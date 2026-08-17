@@ -1,0 +1,8 @@
+# Örtlicher Bündel-Build der Dokumentation (Handbuch, Website, Stilvorlage)
+docs/build/
+
+# Gebaute Präsentationen aus example.typ
+*.html
+*.pdf
+
+.DS_Store

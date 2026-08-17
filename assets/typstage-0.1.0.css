@@ -1,0 +1,58 @@
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+#ts-stage{position:absolute;inset:0;margin:auto;overflow:hidden;background:#fafafa}
+.ts-slide{position:absolute;inset:0;visibility:hidden;opacity:0}
+.ts-slide[data-on]{visibility:visible;opacity:1}
+/* Die abtretende Folie bleibt nur so lange sichtbar, wie sie ausblendet —
+   `data-on` trägt derweil schon die neue, und zwar allein. */
+/* Auch die Deckkraft: ein Übergang wie `push` bewegt nur, ohne zu blenden —
+   ohne diese Zeile wäre die abtretende Folie schlicht unsichtbar. Wo eine
+   Animation die Deckkraft doch setzt, gewinnt sie ohnehin. */
+.ts-slide[data-off]{visibility:visible;opacity:1}
+.ts-bg{position:absolute;inset:0}
+.ts-bg svg{width:100%!important;height:100%!important;display:block}
+.ts-ov{position:absolute;inset:0;pointer-events:none}
+.ts-el{position:absolute;opacity:0;transform-origin:50% 50%;pointer-events:none}
+.ts-el[data-hold]{visibility:hidden}
+.ts-el svg{width:100%!important;height:100%!important;display:block;
+  overflow:visible!important}
+.ts-el video{width:100%;height:100%;display:block}
+.ts-el iframe{width:100%;height:100%;display:block;border:0}
+.ts-embed{pointer-events:auto}
+.ts-bridged{pointer-events:auto}
+.ts-bridged iframe{opacity:0;transition:opacity .3s}
+.ts-bridged[data-bereit="1"] iframe{opacity:1}
+.ts-video[data-controls="1"]{pointer-events:auto}
+.ts-frame{position:absolute;inset:0;visibility:hidden}
+.ts-frame[data-on]{visibility:visible}
+/* Über beiden Folien: der Übergang gibt einer von ihnen einen z-index, und
+   ohne eigenen läge die Flugebene darunter — die Geister verschwänden
+   mitten in der Bewegung hinter der abtretenden Folie. */
+#ts-fly{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:5}
+.ts-ghost{position:absolute;transform-origin:0 0;pointer-events:none;
+  overflow:visible}
+.ts-ghost svg{width:100%!important;height:100%!important;display:block;
+  overflow:visible!important}
+#ts-overview{position:absolute;inset:0;background:#0f1116;display:none;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;
+  padding:16px;overflow:auto;z-index:50;align-content:start}
+#ts-overview[data-on]{display:grid}
+.ts-mini{position:relative;background:#fafafa;border-radius:4px;overflow:hidden;
+  cursor:pointer;outline:2px solid transparent;height:0;padding-bottom:var(--ts-ratio,56.25%)}
+.ts-mini[data-hier]{outline-color:#eb5e28}
+.ts-mini svg{position:absolute;inset:0;width:100%!important;height:100%!important;
+  display:block}
+#ts-hint{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);
+  color:#fff;font-size:13px;background:#000b;padding:8px 16px;border-radius:20px;
+  opacity:0;transition:opacity .25s;pointer-events:none;z-index:60;max-width:70vw}
+#ts-hint[data-on]{opacity:1}
+@media print{
+  html,body{overflow:visible;background:#fff;height:auto}
+  #ts-stage{position:static;width:100%!important;height:auto!important}
+  .ts-slide{position:relative;visibility:visible!important;opacity:1!important;
+    break-after:page;width:100%;height:0;padding-bottom:var(--ts-ratio,56.25%)}
+  .ts-el{opacity:1!important;visibility:visible!important}
+  #ts-overview,#ts-hint,#ts-fly{display:none!important}
+}

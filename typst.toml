@@ -1,0 +1,16 @@
+[package]
+name = "typstage"
+version = "0.1.0"
+compiler = "0.15.0"
+entrypoint = "src/lib.typ"
+authors = ["Alexander Schulz"]
+license = "MIT"
+repository = "https://github.com/Loewe1000/typstage"
+description = "Animierte HTML-Präsentationen aus einer einzigen Typst-Datei — und aus derselben Quelle ein PDF-Handout. Typst setzt, der Browser bewegt: Magic-Move-Morphing, gestaffelte Einblendungen, Folienübergänge, Medien."
+keywords = ["presentation", "slides", "animation", "html"]
+categories = ["presentation"]
+disciplines = ["education"]
+
+# Nicht mitausliefern: die Beispieldatei ist zum Ausprobieren da,
+# nicht Teil des Pakets — und sie zieht CeTZ als Abhängigkeit nach.
+exclude = ["example.typ"]
