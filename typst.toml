@@ -11,6 +11,7 @@ keywords = ["presentation", "slides", "animation", "html"]
 categories = ["presentation"]
 disciplines = ["education"]
 
-# Nicht mitausliefern: die Beispieldatei ist zum Ausprobieren da,
-# nicht Teil des Pakets — und sie zieht CeTZ als Abhängigkeit nach.
-exclude = ["example.typ"]
+# Nicht mitausliefern: die Beispieldateien sind zum Ausprobieren da,
+# nicht Teil des Pakets — und `example.typ` zieht CeTZ als Abhängigkeit nach.
+# `examples/` zeigt je eine kurze Präsentation zu jedem mitgelieferten Theme.
+exclude = ["example.typ", "examples", "docs", "assets"]

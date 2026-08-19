@@ -4,6 +4,7 @@
 #import "internal.typ": *
 #import "slides.typ": *
 #import "theme.typ": handout-body, slide-body
+#import "themes.typ": theme-state, themes
 #import "render.typ": *
 #import "elements.typ": anim, pause
 
@@ -59,9 +60,13 @@
     else { current.push(t) }
   }
   runs.push(current.join())
-  let out = block(runs.first())
+  // `width: 100%` ist nicht Zierrat: ein Block ohne Breite schrumpft auf
+  // seinen Inhalt, und ein `align(center, …)` darin hätte keinen Raum zum
+  // Zentrieren — der Absatz bliebe links stehen, obwohl er ohne die Pause
+  // mittig steht.
+  let out = block(width: 100%, runs.first())
   for (i, run) in runs.slice(1).enumerate() {
-    out += anim(block(run), at: i + 2)
+    out += anim(block(width: 100%, run), at: i + 2)
   }
   out
 }
@@ -162,6 +167,13 @@
 /// typst compile deck.typ deck.pdf
 /// ```
 ///
+/// `theme:` bestimmt das ganze Aussehen — Farben, Schrift, Titelbalken,
+/// Fußzeile, Fortschritt, Titel- und Abschnittsfolie. Mitgeliefert sind
+/// `themes.default` (die Vorgabe), `themes.lesson`, `themes.night`,
+/// `themes.plain` und `themes.editorial`; abwandeln lässt sich jedes davon mit
+/// `themes.night + (accent: blue)`. Der `style`-Haken bleibt davon unberührt
+/// und liegt weiter *innen*: was dort steht, überstimmt das Theme.
+///
 /// The PDF is a handout: one page per slide, every tracked element in its
 /// final state. What belongs only to the motion — notes, slide transitions,
 /// bridge jobs — are state updates without output and fall away by themselves.
@@ -172,6 +184,7 @@
   author: [],
   date: none,
   assets: "inline",
+  theme: themes.default,
   transition: "slide",
   transition-duration: 420,
   duration: 520,
@@ -211,18 +224,21 @@
     let per = if handout == true { 2 } else { handout }
     assert(type(per) == int and per >= 1 and per <= 6,
            message: "typstage: handout takes true or 1 to 6 slides per page")
-    handout-body(all, total, style, geo, per)
+    theme-state.update(theme)
+    handout-body(all, total, style, geo, theme, per)
   } else if target() != "html" {
     set page(width: geo.width, height: geo.height, margin: 0pt)
+    theme-state.update(theme)
     let n = 0
     let pages = ()
     for s in all {
       if s.kind == "slide" { n += 1 }
-      pages.push(slide-counter.step() + slide-body(s, n, total, style, geo))
+      pages.push(slide-counter.step() + slide-body(s, n, total, style, geo, theme))
     }
     pages.join(pagebreak(weak: true))
   } else {
     html-output.update(true)
+    theme-state.update(theme)
     let n = 0
     let parts = ()
     for s in all {
@@ -241,7 +257,7 @@
         // while the frame is laid out would be entered any more.
         html.elem("section", attrs: (class: "ts-slide"), {
           html.elem("div", attrs: (class: "ts-bg"),
-                    html.frame(slide-body(s, here, total, style, geo)))
+                    html.frame(slide-body(s, here, total, style, geo, theme)))
           context {
             let tr = transition-state.get()
             let note = plain-text(note-state.get()).trim()

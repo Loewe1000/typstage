@@ -14,6 +14,7 @@
   runtime-version, runtime-files,
 )
 
+#import "themes.typ": theme, themes
 #import "slides.typ": slide, section, title-slide, transition, speaker-note
 #import "elements.typ": alternatives, anim, morph, pause, pin, stagger
 #import "layout.typ": card, callout, side-by-side, statement, tiles

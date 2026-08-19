@@ -327,6 +327,21 @@
       }
       frei.splice(best, 1);
     });
+    // Ein Pin darf sich zweimal aufs Ziel legen: dann teilt sich das Zeichen
+    // sichtbar in zwei. Genau das braucht die Potenzregel — der Exponent tritt
+    // vorn als Faktor auf und bleibt zugleich oben stehen. Gesucht wird
+    // deshalb auch unter den bereits vergebenen Quellen.
+    for (var i = frei.length - 1; i >= 0; i--) {
+      var z = frei[i];
+      if (z.pin === null || z.pin === undefined) continue;
+      for (var k = 0; k < fest.length; k++) {
+        if (fest[k][0].pin === z.pin) {
+          zug.push([fest[k][0], z]);
+          frei.splice(i, 1);
+          break;
+        }
+      }
+    }
     // `rest` are target glyphs without a source — those have to fade in.
     return { zug: zug, rest: frei };
   }

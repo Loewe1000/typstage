@@ -1,51 +1,42 @@
 // The visible chrome of a slide.
 //
 // Not a Touying theme: header, footer, section slide and title slide are built
-// by hand here. They resemble Metropolis but are not the same thing.
+// by hand here. The default theme resembles Metropolis but is not the same
+// thing.
+//
+// Hier steht nur noch, *wie* gezeichnet wird — *was* gezeichnet wird, sagt das
+// Theme (siehe `themes.typ`). Jede Zahl unten ist entweder ein Maß aus dem
+// Theme oder ein Punktwert auf dem Vorgabe-Canvas, mit `k` mitskaliert.
 
 #import "config.typ": *
 #import "internal.typ": note-state, plain-text, slide-counter
+#import "themes.typ": font-args
 
 /// The body of one slide, background included.
 ///
 /// The same block serves both outputs: in HTML it becomes the background layer
 /// under the overlay, on paper it is the page.
-#let slide-body(s, n, total, style, geo) = block(
+///
+/// `t` ist das Theme: alle Farben, Schriften und Maße kommen von dort, und die
+/// Titel- wie die Abschnittsfolie zeichnet es selbst.
+#let slide-body(s, n, total, style, geo, t) = block(
   width: geo.width, height: geo.height,
 {
   // Everything below is measured on the default canvas and scaled with it, so
   // a smaller or wider slide keeps its proportions.
   let k = geo.scale
-  let margins = geo.margin
-  let margin-left = if type(margins) == dictionary { margins.left } else { margins }
-  let margin-right = if type(margins) == dictionary { margins.right } else { margins }
-  let margin-top = if type(margins) == dictionary { margins.top } else { margins }
-  let margin-bottom = if type(margins) == dictionary { margins.bottom } else { margins }
-  let bar = 54pt * k          // height of the title band
-  // Slide type size: on an 841pt wide canvas Typst's default of 11pt is fine
-  // print. Metropolis sets around 20pt here.
-  set text(size: 19pt * k)
+  let m = margins(geo)
+  let inner = geo.width - m.left - m.right
+  // Schriftgröße: auf einem 841pt breiten Canvas ist Typsts Vorgabe von 11pt
+  // Kleingedrucktes; ein Theme setzt hier um die 19pt an.
+  //
+  // Schrift, Größe und Textfarbe stehen *hier* und nicht im `style`-Haken —
+  // der liegt weiter innen, und was dort steht, überstimmt das Theme.
+  set text(..font-args(t.font), size: t.size * k, fill: t.ink)
   if s.kind == "title" {
-    rect(width: 100%, height: 100%, fill: paper, stroke: none)
-    place(top + left, dx: margin-left, dy: geo.height * 0.32, {
-      text(size: 34pt * k, weight: "bold", fill: dark, s.title)
-      v(4pt * k)
-      rect(width: 190pt * k, height: 2.5pt * k, fill: accent, stroke: none)
-      v(6pt * k)
-      text(size: 17pt * k, fill: muted, s.subtitle)
-    })
-    place(bottom + left, dx: margin-left, dy: -margin-bottom,
-      text(size: 12pt * k, fill: muted, {
-        s.author
-        if s.date != none [ · #s.date.display("[day].[month].[year]") ]
-      }))
+    (t.title-slide)(t, s, geo)
   } else if s.kind == "section" {
-    rect(width: 100%, height: 100%, fill: dark, stroke: none)
-    place(horizon + left, dx: margin-left, {
-      rect(width: 62pt * k, height: 2.5pt * k, fill: accent, stroke: none)
-      v(8pt * k)
-      text(size: 30pt * k, weight: "bold", fill: white, s.title)
-    })
+    (t.section)(t, s, geo)
   } else {
     // Eine Folie ohne Titel bekommt keinen Balken: `slide(none)[…]` oder ein
     // nacktes `==`. Der Rumpf rückt dann nach oben und bekommt die Höhe, die
@@ -54,22 +45,65 @@
     // `plain-text` liefert für eine leere Überschrift `none`, nicht "".
     let roh = if s.title == none { none } else { plain-text(s.title) }
     let titel = roh != none and roh.trim() != ""
-    let kopf = if titel { bar } else { margin-top }
-    rect(width: 100%, height: 100%, fill: paper, stroke: none)
-    if titel {
-      place(top + left, rect(width: 100%, height: bar, fill: dark, stroke: none))
-      place(top + left, dx: margin-left,
-        block(width: geo.width - margin-left - margin-right, height: bar,
-          align(left + horizon,
-            text(size: 23pt * k, weight: "bold", fill: white, s.title))))
+    let bar = t.band-height * k
+    let strich = if t.rule-size > 0pt { t.rule-size * k + 6pt * k } else { 0pt }
+    // Wie hoch der Kopf baut. Beim Balken steht das im Theme; ohne Balken wird
+    // die Höhe der Titelzeile gerechnet statt gemessen — messen hieße, den
+    // Titel zweimal zu setzen, und der Abstand darunter fängt die paar Punkte
+    // Unterschied ohnehin auf.
+    let kopf = if not titel { m.top } else if t.header == "band" { bar } else {
+      m.top + t.title-size * 1.35 * k + strich
     }
-    place(bottom + right, dx: -margin-right, dy: -13pt * k,
-          text(size: 12pt * k, fill: muted, str(n) + " / " + str(total)))
-    place(bottom + left,
-          rect(width: 100% * n / total, height: 2.5pt * k, fill: accent, stroke: none))
-    place(top + left, dx: margin-left, dy: kopf + 20pt * k,
-      block(width: geo.width - margin-left - margin-right,
-            height: geo.height - kopf - 44pt * k,
+    let titel-text = text(
+      ..font-args(t.title-font), size: t.title-size * k, weight: t.weight,
+      fill: t.title-fill, tracking: t.tracking * k, s.title,
+    )
+    rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
+    if titel and t.header == "band" {
+      place(top + left, rect(width: 100%, height: bar, fill: t.strong, stroke: none))
+      place(top + left, dx: m.left,
+        block(width: inner, height: bar, align(left + horizon, titel-text)))
+    } else if titel {
+      place(top + left, dx: m.left, dy: m.top, block(width: inner, {
+        titel-text
+        if t.rule-size > 0pt {
+          v(6pt * k)
+          rect(width: 100%, height: t.rule-size * k, fill: t.rule-fill, stroke: none)
+        }
+      }))
+    }
+    // Fußzeile: die Zahl, wahlweise mit der Gesamtzahl, und eine Haarlinie
+    // darüber.
+    if t.footer-rule > 0pt {
+      place(bottom + left, dx: m.left, dy: -(t.foot-gap + 6pt) * k,
+            rect(width: inner, height: t.footer-rule * k, fill: t.border, stroke: none))
+    }
+    let zahl = if t.footer == "fraction" { str(n) + " / " + str(total) } else { str(n) }
+    if t.footer == "center" {
+      place(bottom + center, dy: -13pt * k, text(size: 12pt * k, fill: t.muted, zahl))
+    } else if t.footer != "none" {
+      place(bottom + right, dx: -m.right, dy: -13pt * k,
+            text(size: 12pt * k, fill: t.muted, zahl))
+    }
+    // Fortschritt: ein wachsender Balken unten oder oben, oder eine Marke, die
+    // auf ihrer Schiene wandert — die zeigt auch bei siebzig Folien noch, wo
+    // man ist, während der Balken dort nur langsam länger wird.
+    if t.progress == "bar" {
+      place(bottom + left,
+            rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
+    } else if t.progress == "top" {
+      place(top + left,
+            rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
+    } else if t.progress == "tick" {
+      let breite = 34pt * k
+      place(bottom + left,
+            rect(width: 100%, height: 3pt * k, fill: t.accent.lighten(78%), stroke: none))
+      place(bottom + left, dx: (geo.width - breite) * n / total,
+            rect(width: breite, height: 3pt * k, fill: t.accent, stroke: none))
+    }
+    place(top + left, dx: m.left, dy: kopf + t.head-gap * k,
+      block(width: inner,
+            height: geo.height - kopf - (t.head-gap + t.foot-gap) * k,
             style(s.body)))
   }
 })
@@ -97,9 +131,9 @@
 /// Where a slide has a speaker note it stands in that room; where it has none,
 /// ruled lines take its place. Both are the same thing really: the space is
 /// for whatever is not on the slide itself.
-#let handout-body(all, total, style, geo, per-page) = {
+#let handout-body(all, total, style, geo, t, per-page) = {
   set page(paper: "a4", margin: (x: 1.5cm, y: 1.4cm))
-  set text(size: 10pt, fill: dark)
+  set text(size: 10pt, fill: t.strong)
   let gap = 14pt
   let column-gap = 10pt
   // A 16:9 slide beside a note column is wide and low. Up to two per upright
@@ -152,7 +186,7 @@
       width: w, height: h, clip: true, radius: 2pt,
       stroke: 0.5pt + luma(72%),
       scale(w / geo.width * 100%, origin: top + left,
-            slide-body(item.slide, item.number, total, style, geo)))
+            slide-body(item.slide, item.number, total, style, geo, t)))
 
     let rows = sheet.map(item => {
       // Counted here too, not only in the other two branches: a companion

@@ -33,6 +33,20 @@
   )
 }
 
+/// Die vier Ränder des Canvas, einzeln.
+///
+/// `margin` darf eine Länge oder ein Wörterbuch sein; ein Theme will die vier
+/// Werte einzeln haben und soll das nicht jedes Mal auseinandernehmen müssen.
+#let margins(geo) = {
+  let m = geo.margin
+  if type(m) != dictionary { return (left: m, right: m, top: m, bottom: m) }
+  let seite(name, achse) = m.at(name, default: m.at(achse, default: 0pt))
+  (
+    left: seite("left", "x"), right: seite("right", "x"),
+    top: seite("top", "y"), bottom: seite("bottom", "y"),
+  )
+}
+
 /// The default palette. Override it by wrapping the presentation in your own
 /// document template — see `style` on `presentation`.
 #let dark = rgb("#23303f")

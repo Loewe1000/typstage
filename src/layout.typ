@@ -5,18 +5,25 @@
 // Ein Layout ist damit etwas, das *in* einer Folie steht — es lässt sich
 // schachteln, in eine Rasterzelle setzen und mit `anim` einblenden.
 //
-// Die Farbgebung bleibt draußen. Wer sechs Bedeutungsfarben führt, setzt sie
-// über `style` oder gibt sie an der Stelle mit; das Paket schreibt sie nicht
-// vor.
+// Die Farbgebung kommt aus dem Theme, und zwar nur als *Vorgabe*: `color`,
+// `fill` und `stroke` stehen auf `auto` und holen sich dort ihren Wert. Wer
+// sechs Bedeutungsfarben führt, gibt sie wie bisher an der Stelle mit; das
+// Paket schreibt keine vor.
+//
+// Deshalb steckt der Kasten in einem `context`: er steht im Folienrumpf und
+// erfährt erst dort, unter welchem Theme er gesetzt wird.
 
-#import "config.typ": accent, dark, muted
 #import "elements.typ": anim
 #import "internal.typ": step-cursor
+#import "themes.typ": theme-state
 
 /// Ein benannter Kasten — Beamers `block`.
 ///
 /// `title` steht in einem farbigen Streifen darüber, `number` setzt zusätzlich
 /// eine Ziffernscheibe davor. Ohne beides bleibt ein schlichter Kasten.
+///
+/// `color`, `fill` und `stroke` nehmen auf `auto` die Werte des Themes —
+/// dessen tragende Farbe, seinen Kartengrund und seinen Rahmen.
 ///
 /// Kein `clip: true`: Typst leitet die Kennung eines Beschnittpfads aus dem
 /// Inhalt ab, und derselbe Kasten zweimal auf einer Folie ergäbe dieselbe
@@ -25,13 +32,19 @@
   body,
   title: none,
   number: none,
-  color: dark,
-  fill: white,
+  color: auto,
+  fill: auto,
+  stroke: auto,
   radius: 7pt,
   inset: (x: 12pt, y: 10pt),
   width: 100%,
-) = block(
-  width: width, radius: radius, fill: fill, stroke: 0.7pt + luma(84%),
+) = context {
+  let t = theme-state.get()
+  let color = if color == auto { t.strong } else { color }
+  let fill = if fill == auto { t.surface } else { fill }
+  let stroke = if stroke == auto { 0.7pt + t.border } else { stroke }
+  block(
+    width: width, radius: radius, fill: fill, stroke: stroke,
   {
     if title != none {
       block(
@@ -54,7 +67,8 @@
       )
     })
   },
-)
+  )
+}
 
 /// Ein hervorgehobener Merksatz — Beamers `alertblock`.
 ///
@@ -62,23 +76,31 @@
 /// erkennbar, ohne dass er wie ein zweiter Kasten aussieht.
 #let callout(
   body,
-  title: [Merke],
-  color: accent,
+  title: [Note],
+  color: auto,
   radius: 7pt,
   inset: (x: 14pt, y: 11pt),
   width: 100%,
-) = block(
-  width: width, radius: radius, fill: color.lighten(90%),
-  stroke: (left: 3.5pt + color), inset: inset,
-  {
-    if title != none {
-      text(size: 0.62em, weight: "bold", fill: color.darken(12%),
-           tracking: 0.6pt, upper(title))
-      v(6pt)
-    }
-    body
-  },
-)
+) = context {
+  let t = theme-state.get()
+  let color = if color == auto { t.accent } else { color }
+  // Auf dunklem Grund ist ein aufgehellter Akzent ein Scheinwerfer. Dort wird
+  // die Farbe abgedunkelt statt aufgehellt, und die Beschriftung aufgehellt.
+  let grund = if t.inverted { color.darken(68%) } else { color.lighten(90%) }
+  let beschriftung = if t.inverted { color.lighten(15%) } else { color.darken(12%) }
+  block(
+    width: width, radius: radius, fill: grund,
+    stroke: (left: 3.5pt + color), inset: inset,
+    {
+      if title != none {
+        text(size: 0.62em, weight: "bold", fill: beschriftung,
+             tracking: 0.6pt, upper(title))
+        v(6pt)
+      }
+      body
+    },
+  )
+}
 
 /// Zwei oder mehr Spalten nebeneinander.
 ///
@@ -96,6 +118,12 @@
   let spalten = parts.pos()
   assert(spalten.len() >= 2,
          message: "typstage: side-by-side() wants at least two columns")
+  // `..parts` schluckt sonst jede benannte Angabe wortlos — ein Tippfehler in
+  // `split:` bliebe unbemerkt, und die Folie sähe still anders aus.
+  assert(parts.named().len() == 0,
+         message: "typstage: side-by-side() does not know "
+                + parts.named().keys().join(", ")
+                + " — it takes split, gutter and align.")
   let breiten = if spalten.len() == split.len() { split }
                 else { (1fr,) * spalten.len() }
   grid(columns: breiten, column-gutter: gutter, align: align, ..spalten)
