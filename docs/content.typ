@@ -283,7 +283,7 @@ zur nächsten weiter. Was dabei auf welchem Schritt erscheint, sagt der Selektor
 `at`.
 
 Fünf Bausteine bestimmen diesen Ablauf: `anim` blendet ein, `pause` teilt eine
-Folie ohne jede Umhüllung auf, `stagger` und `steps` staffeln mehrere Dinge
+Folie ohne jede Umhüllung auf, `stagger` und `stagger` staffeln mehrere Dinge
 nacheinander, `alternatives` stellt mehrere Fassungen an denselben Ort. Sie
 wirken alle im HTML-Ziel. Im PDF gibt es keine Schritte: dort steht jede Folie
 auf einer Seite und jedes Element in seinem Endzustand. Derselbe Quelltext
@@ -356,7 +356,7 @@ oder `"3"` lässt das Element wieder verschwinden -- dann greift `exit`.
 === Nur Einblendungen zählen
 
 #warning[
-  Der Zeiger zählt ausschließlich Einblendungen: `anim`, `stagger`, `steps` --
+  Der Zeiger zählt ausschließlich Einblendungen: `anim`, `stagger`, `stagger` --
   und damit auch `pause` und `alternatives`, die daraus gebaut sind. Ein
   Applet, ein Video oder ein `morph` verbraucht *keinen* Schritt und schiebt
   nichts weiter. Solche Elemente sind von Anfang an da.
@@ -530,7 +530,7 @@ Zweiter Lauf.
 )
 ```]
 
-== stagger und steps
+== stagger
 
 `stagger` staffelt die Punkte einer Liste über die Schritte. `start` ist `auto`
 und schließt an den Zeiger an, sodass eine Liste dort weiterzählt, wo die Folie
@@ -586,7 +586,7 @@ einem einzigen Schritt, aber kurz nacheinander eingeschwenkt.
 
 Enthält der Rumpf keine Liste, wird er als ein Stück eingeblendet.
 
-`steps` staffelt beliebige Blöcke, die keine Liste sind -- nach denselben
+`stagger` staffelt beliebige Blöcke, die keine Liste sind -- nach denselben
 Regeln, `start` eingeschlossen.
 
 #show-example(
@@ -595,14 +595,14 @@ Regeln, `start` eingeschlossen.
     let karte(body) = block(
       fill: luma(96%), inset: 10pt, radius: 5pt, width: 100%, body,
     )
-    steps(
+    stagger(
       karte[Erst die Behauptung],
       karte[dann die Begründung],
       karte[und zuletzt das Beispiel.],
     )
   },
   source: ```typ
-  #steps(
+  #stagger(
     karte[Erst die Behauptung],
     karte[dann die Begründung],
     karte[und zuletzt das Beispiel.],
@@ -1262,6 +1262,8 @@ dann Medien und Brücke, zuletzt die Maße und Farben.
 
 == Medien und Einbettungen
 
+// `fallback-box` ist nicht mehr öffentlich; `embed` und `geogebra` benutzen es
+// von innen, wenn im Seitensatz kein Applet steht.
 #show-module(read("../src/media.typ"), name: "typstage",
              exclude: ("fallback-box",))
 

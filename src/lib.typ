@@ -15,9 +15,8 @@
 )
 
 #import "slides.typ": slide, section, title-slide, transition, speaker-note
-#import "elements.typ": (alternatives, anim, morph, pause, pin, stagger,
-                         steps)
+#import "elements.typ": alternatives, anim, morph, pause, pin, stagger
 #import "layout.typ": card, callout, side-by-side, statement, tiles
-#import "media.typ": video, embed, flipbook, fallback-box
+#import "media.typ": video, embed, flipbook
 #import "bridge.typ": bridge-job, bridge-targets
 #import "present.typ": presentation

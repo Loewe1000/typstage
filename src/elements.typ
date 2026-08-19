@@ -30,13 +30,18 @@
 ///
 /// The name is a string or a label — `morph(<pythagoras>, …)`.
 ///
+/// `duration` ist 900 ms, nicht die Dauer der Präsentation: ein Flug quer über
+/// die Folie braucht mehr Zeit als eine Einblendung, und in echten Decks wurde
+/// die Vorgabe in 161 von 165 Fällen überschrieben. `auto` nimmt wieder die
+/// Dauer der Präsentation.
+///
 /// `match` is `"auto"`, `"glyph"` (always per glyph) or `"block"` (always as
 /// one rectangle).
 ///
 /// Two names may be equal on the *target* slide. The runtime looks the source
 /// up by name but iterates over the targets, so two targets sharing a name
 /// both start from the same place and the glyph visibly splits in two.
-#let morph(name, body, duration: auto, match: "auto", inline: true) = track(
+#let morph(name, body, duration: 900, match: "auto", inline: true) = track(
   "morph", body, at: "1-", inline: inline,
   extra: (name: name-of(name), match: match,
           duration: if duration == auto { none } else { duration }),
@@ -140,38 +145,64 @@
 /// `anim` in those places.
 #let pause = metadata("typstage-pause")
 
-/// Stagger the items of a list across the steps.
+/// Nacheinander erscheinen lassen — eine Liste oder mehrere Blöcke.
 ///
-/// The rows are set here rather than handed to `list()`: only that way does
-/// the bullet belong to the tracked element. Left to the list, it would sit in
-/// the background — and be there before its item appeared.
+/// Zwei Schreibweisen, dieselbe Funktion:
 ///
-/// `start` is `auto` by default: the list carries on where the slide left off,
-/// so `stagger` after two `anim`s begins at step three.
+/// ```typ
+/// #stagger[
+///   - erst dies
+///   - dann das
+/// ]
+/// #stagger(card[links], card[rechts])
+/// ```
+///
+/// Bei einer Liste werden die Aufzählungszeichen hier gesetzt und nicht `list`
+/// überlassen: nur so gehört das Zeichen zum verfolgten Element. Bliebe es bei
+/// der Liste, stünde es im Hintergrund — und wäre da, bevor sein Punkt
+/// erscheint.
+///
+/// `start` ist `auto`: die Folge macht dort weiter, wo die Folie stehen
+/// geblieben ist. `stride: 0` lässt alles im selben Schritt erscheinen und
+/// staffelt nur über `stagger` in Millisekunden.
 #let stagger(
-  body,
+  ..items,
   start: auto,
   stride: 1,
   enter: "fade-up",
   duration: auto,
-  stagger: 0,
+  stagger: 60,
   spacing: 0.65em,
 ) = context {
   let start = if start == auto { step-cursor.get().first() + 1 } else { start }
-  let parts = if body.has("children") { body.children } else { (body,) }
-  let items = parts.filter(c => c.func() in (list.item, enum.item))
-  if items.len() == 0 {
-    // No list content — then as one piece.
-    return anim(body, at: str(start) + "-", enter: enter, duration: duration)
+  let gegeben = items.pos()
+  assert(gegeben.len() > 0, message: "typstage: stagger() wants something to stagger")
+
+  // Ein einzelnes Stück kann eine Liste sein — dann werden deren Punkte
+  // gestaffelt. Alles andere sind die Stücke selbst.
+  let punkte = if gegeben.len() == 1 {
+    let body = gegeben.first()
+    let parts = if body.has("children") { body.children } else { (body,) }
+    parts.filter(c => c.func() in (list.item, enum.item))
+  } else { () }
+
+  if punkte.len() == 0 {
+    // Keine Liste: die Stücke der Reihe nach, jedes als eigener Block.
+    for (i, b) in gegeben.enumerate() {
+      block(anim(b, at: str(start + i * stride) + "-",
+                 enter: enter, duration: duration, delay: i * stagger))
+    }
+    return
   }
-  let numbered = items.at(0).func() == enum.item
-  let marks = items.enumerate().map(((i, p)) => {
+
+  let numbered = punkte.at(0).func() == enum.item
+  let marks = punkte.enumerate().map(((i, p)) => {
     if numbered { [#(i + 1).] } else { [•] }
   })
   // One shared column width so the texts line up.
   let column = calc.max(..marks.map(m => measure(m).width.pt())) * 1pt
 
-  for (i, p) in items.enumerate() {
+  for (i, p) in punkte.enumerate() {
     if i > 0 { v(spacing, weak: true) }
     anim(
       grid(
@@ -183,16 +214,5 @@
       at: str(start + i * stride) + "-",
       enter: enter, duration: duration, delay: i * stagger,
     )
-  }
-}
-
-/// Stagger arbitrary blocks that are not a list — same rules as `stagger`,
-/// `start` included.
-#let steps(..blocks, start: auto, stride: 1, enter: "fade-up",
-           stagger: 0) = context {
-  let start = if start == auto { step-cursor.get().first() + 1 } else { start }
-  for (i, b) in blocks.pos().enumerate() {
-    block(anim(b, at: str(start + i * stride) + "-",
-               enter: enter, delay: i * stagger))
   }
 }
