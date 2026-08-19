@@ -9,6 +9,44 @@
   var CFG = JSON.parse(document.getElementById("ts-cfg").textContent);
   var EASE = "cubic-bezier(.4,0,.2,1)";
 
+  // ── Doppelte SVG-Kennungen entschärfen ───────────────────────────────────
+  //
+  // Typst leitet die Kennungen in einem SVG aus dem Inhalt ab. Derselbe
+  // beschnittene Kasten zweimal auf einer Folie — einmal im Hintergrund und
+  // einmal als Sprite, oder schlicht zweimal — ergibt deshalb dieselbe
+  // `<clipPath id>` zweimal. In HTML muss eine Kennung eindeutig sein, also
+  // bindet `url(#…)` ans erste Vorkommen: der zweite Kasten wird gegen fremde
+  // Maße beschnitten und verschwindet meist ganz. Dasselbe trifft die
+  // `<symbol id>` der Glyphen.
+  //
+  // Umbenannt wird nur, was wirklich doppelt ist, und Verweise werden nur
+  // innerhalb desselben SVG umgebogen — dort, wo sie hingehören.
+  (function () {
+    var gesehen = Object.create(null), lauf = 0;
+    document.querySelectorAll("svg").forEach(function (svg) {
+      var karte = null;
+      svg.querySelectorAll("[id]").forEach(function (el) {
+        var alt = el.id;
+        if (!gesehen[alt]) { gesehen[alt] = 1; return; }
+        var neu = alt + "-ts" + (++lauf);
+        el.id = neu;
+        gesehen[neu] = 1;
+        (karte || (karte = Object.create(null)))[alt] = neu;
+      });
+      if (!karte) return;
+      svg.querySelectorAll("*").forEach(function (u) {
+        for (var i = 0; i < u.attributes.length; i++) {
+          var a = u.attributes[i], v = a.value;
+          if (v.indexOf("#") < 0) continue;
+          for (var alt in karte) {
+            if (v === "#" + alt) { a.value = "#" + karte[alt]; break; }
+            if (v === "url(#" + alt + ")") { a.value = "url(#" + karte[alt] + ")"; break; }
+          }
+        }
+      });
+    });
+  })();
+
   // Per-slide settings live on the overlay: it sits inside a `context` and
   // therefore sees marks that were only set while laying out the body.
   function attr(f, name) {

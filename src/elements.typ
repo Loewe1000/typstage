@@ -51,6 +51,9 @@
 /// )
 /// ```
 ///
+/// `inline: true` keeps the whole thing in the running line, for versions of a
+/// single word or formula.
+///
 /// They all stand in the same place, in a box as large as the largest of them,
 /// so nothing around them jumps as they change. Each takes one step; the last
 /// one stays for the rest of the slide.
@@ -64,14 +67,24 @@
   align: top + left,
   enter: "fade",
   duration: auto,
+  inline: false,
 ) = {
   let items = variants.pos()
   assert(items.len() > 0,
          message: "typstage: alternatives() wants at least one version")
-  layout(available => context {
-    let sizes = items.map(v => measure(v, width: available.width))
-    let w = calc.max(..sizes.map(s => s.width))
-    let h = calc.max(..sizes.map(s => s.height))
+  // Wie bei `morph`: `layout()` arbeitet blockweise und bräche die Zeile, in
+  // der die Fassungen stehen. Die Hülle muss deshalb um das Ganze liegen,
+  // nicht darin.
+  let shell-outer = if inline { box } else { it => it }
+  shell-outer(layout(available => context {
+    // Zweimal messen, das Größere gilt — dieselbe Falle wie in `track`:
+    // `height: 100%` in einer Fassung fiele sonst auf null zusammen, eine
+    // Messung nur gegen die verfügbare Höhe würde Überlauf kappen.
+    let natural = items.map(v => measure(v, width: available.width))
+    let bounded = items.map(v => measure(v, width: available.width,
+                                         height: available.height))
+    let w = calc.max(..natural.map(s => s.width), ..bounded.map(s => s.width))
+    let h = calc.max(..natural.map(s => s.height), ..bounded.map(s => s.height))
     if not html-output.get() {
       return block(width: w, height: h, place(align, items.last()))
     }
@@ -85,7 +98,7 @@
         place(align, anim(v, at: at, enter: enter, duration: duration))
       }
     })
-  })
+  }))
 }
 
 /// Everything after this appears a step later.

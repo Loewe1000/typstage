@@ -380,6 +380,27 @@ den Bewegungen des Applets:
 Der Zeiger beginnt auf jeder Folie neu. Schrittnummern sind folienlokal; auf
 der nächsten Folie steht wieder eins.
 
+=== Ein Schritt vererbt sich nicht nach innen
+
+Jedes verfolgte Element trägt seinen eigenen Schritt. Steckt eines im anderen,
+gilt für das innere trotzdem dessen eigene Angabe — nicht die des äußeren:
+
+#show-code(```typ
+#anim(at: 3)[Ab Schritt drei — #morph(<m>, $x^2$) aber ab Schritt eins.]
+```)
+
+Der Morph bekommt hier `1-`, obwohl er innerhalb einer Einblendung ab Schritt
+drei steht. Das ist gewollt: ein Morph muss beim Betreten der Folie schon da
+sein, sonst hätte der Flug von der Vorfolie kein Ziel. Für alles andere gilt
+dasselbe — wer ein inneres Element später zeigen will, schreibt seinen Schritt
+hin.
+
+#warning[
+  Sichtbar wird das erst beim Blättern: das äußere Element ist noch unsichtbar,
+  das innere schon da. Bei `morph` ist es richtig so, bei einem `anim` in einem
+  `anim` meist ein Versehen.
+]
+
 == anim
 
 `anim` blendet Inhalt auf bestimmten Schritten ein. Das Argument ist beliebiger

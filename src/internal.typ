@@ -145,15 +145,33 @@
       // measurement travels outward so the sprite gets exactly the same
       // layout — otherwise a `width: 100%` inside the free frame would come to
       // nothing and boxes would lose their area.
-      let room = if width == auto {
-        if inline { available.width } else { available.width }
-      } else { width }
-      let m = measure(body, width: room)
+      let room = if width == auto { available.width } else { width }
+      // Zweimal gemessen, und das Größere gilt. Eine Messung ohne Höhenbezug
+      // lässt `height: 100%` im Rumpf auf null zusammenfallen; eine Messung
+      // gegen die verfügbare Höhe löst es auf, kappt dafür aber alles, was
+      // überläuft (nachgemessen: `lorem(200)` wird 200pt statt 482pt). Das
+      // Maximum ist in beiden Fällen richtig. Ist die Höhe unbegrenzt, liefert
+      // die zweite Messung 0 und das Maximum fällt auf die erste zurück.
+      let natural = measure(body, width: room)
+      let bounded = measure(body, width: room, height: available.height)
+      let m = (
+        width: calc.max(natural.width, bounded.width),
+        height: calc.max(natural.height, bounded.height),
+      )
       // What holds here has to be set again in the sprite: its own frame does
       // not know the slide's `set` rules.
+      // Der Sprite wird in einem eigenen Rahmen gesetzt und kennt die
+      // `set`-Regeln der Folie nicht. Was den Umbruch und die Höhe bestimmt,
+      // muss deshalb mitreisen — sonst füllt er seinen gemessenen Rahmen
+      // nicht aus: mit `#set par(leading: 2em)` maß der Hintergrund 63pt,
+      // der Sprite kam mit Vorgabe-Durchschuss auf 37pt und klebte oben.
       let style = (
         size: text.size, fill: text.fill, font: text.font,
         weight: text.weight, style: text.style, lang: text.lang,
+        tracking: text.tracking, spacing: text.spacing,
+        leading: par.leading, par-spacing: par.spacing,
+        justify: par.justify, first-line-indent: par.first-line-indent,
+        hanging-indent: par.hanging-indent,
       )
       // Inline elements stay as narrow as their content; block elements take
       // the room they were given.

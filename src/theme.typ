@@ -68,7 +68,14 @@
 /// Both have to receive the same typography — they are laid out separately.
 #let with-style(s, body) = {
   set text(size: s.style.size, fill: s.style.fill, font: s.style.font,
-           weight: s.style.weight, style: s.style.style, lang: s.style.lang)
+           weight: s.style.weight, style: s.style.style, lang: s.style.lang,
+           tracking: s.style.at("tracking", default: 0pt),
+           spacing: s.style.at("spacing", default: 100% + 0pt))
+  set par(leading: s.style.at("leading", default: 0.65em),
+          spacing: s.style.at("par-spacing", default: 1.2em),
+          justify: s.style.at("justify", default: false),
+          first-line-indent: s.style.at("first-line-indent", default: 0pt),
+          hanging-indent: s.style.at("hanging-indent", default: 0pt))
   body
 }
 
