@@ -10,6 +10,8 @@ typst compile deck.typ deck.pdf                                  # slides and ha
 
 ![A slide of a typstage deck in the browser, halfway through its reveals](assets/slide.png)
 
+**Try it without installing anything:** [five example decks](https://loewe1000.github.io/typstage/beispiele/) — the same short talk in each built-in theme, running in your browser.
+
 ## Typst sets, the browser moves
 
 The usual route from Typst to a presentation is a PDF in which every step
@@ -255,9 +257,13 @@ else, no Node, no bundler.
 
 ## Documentation
 
-The manual — steps, magic move, transitions, media, the bridge, a full API
-reference — is `docs/content.typ`. One run gives the printed manual, the
-website and its stylesheet:
+The [manual](https://loewe1000.github.io/typstage/) — steps, magic move,
+transitions, media, the bridge, a full API reference — is published from this
+repository, together with the [example decks](https://loewe1000.github.io/typstage/beispiele/).
+It is also available as a [PDF](https://loewe1000.github.io/typstage/typstage.pdf).
+Both are German; the source is `docs/content.typ`.
+
+One run gives the printed manual, the website and its stylesheet:
 
 ```bash
 typst compile docs/docs.typ build --format bundle --features bundle,html --root .

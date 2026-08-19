@@ -1,0 +1,76 @@
+name: Handbuch & Beispiele veröffentlichen
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Seite bauen
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Typst-Schule danebenlegen
+        uses: actions/checkout@v4
+        with:
+          # docs/docs.typ setzt auf @schule/schuldocs, und das liegt dort. Von
+          # dort kommt außerdem der Erzeuger der Beispiel-Übersicht — eine
+          # zweite Fassung davon würde nur abdriften.
+          repository: Loewe1000/Typst-Schule
+          path: .aggregat
+          fetch-depth: 1
+
+      - name: Typst installieren
+        uses: typst-community/setup-typst@v4
+        with:
+          # Festgenagelt, nicht `latest`: Handbuch und Website entstehen in
+          # einem Bündel-Lauf hinter `--features bundle`, und das ist
+          # ausdrücklich experimentell.
+          typst-version: "0.15.0"
+
+      - name: Handbuch und Beispiele bauen
+        env:
+          AGGREGAT: ${{ github.workspace }}/.aggregat
+        run: bash .github/scripts/build-site.sh
+
+      - name: GitHub Pages konfigurieren
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Pages-Artefakt hochladen
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site/
+
+  deploy:
+    name: Auf GitHub Pages deployen
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy auf GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

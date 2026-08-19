@@ -19,7 +19,10 @@
     HTML-Präsentation, ein Foliensatz als PDF und ein Handout zum Mitschreiben.
   ],
   links: (
-    (name: "GitHub", url: "https://github.com/Loewe1000/Typst-Schule"),
+    (name: "GitHub", url: "https://github.com/Loewe1000/typstage"),
+    // Absolut, nicht relativ: derselbe Eintrag steht auch auf der Titelseite
+    // des PDFs, und dort führt ein Pfad ins Leere.
+    (name: "Beispiele", url: "https://loewe1000.github.io/typstage/beispiele/"),
   ),
   notices: ([Teil des Schule-Typst-Ökosystems],),
 )
