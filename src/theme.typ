@@ -46,7 +46,9 @@
     let roh = if s.title == none { none } else { plain-text(s.title) }
     let titel = roh != none and roh.trim() != ""
     let bar = t.band-height * k
-    let strich = if t.rule-size > 0pt { t.rule-size * k + 6pt * k } else { 0pt }
+    let strich = if t.rule-size > 0pt {
+      t.rule-size * k + t.title-size * 0.34 * k
+    } else { 0pt }
     // Wie hoch der Kopf baut. Beim Balken steht das im Theme; ohne Balken wird
     // die Höhe der Titelzeile gerechnet statt gemessen — messen hieße, den
     // Titel zweimal zu setzen, und der Abstand darunter fängt die paar Punkte
@@ -64,11 +66,15 @@
       place(top + left, dx: m.left,
         block(width: inner, height: bar, align(left + horizon, titel-text)))
     } else if titel {
+      // Dieselbe Falle wie im Merksatz: ohne gesetztes `above`/`below` läge
+      // zwischen Titel und Linie zusätzlich der Absatzabstand, und die Linie
+      // rutschte an den Inhalt statt an den Titel.
       place(top + left, dx: m.left, dy: m.top, block(width: inner, {
-        titel-text
+        block(above: 0pt, below: 0pt, titel-text)
         if t.rule-size > 0pt {
-          v(6pt * k)
-          rect(width: 100%, height: t.rule-size * k, fill: t.rule-fill, stroke: none)
+          block(above: t.title-size * 0.34 * k, below: 0pt,
+            rect(width: 100%, height: t.rule-size * k, fill: t.rule-fill,
+                 stroke: none))
         }
       }))
     }

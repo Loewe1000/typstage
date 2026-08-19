@@ -21,6 +21,23 @@
 /// darf das Argument gar nicht erst setzen.
 #let font-args(f) = if f == none { (:) } else { (font: f) }
 
+/// Stücke untereinander, mit genau dem angegebenen Abstand.
+///
+/// Die Argumente wechseln sich ab: Inhalt, Abstand, Inhalt, Abstand, Inhalt.
+/// Nötig, weil Typst zwischen zwei Absätzen `par.spacing` und zwischen zwei
+/// Blöcken `block.spacing` einschiebt — beides addiert sich zu einem
+/// ausdrücklichen `v()`. Auf einer Titelfolie mit 24pt Grundschrift waren das
+/// gemessen 29pt zusätzlich, die den Aufbau auseinanderzogen. Hier zählt nur,
+/// was dasteht.
+#let stapel(..teile) = {
+  let xs = teile.pos()
+  for (i, x) in xs.enumerate() {
+    if calc.rem(i, 2) == 0 {
+      block(above: if i == 0 { 0pt } else { xs.at(i - 1) }, below: 0pt, x)
+    }
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  Titel- und Abschnittsfolien
 // ═══════════════════════════════════════════════════════════════════════════
@@ -44,11 +61,14 @@
   let m = margins(geo)
   rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
   place(top + left, dx: m.left, dy: geo.height * 0.32, {
-    text(..font-args(t.title-font), size: 34pt * k, weight: "bold", fill: t.strong, s.title)
-    v(4pt * k)
-    rect(width: 190pt * k, height: 2.5pt * k, fill: t.accent, stroke: none)
-    v(6pt * k)
-    text(size: 17pt * k, fill: t.muted, s.subtitle)
+    stapel(
+      text(..font-args(t.title-font), size: 34pt * k, weight: "bold",
+           fill: t.strong, s.title),
+      6pt * k,
+      rect(width: 190pt * k, height: 2.5pt * k, fill: t.accent, stroke: none),
+      8pt * k,
+      text(size: 17pt * k, fill: t.muted, s.subtitle),
+    )
   })
   place(bottom + left, dx: m.left, dy: -m.bottom, by-line(t, s, k))
 }
@@ -59,9 +79,12 @@
   let m = margins(geo)
   rect(width: 100%, height: 100%, fill: t.strong, stroke: none)
   place(horizon + left, dx: m.left, {
-    rect(width: 62pt * k, height: 2.5pt * k, fill: t.accent, stroke: none)
-    v(8pt * k)
-    text(..font-args(t.title-font), size: 30pt * k, weight: "bold", fill: white, s.title)
+    stapel(
+      rect(width: 62pt * k, height: 2.5pt * k, fill: t.accent, stroke: none),
+      10pt * k,
+      text(..font-args(t.title-font), size: 30pt * k, weight: "bold",
+           fill: white, s.title),
+    )
   })
 }
 
@@ -75,11 +98,14 @@
   place(top + left, rect(width: 100%, height: 12pt * k, fill: t.accent, stroke: none))
   place(center + horizon, dy: -10pt * k, block(width: geo.width - 2 * m.left, {
     set align(center)
-    text(..font-args(t.title-font), size: 38pt * k, weight: "bold", fill: t.strong, s.title)
-    v(12pt * k)
-    rect(width: 130pt * k, height: 3pt * k, fill: t.accent, stroke: none)
-    v(12pt * k)
-    text(size: 18pt * k, fill: t.muted, s.subtitle)
+    stapel(
+      text(..font-args(t.title-font), size: 38pt * k, weight: "bold",
+           fill: t.strong, s.title),
+      14pt * k,
+      rect(width: 130pt * k, height: 3pt * k, fill: t.accent, stroke: none),
+      14pt * k,
+      text(size: 18pt * k, fill: t.muted, s.subtitle),
+    )
   }))
   place(bottom + center, dy: -m.bottom, by-line(t, s, k))
 }
@@ -106,11 +132,14 @@
   rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
   place(center + horizon, block(width: geo.width * 0.74, {
     set align(center)
-    text(..font-args(t.title-font), size: 40pt * k, weight: "bold", fill: t.ink, s.title)
-    v(14pt * k)
-    rect(width: 90pt * k, height: 2pt * k, fill: t.accent, stroke: none)
-    v(14pt * k)
-    text(size: 17pt * k, fill: t.muted, s.subtitle)
+    stapel(
+      text(..font-args(t.title-font), size: 40pt * k, weight: "bold",
+           fill: t.ink, s.title),
+      16pt * k,
+      rect(width: 90pt * k, height: 2pt * k, fill: t.accent, stroke: none),
+      16pt * k,
+      text(size: 17pt * k, fill: t.muted, s.subtitle),
+    )
   }))
   place(bottom + center, dy: -m.bottom, by-line(t, s, k))
 }
@@ -121,11 +150,14 @@
   rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
   place(center + horizon, block(width: geo.width * 0.56, {
     set align(center)
-    rect(width: 100%, height: 1pt * k, fill: t.accent, stroke: none)
-    v(16pt * k)
-    text(..font-args(t.title-font), size: 30pt * k, weight: "bold", fill: t.accent, s.title)
-    v(16pt * k)
-    rect(width: 100%, height: 1pt * k, fill: t.accent, stroke: none)
+    stapel(
+      rect(width: 100%, height: 1pt * k, fill: t.accent, stroke: none),
+      18pt * k,
+      text(..font-args(t.title-font), size: 30pt * k, weight: "bold",
+           fill: t.accent, s.title),
+      18pt * k,
+      rect(width: 100%, height: 1pt * k, fill: t.accent, stroke: none),
+    )
   }))
 }
 
@@ -137,9 +169,12 @@
   let m = margins(geo)
   rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
   place(top + left, dx: m.left, dy: geo.height * 0.42, block(width: geo.width * 0.7, {
-    text(..font-args(t.title-font), size: 30pt * k, fill: t.strong, tracking: 0.3pt * k, s.title)
-    v(10pt * k)
-    text(size: 15pt * k, fill: t.muted, s.subtitle)
+    stapel(
+      text(..font-args(t.title-font), size: 30pt * k, fill: t.strong,
+           tracking: 0.3pt * k, s.title),
+      12pt * k,
+      text(size: 15pt * k, fill: t.muted, s.subtitle),
+    )
   }))
   place(bottom + left, dx: m.left, dy: -m.bottom,
     text(size: 10pt * k, fill: t.muted, {
@@ -154,9 +189,12 @@
   let m = margins(geo)
   rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
   place(horizon + left, dx: m.left, block(width: geo.width * 0.7, {
-    text(..font-args(t.title-font), size: 26pt * k, fill: t.strong, tracking: 0.3pt * k, s.title)
-    v(9pt * k)
-    rect(width: 40pt * k, height: 0.8pt * k, fill: t.muted, stroke: none)
+    stapel(
+      text(..font-args(t.title-font), size: 26pt * k, fill: t.strong,
+           tracking: 0.3pt * k, s.title),
+      11pt * k,
+      rect(width: 40pt * k, height: 0.8pt * k, fill: t.muted, stroke: none),
+    )
   }))
 }
 
@@ -170,13 +208,16 @@
   rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
   place(center + horizon, dy: -8pt * k, block(width: geo.width * 0.68, {
     set align(center)
-    rect(width: 64pt * k, height: 0.9pt * k, fill: t.accent, stroke: none)
-    v(16pt * k)
-    text(..font-args(t.title-font), size: 34pt * k, fill: t.strong, tracking: 0.5pt * k, s.title)
-    v(10pt * k)
-    text(size: 16pt * k, style: "italic", fill: t.muted, s.subtitle)
-    v(18pt * k)
-    rect(width: 64pt * k, height: 0.9pt * k, fill: t.accent, stroke: none)
+    stapel(
+      rect(width: 64pt * k, height: 0.9pt * k, fill: t.accent, stroke: none),
+      18pt * k,
+      text(..font-args(t.title-font), size: 34pt * k, fill: t.strong,
+           tracking: 0.5pt * k, s.title),
+      12pt * k,
+      text(size: 16pt * k, style: "italic", fill: t.muted, s.subtitle),
+      20pt * k,
+      rect(width: 64pt * k, height: 0.9pt * k, fill: t.accent, stroke: none),
+    )
   }))
   place(bottom + center, dy: -m.bottom,
     text(size: 11pt * k, fill: t.muted, tracking: 1.4pt * k, upper({
@@ -191,9 +232,12 @@
   rect(width: 100%, height: 100%, fill: t.strong, stroke: none)
   place(center + horizon, block(width: geo.width * 0.7, {
     set align(center)
-    rect(width: 44pt * k, height: 0.9pt * k, fill: t.accent, stroke: none)
-    v(18pt * k)
-    text(..font-args(t.title-font), size: 30pt * k, fill: t.paper, tracking: 0.5pt * k, s.title)
+    stapel(
+      rect(width: 44pt * k, height: 0.9pt * k, fill: t.accent, stroke: none),
+      20pt * k,
+      text(..font-args(t.title-font), size: 30pt * k, fill: t.paper,
+           tracking: 0.5pt * k, s.title),
+    )
   }))
 }
 

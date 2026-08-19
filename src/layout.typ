@@ -97,12 +97,21 @@
     width: width, radius: radius, fill: grund,
     stroke: (left: 3.5pt + color), inset: inset,
     {
+      // Nicht Text, `v()` und Rumpf hintereinander: zwischen zwei Absätzen
+      // schiebt Typst zusätzlich `par.spacing` — bei 24pt Schrift 29pt, die
+      // sich zum ausdrücklichen Abstand addieren. Gemessen 34pt statt der
+      // gewollten 6. Als Blöcke mit gesetztem `above`/`below` zählt nur, was
+      // hier steht.
       if title != none {
-        text(size: 0.62em, weight: "bold", fill: beschriftung,
-             tracking: 0.6pt, upper(title))
-        v(6pt)
+        block(above: 0pt, below: 0pt,
+          text(size: 0.62em, weight: "bold", fill: beschriftung,
+               tracking: 0.6pt, upper(title)))
       }
-      body
+      // Relativ zur Schrift, damit der Abstand bei jeder Themengröße stimmt:
+      // fest gesetzte Punkte sähen bei 15pt zu luftig und bei 31pt gedrängt aus.
+      // Mehr Luft als im Kasten: dort trennt der farbige Streifen Etikett und
+      // Text, hier stehen beide auf demselben Grund und brauchen den Abstand.
+      block(above: if title == none { 0pt } else { 0.6em }, below: 0pt, body)
     },
   )
 }
