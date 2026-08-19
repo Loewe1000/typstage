@@ -58,6 +58,8 @@ This file compiles, as it stands, with both commands above.
   ],
 )
 
+#v(1fr)
+
 #callout(title: [Remember])[
   The leftover area cannot change — only its shape does.
 ]

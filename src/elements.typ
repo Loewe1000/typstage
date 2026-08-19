@@ -208,7 +208,11 @@
       grid(
         columns: (column, 1fr),
         column-gutter: 0.5em,
-        align: (right, left),
+        // Senkrecht ausdrücklich: eine `auto`-Ausrichtung erbt die des
+        // umgebenden Rasters, und `side-by-side` gibt `horizon` vor. Das
+        // Zeichen säße dann neben der Mitte eines zweizeiligen Punktes
+        // statt neben seiner ersten Zeile.
+        align: (right + top, left + top),
         marks.at(i), p.body,
       ),
       at: str(start + i * stride) + "-",
