@@ -661,6 +661,128 @@ die Seite die Abstände der Folie behält. Alle zu drucken hieße, sie
   des Kastens, und der Wechsel wird ruhig.
 ]
 
+= Layouts
+
+Fünf Bausteine für den Folienrumpf. Es sind Inhaltsfunktionen, keine eigenen
+Folienarten — sie lassen sich schachteln, in eine Rasterzelle setzen und mit
+`anim` einblenden.
+
+Farben gibt das Paket nicht vor. Wer eine eigene Bedeutungsfarbe führt, reicht
+sie mit `color:` herein oder setzt sie über `style`.
+
+== Folien ohne Titel
+
+Ein nacktes `==` lässt den Titelbalken weg; der Rumpf beginnt dann oben und
+bekommt die Höhe, die sonst der Balken belegt hätte.
+
+#show-code(```typ
+== 
+#statement[$ f'(x) = lim_(h -> 0) (f(x+h) - f(x)) / h $]
+```)
+
+In der Argumentform sind alle drei Schreibweisen erlaubt: `slide[Rumpf]` ohne
+Titel, `slide(none)[Rumpf]` ausdrücklich ohne, `slide([Titel])[Rumpf]` mit.
+
+== card — der benannte Kasten
+
+#show-example(
+  rendered: {
+    import "../src/layout.typ": card
+    card(title: [Potenzfunktion])[$f(x) = x^n$ mit $n in NN$.]
+  },
+  source: ```typ
+  #card(title: [Potenzfunktion])[$f(x) = x^n$ mit $n in NN$.]
+  ```,
+  width: 11cm,
+)
+
+`number:` setzt zusätzlich eine Ziffernscheibe davor — für Schrittfolgen, bei
+denen die Nummer zur Sache gehört.
+
+#show-example(
+  rendered: {
+    import "../src/layout.typ": card
+    card(number: 2, title: [Zweiter Schritt])[Ableiten, dann einsetzen.]
+  },
+  source: ```typ
+  #card(number: 2, title: [Zweiter Schritt])[Ableiten, dann einsetzen.]
+  ```,
+  width: 11cm,
+)
+
+#info[
+  Der Kasten beschneidet seinen Inhalt bewusst nicht. Typst leitet die Kennung
+  eines Beschnittpfads aus dem Inhalt ab; derselbe Kasten zweimal auf einer
+  Folie ergäbe dieselbe Kennung zweimal. Die Ecken rundet deshalb der farbige
+  Streifen selbst.
+]
+
+== callout — der Merksatz
+
+#show-example(
+  rendered: {
+    import "../src/layout.typ": callout
+    callout[Der Exponent entscheidet über die Symmetrie.]
+  },
+  source: ```typ
+  #callout[Der Exponent entscheidet über die Symmetrie.]
+  ```,
+  width: 11cm,
+)
+
+`title:` ändert die Überschrift, `color:` die Farbe; `title: none` lässt sie
+weg.
+
+== side-by-side — zwei Spalten
+
+Der Name kommt aus Touying und Polylux, die ihn unabhängig voneinander gleich
+gewählt haben. `split:` nimmt die Spaltenbreiten; die Vorgabe `(1.25fr, 1fr)`
+gibt der ersten etwas mehr, weil dort meist die Anschauung steht.
+
+#show-code(```typ
+#side-by-side(
+  geogebra(height: 240pt),
+  stagger[
+    - erst dies
+    - dann das
+  ],
+)
+```)
+
+== tiles — das Kachelraster
+
+Jede Kachel erscheint einen Schritt nach der vorigen. Genau dafür gibt es die
+Funktion: von Hand wäre das ein `anim` je Kachel mit hochgezählter Nummer.
+
+#show-code(```typ
+#tiles(
+  card(title: [eins])[A],
+  card(title: [zwei])[B],
+  card(title: [drei])[C],
+)
+```)
+
+`columns:` legt die Spaltenzahl fest (Vorgabe: bis zu drei), `stride: 0` lässt
+alle im selben Schritt erscheinen und staffelt nur über `stagger` in
+Millisekunden — dann läuft eine Welle durch das Raster.
+
+== statement — die große Aussage
+
+#show-example(
+  rendered: {
+    import "../src/layout.typ": statement
+    statement[$ a^2 + b^2 = c^2 $]
+  },
+  source: ```typ
+  #statement[$ a^2 + b^2 = c^2 $]
+  ```,
+  width: 11cm,
+)
+
+Verlangt ausdrücklich die volle Breite. Das ist der Grund, warum es die
+Funktion gibt: ein verfolgtes Element wird so breit wie sein Inhalt, und ein
+blankes `align(center, …)` darin hätte keinen Raum zum Zentrieren.
+
 = Bewegung zwischen Folien
 
 Beim Wechsel von einer Folie zur nächsten geschieht dreierlei, und zwar
@@ -1096,6 +1218,10 @@ dann Medien und Brücke, zuletzt die Maße und Farben.
 == Einblenden, Bewegen, Staffeln
 
 #show-module(read("../src/elements.typ"), name: "typstage")
+
+== Layouts
+
+#show-module(read("../src/layout.typ"), name: "typstage")
 
 == Medien und Einbettungen
 

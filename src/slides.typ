@@ -3,9 +3,24 @@
 #import "internal.typ": note-state, transition-state
 
 /// A regular slide.
-#let slide(title, note: none, transition: none, body) = (
-  kind: "slide", title: title, note: note, transition: transition, body: body,
-)
+///
+/// `title: none` — oder ein nacktes `==` in der Überschriftenform — lässt den
+/// Titelbalken weg; der Rumpf bekommt dann die ganze Fläche.
+#let slide(title: none, note: none, transition: none, ..rest) = {
+  // Damit alle drei Schreibweisen gehen: `slide[Rumpf]` (ohne Titel),
+  // `slide([Titel])[Rumpf]` und `slide(none)[Rumpf]`. Ein einzelnes Stück ist
+  // der Rumpf, zwei sind Titel und Rumpf.
+  let teile = rest.pos()
+  let kopf = title
+  let rumpf = []
+  if teile.len() == 1 {
+    rumpf = teile.at(0)
+  } else if teile.len() >= 2 {
+    kopf = teile.at(0)
+    rumpf = teile.at(1)
+  }
+  (kind: "slide", title: kopf, note: note, transition: transition, body: rumpf)
+}
 
 /// A section slide.
 #let section(title, transition: none) = (

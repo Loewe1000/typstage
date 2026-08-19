@@ -1,0 +1,164 @@
+// Layouts für den Folienrumpf.
+//
+// Bewusst Inhaltsfunktionen, keine neuen Folienarten: der Aufteiler in
+// `present.typ` erzeugt aus Überschriften `slide` und `section`, sonst nichts.
+// Ein Layout ist damit etwas, das *in* einer Folie steht — es lässt sich
+// schachteln, in eine Rasterzelle setzen und mit `anim` einblenden.
+//
+// Die Farbgebung bleibt draußen. Wer sechs Bedeutungsfarben führt, setzt sie
+// über `style` oder gibt sie an der Stelle mit; das Paket schreibt sie nicht
+// vor.
+
+#import "config.typ": accent, dark, muted
+#import "elements.typ": anim
+#import "internal.typ": step-cursor
+
+/// Ein benannter Kasten — Beamers `block`.
+///
+/// `title` steht in einem farbigen Streifen darüber, `number` setzt zusätzlich
+/// eine Ziffernscheibe davor. Ohne beides bleibt ein schlichter Kasten.
+///
+/// Kein `clip: true`: Typst leitet die Kennung eines Beschnittpfads aus dem
+/// Inhalt ab, und derselbe Kasten zweimal auf einer Folie ergäbe dieselbe
+/// Kennung. Die Ecken rundet deshalb der Streifen selbst.
+#let card(
+  body,
+  title: none,
+  number: none,
+  color: dark,
+  fill: white,
+  radius: 7pt,
+  inset: (x: 12pt, y: 10pt),
+  width: 100%,
+) = block(
+  width: width, radius: radius, fill: fill, stroke: 0.7pt + luma(84%),
+  {
+    if title != none {
+      block(
+        width: 100%, fill: color,
+        radius: (top-left: radius, top-right: radius),
+        inset: (x: 11pt, y: 6pt),
+        text(size: 0.62em, weight: "bold", fill: white, tracking: 0.6pt,
+             upper(title)),
+      )
+    }
+    block(width: 100%, inset: inset, if number == none { body } else {
+      grid(
+        columns: (auto, 1fr), column-gutter: 8pt, align: (left + top, left + top),
+        box(baseline: 0.24em, circle(
+          radius: 0.62em, fill: color, stroke: none,
+          align(center + horizon,
+                text(size: 0.62em, weight: "bold", fill: white, str(number))),
+        )),
+        body,
+      )
+    })
+  },
+)
+
+/// Ein hervorgehobener Merksatz — Beamers `alertblock`.
+///
+/// Der Balken links macht ihn auf jeder Folie sofort als „das bleibt hängen"
+/// erkennbar, ohne dass er wie ein zweiter Kasten aussieht.
+#let callout(
+  body,
+  title: [Merke],
+  color: accent,
+  radius: 7pt,
+  inset: (x: 14pt, y: 11pt),
+  width: 100%,
+) = block(
+  width: width, radius: radius, fill: color.lighten(90%),
+  stroke: (left: 3.5pt + color), inset: inset,
+  {
+    if title != none {
+      text(size: 0.62em, weight: "bold", fill: color.darken(12%),
+           tracking: 0.6pt, upper(title))
+      v(6pt)
+    }
+    body
+  },
+)
+
+/// Zwei oder mehr Spalten nebeneinander.
+///
+/// Der Name kommt aus Touying und Polylux, die ihn unabhängig voneinander
+/// gleich gewählt haben.
+///
+/// `split` nimmt die Spaltenbreiten; die Vorgabe gibt der ersten Spalte etwas
+/// mehr, weil dort meist die Anschauung steht und rechts der Text.
+#let side-by-side(
+  ..parts,
+  split: (1.25fr, 1fr),
+  gutter: 18pt,
+  align: horizon,
+) = {
+  let spalten = parts.pos()
+  assert(spalten.len() >= 2,
+         message: "typstage: side-by-side() wants at least two columns")
+  let breiten = if spalten.len() == split.len() { split }
+                else { (1fr,) * spalten.len() }
+  grid(columns: breiten, column-gutter: gutter, align: align, ..spalten)
+}
+
+/// Ein Kachelraster, das sich von selbst staffelt.
+///
+/// Jede Kachel erscheint einen Schritt nach der vorigen — das ist der Grund,
+/// warum es diese Funktion gibt: von Hand heißt das ein `anim` je Kachel mit
+/// hochgezählter Nummer oder Verzögerung.
+///
+/// `at` verhält sich wie bei `anim`: `auto` nimmt den nächsten freien Schritt.
+/// `stride: 0` lässt alle im selben Schritt erscheinen und staffelt nur über
+/// `stagger` in Millisekunden — dann läuft eine Welle durch das Raster.
+#let tiles(
+  ..items,
+  columns: auto,
+  gutter: 14pt,
+  row-gutter: auto,
+  at: auto,
+  stride: 1,
+  stagger: 0,
+  enter: "fade-up",
+  align: top + left,
+) = context {
+  let kacheln = items.pos()
+  assert(kacheln.len() > 0, message: "typstage: tiles() wants at least one tile")
+  assert(at == auto or type(at) == int,
+         message: "typstage: tiles() takes a step number or auto")
+  // Einmal aufgelöst und dann hochgezählt — nicht je Kachel `auto`, sonst
+  // ließe sich `stride: 0` (alle im selben Schritt) gar nicht ausdrücken.
+  let start = if at == auto { step-cursor.get().first() + 1 } else { at }
+  let spalten = if columns == auto { calc.min(kacheln.len(), 3) } else { columns }
+  grid(
+    columns: if type(spalten) == int { (1fr,) * spalten } else { spalten },
+    column-gutter: gutter,
+    row-gutter: if row-gutter == auto { gutter } else { row-gutter },
+    align: align,
+    ..kacheln.enumerate().map(((i, k)) => anim(
+      k,
+      at: start + i * stride,
+      enter: enter,
+      delay: i * stagger,
+    )),
+  )
+}
+
+/// Eine große Aussage in der Mitte — die Formel, auf die es ankommt.
+///
+/// Verlangt ausdrücklich die volle Breite: ein verfolgtes Element wird so
+/// breit wie sein Inhalt, ein blankes `align(center, …)` darin hätte keinen
+/// Raum zum Zentrieren und säße unverändert links.
+#let statement(
+  body,
+  size: 1.6em,
+  color: none,
+  above: 0.6em,
+  below: 0.6em,
+) = block(width: 100%, {
+  v(above)
+  // `fill: auto` gibt es bei `text` nicht — ohne Farbe wird sie schlicht nicht
+  // gesetzt, damit die der Umgebung gilt.
+  let gesetzt = text(size: size, body)
+  align(center, if color == none { gesetzt } else { text(fill: color, gesetzt) })
+  v(below)
+})

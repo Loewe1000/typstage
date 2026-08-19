@@ -47,19 +47,29 @@
       text(size: 30pt * k, weight: "bold", fill: white, s.title)
     })
   } else {
+    // Eine Folie ohne Titel bekommt keinen Balken: `slide(none)[…]` oder ein
+    // nacktes `==`. Der Rumpf rückt dann nach oben und bekommt die Höhe, die
+    // sonst der Balken belegt hätte — sonst wäre eine titellose Folie kleiner
+    // als eine mit Titel.
+    // `plain-text` liefert für eine leere Überschrift `none`, nicht "".
+    let roh = if s.title == none { none } else { plain-text(s.title) }
+    let titel = roh != none and roh.trim() != ""
+    let kopf = if titel { bar } else { margin-top }
     rect(width: 100%, height: 100%, fill: paper, stroke: none)
-    place(top + left, rect(width: 100%, height: bar, fill: dark, stroke: none))
-    place(top + left, dx: margin-left,
-      block(width: geo.width - margin-left - margin-right, height: bar,
-        align(left + horizon,
-          text(size: 23pt * k, weight: "bold", fill: white, s.title))))
+    if titel {
+      place(top + left, rect(width: 100%, height: bar, fill: dark, stroke: none))
+      place(top + left, dx: margin-left,
+        block(width: geo.width - margin-left - margin-right, height: bar,
+          align(left + horizon,
+            text(size: 23pt * k, weight: "bold", fill: white, s.title))))
+    }
     place(bottom + right, dx: -margin-right, dy: -13pt * k,
           text(size: 12pt * k, fill: muted, str(n) + " / " + str(total)))
     place(bottom + left,
           rect(width: 100% * n / total, height: 2.5pt * k, fill: accent, stroke: none))
-    place(top + left, dx: margin-left, dy: bar + 20pt * k,
+    place(top + left, dx: margin-left, dy: kopf + 20pt * k,
       block(width: geo.width - margin-left - margin-right,
-            height: geo.height - bar - 44pt * k,
+            height: geo.height - kopf - 44pt * k,
             style(s.body)))
   }
 })
