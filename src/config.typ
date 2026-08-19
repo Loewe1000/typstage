@@ -60,6 +60,24 @@
 #let runtime-css = read("../assets/typstage-" + runtime-version + ".css")
 #let runtime-js = read("../assets/typstage-" + runtime-version + ".js")
 
+/// Die zwei Sätze, die die Laufzeit selbst anzeigt — der Hinweis bei `s` ohne
+/// Notiz und die Tastenhilfe bei `?`.
+///
+/// Sie folgen `text.lang`, damit ein deutsches Deck deutsche und ein
+/// englisches englische Wörter zeigt. Wer eine Sprache vermisst, reicht sie
+/// über `words:` an `presentation` herein; Englisch ist der Rückfall.
+#let runtime-words(lang) = {
+  let listen = (
+    de: (no-note: "keine Notiz",
+         help: "← → blättern · o Übersicht · f Vollbild · s Notiz · p Druck"),
+    en: (no-note: "no note",
+         help: "← → page · o overview · f full screen · s note · p print"),
+    fr: (no-note: "aucune note",
+         help: "← → naviguer · o aperçu · f plein écran · s note · p imprimer"),
+  )
+  listen.at(lang, default: listen.en)
+}
+
 /// File name of an asset, carrying the version.
 #let asset-name(extension) = "typstage-" + runtime-version + "." + extension
 

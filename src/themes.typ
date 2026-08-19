@@ -202,40 +202,25 @@
 //  Der Bauplan
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Ein Theme bauen.
+/// Baut ein Theme. Ohne Argument ergibt es das voreingestellte
+/// Aussehen — `themes.default` ist genau das.
 ///
-/// Ohne ein einziges Argument kommt genau das Aussehen heraus, das `typstage`
-/// von jeher hat — `themes.default` ist nichts anderes als `theme()`. Wer nur
-/// eine Kleinigkeit ändern will, nimmt lieber ein fertiges Theme und schreibt
-/// den Eintrag um: `themes.night + (accent: blue)`. Das ändert genau diesen
-/// einen Eintrag: was beim Bauen daraus abgeleitet wurde — `rule-fill` etwa
-/// nimmt ein `none` als „wie `accent`" — steht danach noch so da, wie es
-/// gebaut wurde.
+/// Die Einträge in Gruppen: Farben (`paper ink strong accent muted
+/// surface border inverted`), Typografie (`font title-font size
+/// title-size weight tracking`), die gewöhnliche Folie (`header
+/// title-fill rule-size rule-fill head-gap foot-gap band-height
+/// footer footer-rule progress`) und die beiden ganzen Bilder
+/// (`title-slide`, `section`).
 ///
-/// - Farben —
-///   `paper` Grund der Folie, `ink` der Fließtext, `strong` die tragende
-///   dunkle Farbe (Titelbalken, Kartenkopf, Abschnittsfläche), `accent` die
-///   Signalfarbe (Striche, Fortschritt, Merkkasten), `muted` das
-///   Nebensächliche (Fußzeile, Untertitel), `surface` der Grund einer Karte,
-///   `border` ihr Rahmen. `inverted` sagt, ob hell auf dunkel gesetzt wird —
-///   `callout` tönt seinen Grund danach.
-/// - Typografie —
-///   `font` und `title-font` (`none` heißt: Typsts Vorgabe), `size` der
-///   Fließtext und `title-size` der Folientitel, beides in Punkten des
-///   Vorgabe-Canvas, dazu `weight` und `tracking` für die Titel.
-/// - Die gewöhnliche Folie —
-///   `header` ist `"band"` (farbiger Balken über die ganze Breite) oder
-///   `"plain"` (der Titel steht einfach da). `rule-size` legt eine Linie unter
-///   den Titel, `0pt` lässt sie weg. `head-gap` und `foot-gap` sind die Luft
-///   über und unter dem Rumpf, `band-height` die Höhe des Balkens.
-///   `footer` ist `"fraction"` (3 / 12), `"number"` (3), `"center"` (mittig)
-///   oder `"none"`; `footer-rule` legt eine Haarlinie darüber.
-///   `progress` ist `"bar"` (wachsender Balken unten), `"top"` (dasselbe oben),
-///   `"tick"` (eine wandernde Marke auf einer Schiene) oder `"none"`.
-/// - Ganze Bilder —
-///   `title-slide` und `section` sind Funktionen `(t, s, geo) => content`.
+/// Schriftgrößen: gemessen an Beamer und Metropolis, wo der Fließtext
+/// rund 3,0 % der Folienbreite einnimmt und der Titel 3,9 %. Die
+/// früheren 19pt/23pt lagen bei 2,3 % und 2,7 % — spürbar kleiner,
+/// als man es aus der letzten Reihe lesen möchte.
+///
+/// Kommentare dürfen NICHT in die Parameterliste: tidy zerlegt sie an
+/// den Kommas und erwartet in jedem Stück einen Doppelpunkt — die
+/// API-Referenz bricht daran ab.
 #let theme(
-  // Farben
   paper: rgb("#fafafa"),
   ink: black,
   strong: rgb("#23303f"),
@@ -244,25 +229,22 @@
   surface: white,
   border: luma(84%),
   inverted: false,
-  // Typografie
   font: none,
   title-font: none,
-  size: 19pt,
-  title-size: 23pt,
+  size: 24pt,
+  title-size: 31pt,
   weight: "bold",
   tracking: 0pt,
-  // Die gewöhnliche Folie
   header: "band",
   title-fill: white,
   rule-size: 0pt,
   rule-fill: none,
   head-gap: 20pt,
   foot-gap: 24pt,
-  band-height: 54pt,
+  band-height: 66pt,
   footer: "fraction",
   footer-rule: 0pt,
   progress: "bar",
-  // Ganze Bilder
   title-slide: band-title-slide,
   section: band-section,
 ) = {

@@ -283,6 +283,7 @@
     })
     html.elem("div", attrs: (id: "ts-overview"), [])
     html.elem("div", attrs: (id: "ts-hint"), [])
+    let worte = runtime-words(text.lang)
     html.elem("script", attrs: (id: "ts-cfg", type: "application/json"),
       "{\"duration\":" + str(duration)
         + ",\"transition\":" + (if type(transition) == str {
@@ -290,7 +291,14 @@
           } else { json.encode(transition) })
         + ",\"transitionDuration\":" + str(transition-duration)
         + ",\"width\":" + str(geo.width.pt())
-        + ",\"height\":" + str(geo.height.pt()) + "}")
+        + ",\"height\":" + str(geo.height.pt())
+        // Die Laufzeit zeigt zwei Sätze selbst an. Welche Sprache, entscheidet
+        // `text.lang` der Folie — nicht die Laufzeit, die kennt das Dokument
+        // nicht. Englisch ist der Rückfall.
+        + ",\"words\":" + json.encode((
+            noNote: worte.no-note,
+            help: worte.help,
+          )) + "}")
     if assets == "inline" { html.elem("script", runtime-js) } else { links.js }
   }
 }

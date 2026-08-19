@@ -46,6 +46,11 @@
   block(
     width: width, radius: radius, fill: fill, stroke: stroke,
   {
+    // Zwischen Streifen und Rumpf setzt Typst sonst seinen Blockabstand —
+    // gemessen 20pt bei 17pt Schrift, wodurch der Text 30pt unter dem Kopf
+    // hing, aber nur 9pt über dem unteren Rand. Beide Blöcke geben ihn ab,
+    // der Abstand kommt allein aus `inset`.
+    set block(spacing: 0pt)
     if title != none {
       block(
         width: 100%, fill: color,

@@ -939,9 +939,9 @@
       if (document.fullscreenElement) document.exitFullscreen();
       else document.documentElement.requestFullscreen();
     } else if (e.key === "s") {
-      hint(attr(SLIDES[STEPS[current].slide], "note") || "keine Notiz");
+      hint(attr(SLIDES[STEPS[current].slide], "note") || CFG.words.noNote);
     } else if (e.key === "?") {
-      hint("← → blättern · o Übersicht · f Vollbild · s Notiz · p Druck");
+      hint(CFG.words.help);
     } else if (e.key === "p") { print(); }
   });
   addEventListener("click", function (e) {
