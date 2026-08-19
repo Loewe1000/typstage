@@ -764,7 +764,14 @@ Funktion: von Hand wäre das ein `anim` je Kachel mit hochgezählter Nummer.
 
 `columns:` legt die Spaltenzahl fest (Vorgabe: bis zu drei), `stride: 0` lässt
 alle im selben Schritt erscheinen und staffelt nur über `stagger` in
-Millisekunden — dann läuft eine Welle durch das Raster.
+Millisekunden — dann läuft eine Welle durch das Raster statt einer Folge von
+Schritten:
+
+#show-code(```typ
+#tiles(stride: 0, stagger: 90, [A], [B], [C], [D])
+```)
+
+Das ergibt einen einzigen Schritt mit den Verzögerungen 0, 90, 180 und 270 ms.
 
 == statement — die große Aussage
 
@@ -861,6 +868,36 @@ Ziels ohne Quelle blenden in der zweiten Hälfte der Bewegung ein.
 `duration` gibt die Dauer des Fluges in Millisekunden an. Der Wert der
 Zielfolie gilt, sonst der der Quelle, sonst `duration` der Präsentation
 (520 ms).
+
+=== pin — Zeichen beim Namen nennen
+
+Der Formabgleich paart Zeichen nach ihrem Umriss und, wo das nicht reicht, nach
+Nähe. Meistens stimmt das. Wo nicht, bekommt ein Stück einen Namen:
+
+#show-code(```typ
+== 
+#morph(<term>)[$#pin(<faktor>)[3] x^#pin(<hoch>)[4]$]
+
+== 
+#morph(<term>)[$#pin(<hoch>)[4] dot #pin(<faktor>)[3] x^3$]
+```)
+
+Gleiche Namen finden zueinander, bevor die Form befragt wird; alles Übrige
+läuft weiter wie bisher. Ein Pin ohne Gegenstück auf der anderen Folie fällt
+geräuschlos in den Formabgleich zurück.
+
+Woran man merkt, dass man einen Pin braucht: zwei gleiche Zeichen sollen die
+Plätze tauschen. Nachgemessen an `2a + 2b` → `2b + 2a`: ohne Pins bleiben zwei
+Zeichen stehen, weil die Form die erste Zwei mit der ersten Zwei paart; mit
+Pins fliegen alle acht Zeichen über Kreuz.
+
+#info[
+  Der Name wird nicht gezählt, sondern gerechnet — dieselbe Zeichenkette ergibt
+  auf jeder Folie dieselbe Zahl. Zwei verschiedene Namen können theoretisch
+  dieselbe treffen; bei einer Handvoll Pins je Umformung ist das
+  unwahrscheinlich, und die Folge wäre eine falsch gepaarte Glyphe, kein
+  Fehler.
+]
 
 === Wo es aufhört
 

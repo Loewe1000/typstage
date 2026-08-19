@@ -42,6 +42,26 @@
 /// Alpha 0 — invisible, but Typst keeps the path in the SVG.
 #let marker(n) = rgb(254, calc.div-euclid(n, 256), calc.rem(n, 256), 0%)
 
+/// Die Farbe einer Pin-Marke — wie `marker`, nur mit 253 im ersten Kanal.
+/// Daran unterscheidet die Laufzeit einen Pin von der Marke eines Elements.
+#let pin-marker(n) = rgb(253, calc.div-euclid(n, 256), calc.rem(n, 256), 0%)
+
+/// Aus einem Namen eine Zahl von 0 bis 65535 (FNV-1a über die Bytes).
+///
+/// Bewusst gerechnet statt gezählt: derselbe Name ergibt auf jeder Folie und
+/// in jedem Lauf dieselbe Zahl, ohne dass irgendwo eine Liste geführt und
+/// zwischen den Folien weitergereicht werden müsste. Zwei verschiedene Namen
+/// können dieselbe Zahl treffen — bei einer Handvoll Pins je Umformung ist das
+/// unwahrscheinlich, und die Folge wäre eine falsch gepaarte Glyphe, kein
+/// Fehler.
+#let pin-index(name) = {
+  let h = 2166136261
+  for b in array(bytes(name)) {
+    h = calc.rem(h.bit-xor(b) * 16777619, 4294967296)
+  }
+  calc.rem(h, 65536)
+}
+
 /// Plain text out of content, for speaker notes.
 #let plain-text(c) = {
   if type(c) == str { c } else if type(c) != content { "" } else if c.func() == text {

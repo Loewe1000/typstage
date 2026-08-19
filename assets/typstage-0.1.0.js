@@ -246,13 +246,39 @@
     return sig;
   }
 
+  // Pins liegen als durchsichtige Rechtecke hinter ihrem Inhalt — dieselbe
+  // Bauart wie die Elementmarken, nur mit #fd statt #fe. Die Zahl darin ist
+  // aus dem Namen gerechnet, gleiche Namen ergeben also dieselbe Zahl.
+  function pinFelder(el) {
+    var felder = [];
+    el.querySelectorAll("path").forEach(function (p) {
+      var f = (p.getAttribute("fill") || "").toLowerCase();
+      if (f.length !== 9 || f.slice(0, 3) !== "#fd" || f.slice(7) !== "00") return;
+      var r = p.getBoundingClientRect();
+      if (!r.width && !r.height) return;
+      felder.push({ id: parseInt(f.slice(3, 7), 16), r: r });
+    });
+    return felder;
+  }
+
   function glyphs(el) {
-    var out = [];
+    var out = [], felder = pinFelder(el);
     el.querySelectorAll("use").forEach(function (u) {
       var r = u.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) return;
       var id = u.getAttribute("xlink:href") || u.getAttribute("href") || "";
-      out.push({ id: id, sig: signatur(id), r: r, node: u });
+      // Die Glyphe gehört zu dem Pin, in dessen Feld ihre Mitte liegt. Bei
+      // geschachtelten Pins gewinnt das kleinste — sonst schluckte ein Pin um
+      // den ganzen Term die Namen der Zeichen darin.
+      var mx = r.left + r.width / 2, my = r.top + r.height / 2;
+      var pin = null, klein = Infinity;
+      for (var i = 0; i < felder.length; i++) {
+        var q = felder[i].r;
+        if (mx < q.left || mx > q.right || my < q.top || my > q.bottom) continue;
+        var a = q.width * q.height;
+        if (a < klein) { klein = a; pin = felder[i].id; }
+      }
+      out.push({ id: id, sig: signatur(id), r: r, node: u, pin: pin });
     });
     return out;
   }
@@ -262,7 +288,26 @@
   // it changed places.
   function pairs(a, b) {
     var frei = b.slice(), zug = [], offen = [];
+    // Erst die Pins: gleiche Namen finden zueinander, bevor die Form befragt
+    // wird. Ein Pin ohne Gegenstück fällt danach in den Formabgleich zurück.
+    var fest = [];
     a.forEach(function (g) {
+      if (g.pin === null || g.pin === undefined) return;
+      for (var i = 0; i < frei.length; i++) {
+        if (frei[i].pin === g.pin) {
+          fest.push([g, frei[i]]);
+          frei.splice(i, 1);
+          return;
+        }
+      }
+    });
+    function gepinnt(g) {
+      for (var i = 0; i < fest.length; i++) if (fest[i][0] === g) return fest[i][1];
+      return null;
+    }
+    a.forEach(function (g) {
+      var p = gepinnt(g);
+      if (p) { zug.push([g, p]); return; }
       var t = -1;
       for (var i = 0; i < frei.length; i++) if (frei[i].sig === g.sig) { t = i; break; }
       if (t < 0) { offen.push(g); zug.push([g, null]); return; }

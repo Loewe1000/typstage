@@ -1,6 +1,7 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": html-output, name-of, step-cursor, track
+#import "internal.typ": (html-output, name-of, pin-index, pin-marker,
+                        step-cursor, track)
 
 /// Reveal content on particular steps.
 ///
@@ -100,6 +101,26 @@
     })
   }))
 }
+
+/// Ein benanntes Stück innerhalb eines Morphs.
+///
+/// Der Formabgleich paart Zeichen nach ihrem Umriss und, wo das nicht reicht,
+/// nach Nähe. Meistens stimmt das. Wo nicht — weil aus der 3 in `3x^4` die 3
+/// in `4 dot 3x^3` werden soll und dazwischen eine andere 3 steht —, bekommt
+/// das Stück einen Namen, und die Paarung richtet sich danach.
+///
+/// ```typ
+/// #morph(<term>)[$#pin(<faktor>)[3] x^#pin(<hoch>)[4]$]
+/// … und auf der nächsten Folie …
+/// #morph(<term>)[$#pin(<hoch>)[4] dot #pin(<faktor>)[3] x^3$]
+/// ```
+///
+/// Gleiche Namen finden zueinander, bevor die Form befragt wird; alles
+/// Übrige läuft weiter wie bisher. Ein Pin ohne Gegenstück auf der anderen
+/// Folie fällt geräuschlos in den Formabgleich zurück.
+///
+/// Der Name ist eine Zeichenkette oder eine Marke.
+#let pin(name, body) = box(fill: pin-marker(pin-index(name-of(name))), body)
 
 /// Everything after this appears a step later.
 ///
