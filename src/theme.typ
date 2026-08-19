@@ -16,28 +16,32 @@
   // Everything below is measured on the default canvas and scaled with it, so
   // a smaller or wider slide keeps its proportions.
   let k = geo.scale
-  let pad = geo.margin
+  let margins = geo.margin
+  let margin-left = if type(margins) == dictionary { margins.left } else { margins }
+  let margin-right = if type(margins) == dictionary { margins.right } else { margins }
+  let margin-top = if type(margins) == dictionary { margins.top } else { margins }
+  let margin-bottom = if type(margins) == dictionary { margins.bottom } else { margins }
   let bar = 54pt * k          // height of the title band
   // Slide type size: on an 841pt wide canvas Typst's default of 11pt is fine
   // print. Metropolis sets around 20pt here.
   set text(size: 19pt * k)
   if s.kind == "title" {
     rect(width: 100%, height: 100%, fill: paper, stroke: none)
-    place(top + left, dx: pad, dy: geo.height * 0.32, {
+    place(top + left, dx: margin-left, dy: geo.height * 0.32, {
       text(size: 34pt * k, weight: "bold", fill: dark, s.title)
       v(4pt * k)
       rect(width: 190pt * k, height: 2.5pt * k, fill: accent, stroke: none)
       v(6pt * k)
       text(size: 17pt * k, fill: muted, s.subtitle)
     })
-    place(bottom + left, dx: pad, dy: -pad,
+    place(bottom + left, dx: margin-left, dy: -margin-bottom,
       text(size: 12pt * k, fill: muted, {
         s.author
         if s.date != none [ · #s.date.display("[day].[month].[year]") ]
       }))
   } else if s.kind == "section" {
     rect(width: 100%, height: 100%, fill: dark, stroke: none)
-    place(horizon + left, dx: pad, {
+    place(horizon + left, dx: margin-left, {
       rect(width: 62pt * k, height: 2.5pt * k, fill: accent, stroke: none)
       v(8pt * k)
       text(size: 30pt * k, weight: "bold", fill: white, s.title)
@@ -45,14 +49,16 @@
   } else {
     rect(width: 100%, height: 100%, fill: paper, stroke: none)
     place(top + left, rect(width: 100%, height: bar, fill: dark, stroke: none))
-    place(top + left, dx: pad, dy: 14pt * k,
-          text(size: 23pt * k, weight: "bold", fill: white, s.title))
-    place(bottom + right, dx: -pad, dy: -13pt * k,
+    place(top + left, dx: margin-left,
+      block(width: geo.width - margin-left - margin-right, height: bar,
+        align(left + horizon,
+          text(size: 23pt * k, weight: "bold", fill: white, s.title))))
+    place(bottom + right, dx: -margin-right, dy: -13pt * k,
           text(size: 12pt * k, fill: muted, str(n) + " / " + str(total)))
     place(bottom + left,
           rect(width: 100% * n / total, height: 2.5pt * k, fill: accent, stroke: none))
-    place(top + left, dx: pad, dy: bar + 20pt * k,
-      block(width: geo.width - 2 * pad,
+    place(top + left, dx: margin-left, dy: bar + 20pt * k,
+      block(width: geo.width - margin-left - margin-right,
             height: geo.height - bar - 44pt * k,
             style(s.body)))
   }
