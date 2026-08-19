@@ -53,7 +53,7 @@ This file compiles, as it stands, with both commands above.
     Four copies of the triangle fit into a square of side $a + b$.
   ],
   stagger[
-    - The tilted inner square has side $c$
+    - The inner square has side $c$
     - Rearranged, the same four copies leave $a^2 + b^2$
   ],
 )
