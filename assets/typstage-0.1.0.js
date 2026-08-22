@@ -485,7 +485,18 @@
       any = true;
       var d = +dst.dataset.fly || +src.dataset.fly || fallback;
       var qr = src.getBoundingClientRect(), zr = dst.getBoundingClientRect();
-      var wie = dst.dataset.match || "auto";
+      // Von beiden Seiten, wie schon die Flugdauer eine Zeile darüber: Beim
+      // Zurückblättern tauschen Quelle und Ziel die Rollen, und wer `match` nur
+      // am Ziel liest, findet dort die Vorgabe. In theme-editorial trägt die
+      // lange Zeile `match: "glyph"`; rückwärts ist sie die Quelle, und aus dem
+      // Flug wurde ein Blockschub.
+      //
+      // `"auto"` zählt dabei als „nicht gewählt" und nicht als Antwort — der
+      // Wert steht als Vorgabe an *jedem* Morph, ein bloßes `||` käme deshalb
+      // nie bis zur Quelle durch. Eine ausdrückliche Wahl auf einer der beiden
+      // Seiten gilt für den Flug zwischen ihnen, in beide Richtungen.
+      var wie = dst.dataset.match;
+      if (!wie || wie === "auto") wie = src.dataset.match || "auto";
       var qg = glyphs(src), zg = glyphs(dst);
       var perGlyph = wie !== "block" && qg.length > 0 && zg.length > 0 &&
         (wie === "glyph" || (qg.length <= 48 && zg.length <= 48));
