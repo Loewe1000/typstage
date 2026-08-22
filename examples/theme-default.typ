@@ -172,8 +172,11 @@
   })
 }
 
+// `auto` für die Zeichnung, `1fr` für den Text: das Daumenkino ist 300pt breit
+// und bekommt genau so viel, der Rest gehört den Stichpunkten. Mit zwei
+// `fr`-Anteilen bliebe links Leerlauf und rechts wäre es unnötig eng.
 #side-by-side(
-  split: (1.05fr, 1fr),
+  split: (auto, 1fr),
   flipbook(
     render-maeander,
     frames: 30, fps: 15, width: 300pt, height: 190pt, loop: true,
