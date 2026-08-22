@@ -60,11 +60,26 @@
     else { current.push(t) }
   }
   runs.push(current.join())
-  // `width: 100%` ist nicht Zierrat: ein Block ohne Breite schrumpft auf
-  // seinen Inhalt, und ein `align(center, …)` darin hätte keinen Raum zum
-  // Zentrieren — der Absatz bliebe links stehen, obwohl er ohne die Pause
-  // mittig steht.
-  let out = block(width: 100%, runs.first())
+  // Der erste Lauf steht ohne Hülle da, alle weiteren bekommen eine.
+  //
+  // Die Hülle ist für die verfolgten Läufe nötig: `anim` misst seinen Inhalt,
+  // und ein Absatz ohne Breite schrumpft auf seine Schwärzung. Ein
+  // `align(center, …)` darin hätte dann keinen Raum zum Zentrieren und bliebe
+  // links stehen, obwohl er ohne die Pause mittig steht. `width: 100%` gibt
+  // ihm den Raum zurück.
+  //
+  // Der erste Lauf braucht das nicht, denn er sitzt unverpackt im Folienrumpf
+  // und der ist ohnehin so breit wie die Folie. Und er darf es nicht haben:
+  // ein `v(1fr)` darin löste sonst gegen die *automatische* Höhe dieser Hülle
+  // auf statt gegen die Folie, fraß den ganzen Rumpf und schob alles nach der
+  // ersten Pause aus der Folie hinaus. Wortlos — gemessen an einer Probe mit
+  // vier Folien fehlten im PDF alle Absätze hinter der ersten Pause, sobald
+  // irgendwo ein `v(1fr)` stand.
+  //
+  // Nachgemessen, dass die Hülle hier nichts trug: alle sechs Beispiel-Decks
+  // ergeben davor und danach dieselbe Seitenzahl und denselben Text, und eine
+  // Probe mit `align(center)` vor einer Pause zentriert unverändert.
+  let out = runs.first()
   for (i, run) in runs.slice(1).enumerate() {
     out += anim(block(width: 100%, run), at: i + 2)
   }

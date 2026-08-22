@@ -48,9 +48,17 @@
 // Vorgabe-Canvas gemeint und wird damit multipliziert.
 
 /// Die Zeile mit Autor und Datum, wie sie unter jeder Titelfolie steht.
+///
+/// `date` darf beides sein. Ein `datetime` wird in der hiesigen Schreibweise
+/// gesetzt; wer eine andere will, gibt gleich Inhalt an: `date: [15 September
+/// 2026]`. Vorher rief die Zeile `display` ohne zu fragen — ein englisches
+/// Deck bekam damit zwangsläufig „15.09.2026" unter den Titel, und Inhalt
+/// mitzugeben brach den Bau ab, weil Inhalt kein `display` kennt.
 #let by-line(t, s, k) = text(size: 12pt * k, fill: t.muted, {
   s.author
-  if s.date != none [ · #s.date.display("[day].[month].[year]") ]
+  if s.date != none [ · #if type(s.date) == datetime {
+    s.date.display("[day].[month].[year]")
+  } else { s.date } ]
 })
 
 // ── default ────────────────────────────────────────────────────────────────

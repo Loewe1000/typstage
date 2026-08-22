@@ -90,6 +90,12 @@
   let items = variants.pos()
   assert(items.len() > 0,
          message: "typstage: alternatives() wants at least one version")
+  // Schritte sind einsbasiert. Eine 0 träfe nie: die erste Fassung käme
+  // nirgends vor, und die letzte stünde von Anfang an da. Das ist als Fehler
+  // nicht zu sehen — die Folie hat dann einfach einen Schritt weniger, und
+  // niemand sagt warum.
+  assert(start == auto or (type(start) == int and start >= 1),
+         message: "typstage: alternatives(start: …) counts from 1, not 0")
   // Wie bei `morph`: `layout()` arbeitet blockweise und bräche die Zeile, in
   // der die Fassungen stehen. Die Hülle muss deshalb um das Ganze liegen,
   // nicht darin.
