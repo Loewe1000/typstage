@@ -51,8 +51,12 @@
 /// Übersetzen und meldet sich, wenn es nicht stimmt.
 #let morph(name, body, at: "1-", duration: 900, match: "auto", inline: true) = track(
   "morph", body, at: at, inline: inline,
+  // `fly`, nicht `duration`: das hier ist die Dauer des *Fluges*, und der
+  // Runtime las bisher dasselbe Attribut auch für das Einblenden. Ein Morph
+  // mit `at:` blendete deshalb über 900ms ein, während die Karte daneben nach
+  // 520ms fertig war — dieselbe Bewegung, sichtbar auseinandergezogen.
   extra: (name: name-of(name), match: match,
-          duration: if duration == auto { none } else { duration }),
+          fly: if duration == auto { none } else { duration }),
 )
 
 /// Several versions of the same thing, each replacing the one before.

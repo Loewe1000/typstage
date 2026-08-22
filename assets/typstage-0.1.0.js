@@ -424,7 +424,7 @@
       var src = sources[dst.dataset.name];
       if (!src) return;
       any = true;
-      var d = +dst.dataset.duration || +src.dataset.duration || fallback;
+      var d = +dst.dataset.fly || +src.dataset.fly || fallback;
       var qr = src.getBoundingClientRect(), zr = dst.getBoundingClientRect();
       var wie = dst.dataset.match || "auto";
       var qg = glyphs(src), zg = glyphs(dst);
