@@ -77,12 +77,20 @@
 
 #transition("push")
 
+// Die Morph-Quelle steht *außerhalb* der Kacheln, und zwar mit Absicht: ein
+// `morph` verbraucht keinen Schritt und ist von Anfang an da — sonst hätte der
+// Flug von der Vorfolie kein Ziel. In einer Kachel, die erst in Schritt zwei
+// erscheint, stünde die Formel schon in Schritt eins allein im Leeren.
+#statement(color: t.strong, above: 0pt)[
+  #morph(<satz>, $a^2 + b^2 = c^2$)
+]
+
 #tiles(
   card(number: 1, title: [Benennen])[
     Welche Seite liegt dem rechten Winkel gegenüber? Das ist $c$.
   ],
   card(number: 2, title: [Einsetzen])[
-    #morph(<satz>, $a^2 + b^2 = c^2$) — die gesuchte Größe bleibt allein.
+    Die beiden bekannten Seiten einsetzen — die gesuchte bleibt allein.
   ],
   card(number: 3, title: [Wurzel ziehen])[
     Am Ende steht eine Länge, also die positive Wurzel.

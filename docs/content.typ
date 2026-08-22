@@ -561,6 +561,19 @@ sein, sonst hätte der Flug von der Vorfolie kein Ziel. Bei einem `anim` in
 einem `anim` ist es meist ein Versehen -- und es fällt erst beim Blättern auf,
 wenn das äußere Element noch unsichtbar ist und das innere schon steht.
 
+Daraus folgt eine Regel für den Morph: *er gehört nicht in etwas hinein, das
+erst später erscheint.* Steht er in einer Kachel, die im zweiten Schritt kommt,
+oder in einem `anim`, dann schwebt er schon im ersten Schritt allein an der
+Stelle, an der sein Behälter erst später auftauchen wird. Die Morph-Quelle
+gehört an einen Platz, den die Folie von Anfang an zeigt --
+`statement`, `place` oder schlicht der Fließtext:
+
+#show-code(```typ
+== In drei Schritten
+#statement[#morph(<satz>, $a^2 + b^2 = c^2$)]   // ab Schritt eins da
+#tiles(card[…], card[…], card[…])               // erscheinen nacheinander
+```)
+
 *Ein `fr`-Abstand gehört nicht ins verfolgte Element.* `fr` heißt „Anteil an
 dem, was übrig bleibt" -- und was übrig bleibt, verteilt der Elternteil unter
 den Geschwistern. Ein verfolgtes Element wird aber allein gemessen und sieht
