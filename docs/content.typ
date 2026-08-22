@@ -556,21 +556,25 @@ dessen eigene Angabe:
 #anim(at: 3)[Ab Schritt drei -- #morph(<m>, $x^2$) aber ab Schritt eins.]
 ```)
 
-Bei `morph` ist das richtig so: Ein Morph muss beim Betreten der Folie schon da
-sein, sonst hätte der Flug von der Vorfolie kein Ziel. Bei einem `anim` in
-einem `anim` ist es meist ein Versehen -- und es fällt erst beim Blättern auf,
-wenn das äußere Element noch unsichtbar ist und das innere schon steht.
+Bei `morph` ist das richtig so: Das *Ziel* eines Fluges muss beim Betreten der
+Folie schon stehen, sonst käme der Flug von der Vorfolie nirgends an. Bei einem
+`anim` in einem `anim` ist es dagegen meist ein Versehen -- und es fällt erst
+beim Blättern auf, wenn das äußere Element noch unsichtbar ist und das innere
+schon steht.
 
-Daraus folgt eine Regel für den Morph: *er gehört nicht in etwas hinein, das
-erst später erscheint.* Steht er in einer Kachel, die im zweiten Schritt kommt,
-oder in einem `anim`, dann schwebt er schon im ersten Schritt allein an der
-Stelle, an der sein Behälter erst später auftauchen wird. Die Morph-Quelle
-gehört an einen Platz, den die Folie von Anfang an zeigt --
+*Ein Morph lässt sich nicht verzögern.* `morph` hat kein `at:`; es steht fest
+auf dem ersten Schritt. Für ein Flugziel ist das nötig, für eine Flugquelle
+nicht -- die müsste erst stehen, wenn man die Folie *verlässt* --, aber das
+Paket unterscheidet beide nicht. Die Regel gilt deshalb für jeden Morph:
+*er gehört nicht in etwas hinein, das erst später erscheint.* Steht er in einer
+Kachel, die im zweiten Schritt kommt, dann schwebt er schon im ersten Schritt
+allein an der Stelle, an der sein Behälter erst später auftauchen wird. Ein
+Morph gehört an einen Platz, den die Folie von Anfang an zeigt --
 `statement`, `place` oder schlicht der Fließtext:
 
 #show-code(```typ
 == In drei Schritten
-#statement[#morph(<satz>, $a^2 + b^2 = c^2$)]   // ab Schritt eins da
+#statement[#morph(<satz>, $a^2 + b^2 = c^2$)]   // steht ab Schritt eins
 #tiles(card[…], card[…], card[…])               // erscheinen nacheinander
 ```)
 

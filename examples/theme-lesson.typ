@@ -77,10 +77,10 @@
 
 #transition("push")
 
-// Die Morph-Quelle steht *außerhalb* der Kacheln, und zwar mit Absicht: ein
-// `morph` verbraucht keinen Schritt und ist von Anfang an da — sonst hätte der
-// Flug von der Vorfolie kein Ziel. In einer Kachel, die erst in Schritt zwei
-// erscheint, stünde die Formel schon in Schritt eins allein im Leeren.
+// Die Morph-Quelle steht *außerhalb* der Kacheln, und zwar mit Absicht:
+// `morph` hat kein `at:` und steht fest auf dem ersten Schritt. In einer
+// Kachel, die erst in Schritt zwei erscheint, stünde die Formel schon in
+// Schritt eins allein im Leeren.
 #statement(color: t.strong, above: 0pt)[
   #morph(<satz>, $a^2 + b^2 = c^2$)
 ]
