@@ -38,7 +38,9 @@
     html.elem("div", attrs: attrs + ("data-frames": str(s.raw-frames.len())),
       s.raw-frames.map(f => html.elem("div", attrs: (class: "ts-frame"),
         html.frame(block(width: s.width, height: s.height,
-                         template(with-style(s, f)))))).join())
+                         template(with-style(s, block(
+                           width: s.region.width, height: s.region.height,
+                           f))))))).join())
   } else {
     html.elem("div", attrs: attrs, {
       // The counter is set to this element's own number before the content is
@@ -47,8 +49,13 @@
       // carry n+1, n+2, … Only that way does the browser find again the marker
       // of an element that vanished into its parent's `hide()`.
       counter("typstage-n").update(n)
+      // Außen die gemessene Größe — sie bestimmt den Rahmen —, innen die
+      // Region von damals. Dadurch löst ein relatives Maß im Rumpf genau
+      // einmal auf, und zwar gegen denselben Bezug wie im Hintergrund.
       html.frame(block(width: s.width, height: s.height,
-                       template(with-style(s, s.body))))
+                       template(with-style(s, block(
+                         width: s.region.width, height: s.region.height,
+                         s.body)))))
     })
   }
 }

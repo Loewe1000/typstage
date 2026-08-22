@@ -166,12 +166,22 @@
       // layout — otherwise a `width: 100%` inside the free frame would come to
       // nothing and boxes would lose their area.
       let room = if width == auto { available.width } else { width }
-      // Zweimal gemessen, und das Größere gilt. Eine Messung ohne Höhenbezug
-      // lässt `height: 100%` im Rumpf auf null zusammenfallen; eine Messung
-      // gegen die verfügbare Höhe löst es auf, kappt dafür aber alles, was
-      // überläuft (nachgemessen: `lorem(200)` wird 200pt statt 482pt). Das
-      // Maximum ist in beiden Fällen richtig. Ist die Höhe unbegrenzt, liefert
-      // die zweite Messung 0 und das Maximum fällt auf die erste zurück.
+      // Zweimal gemessen, und das Größere gilt. Beide Messungen sind nötig,
+      // aber aus verschiedenen Gründen:
+      //
+      // *Mit* Höhenbezug ist das Einzige, was `height: 100%` und `1fr` im
+      // Rumpf überhaupt auflöst — ohne ihn gibt es nichts, wogegen ein
+      // Prozentsatz zählen könnte, und das Element fällt auf 0pt zusammen.
+      // Gemessen: bei 12 von 34 verfolgten Elementen eines Prüfdecks.
+      //
+      // *Ohne* Höhenbezug bestimmt die **Lage**, nicht die Größe. Überlaufendes
+      // wird ohnehin außerhalb der SVG-Box gezeichnet, die Maße bleiben also
+      // gleich; aber mit der gekappten Höhe richtet etwa `side-by-side` (per
+      // Vorgabe `horizon`) das Element an der falschen Mitte aus. Gemessen: bis
+      // zu 84 Prozentpunkte Versatz, `lorem(200)` rutschte ganz aus der Folie.
+      //
+      // Ist die Höhe unbegrenzt, liefert die zweite Messung 0 und das Maximum
+      // fällt auf die erste zurück.
       let natural = measure(body, width: room)
       let bounded = measure(body, width: room, height: available.height)
       let m = (
@@ -193,12 +203,25 @@
         justify: par.justify, first-line-indent: par.first-line-indent,
         hanging-indent: par.hanging-indent,
       )
-      // Inline elements stay as narrow as their content; block elements take
-      // the room they were given.
-      let w = if inline or width != auto { m.width } else { available.width }
+      // Die gemessene Breite — auch für blockweise Elemente. Früher nahmen die
+      // sich `available.width`, damit `align(center, …)` darin Raum zum
+      // Zentrieren hatte. Den liefert jetzt die Region weiter unten, und die
+      // volle Breite zu greifen war schädlich: in einer `auto`-Rasterspalte
+      // drückte sie die `1fr`-Nachbarspalte auf null (gemessen: 85% im PDF,
+      // 0% im HTML).
+      let w = m.width
+      // Die *ursprüngliche* Region reist mit. Ohne sie steht der Rumpf im
+      // Sprite in einer Hülle der gemessenen Größe, und ein relatives Maß löst
+      // dort ein zweites Mal auf — aus `p%` wird `p²%`. Nur `100%` ist
+      // Fixpunkt, deshalb blieb es lange unbemerkt; `height: 50%` kam als 25%
+      // heraus, `morph` mit `width: 60%` als 36%.
+      let region = (
+        width: room,
+        height: if available.height == float("inf") { auto } else { available.height },
+      )
       sprites.update(a => a + ((kind: kind, at: selected, extra: extra, body: body,
                                 raw-frames: raw-frames, width: w,
-                                height: m.height, style: style),))
+                                height: m.height, region: region, style: style),))
       // A `box` is inline and puts its baseline on the bottom edge — with a
       // two-line list item the bullet would drop a line. Block content gets a
       // `block`.
@@ -208,7 +231,13 @@
                                fill: marker(n), stroke: none))
         // `hide` lays out but does not draw: the space is right, the content
         // is only visible in the overlay.
-        place(top + left, hide(body))
+        // Dieselbe Region wie beim Messen: sonst löst ein relatives Maß hier
+        // gegen die Hülle auf statt gegen den echten Behälter, und die Marke
+        // reserviert eine andere Höhe, als der Sprite später füllt.
+        place(top + left, hide(block(
+          width: room,
+          height: if available.height == float("inf") { auto } else { available.height },
+          body)))
       })
     })
   }
