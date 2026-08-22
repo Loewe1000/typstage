@@ -263,13 +263,14 @@
         justify: par.justify, first-line-indent: par.first-line-indent,
         hanging-indent: par.hanging-indent,
       )
-      // Die gemessene Breite — auch für blockweise Elemente. Früher nahmen die
-      // sich `available.width`, damit `align(center, …)` darin Raum zum
-      // Zentrieren hatte. Den liefert jetzt die Region weiter unten, und die
-      // volle Breite zu greifen war schädlich: in einer `auto`-Rasterspalte
-      // drückte sie die `1fr`-Nachbarspalte auf null (gemessen: 85% im PDF,
-      // 0% im HTML).
-      let w = m.width
+      // Inline so schmal wie sein Inhalt, blockweise so breit wie der Platz.
+      //
+      // Für blockweise Elemente muss es der Platz sein, und `measure` kann das
+      // nicht ersetzen: `measure(align(center, rect(80pt)), width: 400pt)`
+      // liefert 80pt, nicht 400 — genauso eine Blockgleichung. Wer die
+      // gemessene Breite nähme, nähme dem `align` den Raum zum Zentrieren und
+      // der Gleichung ihre Mitte.
+      let w = if inline or width != auto { m.width } else { room }
       // Ein Element ohne Fläche — eine Linie misst 0pt hoch, ihre Farbe liegt
       // außerhalb des Kastens — bekommt eine Marke ohne Fläche, und die
       // überspringt der Runtime (`if (!r.width && !r.height) return;`). Der
@@ -287,8 +288,14 @@
       // dort ein zweites Mal auf — aus `p%` wird `p²%`. Nur `100%` ist
       // Fixpunkt, deshalb blieb es lange unbemerkt; `height: 50%` kam als 25%
       // heraus, `morph` mit `width: 60%` als 36%.
+      // Breite wie der Rahmen, Höhe wie die echte Region. Die Höhe muss die
+      // echte sein, sonst löst `height: 50%` gegen den gemessenen Wert auf und
+      // kommt als 25% heraus. Die Breite darf es *nicht* sein: ist die Region
+      // breiter als der Rahmen, richtet Typst den Inhalt darin aus — eine
+      // Blockgleichung landete 293pt neben ihrer Marke, genau die halbe
+      // Differenz.
       let region = (
-        width: room,
+        width: w,
         height: if available.height == float("inf") { auto } else { available.height },
       )
       sprites.update(a => a + ((kind: kind, at: selected, extra: extra, body: body,
@@ -309,7 +316,7 @@
         // gegen die Hülle auf statt gegen den echten Behälter, und die Marke
         // reserviert eine andere Höhe, als der Sprite später füllt.
         place(top + left, hide(block(
-          width: room,
+          width: region.width,
           height: if available.height == float("inf") { auto } else { available.height },
           body)))
       })

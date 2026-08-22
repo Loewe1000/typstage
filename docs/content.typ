@@ -755,6 +755,18 @@ setzt `typstage-geogebra` auf -- und jedes andere Begleitpaket kann es genauso
 tun.
 
 #warning[
+  *Das Dokument muss sich anmelden.* An einen Rahmen, der sich nie gemeldet
+  hat, wird nichts zugestellt -- und zwar wortlos: keine Meldung, keine
+  Warnung, das Applet sitzt einfach da. Ein Zeile genügt, und beide Felder
+  werden gebraucht, denn alles ohne `typstage: 1` wird verworfen, bevor
+  `ready` überhaupt angesehen wird.
+
+  #show-code(```js
+  parent.postMessage({ typstage: 1, ready: 1 }, "*");
+  ```)
+]
+
+#warning[
   Beim Zurückblättern und beim Betreten einer Folie wird der ganze Lauf von
   vorn wiederholt. Aufträge müssen deshalb wiederholbar sein: „setze $a$ auf
   2,5" ist gut, „erhöhe $a$ um 1" nicht.

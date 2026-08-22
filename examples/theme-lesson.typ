@@ -3,8 +3,9 @@
 //   typst compile theme-lesson.typ theme-lesson.html --format html --features html
 //   typst compile theme-lesson.typ theme-lesson.pdf
 //
-// Zeigt: stagger, alternatives, #pause, morph über drei Folien, Übergänge je
-// Folie, Sprechernotizen.
+// Zeigt: alternatives, #pause, morph in einer später erscheinenden Kachel,
+// anim mit Zahl/Bereich/Einzelschritten, vier enter-Arten, tiles mit
+// number-Karten, Sprechernotizen.
 
 #import "@schule/typstage:0.1.0": *
 
@@ -45,6 +46,7 @@
   ],
 )
 
+// enter: "fade-up" — die erste von vier verschiedenen Arten in diesem Deck.
 #anim([Der rechte Winkel liegt immer *gegenüber* der längsten Seite.],
       at: 2, enter: "fade-up")
 
@@ -53,23 +55,25 @@
 #transition("zoom")
 
 // `alternatives` setzt die Fassungen übereinander an dieselbe Stelle: eine
-// löst die vorige ab, und die Folie springt dabei nicht.
+// löst die vorige ab, und die Folie springt dabei nicht. Hier dieselbe Regel
+// für drei verschiedene Adressaten — Erklärung, Formel, Übungsfrage.
 #alternatives(
-  card(title: [In Worten])[
+  card(title: [Für den Merkzettel])[
     In einem rechtwinkligen Dreieck ist die Summe der Quadrate über den
     Katheten so groß wie das Quadrat über der Hypotenuse.
   ],
-  card(title: [In Zeichen])[
+  card(title: [Für die Rechnung])[
     #align(center, text(size: 1.5em, $a^2 + b^2 = c^2$))
   ],
-  card(title: [Als Frage])[
+  card(title: [Für die Übung])[
     Wenn zwei Seiten bekannt sind — wie lang ist die dritte? Genau dafür ist
     der Satz da.
   ],
 )
 
+// enter: "fade-left" — zweite Art.
 #anim([Drei Fassungen, ein Satz. Sucht euch die aus, die euch beim Rechnen
-       hilft.], at: 4, enter: "fade-up")
+       hilft.], at: 4, enter: "fade-left")
 
 = Damit rechnen
 
@@ -77,22 +81,38 @@
 
 #transition("push")
 
+// `tiles` staffelt sich selbst — Kachel 1 ab Schritt 1, Kachel 2 ab Schritt 2,
+// Kachel 3 ab Schritt 3. Kein `anim` je Kachel nötig.
 #tiles(
   card(number: 1, title: [Benennen])[
     Welche Seite liegt dem rechten Winkel gegenüber? Das ist $c$.
   ],
   card(number: 2, title: [Einsetzen])[
     // `at: 2` lässt den Morph mit seiner Kachel erscheinen statt schon im
-    // ersten Schritt. Erlaubt ist das hier, weil die Vorfolie keinen Morph
-    // dieses Namens trägt — sonst ginge der Flug dorthin verloren, und das
-    // Paket sagt es beim Übersetzen.
-    #morph(<satz>, $a^2 + b^2 = c^2$, at: 2) — die gesuchte Größe bleibt allein.
+    // ersten Schritt. Erlaubt ist das hier, weil die Vorfolie (die mit
+    // `alternatives`) keinen Morph dieses Namens trägt — sonst ginge der
+    // Flug dorthin verloren, und das Paket sagt es beim Übersetzen.
+    // Farbe wie das Ziel auf der nächsten Folie, sonst wechselt die Formel
+    // mitten im Flug die Farbe.
+    #text(fill: t.accent, morph(<satz>, $a^2 + b^2 = c^2$, at: 2)) — die
+    gesuchte Größe bleibt allein.
   ],
   card(number: 3, title: [Wurzel ziehen])[
     Am Ende steht eine Länge, also die positive Wurzel.
   ],
 )
 
+// at: "1,3" — erscheint mit Kachel 1, verschwindet mit Kachel 2 (die Formel
+// braucht dort die volle Aufmerksamkeit), kommt mit Kachel 3 zurück, wenn
+// wieder Platz für die Erinnerung ist.
+// enter: "blur" — dritte Art.
+#anim(callout(title: [Denkt an die Skizze])[
+  Wer nicht weiß, was $a$, $b$ und $c$ sind, zeichnet zuerst — auch in der
+  Prüfung ist dafür Platz.
+], at: "1,3", enter: "blur")
+
+// at: "4-" — ein Bereich, bleibt ab Schritt 4 stehen.
+// enter: "rise" — vierte Art.
 #anim(callout(title: [Merke])[
   Wer nach einer *Kathete* sucht, zieht ab statt zu addieren:
   $a^2 = c^2 - b^2$.
@@ -127,7 +147,8 @@ Wie hoch reicht sie? — $sqrt(5^2 - 3^2) = 4$, also 4 m.
   - Eine Skizze zeigt ein Quadrat oder einen Winkelhaken.
 ]
 
+// enter: "scale" — fünfte Art, für den Schlusspunkt der Stunde.
 #anim(card(title: [Hausaufgabe])[
   Buch S. 118, Nr. 3 und 5. Zeichnet erst eine Skizze und schreibt daran,
   welche Seite $c$ ist — erst dann rechnen.
-], at: "4-", enter: "rise")
+], at: "4-", enter: "scale")

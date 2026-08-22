@@ -26,6 +26,17 @@
 ///
 /// When paging backwards or entering a slide the runtime replays the whole run
 /// from its start with a `reset` flag, so jobs should be repeatable.
+///
+/// *The document has to announce itself.* Nothing is sent to a frame that has
+/// not said hello — the runtime marks a frame live only after receiving
+///
+/// ```js
+/// parent.postMessage({ typstage: 1, ready: 1 }, "*");
+/// ```
+///
+/// from it. Both fields are needed: the runtime drops every message without
+/// `typstage: 1` before it ever looks at `ready`. Miss this and the jobs simply
+/// never arrive — there is no error, the applet just sits there.
 #let bridge-job(target, payload, at: "1-") = {
   if at == auto { step-cursor.step() }
   context {

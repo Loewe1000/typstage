@@ -55,6 +55,17 @@
       // `pad` ist fast immer 0pt und der Rahmen dann derselbe wie zuvor. Nur
       // ein Element ohne Fläche bekommt Luft — dieselbe wie seine Marke, sonst
       // säße der Inhalt versetzt darin.
+      // `place(top + left, …)` wie im Hintergrund, und aus demselben Grund: die
+      // Region ist breiter als der gemessene Rahmen, und ein überstehender
+      // Block wird darin sonst mittig ausgerichtet. Gemessen an einer
+      // zentrierten Formel — der Kasten saß richtig, die Zeichen wurden 293pt
+      // daneben gemalt, genau die halbe Differenz.
+      // `align(top + left, …)` in der Region: sie ist breiter als der gemessene
+      // Rahmen, und was Typst von sich aus mittig setzt — eine Blockgleichung
+      // etwa — landete darin in der Mitte statt dort, wo die Marke steht.
+      // Gemessen: der Kasten saß richtig, die Zeichen 293pt daneben, genau die
+      // halbe Differenz zwischen Region und Rahmen. Ein ausdrückliches `align`
+      // im Rumpf gewinnt weiterhin, es steht ja weiter innen.
       let inhalt = template(with-style(s, block(
         width: s.region.width, height: s.region.height, s.body)))
       html.frame(if s.pad == 0pt {

@@ -78,6 +78,12 @@ for bsp in "$WURZEL/examples"/*.typ; do
 done
 
 [[ ${#namen[@]} -gt 0 ]] || { echo "FEHLER: keine Beispiele gebaut" >&2; exit 1; }
+ # Medien neben einem Beispiel reisen mit: `video("demo.mp4")` verweist
+ # auf eine Datei, die neben der HTML-Seite liegen muss.
+ for bei in "$WURZEL/examples"/*; do
+   case "$bei" in *.typ) continue;; esac
+   [ -f "$bei" ] && cp "$bei" "$ZIEL/beispiele/"
+ done
 
 BSP_PAKET="typstage" BSP_VERSION="$VERSION" BSP_NAMEN="${namen[*]}" \
   python3 "$AGGREGAT/.github/scripts/beispiele-index.py" "$ZIEL/beispiele/index.html"
