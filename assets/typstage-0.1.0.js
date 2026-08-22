@@ -309,7 +309,7 @@
   // nearest counterpart — otherwise a glyph would be dropped merely because
   // it changed places.
   function pairs(a, b) {
-    var frei = b.slice(), zug = [], offen = [];
+    var frei = b.slice(), zug = [];
     // Erst die Pins: gleiche Namen finden zueinander, bevor die Form befragt
     // wird. Ein Pin ohne Gegenstück fällt danach in den Formabgleich zurück.
     var fest = [];
@@ -332,23 +332,20 @@
       if (p) { zug.push([g, p]); return; }
       var t = -1;
       for (var i = 0; i < frei.length; i++) if (frei[i].sig === g.sig) { t = i; break; }
-      if (t < 0) { offen.push(g); zug.push([g, null]); return; }
+      if (t < 0) { zug.push([g, null]); return; }
       zug.push([g, frei[t]]);
       frei.splice(t, 1);
     });
-    offen.forEach(function (g) {
-      if (!frei.length) return;
-      var best = 0, weite = Infinity;
-      for (var i = 0; i < frei.length; i++) {
-        var dx = frei[i].r.left - g.r.left, dy = frei[i].r.top - g.r.top;
-        var w = dx * dx + dy * dy;
-        if (w < weite) { weite = w; best = i; }
-      }
-      for (var k = 0; k < zug.length; k++) {
-        if (zug[k][0] === g) { zug[k][1] = frei[best]; break; }
-      }
-      frei.splice(best, 1);
-    });
+    // Kein Rückfall auf das nächstgelegene freie Zeichen. Wer keine gleiche
+    // Form findet, blendet an seinem Platz aus, und das neue blendet an seinem
+    // ein. Ein Doppelpunkt, der sich in einen Buchstaben zieht, ist kein Flug,
+    // sondern ein Schmieren — und welches Zeichen räumlich am nächsten liegt,
+    // sagt nichts darüber, ob die beiden etwas miteinander zu tun haben.
+    //
+    // Wer zwei Zeichen aufeinander beziehen will, deren Form sich unterscheidet,
+    // gibt ihnen mit `pin` denselben Namen. Das ist ausgesprochen und
+    // nachvollziehbar; Nachbarschaft ist es nicht.
+
     // Ein Pin darf sich zweimal aufs Ziel legen: dann teilt sich das Zeichen
     // sichtbar in zwei. Genau das braucht die Potenzregel — der Exponent tritt
     // vorn als Faktor auf und bleibt zugleich oben stehen. Gesucht wird
