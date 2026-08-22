@@ -1,5 +1,8 @@
 // themes.night — der abgedunkelte Raum.
 //
+// Zeigt: alternatives, stagger, morph auf eine titellose Folie, Übergänge je Folie,
+// Sprechernotizen.
+//
 //   typst compile theme-night.typ theme-night.html --format html --features html
 //   typst compile theme-night.typ theme-night.pdf
 
@@ -20,6 +23,11 @@
 = Die stille Stunde
 
 == Warum um drei Uhr niemand schläft
+
+#speaker-note[
+  Nicht in die Details des Lastverteilers gehen — die Frage aus dem Publikum
+  kommt ohnehin, und dann hat man die Folie dafür.
+]
 
 #side-by-side(
   split: (1fr, 1fr),
@@ -45,6 +53,8 @@
 
 == Der Ablauf, viermal in der Nacht
 
+#transition("cube")
+
 #tiles(
   card(number: 1, title: [Abziehen])[
     Ein Knoten wird aus dem Lastverteiler genommen und läuft leer.
@@ -64,12 +74,48 @@
   Rollout selbst der Ausfall.
 ], at: "4-", enter: "rise")
 
+== Dieselbe Regel, drei Adressaten
+
+#transition("blur")
+
+// `alternatives` setzt die Fassungen übereinander an dieselbe Stelle: eine
+// löst die vorige ab, und die Folie springt dabei nicht.
+#alternatives(
+  card(title: [Für die Bereitschaft])[
+    Ein Knoten je Fehlerdomäne. Wer den zweiten zieht, weckt jemanden.
+  ],
+  card(title: [Für die Geschäftsführung])[
+    Wir tauschen die Flotte in vier Nächten statt in einer — und haben in
+    jeder Nacht einen Weg zurück.
+  ],
+  card(title: [Fürs Postmortem])[
+    Wenn zwei Knoten gleichzeitig fehlten, war es kein Rollout, sondern ein
+    Verfahrensfehler.
+  ],
+)
+
+#anim([Drei Sätze, eine Regel. Welcher gilt, hängt davon ab, wer im Raum
+       sitzt.], at: 4, enter: "fade-up")
+
+== Woran man die Nacht kommen sieht
+
+#transition("uncover")
+
+// `stagger` deckt eine Liste Punkt für Punkt auf — ein Schritt je Punkt.
+#stagger[
+  - Die Warteschlangen wachsen langsamer, als sie abgearbeitet werden.
+  - Der Lastverteiler meldet gleich viele Verbindungen je Knoten.
+  - Kein Dienst hat mehr als ein Drittel seines Budgets verbraucht.
+]
+
 = Was zählt
 
 == Die eine Zahl
 
+// Quelle des Morphs — die Formel fliegt auf die nächste Folie und wächst
+// dabei. Quelle und Ziel müssen dafür auf *benachbarten* Folien stehen.
 #statement(color: t.accent)[
-  $ "Fehlerbudget" = (1 - "SLO") dot "Zeitraum" $
+  #morph(<budget>, $ "Fehlerbudget" = (1 - "SLO") dot "Zeitraum" $)
 ]
 
 #anim([Bei 99,9 % im Monat sind das 43 Minuten. Sie werden ausgegeben, nicht
@@ -82,3 +128,13 @@
   Kein Anruf, kein Eintrag im Vorfallbuch — und am Morgen ein Diagramm, dem
   man nicht ansieht, dass die halbe Flotte ausgetauscht wurde.
 ], at: "3-", enter: "rise")
+
+// Eine Folie ohne Titelbalken: `== #h(0pt)` gibt ihr keine Überschrift.
+== #h(0pt)
+
+#transition("zoom")
+
+// Dieselbe Farbe wie die Quelle: sonst wechselt die Formel mitten im Flug
+// die Farbe, was wie ein Aussetzer aussieht.
+#place(center + horizon,
+       morph(<budget>, text(size: 2em, fill: t.accent)[$ "Fehlerbudget" = (1 - "SLO") dot "Zeitraum" $]))

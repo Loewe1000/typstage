@@ -1,5 +1,8 @@
 // themes.editorial — mit Charakter.
 //
+// Zeigt: stagger, #pause, morph auf eine titellose Folie, Übergänge je Folie,
+// Sprechernotizen.
+//
 //   typst compile theme-editorial.typ theme-editorial.html --format html --features html
 //   typst compile theme-editorial.typ theme-editorial.pdf
 
@@ -20,6 +23,10 @@
 = Die Herkunft der Ränder
 
 == Kein Zierrat, sondern Handwerk
+
+#speaker-note[
+  Das Pergament-Beispiel ist der Moment, an dem es klickt. Nicht abkürzen.
+]
 
 #side-by-side(
   split: (1fr, 1fr),
@@ -44,6 +51,8 @@
 
 == Drei Maße, die überlebt haben
 
+#transition("cover")
+
 #tiles(
   card(number: 1, title: [Der Neunerteiler])[
     Van de Graaf teilt Höhe und Breite in Neuntel — der Bund bekommt eins,
@@ -66,12 +75,32 @@
   geändert.
 ], at: "4-", enter: "rise")
 
+== Was der Rand leistet
+
+#transition("uncover")
+
+// `stagger` deckt eine Liste Punkt für Punkt auf — ein Schritt je Punkt.
+#stagger[
+  - Er gibt dem Daumen einen Platz, an dem er nichts verdeckt.
+  - Er hält die Zeile kurz genug, dass das Auge zurückfindet.
+  - Er fängt den Beschnitt ab, den keine Bindung genau trifft.
+]
+
+// `#pause` ist die kurze Schreibweise: alles danach kommt einen Schritt später.
+#pause
+
+#callout(title: [Und deshalb])[
+  Drei Aufgaben, von denen zwei niemand bemerkt, solange sie erfüllt sind.
+]
+
 = Was bleibt
 
 == Der Satz, auf den es hinausläuft
 
+// Quelle des Morphs — der Satz fliegt auf die nächste Folie und wächst dabei.
+// Quelle und Ziel müssen dafür auf *benachbarten* Folien stehen.
 #statement(color: t.strong)[
-  Der Rand ist kein leerer Platz. Er ist der Griff.
+  #morph(<griff>, [Der Rand ist kein leerer Platz. Er ist der Griff.])
 ]
 
 #anim([Auf der Folie heißt das dasselbe: was nicht bis an die Kante läuft,
@@ -84,3 +113,13 @@
   Jan Tschichold, _Ausgewählte Aufsätze über Fragen der Gestalt des Buches_,
   Basel 1975 — besonders das Kapitel über die Willkür der Seitenproportion.
 ], at: "3-", enter: "rise")
+
+// Eine Folie ohne Titelbalken: `== #h(0pt)` gibt ihr keine Überschrift.
+== #h(0pt)
+
+#transition("flip")
+
+// Dieselbe Farbe wie die Quelle: sonst wechselt die Formel mitten im Flug
+// die Farbe, was wie ein Aussetzer aussieht.
+#place(center + horizon,
+       morph(<griff>, text(size: 1.9em, fill: t.strong)[Der Rand ist kein leerer Platz. \ Er ist der Griff.]))
