@@ -77,20 +77,16 @@
 
 #transition("push")
 
-// Die Morph-Quelle steht *außerhalb* der Kacheln, und zwar mit Absicht:
-// `morph` hat kein `at:` und steht fest auf dem ersten Schritt. In einer
-// Kachel, die erst in Schritt zwei erscheint, stünde die Formel schon in
-// Schritt eins allein im Leeren.
-#statement(color: t.strong, above: 0pt)[
-  #morph(<satz>, $a^2 + b^2 = c^2$)
-]
-
 #tiles(
   card(number: 1, title: [Benennen])[
     Welche Seite liegt dem rechten Winkel gegenüber? Das ist $c$.
   ],
   card(number: 2, title: [Einsetzen])[
-    Die beiden bekannten Seiten einsetzen — die gesuchte bleibt allein.
+    // `at: 2` lässt den Morph mit seiner Kachel erscheinen statt schon im
+    // ersten Schritt. Erlaubt ist das hier, weil die Vorfolie keinen Morph
+    // dieses Namens trägt — sonst ginge der Flug dorthin verloren, und das
+    // Paket sagt es beim Übersetzen.
+    #morph(<satz>, $a^2 + b^2 = c^2$, at: 2) — die gesuchte Größe bleibt allein.
   ],
   card(number: 3, title: [Wurzel ziehen])[
     Am Ende steht eine Länge, also die positive Wurzel.
