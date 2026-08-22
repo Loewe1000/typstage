@@ -477,11 +477,10 @@ Read the same four across the leaf instead of along the list.
       start: 2,
       spacing: 0.8em,
       [#text(fill: t.strong)[The measure.] A line the eye can come back from is
-       still about sixty characters wide, and a window that keeps growing still
-       has to be told where to stop.],
+       still about sixty characters wide. A window that keeps growing has to be
+       told where to stop.],
       [#text(fill: t.strong)[The foot.] Type set hard against the bottom edge
-       still reads as though it were falling out of the frame. That was never a
-       fact about paper.],
+       reads as though it were falling out. That was never a fact about paper.],
     )
   ],
 )

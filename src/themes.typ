@@ -425,8 +425,16 @@
     border: rgb("#ded2ba"),
     font: ("Iowan Old Style", "Charter", "Libertinus Serif"),
     title-font: ("Optima", "Palatino", "Libertinus Serif"),
-    size: 18pt,
-    title-size: 24pt,
+    // 20pt, nicht 18pt. Nominell war editorial mit plain das kleinste Theme,
+    // in Wirklichkeit das kleinste überhaupt: Iowan setzt seine x-Höhe auf 0,48
+    // der Schriftgröße, Inter auf 0,55. Gemessen an einem gerenderten „x" waren
+    // das 8,64pt gegen 10,44pt in night und 11,64pt in default, also ein
+    // Viertel kleiner als das größte Theme, obwohl die Zahl daneben nur um
+    // sechs Punkte abwich. Bei 20pt sind es 9,60pt und damit dasselbe wie in
+    // lesson (9,72pt). Der Titel wächst mit, sonst fiele sein Abstand zum
+    // Rumpf von 1,33 auf 1,2.
+    size: 20pt,
+    title-size: 26pt,
     weight: "regular",
     tracking: 0.5pt,
     header: "plain",
