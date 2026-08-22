@@ -621,10 +621,10 @@ Ein `fr` *innerhalb* eines Rasters ist davon nicht betroffen:
 `anim(grid(rows: (1fr, 1fr), …))` verteilt das Raster unter sich selbst und
 weiß daher, wovon es einen Anteil nehmen soll.
 
-== Zwei Grenzen bei relativen Größen
+== Drei Grenzen bei verfolgten Elementen
 
-Ein verfolgtes Element wird für sich gemessen, und daraus folgen zwei Fälle, in
-denen die HTML-Ansicht vom PDF abweicht. Beide haben einen Ausweg von einer
+Ein verfolgtes Element wird für sich gemessen, und daraus folgen drei Fälle, in
+denen die HTML-Ansicht vom PDF abweicht. Alle drei haben einen Ausweg von einer
 Zeile.
 
 *Prozentbreiten an einem inline verfolgten Element.* `morph` ist per Vorgabe
@@ -652,6 +652,13 @@ null gedrückt. Eine feste Spaltenbreite statt `auto` löst es:
   angebotenen Platz füllen *will*, lässt sich also nicht messen. Beide Fälle
   sähen im Messwert gleich aus und bräuchten entgegengesetzte Behandlung.
 ]
+
+*Sehr dicke Striche in einem verfolgten Element.* Eine Linie misst 0pt hoch --
+ihre Farbe liegt außerhalb des Kastens. Damit sie überhaupt erscheint, bekommt
+ein flächenloses Element eine Schrifthöhe Luft nach jeder Seite. Was dicker
+aufträgt, wird beschnitten: bei 24pt Schrift und einem 60pt starken Strich
+bleiben von 91 Bildpunkten 72 übrig, nachgemessen. Solche Striche gehören in
+einen `block` oder `rect` mit eigener Höhe, dann gilt dessen Maß.
 
 = Etwas vorführen statt behaupten
 
