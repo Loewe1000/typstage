@@ -361,22 +361,31 @@
   lesson: theme(
     paper: white,
     ink: rgb("#16181c"),
-    strong: rgb("#d8391a"),
-    accent: rgb("#1292db"),
-    muted: rgb("#6b7280"),
-    // Die Fläche des Merkkastens, gemessen #fdf0df.
-    surface: rgb("#fdf0df"),
-    border: rgb("#f2ddc6"),
+    // Etwas tiefer als das gemessene #d8391a: auf einer Leinwand leuchtet ein
+    // Zinnober stärker als auf Papier.
+    strong: rgb("#c1361c"),
+    accent: rgb("#2b7fb8"),
+    muted: rgb("#767b84"),
+    // Die Tönung des Merkkastens. Gemessen war sie #fdf0df; auf einer Folie
+    // bedeckt so ein Kasten ein Vielfaches der Fläche, die er im Buch hat, und
+    // dieselbe Sättigung wirkt dort schnell bunt. Deshalb heller.
+    surface: rgb("#fdf6ee"),
+    border: rgb("#f0e2d2"),
     font: ("Source Sans 3", "Source Sans Pro", "Open Sans", "DejaVu Sans"),
     size: 20pt,
     title-size: 24pt,
+    // Halbfett statt fett. Die Überschrift steht ohnehin schon in einer
+    // eigenen Farbe und in eigener Größe; Fettung wäre das dritte Signal für
+    // dieselbe Sache.
+    weight: 600,
     header: "plain",
-    title-fill: rgb("#d8391a"),
-    // Eine Haarlinie in Cyan, wie die Kopflinie im Buch. Vorher lagen hier
-    // 3pt in Orange, also ein zweites lautes Signal neben einem Titel, der
-    // ohnehin schon fett, dunkel und groß war.
-    rule-size: 0.9pt,
-    head-gap: 24pt,
+    title-fill: rgb("#c1361c"),
+    // Keine Linie unter dem Titel. Im Buch gehört die farbige Linie zur
+    // Kopfzeile der Seite und nicht zur Überschrift; darunter gesetzt macht
+    // sie aus zwei Dingen eines in zwei Farben. Die Überschrift trägt ihre
+    // Hierarchie in der Farbe, mehr braucht sie nicht.
+    rule-size: 0pt,
+    head-gap: 26pt,
     footer: "fraction",
     progress: "tick",
     box: "label",

@@ -253,7 +253,12 @@ $ x + 3 = plus.minus sqrt(7) quad => quad x = -3 plus.minus sqrt(7) $
 #side-by-side(
   split: (1fr, 1fr),
   align: top,
-  card(title: [What gets written], color: missing)[
+  // Grau, nicht rot: das ist die Fassung, die falsch ist, und sie soll neben
+  // der richtigen tot aussehen. Vorher trug sie `missing`, was seit der
+  // Umstellung dieselbe Farbe ist wie die Vorgabe des Kastens daneben. Zwei
+  // gleich aussehende Kästen auf einer Folie, deren ganzer Zweck der
+  // Unterschied ist.
+  card(title: [What gets written], color: t.muted)[
     #v(0.2em)
     #align(center, $x^2 + 6x + 2 = (x + 3)^2 + 2$)
     #v(0.5em)
