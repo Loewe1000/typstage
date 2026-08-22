@@ -52,10 +52,17 @@
       // Außen die gemessene Größe — sie bestimmt den Rahmen —, innen die
       // Region von damals. Dadurch löst ein relatives Maß im Rumpf genau
       // einmal auf, und zwar gegen denselben Bezug wie im Hintergrund.
-      html.frame(block(width: s.width, height: s.height,
-                       template(with-style(s, block(
-                         width: s.region.width, height: s.region.height,
-                         s.body)))))
+      // `pad` ist fast immer 0pt und der Rahmen dann derselbe wie zuvor. Nur
+      // ein Element ohne Fläche bekommt Luft — dieselbe wie seine Marke, sonst
+      // säße der Inhalt versetzt darin.
+      let inhalt = template(with-style(s, block(
+        width: s.region.width, height: s.region.height, s.body)))
+      html.frame(if s.pad == 0pt {
+        block(width: s.width, height: s.height, inhalt)
+      } else {
+        block(width: s.width + 2 * s.pad, height: s.height + 2 * s.pad,
+              place(top + left, dx: s.pad, dy: s.pad, inhalt))
+      })
     })
   }
 }

@@ -561,11 +561,22 @@ sein, sonst hätte der Flug von der Vorfolie kein Ziel. Bei einem `anim` in
 einem `anim` ist es meist ein Versehen -- und es fällt erst beim Blättern auf,
 wenn das äußere Element noch unsichtbar ist und das innere schon steht.
 
-*Volle Breite muss angefordert werden.* Ein verfolgtes Element wird so breit
-wie sein Inhalt. Ein blankes `align(center, …)` darin hat deshalb keinen Raum
-zum Zentrieren und sitzt unverändert links. Wo etwas mittig stehen soll, gehört
-ein `block(width: 100%, …)` darum -- oder gleich `statement` aus dem Kapitel
-„Das eigene Aussehen".
+*Ein `fr`-Abstand gehört nicht ins verfolgte Element.* `fr` heißt „Anteil an
+dem, was übrig bleibt" -- und was übrig bleibt, verteilt der Elternteil unter
+den Geschwistern. Ein verfolgtes Element wird aber allein gemessen und sieht
+seine Geschwister nicht. Ein `#v(1fr)` unmittelbar in einem `anim` wird deshalb
+durchgereicht statt verfolgt (an Leerraum ist ohnehin nichts zu animieren);
+steht es zwischen anderem Inhalt, meldet das Paket einen Fehler, statt die
+Folie stillschweigend verrutschen zu lassen:
+
+#show-code(```typ
+#anim[Links #v(1fr) Rechts]        // Fehler -- das fr gehört nach draußen
+#anim[Links] #v(1fr) #anim[Rechts] // so ist es gemeint
+```)
+
+Ein `fr` *innerhalb* eines Rasters ist davon nicht betroffen:
+`anim(grid(rows: (1fr, 1fr), …))` verteilt das Raster unter sich selbst und
+weiß daher, wovon es einen Anteil nehmen soll.
 
 = Etwas vorführen statt behaupten
 

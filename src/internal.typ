@@ -131,6 +131,30 @@
 /// - a length — that width. Block elements default to the full available
 ///   width, because that is what a block *is*: without it an `align(center,
 ///   …)` inside `anim` has no room to centre in and silently stays left.
+/// Trägt der Rumpf auf oberster Ebene einen `fr`-Abstand?
+///
+/// `fr` heißt „Anteil an dem, was übrig bleibt" — und was übrig bleibt,
+/// verteilt der Elternteil unter den Geschwistern. Ein verfolgtes Element wird
+/// aber allein gemessen, und `measure` sieht die Geschwister nicht. Deshalb
+/// lässt sich ein `fr`, das *dem Element selbst* gilt, hier grundsätzlich nicht
+/// auflösen; ein `fr` weiter innen (etwa `grid(rows: (1fr, 1fr))`) ist davon
+/// nicht betroffen, weil es das Raster unter sich selbst verteilt.
+#let fr-teile(body) = {
+  let teile = if body == none { () }
+              else if body.has("children") { body.children } else { (body,) }
+  teile.filter(c => c.func() in (v, h) and type(c.amount) == fraction)
+}
+
+/// Besteht der Rumpf *nur* aus solchen Abständen (und Leerraum)?
+#let nur-fr(body) = {
+  let teile = if body == none { () }
+              else if body.has("children") { body.children } else { (body,) }
+  let leer = [ ].func()
+  teile.len() > 0 and teile.all(c =>
+    (c.func() in (v, h) and type(c.amount) == fraction)
+    or c.func() in (leer, parbreak))
+}
+
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
            width: auto) = {
   // The `box` has to sit around the *whole* construction, not inside it:
@@ -138,6 +162,20 @@
   // further in would still break the line it sits in.
   let shell-outer = if inline { box } else { it => it }
   shell-outer(context {
+  // Reiner `fr`-Abstand wird durchgereicht statt verfolgt. Gemessen käme er als
+  // volle Resthöhe heraus und schöbe die Geschwister aus der Folie (nachgemessen:
+  // 86% statt 76%). Durchgereicht verteilt ihn der Elternteil richtig — und an
+  // Leerraum ist ohnehin nichts zu animieren, es geht also nichts verloren.
+  // Auch der Schritt wird nicht verbraucht: er bliebe sonst leer.
+  if nur-fr(body) { return body }
+  // Gemischter Inhalt lässt sich nicht retten: der Abstand gehört dem
+  // Elternteil, der Rest dem Element. Lieber eine klare Ansage als eine Folie,
+  // auf der stillschweigend etwas verrutscht.
+  assert(fr-teile(body).len() == 0, message:
+    "typstage: an fr spacer inside a tracked element cannot be resolved — "
+    + "fr is shared out by the parent among its siblings, and a tracked "
+    + "element is measured on its own. Put the fr outside the anim/stagger, "
+    + "or give the element a container with a known size.")
   if not html-output.get() { return body }
   element-counter.step()
   // `auto` takes the next step. An explicit selector pulls the cursor up to its
@@ -210,6 +248,18 @@
       // drückte sie die `1fr`-Nachbarspalte auf null (gemessen: 85% im PDF,
       // 0% im HTML).
       let w = m.width
+      // Ein Element ohne Fläche — eine Linie misst 0pt hoch, ihre Farbe liegt
+      // außerhalb des Kastens — bekommt eine Marke ohne Fläche, und die
+      // überspringt der Runtime (`if (!r.width && !r.height) return;`). Der
+      // Sprite würde nie positioniert und bliebe unsichtbar. Marke und Sprite
+      // bekommen deshalb Luft nach allen Seiten. Sie steht in `place`, ändert
+      // am Fluss also nichts: die Zeile bleibt so hoch wie ohne `anim`.
+      //
+      // Das Maß ist geschätzt, nicht gemessen — die Farbe eines Strichs lässt
+      // sich in Typst nicht ausmessen. Eine Schrifthöhe deckt jede übliche
+      // Strichstärke; was dicker aufträgt, ist eine Zeichnung und bringt
+      // normalerweise ihren eigenen Kasten mit.
+      let luft = if m.height == 0pt or m.width == 0pt { text.size } else { 0pt }
       // Die *ursprüngliche* Region reist mit. Ohne sie steht der Rumpf im
       // Sprite in einer Hülle der gemessenen Größe, und ein relatives Maß löst
       // dort ein zweites Mal auf — aus `p%` wird `p²%`. Nur `100%` ist
@@ -221,14 +271,16 @@
       )
       sprites.update(a => a + ((kind: kind, at: selected, extra: extra, body: body,
                                 raw-frames: raw-frames, width: w,
-                                height: m.height, region: region, style: style),))
+                                height: m.height, region: region, pad: luft,
+                                style: style),))
       // A `box` is inline and puts its baseline on the bottom edge — with a
       // two-line list item the bullet would drop a line. Block content gets a
       // `block`.
       let shell = if inline { box } else { block }
       shell(width: w, height: m.height, {
-        place(top + left, rect(width: w, height: m.height,
-                               fill: marker(n), stroke: none))
+        place(top + left, dx: -luft, dy: -luft,
+              rect(width: w + 2 * luft, height: m.height + 2 * luft,
+                   fill: marker(n), stroke: none))
         // `hide` lays out but does not draw: the space is right, the content
         // is only visible in the overlay.
         // Dieselbe Region wie beim Messen: sonst löst ein relatives Maß hier
