@@ -564,34 +564,56 @@
             { duration: d * 0.5, delay: d * 0.5, easing: "ease-out", fill: "both" });
         });
       } else {
-        var bahn2 = [
-          { transform: "translate(0,0) scale(1,1)" },
-          { transform: "translate(" + (zr.left - qr.left) + "px," +
-            (zr.top - qr.top) + "px) scale(" + (zr.width / qr.width) + "," +
-            (zr.height / qr.height) + ")" }
-        ];
         var takt2 = { duration: d, easing: EASE, fill: "forwards" };
-        var copyOf = function (quelle2) {
-          var k = quelle2.cloneNode(true);
+        // Jede Kopie liegt in *ihrem eigenen* Kasten und wird von dort bewegt.
+        //
+        // Vorher lagen beide im Kasten der Quelle. Für die Quelle stimmt das,
+        // für das Ziel nicht. Die Regel `.ts-ghost svg` zwingt das SVG auf
+        // volle Breite und Höhe der Kopie, das Ziel wurde also in ein fremdes
+        // Seitenverhältnis eingepasst; und weil ein SVG dabei sein eigenes
+        // Verhältnis wahrt, blieb Luft an zwei Rändern. Die anisotrope
+        // Skalierung danach nahm das nicht zurück. Am Ende des Fluges stand die
+        // Zeichnung deshalb in anderen Proportionen da als das echte Element,
+        // das eine Zehntelsekunde später an ihre Stelle trat.
+        //
+        // Gemessen im Editorial-Deck, Bild für Bild: von 760ms bis 840ms
+        // bewegte sich nichts mehr, der Flug saß. Bei 920ms sprangen dann 824
+        // Pixel um, rückwärts 302. Genau das ist der Ruck, den man sieht.
+        //
+        // Jetzt liegt das Ziel von Anfang an in seinem eigenen Kasten und
+        // startet zusammengestaucht auf dem der Quelle. Es endet bei
+        // scale(1,1) und ist damit Pixel für Pixel das, was danach dasteht:
+        // beide Richtungen 0 statt 824 und 302.
+        var kopie = function (was, kasten) {
+          var k = was.cloneNode(true);
           k.className = "ts-ghost";
           k.removeAttribute("data-n");
           k.removeAttribute("data-at");
           k.removeAttribute("data-hold");
-          k.style.left = (qr.left - stage.left) + "px";
-          k.style.top = (qr.top - stage.top) + "px";
-          k.style.width = qr.width + "px";
-          k.style.height = qr.height + "px";
+          k.style.left = (kasten.left - stage.left) + "px";
+          k.style.top = (kasten.top - stage.top) + "px";
+          k.style.width = kasten.width + "px";
+          k.style.height = kasten.height + "px";
           return k;
         };
-        var ank2 = copyOf(dst);
+        // Der Ursprung der Geister liegt oben links (siehe CSS), deshalb setzt
+        // sich der Weg schlicht aus Verschiebung und Streckung zusammen.
+        var hin = function (von, nach) {
+          return "translate(" + (nach.left - von.left) + "px," +
+                 (nach.top - von.top) + "px) scale(" +
+                 (nach.width / von.width) + "," + (nach.height / von.height) + ")";
+        };
+        var ank2 = kopie(dst, zr);
         ank2.style.opacity = "1";
         attach(ank2);
-        ank2.animate(bahn2, takt2);
+        ank2.animate([{ transform: hin(zr, qr) },
+                      { transform: "translate(0,0) scale(1,1)" }], takt2);
 
-        var ghost = copyOf(src);
+        var ghost = kopie(src, qr);
         ghost.style.opacity = "1";
         attach(ghost);
-        ghost.animate(bahn2, takt2);
+        ghost.animate([{ transform: "translate(0,0) scale(1,1)" },
+                       { transform: hin(qr, zr) }], takt2);
         ghost.animate([{ opacity: 1 }, { opacity: 0 }], window);
       }
 
