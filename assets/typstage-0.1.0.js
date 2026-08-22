@@ -375,8 +375,24 @@
     return svg.getScreenCTM().inverse().multiply(node.getScreenCTM());
   }
 
+  // Die Strichstärke, sofern der Knoten überhaupt strichelt. Glyphen-Umrisse
+  // haben nur eine Füllung und liefern 0 — daran lassen sie sich erkennen.
+  function strichBreite(node) {
+    var st = node.getAttribute("stroke");
+    if (!st || st === "none") return 0;
+    return parseFloat(node.getAttribute("stroke-width")
+                      || getComputedStyle(node).strokeWidth) || 0;
+  }
+
   function kastenInBenutzer(node, svg, m) {
     var b = node.getBBox(), p = svg.createSVGPoint(), xs = [], ys = [];
+    // `getBBox` misst die Geometrie ohne den Strich. Ein waagerechter
+    // Wurzelstrich ist damit null hoch, und sein Doppel bliebe unsichtbar.
+    var sw = strichBreite(node);
+    if (sw > 0) {
+      b = { x: b.x - sw / 2, y: b.y - sw / 2,
+            width: b.width + sw, height: b.height + sw };
+    }
     [[b.x, b.y], [b.x + b.width, b.y],
      [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].forEach(function (c) {
       p.x = c[0]; p.y = c[1];
@@ -386,6 +402,28 @@
     var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
     var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+
+  // Was gezeichnet und nicht gesetzt ist: Wurzelbögen, Bruchstriche,
+  // Gleichheitsbalken, Rahmen. `glyphs()` sammelt nur `<use>`, diese Teile also
+  // nicht — und weil `[data-hold]` das ganze Element verbirgt, waren sie
+  // während des Fluges verschwunden und erschienen erst am Ende schlagartig.
+  function striche(el) {
+    var out = [];
+    el.querySelectorAll("path").forEach(function (n) {
+      var sw = strichBreite(n);
+      if (sw <= 0) return;              // Glyphen-Umriss, kein gezeichneter Strich
+      var r = n.getBoundingClientRect();
+      if (r.width <= 0 && r.height <= 0) return;
+      // Auch auf dem Schirm um die halbe Strichstärke weiten, sonst wäre der
+      // Kasten des Doppels in einer Richtung null.
+      var c = n.getScreenCTM();
+      var px = sw * (c ? Math.hypot(c.a, c.c) : 1) / 2;
+      var py = sw * (c ? Math.hypot(c.b, c.d) : 1) / 2;
+      out.push({ node: n, r: { left: r.left - px, top: r.top - py,
+                               width: r.width + 2 * px, height: r.height + 2 * py } });
+    });
+    return out;
   }
 
   function glyphGeist(g, stage, box) {
@@ -494,6 +532,22 @@
         });
         p.rest.forEach(function (z) {
           var a = glyphGeist(z, stage);
+          a.style.opacity = "0";
+          attach(a);
+          a.animate([{ opacity: 0 }, { opacity: 1 }],
+            { duration: d * 0.5, delay: d * 0.5, easing: "ease-out", fill: "both" });
+        });
+        // Striche gehen denselben Weg wie ein Zeichen ohne Partner: das alte
+        // blendet aus, das neue ein. Gepaart wird nicht — ein Wurzelbogen und
+        // ein Gleichheitsbalken haben nichts miteinander zu tun.
+        striche(src).forEach(function (n) {
+          var a = glyphGeist(n, stage);
+          attach(a);
+          a.animate([{ opacity: 1 }, { opacity: 0 }],
+            { duration: d * 0.55, easing: "ease-out", fill: "forwards" });
+        });
+        striche(dst).forEach(function (n) {
+          var a = glyphGeist(n, stage);
           a.style.opacity = "0";
           attach(a);
           a.animate([{ opacity: 0 }, { opacity: 1 }],
