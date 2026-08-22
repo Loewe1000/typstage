@@ -7,3 +7,7 @@ docs/build/
 
 .DS_Store
 _site/
+
+# Sicherungskopien beim Umbauen
+*.vor-*
+*.sicherung
