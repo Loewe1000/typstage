@@ -24,7 +24,7 @@
   title: [How GPS Knows Where You Are],
   subtitle: [Four satellites, three unknowns, and a clock nobody trusts],
   author: [Institute of Geodesy],
-  date: datetime(year: 2026, month: 4, day: 17),
+  date: [17 April 2026],
   transition: "slide",
 )
 

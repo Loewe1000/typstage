@@ -14,19 +14,21 @@
 // A theme is a dictionary. Its colours are available to the deck as well.
 #let t = themes.lesson
 
-// Two meaning colours, fixed once and passed everywhere. `given` is what the
-// expression x^2 + 6x already hands you; `missing` is the corner you have to
-// supply yourself. Nothing else in the deck is orange, so orange always means
-// "this part was not there before".
-#let given = t.strong
-#let missing = t.accent
+// Two meaning colours, fixed once and passed everywhere, and they follow the
+// convention of a maths textbook rather than being picked for looks: cool for
+// what is already there, warm for what you have to supply. `given` is what the
+// expression x^2 + 6x hands you. `missing` is the corner you add yourself, and
+// warm is the loud one, so the eye goes to the new part first and not to the
+// part it has read three slides running.
+#let given = t.accent
+#let missing = t.strong
 
 #show: presentation.with(
   theme: t,
   title: [Completing the Square],
   subtitle: [Why the quadratic formula is not a rule to memorise (Year 10)],
   author: [Mathematics · Ms Reid],
-  date: datetime(year: 2026, month: 9, day: 15),
+  date: [15 September 2026],
   // Every page change is a plain cross-fade. The deck already has one kind of
   // motion: glyphs flying from one slide to the next. A sliding or zooming
   // page would compete with it at exactly the moment the class is meant to

@@ -35,7 +35,7 @@
   title: [A Tour of typstage],
   subtitle: [Every function once, and what it is for],
   author: [typstage #runtime-version],
-  date: datetime(year: 2026, month: 8, day: 23),
+  date: [23 August 2026],
   transition: "slide",
   // Both in milliseconds: the slide change, and the reveal of one element.
   transition-duration: 420,

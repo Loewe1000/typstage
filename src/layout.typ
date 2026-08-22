@@ -35,14 +35,30 @@
   color: auto,
   fill: auto,
   stroke: auto,
-  radius: 7pt,
+  radius: auto,
   inset: (x: 12pt, y: 10pt),
   width: 100%,
 ) = context {
   let t = theme-state.get()
+  // Zwei Bauarten. `"bar"` ist die bisherige: weiße Fläche, dünner Rahmen,
+  // farbiger Streifen mit versalem Etikett darüber. `"label"` kommt aus dem
+  // Schulbuch: keine Kante, keine Rundung, eine getönte Fläche, und die
+  // Beschriftung steht in der Farbe *im* Kasten statt auf einem Balken.
+  let stil = t.at("box", default: "bar")
+  let eigene-farbe = color != auto
   let color = if color == auto { t.strong } else { color }
-  let fill = if fill == auto { t.surface } else { fill }
-  let stroke = if stroke == auto { 0.7pt + t.border } else { stroke }
+  // Beim Etikettenstil trägt die Tönung dieselbe Bedeutung wie die Schrift
+  // darauf: ein blau beschrifteter Kasten steht auf Blau, ein roter auf Rot.
+  // Nur wer keine Farbe angibt, bekommt `surface` — im Schulbuch-Theme ist das
+  // die ausgemessene Tönung des Merkkastens, und die ist wärmer als eine bloß
+  // aufgehellte Überschriftenfarbe.
+  let fill = if fill != auto { fill }
+              else if stil == "label" and eigene-farbe {
+                if t.inverted { color.darken(72%) } else { color.lighten(89%) }
+              } else { t.surface }
+  let radius = if radius != auto { radius } else if stil == "label" { 0pt } else { 7pt }
+  let stroke = if stroke != auto { stroke }
+                else if stil == "label" { none } else { 0.7pt + t.border }
   block(
     width: width, radius: radius, fill: fill, stroke: stroke,
   {
@@ -51,7 +67,7 @@
     // hing, aber nur 9pt über dem unteren Rand. Beide Blöcke geben ihn ab,
     // der Abstand kommt allein aus `inset`.
     set block(spacing: 0pt)
-    if title != none {
+    if title != none and stil == "bar" {
       block(
         width: 100%, fill: color,
         radius: (top-left: radius, top-right: radius),
@@ -60,7 +76,15 @@
              upper(title)),
       )
     }
-    block(width: 100%, inset: inset, if number == none { body } else {
+    block(width: 100%, inset: inset, {
+    // Beim Etikettenstil sitzt die Beschriftung im Kasten und teilt sich den
+    // Einzug mit dem Rumpf. Gemischtschriftlich und in der Farbe, nicht versal
+    // und weiß: das Etikett ist hier eine Überschrift, kein Reiter.
+    if title != none and stil == "label" {
+      block(above: 0pt, below: 0.45em,
+        text(size: 0.78em, weight: "bold", fill: color, title))
+    }
+    if number == none { body } else {
       grid(
         columns: (auto, 1fr), column-gutter: 8pt, align: (left + top, left + top),
         box(baseline: 0.24em, circle(
@@ -70,6 +94,7 @@
         )),
         body,
       )
+    }
     })
   },
   )

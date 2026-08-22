@@ -47,18 +47,23 @@
 // Faktor, mit dem alle Maße mitwachsen — jede Zahl unten ist in Punkten des
 // Vorgabe-Canvas gemeint und wird damit multipliziert.
 
-/// Die Zeile mit Autor und Datum, wie sie unter jeder Titelfolie steht.
+/// Das Datum, wie es unter einem Titel steht.
 ///
 /// `date` darf beides sein. Ein `datetime` wird in der hiesigen Schreibweise
 /// gesetzt; wer eine andere will, gibt gleich Inhalt an: `date: [15 September
-/// 2026]`. Vorher rief die Zeile `display` ohne zu fragen — ein englisches
-/// Deck bekam damit zwangsläufig „15.09.2026" unter den Titel, und Inhalt
-/// mitzugeben brach den Bau ab, weil Inhalt kein `display` kennt.
+/// 2026]`. Vorher riefen drei Titelfolien `display` ohne zu fragen. Ein
+/// englisches Deck bekam damit zwangsläufig „15.09.2026" unter den Titel, und
+/// Inhalt mitzugeben brach den Bau ab, weil Inhalt kein `display` kennt. Der
+/// erste Anlauf hat nur diese eine Zeile hier geheilt und die beiden anderen
+/// Stellen übersehen; deshalb steht die Umrechnung jetzt an einem Ort.
+#let datum(d) = if type(d) == datetime {
+  d.display("[day].[month].[year]")
+} else { d }
+
+/// Die Zeile mit Autor und Datum, wie sie unter jeder Titelfolie steht.
 #let by-line(t, s, k) = text(size: 12pt * k, fill: t.muted, {
   s.author
-  if s.date != none [ · #if type(s.date) == datetime {
-    s.date.display("[day].[month].[year]")
-  } else { s.date } ]
+  if s.date != none [ · #datum(s.date) ]
 })
 
 // ── default ────────────────────────────────────────────────────────────────
@@ -187,7 +192,7 @@
   place(bottom + left, dx: m.left, dy: -m.bottom,
     text(size: 10pt * k, fill: t.muted, {
       s.author
-      if s.date != none [ · #s.date.display("[day].[month].[year]") ]
+      if s.date != none [ · #datum(s.date) ]
     }))
 }
 
@@ -230,7 +235,7 @@
   place(bottom + center, dy: -m.bottom,
     text(size: 11pt * k, fill: t.muted, tracking: 1.4pt * k, upper({
       s.author
-      if s.date != none [ · #s.date.display("[day].[month].[year]") ]
+      if s.date != none [ · #datum(s.date) ]
     })))
 }
 
@@ -260,7 +265,7 @@
 /// Die Einträge in Gruppen: Farben (`paper ink strong accent muted
 /// surface border inverted`), Typografie (`font title-font size
 /// title-size weight tracking`), die gewöhnliche Folie (`header
-/// title-fill rule-size rule-fill head-gap foot-gap band-height
+/// title-fill rule-size rule-fill head-gap foot-gap band-height box
 /// footer footer-rule progress`) und die beiden ganzen Bilder
 /// (`title-slide`, `section`).
 ///
@@ -297,6 +302,7 @@
   footer: "fraction",
   footer-rule: 0pt,
   progress: "bar",
+  box: "bar",
   title-slide: band-title-slide,
   section: band-section,
 ) = {
@@ -310,6 +316,8 @@
   assert(progress in ("bar", "top", "tick", "none"),
          message: "typstage: theme(progress: ..) is \"bar\", \"top\", \"tick\" "
            + "or \"none\"")
+  assert(box in ("bar", "label"),
+         message: "typstage: theme(box: ..) is \"bar\" or \"label\"")
   (
   paper: paper, ink: ink, strong: strong, accent: accent, muted: muted,
   surface: surface, border: border, inverted: inverted,
@@ -318,7 +326,7 @@
   header: header, title-fill: title-fill,
   rule-size: rule-size, rule-fill: if rule-fill == none { accent } else { rule-fill },
   head-gap: head-gap, foot-gap: foot-gap, band-height: band-height,
-  footer: footer, footer-rule: footer-rule, progress: progress,
+  footer: footer, footer-rule: footer-rule, progress: progress, box: box,
   title-slide: title-slide, section: section,
   )
 }
@@ -342,23 +350,36 @@
   // Der Unterricht. Größere Schrift, kein Balken — der Titel steht auf dem
   // Papier und wird von einem kräftigen Strich unterlegt; unten wandert eine
   // Marke auf ihrer Schiene, damit die Klasse sieht, wie weit die Stunde ist.
+  // Nach dem Vorbild deutscher Mathe-Schulbücher. Die Farben sind nicht
+  // gewählt, sondern aus einer Musterseite von „Fundamente der Mathematik"
+  // (Cornelsen, 10. Schuljahr) ausgemessen: das Zinnoberrot der Überschriften
+  // und der Merkkästen, das Cyanblau der Beispiele und der Kopflinie, dazu die
+  // beiden Tönungen. Was dort trägt, ist nicht Größe und nicht Fettung,
+  // sondern *Farbe als Bedeutung*: warm für „das musst du wissen", kühl für
+  // „so sieht es aus". Deshalb ist die Überschrift hier kleiner als zuvor und
+  // die Linie darunter eine Haarlinie statt eines Balkens.
   lesson: theme(
-    paper: rgb("#fbfaf6"),
-    ink: rgb("#1c2126"),
-    strong: rgb("#2b4c7e"),
-    accent: rgb("#e0762a"),
+    paper: white,
+    ink: rgb("#16181c"),
+    strong: rgb("#d8391a"),
+    accent: rgb("#1292db"),
     muted: rgb("#6b7280"),
-    surface: white,
-    border: rgb("#e2ddd2"),
+    // Die Fläche des Merkkastens, gemessen #fdf0df.
+    surface: rgb("#fdf0df"),
+    border: rgb("#f2ddc6"),
     font: ("Source Sans 3", "Source Sans Pro", "Open Sans", "DejaVu Sans"),
     size: 20pt,
-    title-size: 26pt,
+    title-size: 24pt,
     header: "plain",
-    title-fill: rgb("#2b4c7e"),
-    rule-size: 3pt,
+    title-fill: rgb("#d8391a"),
+    // Eine Haarlinie in Cyan, wie die Kopflinie im Buch. Vorher lagen hier
+    // 3pt in Orange, also ein zweites lautes Signal neben einem Titel, der
+    // ohnehin schon fett, dunkel und groß war.
+    rule-size: 0.9pt,
     head-gap: 24pt,
     footer: "fraction",
     progress: "tick",
+    box: "label",
     title-slide: lesson-title-slide,
     section: lesson-section,
   ),

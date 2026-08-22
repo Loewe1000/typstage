@@ -20,7 +20,7 @@
   title: [The Shape of a Page],
   subtitle: [Four margins, two diagonals, and what a screen does to them],
   author: [A talk on book design],
-  date: datetime(year: 2026, month: 11, day: 6),
+  date: [6 November 2026],
   // Nothing hurried anywhere. This theme is paper and hairlines; a slide that
   // shoves the last one aside makes it look like a slide deck again.
   transition: "fade",

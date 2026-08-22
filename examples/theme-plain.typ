@@ -151,7 +151,7 @@
   title: [Two treatments, one reversal],
   subtitle: [Simpson's paradox, and which of the two numbers to believe],
   author: [Statistics seminar],
-  date: datetime(year: 2026, month: 9, day: 17),
+  date: [17 September 2026],
   transition: "fade",
   transition-duration: 380,
   duration: 460,

@@ -293,7 +293,7 @@
     subtitle: [Error budgets, one node at a time, and how to tell
                it went well],
     author: [SRE Summit · Hall 2],
-    date: datetime(year: 2026, month: 9, day: 30),
+    date: [30 September 2026],
   ),
 
   slide(
