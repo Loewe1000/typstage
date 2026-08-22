@@ -562,21 +562,37 @@ Folie schon stehen, sonst käme der Flug von der Vorfolie nirgends an. Bei einem
 beim Blättern auf, wenn das äußere Element noch unsichtbar ist und das innere
 schon steht.
 
-*Ein Morph lässt sich nicht verzögern.* `morph` hat kein `at:`; es steht fest
-auf dem ersten Schritt. Für ein Flugziel ist das nötig, für eine Flugquelle
-nicht -- die müsste erst stehen, wenn man die Folie *verlässt* --, aber das
-Paket unterscheidet beide nicht. Die Regel gilt deshalb für jeden Morph:
-*er gehört nicht in etwas hinein, das erst später erscheint.* Steht er in einer
-Kachel, die im zweiten Schritt kommt, dann schwebt er schon im ersten Schritt
-allein an der Stelle, an der sein Behälter erst später auftauchen wird. Ein
-Morph gehört an einen Platz, den die Folie von Anfang an zeigt --
-`statement`, `place` oder schlicht der Fließtext:
+*Ein Morph steht ab dem ersten Schritt.* Das ist die Vorgabe, und sie ist
+meistens richtig: Ein Flugziel muss beim Betreten der Folie da sein, und weil
+beim Zurückblättern die Rollen tauschen, gilt das für beide Enden einer Kette.
+Daraus folgt: *ein Morph gehört nicht in etwas hinein, das erst später
+erscheint.* Steht er in einer Kachel, die im zweiten Schritt kommt, dann
+schwebt er schon im ersten Schritt allein an der Stelle, an der sein Behälter
+erst später auftauchen wird:
 
 #show-code(```typ
 == In drei Schritten
 #statement[#morph(<satz>, $a^2 + b^2 = c^2$)]   // steht ab Schritt eins
 #tiles(card[…], card[…], card[…])               // erscheinen nacheinander
 ```)
+
+Für das *erste* Glied einer Kette gibt es eine Ausnahme, und dafür nimmt `morph`
+ein `at:`. Dort kommt kein Flug an -- die Vorfolie trägt ja keinen Morph dieses
+Namens --, und beim Zurückblättern landet man auf dem *letzten* Schritt der
+Folie, wo der Morph längst steht. Er darf also mit seiner Kachel erscheinen:
+
+#show-code(```typ
+== In drei Schritten
+#tiles(
+  card[Benennen …],
+  card[#morph(<satz>, $a^2 + b^2 = c^2$, at: 2)],   // mit der zweiten Kachel
+  card[Wurzel ziehen …],
+)
+```)
+
+Trägt die Vorfolie doch einen gleichnamigen Morph, ginge der Flug zwischen den
+beiden lautlos verloren -- die Formel erschiene einfach, statt zu fliegen. Das
+Paket prüft das beim Übersetzen und sagt es, statt es geschehen zu lassen.
 
 *Ein `fr`-Abstand gehört nicht ins verfolgte Element.* `fr` heißt „Anteil an
 dem, was übrig bleibt" -- und was übrig bleibt, verteilt der Elternteil unter

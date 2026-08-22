@@ -239,6 +239,7 @@
   } else {
     html-output.update(true)
     theme-state.update(theme)
+    morph-index.update(())
     let n = 0
     let parts = ()
     for s in all {
@@ -268,6 +269,15 @@
               + (if note != "" { ("data-note": note) } else { (:) }),
               sprites.get().enumerate()
                 .map(((i, sp)) => sprite-markup(sp, i + 1, style)).join())
+            // Für die Prüfung am Dokumentende vermerken, welche Morphs auf
+            // dieser Folie liegen und ob sie ab Schritt eins stehen.
+            // Erst auswerten, dann eintragen: in der Update-Funktion wäre
+            // `sprites.get()` außerhalb jedes Kontexts und Typst bricht ab.
+            let meine-morphs = sprites.get()
+              .filter(sp => sp.kind == "morph")
+              .map(sp => (slide: here, name: sp.extra.name,
+                          ab-eins: ab-schritt-eins(sp.at)))
+            morph-index.update(a => a + meine-morphs)
             html.elem("script", attrs: (class: "ts-bridge", type: "application/json"),
                       json.encode(bridge-jobs.get()))
           }
@@ -281,6 +291,23 @@
       parts.join()
       html.elem("div", attrs: (id: "ts-fly"), [])
     })
+    // Ein verzögerter Morph steht im ersten Schritt seiner Folie noch nicht.
+    // Das ist unschädlich, solange die Vorfolie keinen gleichnamigen Morph
+    // trägt — sonst geht der Flug zwischen den beiden verloren, und zwar
+    // lautlos: es gibt keine Fehlermeldung, die Formel erscheint einfach,
+    // statt zu fliegen. Deshalb hier eine Ansage beim Übersetzen.
+    context {
+      let alle-morphs = morph-index.get()
+      for m in alle-morphs.filter(m => not m.ab-eins) {
+        let vorher = alle-morphs.filter(v => v.slide == m.slide - 1 and v.name == m.name)
+        assert(vorher.len() == 0, message:
+          "typstage: morph(" + m.name + ") on slide " + str(m.slide)
+          + " starts after step one, but the slide before carries a morph of "
+          + "the same name — the flight between them would be lost without a "
+          + "word. Either drop the `at:` here, or rename one of the two.")
+      }
+    }
+
     html.elem("div", attrs: (id: "ts-overview"), [])
     html.elem("div", attrs: (id: "ts-hint"), [])
     let worte = runtime-words(text.lang)

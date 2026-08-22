@@ -79,6 +79,28 @@
   if numbers.len() == 0 { 1 } else { calc.max(..numbers) }
 }
 
+/// Deckt ein Selektor den ersten Schritt ab?
+///
+/// Entscheidet, ob ein Morph beim Betreten der Folie schon steht. `"1-"` und
+/// `"1,3"` tun es, `"2-"` und `"3"` nicht.
+#let ab-schritt-eins(sel) = {
+  sel.split(",").any(teil => {
+    let t = teil.trim()
+    if t.ends-with("-") {
+      let a = t.slice(0, -1).trim()
+      a == "" or int(a) <= 1
+    } else if t.contains("-") {
+      let g = t.split("-")
+      int(g.first().trim()) <= 1 and int(g.last().trim()) >= 1
+    } else { int(t) == 1 }
+  })
+}
+
+/// Alle Morphs des Dokuments: je Eintrag Folie, Name und ob er ab Schritt eins
+/// steht. Wird am Ende geprüft — ein verzögerter Morph darf seinen Namen nicht
+/// mit einem auf der Vorfolie teilen, sonst geht der Flug dorthin verloren.
+#let morph-index = state("typstage-morphs", ())
+
 /// The running step cursor: the highest step handed out on this slide so far.
 ///
 /// A counter, not a state — and that is the whole trick. Reading a state and

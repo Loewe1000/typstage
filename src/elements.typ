@@ -41,8 +41,16 @@
 /// Two names may be equal on the *target* slide. The runtime looks the source
 /// up by name but iterates over the targets, so two targets sharing a name
 /// both start from the same place and the glyph visibly splits in two.
-#let morph(name, body, duration: 900, match: "auto", inline: true) = track(
-  "morph", body, at: "1-", inline: inline,
+/// `at` ist fast immer richtig, wie es ist. Ein Morph steht ab dem ersten
+/// Schritt, weil ein Flugziel beim Betreten der Folie da sein muss — und weil
+/// beim Zurückblättern die Rollen tauschen, gilt das für beide Enden.
+///
+/// Verzögern lohnt nur für das *erste* Glied einer Kette, etwa wenn die Formel
+/// zusammen mit ihrer Kachel erscheinen soll. Erlaubt ist es genau dann, wenn
+/// die Vorfolie keinen gleichnamigen Morph trägt; das Paket prüft das beim
+/// Übersetzen und meldet sich, wenn es nicht stimmt.
+#let morph(name, body, at: "1-", duration: 900, match: "auto", inline: true) = track(
+  "morph", body, at: at, inline: inline,
   extra: (name: name-of(name), match: match,
           duration: if duration == auto { none } else { duration }),
 )
