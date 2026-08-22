@@ -19,7 +19,52 @@
 ///
 /// `t` ist das Theme: alle Farben, Schriften und Maße kommen von dort, und die
 /// Titel- wie die Abschnittsfolie zeichnet es selbst.
-#let slide-body(s, n, total, style, geo, t) = block(
+/// Fußzeile und Fortschritt — alles, was auf jeder Folie gleich aussieht und
+/// sich nur im Zählerstand unterscheidet.
+///
+/// Steht bewusst für sich: im Browser wird es *nicht* in die Folie gezeichnet,
+/// sondern als eigene Ebene darüber gelegt. Sonst führe der Balken beim
+/// Folienwechsel mit hinaus, während der nächste hereinkommt — man sähe zwei
+/// Balken kreuzen statt einen wachsen. Im PDF gibt es keinen Wechsel, dort
+/// gehört beides in die Seite.
+#let slide-chrome(n, total, geo, t) = {
+  let k = geo.scale
+  let m = margins(geo)
+  let inner = geo.width - m.left - m.right
+  block(width: geo.width, height: geo.height, {
+    // Fußzeile: die Zahl, wahlweise mit der Gesamtzahl, und eine Haarlinie
+    // darüber.
+    if t.footer-rule > 0pt {
+      place(bottom + left, dx: m.left, dy: -(t.foot-gap + 6pt) * k,
+            rect(width: inner, height: t.footer-rule * k, fill: t.border, stroke: none))
+    }
+    let zahl = if t.footer == "fraction" { str(n) + " / " + str(total) } else { str(n) }
+    if t.footer == "center" {
+      place(bottom + center, dy: -13pt * k, text(size: 12pt * k, fill: t.muted, zahl))
+    } else if t.footer != "none" {
+      place(bottom + right, dx: -m.right, dy: -13pt * k,
+            text(size: 12pt * k, fill: t.muted, zahl))
+    }
+    // Fortschritt: ein wachsender Balken unten oder oben, oder eine Marke, die
+    // auf ihrer Schiene wandert — die zeigt auch bei siebzig Folien noch, wo
+    // man ist, während der Balken dort nur langsam länger wird.
+    if t.progress == "bar" {
+      place(bottom + left,
+            rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
+    } else if t.progress == "top" {
+      place(top + left,
+            rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
+    } else if t.progress == "tick" {
+      let breite = 34pt * k
+      place(bottom + left,
+            rect(width: 100%, height: 3pt * k, fill: t.accent.lighten(78%), stroke: none))
+      place(bottom + left, dx: (geo.width - breite) * n / total,
+            rect(width: breite, height: 3pt * k, fill: t.accent, stroke: none))
+    }
+  })
+}
+
+#let slide-body(s, n, total, style, geo, t, chrome: true) = block(
   width: geo.width, height: geo.height,
 {
   // Everything below is measured on the default canvas and scaled with it, so
@@ -78,35 +123,14 @@
         }
       }))
     }
-    // Fußzeile: die Zahl, wahlweise mit der Gesamtzahl, und eine Haarlinie
-    // darüber.
-    if t.footer-rule > 0pt {
-      place(bottom + left, dx: m.left, dy: -(t.foot-gap + 6pt) * k,
-            rect(width: inner, height: t.footer-rule * k, fill: t.border, stroke: none))
-    }
-    let zahl = if t.footer == "fraction" { str(n) + " / " + str(total) } else { str(n) }
-    if t.footer == "center" {
-      place(bottom + center, dy: -13pt * k, text(size: 12pt * k, fill: t.muted, zahl))
-    } else if t.footer != "none" {
-      place(bottom + right, dx: -m.right, dy: -13pt * k,
-            text(size: 12pt * k, fill: t.muted, zahl))
-    }
-    // Fortschritt: ein wachsender Balken unten oder oben, oder eine Marke, die
-    // auf ihrer Schiene wandert — die zeigt auch bei siebzig Folien noch, wo
-    // man ist, während der Balken dort nur langsam länger wird.
-    if t.progress == "bar" {
-      place(bottom + left,
-            rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
-    } else if t.progress == "top" {
-      place(top + left,
-            rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
-    } else if t.progress == "tick" {
-      let breite = 34pt * k
-      place(bottom + left,
-            rect(width: 100%, height: 3pt * k, fill: t.accent.lighten(78%), stroke: none))
-      place(bottom + left, dx: (geo.width - breite) * n / total,
-            rect(width: breite, height: 3pt * k, fill: t.accent, stroke: none))
-    }
+    // Fußzeile und Fortschritt zeichnet `slide-chrome`. Im PDF gehören sie in
+    // die Seite und werden hier mitgezeichnet; im Browser liegen sie als eigene
+    // Ebene über der Bühne, damit sie beim Folienwechsel nicht mitwandern.
+    // `place`, nicht in den Fluss: `slide-chrome` liefert einen Block in voller
+    // Folienhöhe. Im Fluss schöbe er alles darunter fort und seine
+    // `bottom`-Anker bezögen sich auf sich selbst statt auf die Folie.
+    if chrome { place(top + left, slide-chrome(n, total, geo, t)) }
+
     place(top + left, dx: m.left, dy: kopf + t.head-gap * k,
       block(width: inner,
             height: geo.height - kopf - (t.head-gap + t.foot-gap) * k,

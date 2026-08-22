@@ -30,6 +30,17 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
 /* Über beiden Folien: der Übergang gibt einer von ihnen einen z-index, und
    ohne eigenen läge die Flugebene darunter — die Geister verschwänden
    mitten in der Bewegung hinter der abtretenden Folie. */
+/* Fußzeile und Fortschritt liegen über der Bühne, nicht in der Folie:
+   beim Folienwechsel sollen sie wechseln, nicht mitwandern. */
+#ts-chrome{position:absolute;inset:0;pointer-events:none;z-index:4}
+.ts-chrome{position:absolute;inset:0;opacity:0;transition:opacity .22s ease-out}
+/* Wie beim Folienbild: das SVG kommt in seiner Punktgröße und muss auf die
+   Bühne eingepasst werden, sonst ragt der Fuß darunter hinaus. */
+.ts-chrome svg{width:100%!important;height:100%!important;display:block}
+/* Das zweite Chrome je Folie ist nur für die Druckansicht da. */
+.ts-chromep{display:none}
+.ts-chromep svg{width:100%!important;height:100%!important;display:block}
+.ts-chrome[data-on]{opacity:1}
 #ts-fly{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:5}
 .ts-ghost{position:absolute;transform-origin:0 0;pointer-events:none;
   overflow:visible}
@@ -54,5 +65,6 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
   .ts-slide{position:relative;visibility:visible!important;opacity:1!important;
     break-after:page;width:100%;height:0;padding-bottom:var(--ts-ratio,56.25%)}
   .ts-el{opacity:1!important;visibility:visible!important}
-  #ts-overview,#ts-hint,#ts-fly{display:none!important}
+  #ts-overview,#ts-hint,#ts-fly,#ts-chrome{display:none!important}
+  .ts-chromep{display:block;position:absolute;inset:0}
 }

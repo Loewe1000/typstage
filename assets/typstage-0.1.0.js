@@ -451,6 +451,8 @@
     return d;
   }
 
+  var CHROME = [].slice.call(document.querySelectorAll("#ts-chrome > .ts-chrome"));
+
   var flyTimers = [];
 
   //
@@ -732,6 +734,14 @@
       SLIDES[dst.slide].dataset.on = "1";
     }
 
+    // Die Chrome-Ebene folgt der Folie, wandert aber nicht mit ihr: sie liegt
+    // über der Bühne und wird nur ein- und ausgeblendet. Außerhalb der beiden
+    // Zweige darüber, denn der eine gilt nur für die allererste Folie und der
+    // andere reicht den Wechsel an `transition` weiter.
+    CHROME.forEach(function (c, i) {
+      if (i === dst.slide) c.dataset.on = "1"; else delete c.dataset.on;
+    });
+
     SLIDES[dst.slide].querySelectorAll(".ts-el").forEach(function (el) {
       var an = activeAt(el.dataset.at, dst.step);
       var d = +erbt(el, "duration") || CFG.duration;
@@ -961,7 +971,12 @@
     SLIDES.forEach(function (f, i) {
       var m = document.createElement("div");
       m.className = "ts-mini";
-      m.innerHTML = f.querySelector(".ts-bg").innerHTML;
+      // Fußzeile und Fortschritt liegen nicht mehr in `.ts-bg`, sondern in der
+      // Ebene über der Bühne. Fürs Vorschaubild wird deshalb die Druckkopie
+      // mitgenommen, die ohnehin in jeder Folie steckt — sonst wären die
+      // Bildchen ohne Seitenzahl.
+      var cp = f.querySelector(".ts-chromep");
+      m.innerHTML = f.querySelector(".ts-bg").innerHTML + (cp ? cp.innerHTML : "");
       m.addEventListener("click", function () {
         OVERVIEW.removeAttribute("data-on");
         for (var k = 0; k < STEPS.length; k++) {

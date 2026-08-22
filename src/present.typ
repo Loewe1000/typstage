@@ -3,7 +3,7 @@
 #import "config.typ": *
 #import "internal.typ": *
 #import "slides.typ": *
-#import "theme.typ": handout-body, slide-body
+#import "theme.typ": handout-body, slide-body, slide-chrome
 #import "themes.typ": theme-state, themes
 #import "render.typ": *
 #import "elements.typ": anim, pause
@@ -242,9 +242,19 @@
     morph-index.update(())
     let n = 0
     let parts = ()
+    let chrome-teile = ()
     for s in all {
       if s.kind == "slide" { n += 1 }
       let here = n
+      // Fußzeile und Fortschritt kommen als eigene Ebene über die Bühne, nicht
+      // in die Folie. Sonst führen sie beim Wechsel mit hinaus, während die der
+      // nächsten hereinkommt — man sähe zwei Balken kreuzen statt einen wachsen.
+      // Titel- und Abschnittsfolien tragen keins; für sie bleibt der Eintrag
+      // leer, damit die Zählung zu den Folien passt.
+      chrome-teile.push(html.elem("div", attrs: (class: "ts-chrome"),
+        if s.kind == "slide" {
+          html.frame(slide-chrome(here, total, geo, theme))
+        } else { [] }))
       parts.push({
         slide-counter.step()
         element-counter.update(0)
@@ -258,7 +268,17 @@
         // while the frame is laid out would be entered any more.
         html.elem("section", attrs: (class: "ts-slide"), {
           html.elem("div", attrs: (class: "ts-bg"),
-                    html.frame(slide-body(s, here, total, style, geo, theme)))
+                    html.frame(slide-body(s, here, total, style, geo, theme,
+                                         chrome: false)))
+          // Zweites Chrome, nur für die Druckansicht (Taste `p`). Dort steht
+          // jede Folie für sich auf ihrer Seite, es gibt keinen Wechsel — und
+          // die Ebene über der Bühne kann dort nicht mitwandern, weil die
+          // Folien untereinander stehen. Auf dem Schirm bleibt dieses hier
+          // ausgeblendet.
+          if s.kind == "slide" {
+            html.elem("div", attrs: (class: "ts-chromep"),
+                      html.frame(slide-chrome(here, total, geo, theme)))
+          }
           context {
             let tr = transition-state.get()
             let note = plain-text(note-state.get()).trim()
@@ -289,6 +309,7 @@
     if assets == "inline" { html.elem("style", runtime-css) } else { links.css }
     html.elem("div", attrs: (id: "ts-stage"), {
       parts.join()
+      html.elem("div", attrs: (id: "ts-chrome"), chrome-teile.join())
       html.elem("div", attrs: (id: "ts-fly"), [])
     })
     // Ein verzögerter Morph steht im ersten Schritt seiner Folie noch nicht.
