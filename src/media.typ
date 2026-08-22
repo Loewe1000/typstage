@@ -118,9 +118,23 @@
     box(width: width, height: height, clip: true, render(0.0)),
     at: at,
     extra: (fps: fps, loop: loop, pingpong: pingpong, enter: enter),
+    // Wie `t` über die Bilder verteilt wird, hängt am Abspielmodus:
+    //
+    // Beim reinen Schleifen ist `t = 1` derselbe Zustand wie `t = 0` — eine
+    // Bewegung, die sich schließt, ist nach einer vollen Runde wieder am
+    // Anfang. Das letzte Bild wäre also eine Kopie des ersten, und in der
+    // Schleife stünde dasselbe Bild zwei Bilder lang. Nachgemessen am
+    // wandernden Mäander: Bild 0 und Bild 29 waren pixelgleich, Bild 28 wich um
+    // 7% ab. Deshalb `i / frames` — das letzte Bild liegt knapp *vor* dem
+    // Rundenschluss.
+    //
+    // Bei `pingpong` ist `t = 1` dagegen der Wendepunkt und gehört dazu, ebenso
+    // beim einmaligen Abspielen, wo es der Endzustand ist.
     raw-frames: range(frames).map(i => box(
       width: width, height: height, clip: true,
-      render(if frames > 1 { i / (frames - 1) } else { 0.0 }),
+      render(if frames <= 1 { 0.0 }
+             else if loop and not pingpong { i / frames }
+             else { i / (frames - 1) }),
     )),
   )
 }
