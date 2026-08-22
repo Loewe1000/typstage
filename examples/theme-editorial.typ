@@ -103,8 +103,12 @@ Typografen, der sie im zwanzigsten Jahrhundert wiederentdeckte.
 
 // Ziel des Morphs, auf der unmittelbar folgenden Folie — kein Abschnitt
 // dazwischen, sonst bricht der Flug lautlos ab.
+// `match: "glyph"` erzwingt die zeichenweise Paarung. Von sich aus nimmt das
+// Paket sie nur, solange keine Seite mehr als 48 Zeichen hat — hier sind es 50,
+// und ohne die Angabe würde der ganze Block überblenden statt die Ziffern an
+// ihre neuen Plätze fliegen zu lassen. Genau darum geht es auf dieser Folie.
 #place(center + horizon,
-  morph(<kanon>, text(size: 1.7em, fill: t.accent)[
+  morph(<kanon>, match: "glyph", text(size: 1.7em, fill: t.accent)[
     Bund 2 · Kopf 3 · Außen 4 · Fuß 6 \
     dieselbe Reihe, jetzt mit Namen
   ]))
