@@ -150,39 +150,44 @@
     #v(0.6em)
 
     #embed(
-      width: 100%, height: 260pt,
+      width: 100%, height: 210pt,
       fallback: align(center + horizon,
         text(fill: t.muted)[Statusampel — im Browser interaktiv]),
       label: [Statusampel des Nachtbetriebs],
-      html: "<div style=\"height:100%;box-sizing:border-box;padding:14px 18px;"
-        + "background:#0f1319;color:#e6ebf2;font-family:-apple-system,"
-        + "'Helvetica Neue',Arial,sans-serif;display:flex;flex-direction:column;"
-        + "gap:10px;justify-content:center\">"
-        + "<style>"
-        + "@keyframes pulse{0%{opacity:1}50%{opacity:.45}100%{opacity:1}}"
-        + ".dot{width:13px;height:13px;border-radius:50%;flex:none}"
-        + ".row{display:flex;align-items:center;gap:12px;font-size:15px}"
-        + ".lbl{flex:1}.val{color:#8f9bab;font-variant-numeric:tabular-nums}"
+      // Kein `font-family`, keine Schriftgröße, keine Textfarbe: das Paket
+      // stellt dem Dokument den Grundstil des Vortrags voran. Alles hier ist
+      // in `em` bemaßt und wächst deshalb mit den Folien mit.
+      html: "<style>"
+        + "@keyframes puls{0%{opacity:1}50%{opacity:.45}100%{opacity:1}}"
+        + ".tafel{height:100%;box-sizing:border-box;padding:.7em .9em;"
+        + "display:flex;flex-direction:column;gap:.5em;justify-content:center;"
+        + "background:" + t.surface.to-hex() + ";border-radius:.4em;"
+        + "border:1px solid " + t.border.to-hex() + "}"
+        + ".zeile{display:flex;align-items:center;gap:.7em}"
+        + ".punkt{width:.62em;height:.62em;border-radius:50%;flex:none}"
+        + ".was{flex:1}"
+        + ".wert{color:" + t.muted.to-hex() + ";font-variant-numeric:tabular-nums}"
+        + ".stand{margin-top:.3em;font-size:.62em;color:" + t.muted.to-hex() + "}"
         + "</style>"
-        + "<div class=\"row\"><div class=\"dot\" style=\"background:#3ddc84\"></div>"
-        + "<div class=\"lbl\">Lastverteiler</div>"
-        + "<div class=\"val\">im Sollbereich</div></div>"
-        + "<div class=\"row\"><div class=\"dot\" style=\"background:#eab308;"
-        + "animation:pulse 1.6s ease-in-out infinite\"></div>"
-        + "<div class=\"lbl\">Wartungsfenster</div>"
-        + "<div class=\"val\" id=\"wf\">Suchindex — bis 03:30</div></div>"
-        + "<div class=\"row\"><div class=\"dot\" style=\"background:#3ddc84\"></div>"
-        + "<div class=\"lbl\">Fehlerbudget (Monat)</div>"
-        + "<div class=\"val\" id=\"fb\">38 % verbraucht</div></div>"
-        + "<div style=\"margin-top:6px;font-size:11px;color:#5b6675\">"
-        + "Stand: <span id=\"clk\">02:47</span> Uhr, simuliert</div>"
+        + "<div class=\"tafel\">"
+        + "<div class=\"zeile\"><div class=\"punkt\" style=\"background:#3ddc84\"></div>"
+        + "<div class=\"was\">Lastverteiler</div>"
+        + "<div class=\"wert\">im Sollbereich</div></div>"
+        + "<div class=\"zeile\"><div class=\"punkt\" style=\"background:#eab308;"
+        + "animation:puls 1.6s ease-in-out infinite\"></div>"
+        + "<div class=\"was\">Wartungsfenster</div>"
+        + "<div class=\"wert\">Suchindex — bis 03:30</div></div>"
+        + "<div class=\"zeile\"><div class=\"punkt\" style=\"background:#3ddc84\"></div>"
+        + "<div class=\"was\">Fehlerbudget (Monat)</div>"
+        + "<div class=\"wert\">38 % verbraucht</div></div>"
+        + "<div class=\"stand\">Stand: <span id=\"clk\">02:47</span> Uhr, simuliert</div>"
+        + "</div>"
         + "<script>(function(){"
         + "var m=167;var c=document.getElementById('clk');"
         + "setInterval(function(){m+=1;var hh=Math.floor(m/60)%24;"
         + "var mm=m%60;function p(n){return (n<10?'0':'')+n}"
         + "c.textContent=p(hh)+':'+p(mm);},1000);"
-        + "})()</script>"
-        + "</div>",
+        + "})()</script>",
     )
   ],
 

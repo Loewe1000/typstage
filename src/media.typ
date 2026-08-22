@@ -50,6 +50,40 @@
           controls: controls, radius: radius.pt(), enter: enter),
 )
 
+// Was jedem eingebetteten Dokument vorangestellt wird, damit es sich wie ein
+// Teil der Folie verhält statt wie eine Webseite in einem Loch.
+//
+// Zwei Zeilen, ohne die `height: 100%` im Dokument ins Leere greift: ein
+// Prozentmaß braucht eine Höhe am Elternteil, und `body` hat von Haus aus
+// keine. Der Rahmen ist dann so hoch wie sein Inhalt und klebt oben in der
+// Box — der Rest der angegebenen Höhe bleibt leer.
+//
+// Und die Schriftgröße: in einem gezoomten Rahmen ist ein CSS-Pixel genau ein
+// Punkt der Folie, dafür sorgt der Zoom des Runtimes. Also trägt die
+// Grundschrift dieselbe Zahl wie die des Vortrags, und alles, was darin in
+// `em` bemaßt ist, wächst mit den Folien mit. Ohne Zoom spannt der Rahmen
+// echte Bildschirmpixel auf — dann wäre dieselbe Zahl willkürlich, und es
+// bleibt bei der des Browsers.
+//
+// Alles steht *vor* dem Dokument, damit dessen eigenes `<style>` gewinnt.
+#let grundstil(doc, zoom, an) = {
+  if doc == none or not an { return doc }
+  let regeln = (
+    "html,body{height:100%;margin:0}",
+    "body{background:transparent}",
+  )
+  if zoom {
+    let farbe = if type(text.fill) == color { text.fill.to-hex() } else { "inherit" }
+    // `text.font` ist mal eine Zeichenkette, mal eine Liste — beides kommt vor.
+    let familien = if type(text.font) == str { (text.font,) } else { text.font }
+    let stapel = familien.map(f => "\"" + f + "\"") + ("system-ui", "sans-serif")
+    regeln.push("body{font-family:" + stapel.join(",")
+                + ";font-size:" + str(calc.round(text.size.pt(), digits: 2)) + "px"
+                + ";line-height:1.4;color:" + farbe + "}")
+  }
+  "<style>" + regeln.join("") + "</style>" + doc
+}
+
 /// Arbitrary web content in a sandboxed frame.
 ///
 /// `bridge` names the element so step jobs can be sent to it — that is how a
@@ -58,6 +92,10 @@
 ///
 /// `fallback` and `link` only take effect in paged output; in the browser the
 /// embedded document itself stands there.
+///
+/// `style` gives a document passed as `html` the deck's basic style: it fills
+/// the frame, is transparent, and carries the running text size. Switched off,
+/// the frame is a blank browser page again.
 #let embed(
   url: none,
   html: none,
@@ -67,6 +105,7 @@
   enter: "fade",
   bridge: none,
   zoom: true,
+  style: true,
   fallback: none,
   link: none,
   label: [Embedded content],
@@ -87,7 +126,8 @@
     "embed",
     box(width: width, height: height, fill: luma(92%)),
     at: at,
-    extra: (url: url, doc: html, enter: enter, bridge: bridge, zoom: zoom),
+    extra: (url: url, doc: grundstil(html, zoom, style), enter: enter,
+            bridge: bridge, zoom: zoom),
   )
 }
 }

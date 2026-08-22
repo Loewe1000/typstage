@@ -762,6 +762,27 @@ jedem Fenster denselben Ausschnitt zeigt.
 )
 ```]
 
+Ein Dokument, das mit `html` mitgegeben wird, bekommt den Grundstil des
+Vortrags vorangestellt: es füllt seinen Rahmen, ist durchsichtig und trägt die
+laufende Schrift -- Familie, Größe und Farbe an genau dieser Stelle des Decks.
+Das lohnt sich zu wissen, denn im gezoomten Rahmen ist ein CSS-Pixel genau ein
+Punkt der Folie. Wer sein Dokument in `em` bemaßt, dessen Inhalt wächst mit den
+Folien mit; wer `15px` schreibt, hat unabhängig von der Fenstergröße 15 Punkte
+neben einer 19-Punkt-Folienschrift stehen -- und wundert sich, warum die
+Einbettung zu klein wirkt.
+
+Der eigene Stil des Dokuments gewinnt, denn er steht dahinter. Wer den ganzen
+Grundstil nicht will, schaltet ihn mit `style: false` ab und bekommt wieder
+eine leere Browserseite.
+
+#warning[
+  `height: 100%` greift in einem eingebetteten Dokument nur, weil der Grundstil
+  `html` und `body` eine Höhe gibt. Ein Prozentmaß braucht eine Höhe am
+  Elternteil, und `body` hat von Haus aus keine. Ohne das ist der Rahmen so
+  hoch wie sein Inhalt, klebt oben in der Box, und `justify-content: center`
+  zentriert im Nichts.
+]
+
 Soll das eingebettete Dokument den Schritten der Folie folgen, bekommt es einen
 Namen -- und `bridge-job` legt für einen Schritt einen Auftrag an diesen Namen
 ab, den der Browser beim Erreichen des Schritts in den Rahmen zustellt:
