@@ -246,9 +246,16 @@
     theme-state.update(theme)
     let n = 0
     let pages = ()
+    // Welcher Abschnitt gerade laeuft. Die Kopfzeile im Buchstil zeigt ihn
+    // rechts, wie ein Schulbuch das Kapitel zeigt. Mitgezaehlt wird er hier in
+    // der Schleife und nicht ueber einen Zustand: die Reihenfolge steht ohnehin
+    // fest, und so bleibt es eine Zeile statt eines Zustands mehr.
+    let sect = none
     for s in all {
       if s.kind == "slide" { n += 1 }
-      pages.push(slide-counter.step() + slide-body(s, n, total, style, geo, theme))
+      if s.kind == "section" { sect = s.title }
+      pages.push(slide-counter.step()
+                 + slide-body(s, n, total, style, geo, theme, sect: sect))
     }
     pages.join(pagebreak(weak: true))
   } else {
@@ -258,9 +265,12 @@
     let n = 0
     let parts = ()
     let chrome-teile = ()
+    let sect = none
     for s in all {
       if s.kind == "slide" { n += 1 }
+      if s.kind == "section" { sect = s.title }
       let here = n
+      let hier-sect = sect
       // Fußzeile und Fortschritt kommen als eigene Ebene über die Bühne, nicht
       // in die Folie. Sonst führen sie beim Wechsel mit hinaus, während die der
       // nächsten hereinkommt — man sähe zwei Balken kreuzen statt einen wachsen.
@@ -268,7 +278,7 @@
       // leer, damit die Zählung zu den Folien passt.
       chrome-teile.push(html.elem("div", attrs: (class: "ts-chrome"),
         if s.kind == "slide" {
-          html.frame(slide-chrome(here, total, geo, theme))
+          html.frame(slide-chrome(here, total, geo, theme, sect: hier-sect))
         } else { [] }))
       parts.push({
         slide-counter.step()
@@ -284,7 +294,7 @@
         html.elem("section", attrs: (class: "ts-slide"), {
           html.elem("div", attrs: (class: "ts-bg"),
                     html.frame(slide-body(s, here, total, style, geo, theme,
-                                         chrome: false)))
+                                         chrome: false, sect: hier-sect)))
           // Zweites Chrome, nur für die Druckansicht (Taste `p`). Dort steht
           // jede Folie für sich auf ihrer Seite, es gibt keinen Wechsel — und
           // die Ebene über der Bühne kann dort nicht mitwandern, weil die
@@ -292,7 +302,8 @@
           // ausgeblendet.
           if s.kind == "slide" {
             html.elem("div", attrs: (class: "ts-chromep"),
-                      html.frame(slide-chrome(here, total, geo, theme)))
+                      html.frame(slide-chrome(here, total, geo, theme,
+                                              sect: hier-sect)))
           }
           context {
             let tr = transition-state.get()

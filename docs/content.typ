@@ -1386,12 +1386,22 @@ Die drei Bauformen der gewöhnlichen Folie:
   table.header([*Eintrag*], [*Werte*]),
   [`header`], [`"band"` -- farbiger Balken über die ganze Breite;
     `"plain"` -- der Titel steht auf dem Papier. Mit `rule-size` bekommt er
-    eine Linie darunter.],
+    eine Linie darunter. `"run"` -- eine Kopfzeile wie im Schulbuch:
+    Foliennummer links, laufender Abschnitt rechts, eine Haarlinie darunter,
+    und der Titel darunter. Sie liegt in derselben Ebene wie die Fußzeile und
+    wandert beim Blättern nicht mit.],
   [`footer`], [`"fraction"` (3 / 12), `"number"` (3), `"center"` (mittig)
     oder `"none"`; `footer-rule` legt eine Haarlinie darüber.],
   [`progress`], [`"bar"` (wachsender Balken unten), `"top"` (dasselbe oben),
     `"tick"` (wandernde Marke auf einer Schiene) oder `"none"`.],
 )
+
+`box` sagt, wie eine `card` gebaut ist. `"bar"` ist die Vorgabe: weiße Fläche,
+dünner Rahmen, farbiger Streifen mit versalem Etikett darüber. `"label"` kommt
+aus dem Schulbuch: keine Kante, keine Rundung, eine getönte Fläche, und die
+Beschriftung steht gemischtschriftlich in der Farbe im Kasten. Die Tönung
+folgt dabei der mitgegebenen Farbe, ein blau beschrifteter Kasten steht also
+auf Blau; ohne eigene Farbe gilt `surface`.
 
 Dazu kommen `surface` und `border` für die Karten, `inverted` für hell auf
 dunkel, `head-gap`, `foot-gap` und `band-height` für die Luft um den Rumpf --

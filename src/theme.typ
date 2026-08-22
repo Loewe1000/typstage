@@ -27,11 +27,29 @@
 /// Folienwechsel mit hinaus, während der nächste hereinkommt — man sähe zwei
 /// Balken kreuzen statt einen wachsen. Im PDF gibt es keinen Wechsel, dort
 /// gehört beides in die Seite.
-#let slide-chrome(n, total, geo, t) = {
+/// Wie hoch die Kopfzeile im Buchstil baut. Wird an zwei Stellen gebraucht:
+/// `slide-chrome` zeichnet sie, `slide-body` muss den Titel darunter setzen.
+#let lauf-hoehe(t, k) = if t.header == "run" { 27pt * k } else { 0pt }
+
+#let slide-chrome(n, total, geo, t, sect: none) = {
   let k = geo.scale
   let m = margins(geo)
   let inner = geo.width - m.left - m.right
   block(width: geo.width, height: geo.height, {
+    // Die Kopfzeile eines Schulbuchs: Seitenzahl links, Kapitel rechts, eine
+    // Haarlinie darunter. Sie gehoert zur Ebene ueber der Buehne und nicht in
+    // die Folie. Beim Blaettern bleibt sie stehen, wie die Fusszeile auch,
+    // sonst fuehre die Orientierung mit hinaus, die sie geben soll.
+    if t.header == "run" {
+      let zeile = text(size: 11.5pt * k, fill: t.muted, {
+        str(n)
+        if sect != none [ #h(1fr) #sect ]
+      })
+      place(top + left, dx: m.left, dy: m.top * 0.62,
+            block(width: inner, zeile))
+      place(top + left, dx: m.left, dy: m.top * 0.62 + 17pt * k,
+            rect(width: inner, height: 0.9pt * k, fill: t.rule-fill, stroke: none))
+    }
     // Fußzeile: die Zahl, wahlweise mit der Gesamtzahl, und eine Haarlinie
     // darüber.
     if t.footer-rule > 0pt {
@@ -64,7 +82,7 @@
   })
 }
 
-#let slide-body(s, n, total, style, geo, t, chrome: true) = block(
+#let slide-body(s, n, total, style, geo, t, chrome: true, sect: none) = block(
   width: geo.width, height: geo.height,
 {
   // Everything below is measured on the default canvas and scaled with it, so
@@ -98,8 +116,9 @@
     // die Höhe der Titelzeile gerechnet statt gemessen — messen hieße, den
     // Titel zweimal zu setzen, und der Abstand darunter fängt die paar Punkte
     // Unterschied ohnehin auf.
-    let kopf = if not titel { m.top } else if t.header == "band" { bar } else {
-      m.top + t.title-size * 1.35 * k + strich
+    let lauf = lauf-hoehe(t, k)
+    let kopf = if not titel { m.top + lauf } else if t.header == "band" { bar } else {
+      m.top + lauf + t.title-size * 1.35 * k + strich
     }
     let titel-text = text(
       ..font-args(t.title-font), size: t.title-size * k, weight: t.weight,
@@ -114,7 +133,7 @@
       // Dieselbe Falle wie im Merksatz: ohne gesetztes `above`/`below` läge
       // zwischen Titel und Linie zusätzlich der Absatzabstand, und die Linie
       // rutschte an den Inhalt statt an den Titel.
-      place(top + left, dx: m.left, dy: m.top, block(width: inner, {
+      place(top + left, dx: m.left, dy: m.top + lauf, block(width: inner, {
         block(above: 0pt, below: 0pt, titel-text)
         if t.rule-size > 0pt {
           block(above: t.title-size * 0.34 * k, below: 0pt,
@@ -129,7 +148,7 @@
     // `place`, nicht in den Fluss: `slide-chrome` liefert einen Block in voller
     // Folienhöhe. Im Fluss schöbe er alles darunter fort und seine
     // `bottom`-Anker bezögen sich auf sich selbst statt auf die Folie.
-    if chrome { place(top + left, slide-chrome(n, total, geo, t)) }
+    if chrome { place(top + left, slide-chrome(n, total, geo, t, sect: sect)) }
 
     place(top + left, dx: m.left, dy: kopf + t.head-gap * k,
       block(width: inner,

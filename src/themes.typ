@@ -308,8 +308,8 @@
 ) = {
   // Ein Tippfehler in einer dieser drei täte sonst schlicht nichts — die
   // Fußzeile bliebe weg, und niemand wüsste, warum.
-  assert(header in ("band", "plain"),
-         message: "typstage: theme(header: ..) is \"band\" or \"plain\"")
+  assert(header in ("band", "plain", "run"),
+         message: "typstage: theme(header: ..) is \"band\", \"plain\" or \"run\"")
   assert(footer in ("fraction", "number", "center", "none"),
          message: "typstage: theme(footer: ..) is \"fraction\", \"number\", "
            + "\"center\" or \"none\"")
@@ -378,7 +378,6 @@
     // eigenen Farbe und in eigener Größe; Fettung wäre das dritte Signal für
     // dieselbe Sache.
     weight: 600,
-    header: "plain",
     title-fill: rgb("#c1361c"),
     // Keine Linie unter dem Titel. Im Buch gehört die farbige Linie zur
     // Kopfzeile der Seite und nicht zur Überschrift; darunter gesetzt macht
@@ -386,8 +385,14 @@
     // Hierarchie in der Farbe, mehr braucht sie nicht.
     rule-size: 0pt,
     head-gap: 26pt,
-    footer: "fraction",
-    progress: "tick",
+    // Kopfzeile statt Fusszeile: Foliennummer links, Abschnitt rechts, eine
+    // Haarlinie darunter, genau wie die Kopfzeile einer Schulbuchseite. Damit
+    // faellt beides unten weg. Die Zahl steht schon oben, und der wandernde
+    // Fortschrittsstrich hat nichts erklaert, was die Kopfzeile nicht besser
+    // sagt: sie nennt das Kapitel, in dem man ist, nicht bloss den Bruchteil.
+    header: "run",
+    footer: "none",
+    progress: "none",
     box: "label",
     title-slide: lesson-title-slide,
     section: lesson-section,
