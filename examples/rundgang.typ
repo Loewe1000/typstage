@@ -206,14 +206,14 @@ vor, kann das danebengehen — dann bekommt es mit `pin` einen Namen.
   // `t` läuft von 0 bis 1, und Typst zeichnet jedes Bild einzeln. Hier wächst
   // eine Kurve von links nach rechts — man sieht dem Bild also an, dass es
   // gezeichnet wird und nicht bloß verschoben.
-  let w = 300pt
-  let h = 150pt
+  let w = 340pt
+  let h = 190pt
   let n = 60
   // `calc.round` liefert einen Fließkommawert; `range` will einen ganzen.
   let bis = calc.max(1, int(calc.round(n * t)))
   let punkte = range(bis + 1).map(i => (
     i / n * w,
-    h / 2 - 42pt * calc.sin(i / n * 3 * calc.pi),
+    h / 2 - 54pt * calc.sin(i / n * 3 * calc.pi),
   ))
   box(width: w, height: h, clip: true, {
     place(rect(width: w, height: h, fill: luma(94%), stroke: none))
@@ -229,15 +229,22 @@ vor, kann das danebengehen — dann bekommt es mit `pin` einen Namen.
 
 == Video und Daumenkino
 
+// Senkrecht in die Mitte: die beiden Kästen sind niedriger als der Rumpf, und
+// oben angeschlagen bliebe die untere Hälfte der Folie leer.
+#v(1fr)
+
 #side-by-side(
   split: (1fr, 1fr),
   // `poster` ist das Bild, das steht, solange nichts läuft — und im PDF, wo
   // gar nichts laufen kann. Ohne es bliebe dort ein leerer Kasten.
-  video("demo.mp4", width: 100%, height: 150pt, muted: true, loop: true,
+  // Genau das Seitenverhältnis des Clips (1280×720): sonst schneidet der
+  // Rahmen an den Seiten etwas ab — im Browser wie auf Papier, beide füllen
+  // den Kasten und beschneiden dafür.
+  video("demo.mp4", width: 340pt, height: 191pt, muted: true, loop: true,
         controls: false, radius: 6pt, poster: image("demo-poster.png")),
   flipbook(
     kurve,
-    frames: 30, fps: 24, width: 300pt, height: 150pt, pingpong: true,
+    frames: 30, fps: 24, width: 340pt, height: 190pt, pingpong: true,
     // Auf Papier gibt es keine Bewegung, also muss ein Bild genügen. `auto`
     // nähme das erste — hier wäre das ein Punkt am linken Rand. `still` setzt
     // stattdessen die fertige Kurve dorthin.
@@ -248,6 +255,8 @@ vor, kann das danebengehen — dann bekommt es mit `pin` einen Namen.
 #anim([Links ein Video, rechts ein Daumenkino: Bild für Bild von Typst
        gezeichnet und im Browser abgespielt.], at: "2-", enter: "fade-up")
 
+#v(1fr)
+
 == Ein fremdes Dokument einbetten
 
 // `embed` setzt beliebiges HTML in einen abgeschotteten Rahmen. Mit `bridge:`
@@ -256,11 +265,16 @@ vor, kann das danebengehen — dann bekommt es mit `pin` einen Namen.
 // Dokument drüben. Genau so treibt `typstage-geogebra` seine Applets.
 // Ein `+` am Zeilenanfang wäre in Typst ein Aufzählungspunkt und würfe den
 // Ausdruck zurück in den Textmodus. Die Klammern halten ihn im Code.
+// Alles in `em`: `embed` stellt dem Dokument den Grundstil des Vortrags voran,
+// und in einem gezoomten Rahmen ist ein CSS-Pixel genau ein Punkt der Folie.
+// Damit wächst die Lampe mit den Folien mit. Stünde hier `78px`, bliebe sie
+// auf dem Beamer so groß wie auf dem Laptop — also gemessen ein Drittel so
+// breit im Verhältnis zur Folie.
 #let ampel = (
-  "<style>body{margin:0;font:15px/1.4 system-ui;background:#f4f4f5;"
-  + "display:grid;place-items:center;height:100vh}"
-  + "#p{width:78px;height:78px;border-radius:50%;background:#a1a1aa;"
-  + "box-shadow:0 0 0 6px #e4e4e7;transition:background .45s}</style>"
+  "<style>body{display:grid;place-items:center}"
+  + "#p{width:3.4em;height:3.4em;border-radius:50%;background:"
+  + themes.plain.muted.to-hex() + ";box-shadow:0 0 0 .3em "
+  + themes.plain.border.to-hex() + ";transition:background .45s}</style>"
   + "<div><div id=p></div></div><script>"
   // Ohne diese Meldung bleibt der Rahmen stumm: der Runtime schaltet ihn erst
   // frei, wenn das Dokument sich gemeldet hat, und schickt ihm bis dahin nichts.
@@ -273,7 +287,7 @@ vor, kann das danebengehen — dann bekommt es mit `pin` einen Namen.
 
 #side-by-side(
   split: (1fr, 1fr),
-  embed(html: ampel, width: 100%, height: 190pt, bridge: "ampel", zoom: false),
+  embed(html: ampel, width: 100%, height: 190pt, bridge: "ampel"),
   stagger[
     - Der Rahmen bekommt mit `bridge: "ampel"` einen Namen.
     - `bridge-job` schickt ihm zu jedem Schritt ein Wörterbuch.
@@ -281,6 +295,9 @@ vor, kann das danebengehen — dann bekommt es mit `pin` einen Namen.
       Aufträge müssen also wiederholbar sein.
     - Das Dokument muss sich einmal melden (`postMessage({typstage: 1, ready: 1})`), sonst
       bekommt es nichts.
+    - Der Rahmen wird in Folieneinheiten vermessen und mitskaliert. Eine Seite,
+      die selbst umbricht, bekommt mit `zoom: false` stattdessen echte
+      Bildschirmpixel.
   ],
 )
 
