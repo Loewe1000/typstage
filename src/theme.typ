@@ -73,10 +73,21 @@
       place(top + left,
             rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
     } else if t.progress == "tick" {
-      let breite = 34pt * k
+      // Die Marke muss mindestens so breit sein wie ihr eigener Schritt, sonst
+      // springt sie über Lücken statt zu wandern. Bei neun Folien lag der
+      // Schritt bei 90 Punkten und die Marke bei 34 — zwischen zwei Ständen
+      // klafften also 56 Punkte, in denen nichts war. Mit dem Faktor 1,35
+      // überlappen zwei aufeinanderfolgende Stände, und die Bewegung liest
+      // sich als Wandern.
+      let breite = calc.max(34pt * k, geo.width * 1.35 / total)
+      // Von 0 bis ganz rechts über `total - 1` Schritte: die erste Folie steht
+      // am Anfang der Schiene, die letzte am Ende. Vorher lief die Rechnung
+      // über `n / total`, wodurch die Marke schon auf Folie eins ein Stück
+      // vorgerückt war und das Ende nie erreichte.
+      let schritte = calc.max(1, total - 1)
       place(bottom + left,
             rect(width: 100%, height: 3pt * k, fill: t.accent.lighten(78%), stroke: none))
-      place(bottom + left, dx: (geo.width - breite) * n / total,
+      place(bottom + left, dx: (geo.width - breite) * (n - 1) / schritte,
             rect(width: breite, height: 3pt * k, fill: t.accent, stroke: none))
     }
   })
