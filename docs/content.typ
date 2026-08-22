@@ -621,44 +621,27 @@ Ein `fr` *innerhalb* eines Rasters ist davon nicht betroffen:
 `anim(grid(rows: (1fr, 1fr), …))` verteilt das Raster unter sich selbst und
 weiß daher, wovon es einen Anteil nehmen soll.
 
-== Drei Grenzen bei verfolgten Elementen
+== Eine Grenze bei verfolgten Elementen
 
-Ein verfolgtes Element wird für sich gemessen, und daraus folgen drei Fälle, in
-denen die HTML-Ansicht vom PDF abweicht. Alle drei haben einen Ausweg von einer
-Zeile.
-
-*Prozentbreiten an einem inline verfolgten Element.* `morph` ist per Vorgabe
-inline und dann nur so breit wie sein Inhalt -- ein `width: 60%` darin zählt
-folglich von dieser Breite und kommt halbiert heraus. Wer eine Prozentbreite
-braucht, nimmt `inline: false` oder gleich ein absolutes Maß:
-
-#show-code(```typ
-#morph(<a>, rect(width: 60%), inline: false)   // 60% der Folie, wie im PDF
-```)
-
-*Eine `1fr`-Spalte neben einer `auto`-Spalte.* Ein blockweise verfolgtes Element
-bekommt den vollen Platz, den es angeboten bekommt -- das muss so sein, sonst
-hätte ein `align(center, …)` darin keinen Raum. In einer `auto`-Spalte ist der
-angebotene Platz aber das ganze Raster, und die `1fr`-Nachbarspalte wird auf
-null gedrückt. Eine feste Spaltenbreite statt `auto` löst es:
-
-#show-code(```typ
-#grid(columns: (1fr, 60pt), …, anim(…))   // statt (1fr, auto)
-```)
+*Sehr dicke Striche.* Eine Linie misst 0pt hoch -- ihre Farbe liegt außerhalb
+des Kastens. Damit ein flächenloses Element überhaupt erscheint, bekommt es eine
+Schrifthöhe Luft nach jeder Seite. Was dicker aufträgt, wird beschnitten: bei
+24pt Schrift und einem 60pt starken Strich bleiben von 91 Bildpunkten 72 übrig,
+nachgemessen. Solche Striche gehören in einen `block` oder `rect` mit eigener
+Höhe, dann gilt dessen Maß.
 
 #info[
-  Warum nicht anders: `measure(align(center, rect(80pt)), width: 400pt)` liefert
-  80pt, nicht 400 -- bei einer Blockgleichung genauso. Ob ein Inhalt den
-  angebotenen Platz füllen *will*, lässt sich also nicht messen. Beide Fälle
-  sähen im Messwert gleich aus und bräuchten entgegengesetzte Behandlung.
-]
+  Sonst braucht die Breite eines verfolgten Elements keine Aufmerksamkeit. Das
+  Paket sieht dem Inhalt an, ob er den angebotenen Platz ausfüllen will -- ein
+  `align` oder eine Blockgleichung will es, ein schmales Rechteck nicht --, und
+  richtet sich danach. Messen genügt dafür nicht:
+  `measure(align(center, rect(80pt)), width: 400pt)` liefert 80pt, nicht 400.
+  Deshalb wird nachgesehen statt gemessen.
 
-*Sehr dicke Striche in einem verfolgten Element.* Eine Linie misst 0pt hoch --
-ihre Farbe liegt außerhalb des Kastens. Damit sie überhaupt erscheint, bekommt
-ein flächenloses Element eine Schrifthöhe Luft nach jeder Seite. Was dicker
-aufträgt, wird beschnitten: bei 24pt Schrift und einem 60pt starken Strich
-bleiben von 91 Bildpunkten 72 übrig, nachgemessen. Solche Striche gehören in
-einen `block` oder `rect` mit eigener Höhe, dann gilt dessen Maß.
+  Praktisch heißt das: `align(center, …)` in einem `anim` zentriert wie im PDF,
+  und ein verfolgtes Element in einer `auto`-Rasterspalte lässt die
+  `1fr`-Nachbarspalte stehen, statt sie auf null zu drücken.
+]
 
 = Etwas vorführen statt behaupten
 

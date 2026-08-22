@@ -177,34 +177,6 @@
     or c.func() in (leer, parbreak))
 }
 
-/// Will der Rumpf die angebotene Breite ausfüllen?
-///
-/// Der Unterschied lässt sich nicht messen: `measure(align(center, rect(80pt)),
-/// width: 400pt)` liefert 80pt, nicht 400 — eine Blockgleichung genauso. Beide
-/// brauchen aber den vollen Platz, sonst hat das `align` keinen Raum zum
-/// Zentrieren und die Gleichung keine Mitte.
-///
-/// Deshalb wird hier nicht gemessen, sondern nachgesehen. Ein paar Ebenen tief,
-/// denn `text(…)[$ x $]` verpackt die Gleichung in ein `styled` mit `child`,
-/// und ein Absatz in ein `sequence` mit `children` — auf der obersten Ebene
-/// steht selten das, worauf es ankommt.
-///
-/// Davon hängt zweierlei ab: ob ein verfolgtes Element in einer
-/// `auto`-Rasterspalte die ganze Breite an sich zieht (und damit die
-/// `1fr`-Nachbarspalte auf null drückt), und ob Rahmen und Region gleich breit
-/// sein müssen, damit der Rumpf nicht neben seiner Marke landet.
-#let will-fuellen(body, tiefe: 4) = {
-  if body == none or tiefe <= 0 { return false }
-  let f = body.func()
-  if f == align { return true }
-  if f == math.equation and body.at("block", default: false) { return true }
-  if body.has("child") { return will-fuellen(body.child, tiefe: tiefe - 1) }
-  if body.has("children") {
-    return body.children.any(c => will-fuellen(c, tiefe: tiefe - 1))
-  }
-  false
-}
-
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
            width: auto) = {
   // The `box` has to sit around the *whole* construction, not inside it:
@@ -291,14 +263,14 @@
         justify: par.justify, first-line-indent: par.first-line-indent,
         hanging-indent: par.hanging-indent,
       )
-      // Nur was füllen *will*, bekommt den vollen Platz. Alles andere bleibt so
-      // breit wie sein Inhalt — sonst zieht ein verfolgtes Element in einer
-      // `auto`-Rasterspalte die ganze Breite an sich und drückt die
-      // `1fr`-Nachbarspalte auf null.
-      let fuellt = will-fuellen(body)
-      let w = if inline or width != auto { m.width }
-              else if fuellt { room }
-              else { m.width }
+      // Inline so schmal wie sein Inhalt, blockweise so breit wie der Platz.
+      //
+      // Für blockweise Elemente muss es der Platz sein, und `measure` kann das
+      // nicht ersetzen: `measure(align(center, rect(80pt)), width: 400pt)`
+      // liefert 80pt, nicht 400 — genauso eine Blockgleichung. Wer die
+      // gemessene Breite nähme, nähme dem `align` den Raum zum Zentrieren und
+      // der Gleichung ihre Mitte.
+      let w = if inline or width != auto { m.width } else { room }
       // Ein Element ohne Fläche — eine Linie misst 0pt hoch, ihre Farbe liegt
       // außerhalb des Kastens — bekommt eine Marke ohne Fläche, und die
       // überspringt der Runtime (`if (!r.width && !r.height) return;`). Der
@@ -316,18 +288,14 @@
       // dort ein zweites Mal auf — aus `p%` wird `p²%`. Nur `100%` ist
       // Fixpunkt, deshalb blieb es lange unbemerkt; `height: 50%` kam als 25%
       // heraus, `morph` mit `width: 60%` als 36%.
-      // Die Höhe ist immer die echte Region, damit `height: 50%` gegen den
-      // richtigen Bezug auflöst. Bei der Breite hängt es davon ab, ob der Rumpf
-      // sich selbst mittig setzt:
-      //
-      // - Tut er es, müssen Rahmen und Region gleich breit sein. Sonst zentriert
-      //   er sich in der breiteren Region und wird neben seiner Marke gemalt —
-      //   nachgemessen 293pt daneben, genau die halbe Differenz.
-      // - Tut er es nicht, steht er links und liegt damit im Rahmen; dann darf
-      //   die Region die volle Breite haben, und `width: 50%` löst richtig auf
-      //   statt als 25% herauszukommen.
+      // Breite wie der Rahmen, Höhe wie die echte Region. Die Höhe muss die
+      // echte sein, sonst löst `height: 50%` gegen den gemessenen Wert auf und
+      // kommt als 25% heraus. Die Breite darf es *nicht* sein: ist die Region
+      // breiter als der Rahmen, richtet Typst den Inhalt darin aus — eine
+      // Blockgleichung landete 293pt neben ihrer Marke, genau die halbe
+      // Differenz.
       let region = (
-        width: if fuellt { w } else { room },
+        width: w,
         height: if available.height == float("inf") { auto } else { available.height },
       )
       sprites.update(a => a + ((kind: kind, at: selected, extra: extra, body: body,
