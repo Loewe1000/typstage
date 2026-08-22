@@ -1,4 +1,4 @@
-// Der Democlip für examples/rundgang.typ — 36 Bilder, 12 fps, nahtlos.
+// Der Democlip für examples/tour.typ: 36 Bilder, 12 fps, nahtlos.
 //
 //   typst compile demo.typ "bild/{n}.png" --ppi 288
 //   ffmpeg -framerate 12 -i bild/%d.png … demo.mp4
@@ -24,6 +24,6 @@
       text(size: 34pt, weight: "bold", tracking: -0.5pt)[typstage])
     #place(bottom + center, dy: -18pt,
       text(size: 9pt, fill: rgb("#8fa0b4"), tracking: 1.2pt)[
-        EINE QUELLE · DREI AUSGABEN])
+        ONE SOURCE · THREE OUTPUTS])
   ]
 }

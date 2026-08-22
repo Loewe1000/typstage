@@ -1,245 +1,432 @@
-// themes.default — der Vortrag im hellen Saal.
+// themes.default: a talk in a bright room.
 //
-// Zeigt: flipbook (ein Mäander wandert flussabwärts), stagger in
-// Stücke-Form, morph mit pin (dieselbe Größe an drei Stellen einer
-// Formel), eine titellose Folie, drei Übergangsarten, ein anim mit
-// ausdrücklichem exit, Sprechernotizen.
+// "How GPS Knows Where You Are": ranging, trilateration, and the fourth
+// satellite that solves for time instead of place.
 //
 //   typst compile theme-default.typ theme-default.html --format html --features html
 //   typst compile theme-default.typ theme-default.pdf
 
 #import "@schule/typstage:0.1.0": *
 
-// Ein Theme ist ein Wörterbuch — man kann seine Farben auch selbst benutzen.
+// A theme is a dictionary, so its colours are available to our own drawings.
 #let t = themes.default
 
-// Farben für den Mäander, an das Theme angelehnt: Wasser in Blau, Ufer in
-// Sand, Prallhang (Erosion) im Akzent des Themes, Gleithang (Ablagerung) in
-// einem ruhigen Grün.
-#let wasser = rgb("#3a6ea5")
-#let ufer = rgb("#e9dab3")
-#let ablagerung-farbe = rgb("#7c9464")
+// Three meaning colours, fixed once here and handed to every drawing and card
+// that needs them. Nothing below reaches for a colour of its own.
+#let ring = rgb("#3a6ea5") // a satellite and the range ring it draws
+#let sky = rgb("#eef2f7") // the panel the map view sits on
+#let fix = t.accent // a candidate position, and the fix
+#let faster = rgb("#6f8f57") // a clock that runs fast (gravity)
+#let slower = rgb("#8a5a9e") // a clock that runs slow (speed)
 
 #show: presentation.with(
   theme: t,
-  title: [Wie ein Fluss sein Bett gräbt],
-  subtitle: [Erosion, Transport, Ablagerung — und wie ein Mäander wandert],
-  author: [Institut für Geomorphologie],
-  date: datetime(year: 2026, month: 3, day: 12),
+  title: [How GPS Knows Where You Are],
+  subtitle: [Four satellites, three unknowns, and a clock nobody trusts],
+  author: [Institute of Geodesy],
+  date: datetime(year: 2026, month: 4, day: 17),
   transition: "slide",
 )
 
-= Was Wasser mit Gestein macht
 
-== Ein Fluss, drei Vorgänge
+// ═══════════════════════════════════════════════════════════════════════════
+//  The map view
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// One drawing serves two slides: the construction on "Each range is a ring"
+// and the flipbook on "A millisecond is three hundred kilometres". That reuse
+// is the point. When the picture comes back with the rings pulled apart, the
+// audience already knows what it is looking at and can spend its attention on
+// what changed.
+//
+// Everything is in plain numbers of points and multiplied by `1pt` where it is
+// placed. `calc.sqrt` will not take a length, and carrying units through the
+// geometry below would mean converting back and forth at every step.
+
+#let map-w = 372.0
+#let map-h = 232.0
+
+// Three satellites and the receiver. The receiver's position is chosen first;
+// the ranges then follow from it, so the rings meet exactly by construction
+// and no radius has to be tuned by hand.
+//
+// The positions are picked so that each ring stays mostly inside the frame and
+// visibly *encircles* its own satellite. A first attempt put the satellites in
+// the corners; the ranges were then over 130pt in a 200pt frame, only a shallow
+// arc of each ring survived the clipping, and the drawing read as three loose
+// curves that happened to cross rather than as three distances.
+#let sats = ((108.0, 68.0), (268.0, 70.0), (180.0, 189.0))
+#let me = (187.0, 117.0)
+
+#let dist(a, b) = calc.sqrt(
+  calc.pow(b.at(0) - a.at(0), 2) + calc.pow(b.at(1) - a.at(1), 2),
+)
+#let ranges = sats.map(s => dist(s, me))
+
+// Where two rings cross. `side` picks which of the two crossings: +1 is the
+// one the receiver is standing on, -1 the other candidate.
+//
+// Computed rather than written down: the second crossing of rings 1 and 2 is
+// what the middle panel of the construction marks, and if a satellite is ever
+// moved, a hand-copied coordinate would quietly point at nothing.
+#let cross(a, ra, b, rb, side) = {
+  let dx = b.at(0) - a.at(0)
+  let dy = b.at(1) - a.at(1)
+  let d = calc.sqrt(dx * dx + dy * dy)
+  let m = (d * d + ra * ra - rb * rb) / (2 * d)
+  let h = calc.sqrt(calc.max(ra * ra - m * m, 0.0))
+  let (ux, uy) = (dx / d, dy / d)
+  (a.at(0) + m * ux - side * h * uy, a.at(1) + m * uy + side * h * ux)
+}
+
+#let ghost = cross(sats.at(0), ranges.at(0), sats.at(1), ranges.at(1), -1)
+
+// A dot at `p`, either hollow (a candidate) or filled (the answer). Called
+// `mark`, not `dot`: a `#let dot` at the top of a deck shadows Typst's own
+// `dot` inside every equation further down, and `c dot.op Delta t` then fails
+// with "cannot access fields on user-defined functions".
+#let mark(p, solid: false) = place(
+  dx: (p.at(0) - 6.5) * 1pt,
+  dy: (p.at(1) - 6.5) * 1pt,
+  circle(radius: 6.5pt, fill: if solid { fix } else { none }, stroke: 2.2pt + fix),
+)
+
+/// The panel itself.
+///
+/// `rings` is how many satellites are drawn, `bias` is added to every radius.
+/// That single number is the whole clock story: at `0.0` the rings meet, and
+/// at anything else they do not.
+#let map-frame(rings: 3, bias: 0.0, candidates: (), fix-at: none, readout: none) = box(
+  width: map-w * 1pt,
+  height: map-h * 1pt,
+  clip: true,
+  {
+    place(rect(width: 100%, height: 100%, fill: sky, stroke: none))
+    for i in range(rings) {
+      let s = sats.at(i)
+      let r = ranges.at(i) + bias
+      if r > 0 {
+        place(
+          dx: (s.at(0) - r) * 1pt,
+          dy: (s.at(1) - r) * 1pt,
+          circle(radius: r * 1pt, fill: none, stroke: 1.6pt + ring),
+        )
+      }
+    }
+    for p in candidates { mark(p) }
+    if fix-at != none { mark(fix-at, solid: true) }
+    // The satellites go on top of their own rings: a ring passing through the
+    // marker of another satellite would read as the two touching.
+    for i in range(rings) {
+      let s = sats.at(i)
+      place(
+        dx: (s.at(0) - 8) * 1pt,
+        dy: (s.at(1) - 8) * 1pt,
+        circle(
+          radius: 8pt,
+          fill: ring,
+          stroke: 2.5pt + sky,
+          align(center + horizon, text(size: 9pt, weight: "bold", fill: white, str(i + 1))),
+        ),
+      )
+    }
+    if readout != none { place(bottom + left, dx: 11pt, dy: -10pt, readout) }
+  },
+)
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+
+= Distance from a clock
+
+== What a satellite actually sends
 
 #speaker-note[
-  Die Faustregel in der ersten Einblendung ist absichtlich zu einfach — sie
-  soll kurz stehen und dann von der richtigen Erklärung abgelöst werden.
+  The last point is the one people miss: the satellite is not answering a
+  question. It is shouting into the dark, and the arithmetic happens entirely
+  in the listener's pocket.
 ]
 
+#stagger(
+  [#text(fill: t.strong, weight: "bold")[Where I am.] Its own orbit, good to a
+   metre or two, refreshed every couple of hours.],
+  [#text(fill: t.strong, weight: "bold")[What time it is.] The instant the
+   message left, read off an atomic clock on board.],
+  [Subtract the second from your own clock and you have a travel time. Multiply
+   by the speed of light and you have a distance: a *range*.],
+)
+
+#v(0.9em)
+
+#anim(
+  callout(title: [Worth noticing])[
+    Nothing in the broadcast is about you. The satellite does not know you are
+    listening, and every receiver on the planet reads the same words.
+  ],
+  enter: "rise",
+)
+
+== Each range is a ring
+
+#speaker-note[
+  Say out loud that this is a flat slice. Spheres come on the next slide.
+  Nobody is confused by the simplification if it is named.
+]
+
+#v(1fr)
+
+// Two `alternatives` on the same `start:`. The picture and the sentence about
+// it change together, on one step. Written as one alternatives each rather
+// than three anims, because the whole claim is that it is *the same picture*
+// with one more constraint: same box, same place, nothing around it moving.
 #side-by-side(
-  split: (1fr, 1fr),
-  card(title: [Der Kreislauf])[
-    Ein Fluss nimmt Material auf, trägt es fort und legt es wieder ab. Alle
-    drei Vorgänge laufen zu jeder Zeit — nur an verschiedenen Stellen.
-
-    Im Oberlauf überwiegt das Aufnehmen, im Unterlauf das Ablegen.
-  ],
-  callout(title: [Merke])[
-    Entscheidend ist die *Fließgeschwindigkeit*: Sie bestimmt, ob ein Korn
-    liegen bleibt oder mitgeht.
-
-    Sie hängt am Gefälle, an der Wassermenge und an der Rauheit des Bettes.
-  ],
+  split: (auto, 1fr),
+  alternatives(
+    start: 1,
+    align: center + horizon,
+    map-frame(rings: 1),
+    map-frame(rings: 2, candidates: (me, ghost)),
+    // The rejected candidate stays on the panel, still hollow: the sentence
+    // says the third ring passes through one of *them*, and it can only say
+    // that while both are still visible.
+    map-frame(rings: 3, candidates: (ghost,), fix-at: me),
+  ),
+  text(size: 0.78em, alternatives(
+    start: 1,
+    align: left + horizon,
+    [One range. You are somewhere on this ring, and the ring says nothing about
+     where.],
+    [A second ring crosses the first in *two* places. Two candidates, no way to
+     choose.],
+    [A third ring passes through exactly one of them. That point is you.],
+  )),
 )
 
-#anim([Vorläufige Faustregel: mehr Gefälle heißt mehr Kraft.],
-      at: "2-2", enter: "fade-up", exit: "fade-left")
+#v(0.7em)
 
-#anim([Entscheidend ist allein die Geschwindigkeit am Grund.],
-      at: "3-", enter: "fade-up")
+#align(center, text(size: 0.62em, fill: t.muted)[
+  A flat slice through the problem. Schematic, not to scale.
+])
 
-== Die Korngrößen
+#v(1fr)
 
-#transition("push")
+== Two answers, one of them absurd
 
-#tiles(
-  card(number: 1, title: [Ton])[unter 0,002 mm — schwebt, sinkt kaum],
-  card(number: 2, title: [Sand])[0,063 bis 2 mm — springt über den Grund],
-  card(number: 3, title: [Kies])[über 2 mm — rollt, und nur bei Hochwasser],
-)
+// A quiet slide between the construction and the flipbook. It carries the lift
+// from flat to solid, which is a step of *understanding* rather than of
+// sequence. An animation here would only invite the audience to watch instead
+// of think.
+
+#v(1fr)
+
+Lift that into three dimensions and every ring becomes a sphere.
+
+#v(0.5em)
+
+Two spheres meet in a circle. Three spheres meet that circle in two points.
+One of those points sits thousands of kilometres above the ground, travelling
+at a speed nothing on Earth travels at. Throw it away.
 
 #v(1em)
 
-#anim([Deshalb liegt im Oberlauf Geröll und im Mündungsdelta Ton.],
-      at: "4-", enter: "fade-up")
-
-== Was ein Fluss unterwegs sortiert
-
-#transition("uncover")
-
-// Stücke-Form: drei eigenständige Stücke, keine Liste. Jedes erscheint einen
-// Schritt nach dem vorigen, ganz ohne Nummerierung von Hand.
-#stagger(
-  [#text(fill: t.strong, weight: "bold")[Oberlauf] — nur was zu schwer ist,
-   um mitzugehen, bleibt liegen: Blöcke und grobes Geröll.],
-  [#text(fill: t.strong, weight: "bold")[Mittelstrecke] — Sand wandert
-   sprungweise über den Grund: heben, fallen, wieder heben.],
-  [#text(fill: t.strong, weight: "bold")[Mündung] — erst im ruhigen Wasser
-   des Deltas sinkt der feine Ton endgültig zu Boden.],
-)
-
-#v(1.2em)
-
-#anim(callout(title: [Deshalb])[
-  Ein Flussbett ist eine Sortiermaschine. Wer die Korngröße an einer Stelle
-  kennt, weiß ungefähr, wie schnell das Wasser dort war.
-], at: "4-", enter: "rise")
-
-= Wie ein Mäander wandert
-
-== Der Mäander wandert flussabwärts
-
-#transition("wipe")
-
-#speaker-note[
-  Beim Abspielen darauf hinweisen, dass die Kurve nicht neu gezeichnet wird —
-  dieselbe Welle verschiebt sich nur nach rechts. Genau das tut ein Mäander
-  auch, nur über Jahre statt über Sekunden.
+#card(title: [So we are finished])[
+  Three satellites, three ranges, one position. The receiver needs no
+  transmitter, no subscription and no help from the ground.
 ]
 
-// `render` bekommt einen Bruchteil `frac` von 0 bis 1 und zeichnet damit ein
-// Einzelbild: eine sinusförmige Flusslinie, deren Phase mit `frac`
-// verschoben wird. Nach genau einer Wellenlänge Verschiebung sieht Bild 1
-// wieder aus wie Bild 0 — die Schleife ist damit nahtlos.
-#let render-maeander(frac) = {
-  let w = 300pt
-  let h = 190pt
-  let amp = 38pt
-  let periode = w * 0.55
-  let versatz = frac * periode
-  let n = 90
-  // Etwas breiter als sichtbar zeichnen, damit am Rand keine Lücke entsteht —
-  // `flipbook` schneidet ohnehin auf `width`/`height` zu.
-  let rand = periode
-  let xs = range(n + 1).map(i => -rand + i / n * (w + 2 * rand))
-  let punkte = xs.map(x => (
-    x, h / 2 + amp * calc.sin((x - versatz) / periode * 2 * calc.pi),
-  ))
-  let sichtbar = punkte.filter(p => p.at(0) >= 0pt and p.at(0) <= w)
-  let ys = sichtbar.map(p => p.at(1))
-  // Eigenes Zuschneiden: Im PDF (ein Einzelbild, `still`) legt `flipbook`
-  // selbst keinen Rahmen darüber — ohne `clip: true` liefe die Welle über
-  // ihr Sandrechteck hinaus.
-  box(width: w, height: h, clip: true, {
-    place(rect(width: w, height: h, fill: ufer, stroke: none))
-    place(curve(
-      stroke: 6pt + wasser,
-      curve.move(punkte.first()),
-      ..punkte.slice(1).map(p => curve.line(p)),
-    ))
-    // Prallhang (Außenkurve, Erosion) und Gleithang (Innenkurve, Ablagerung).
-    //
-    // Der Scheitel wird *gerechnet*, nicht gesucht. Über die sichtbare Breite
-    // passen knapp zwei Wellenberge; wer den höchsten Abtastpunkt nimmt, hängt
-    // am globalen Maximum — und welcher Berg das gerade ist, wechselt beim
-    // Wandern. Gemessen sprang der Punkt zwischen 65pt und 346pt hin und her,
-    // statt zu wandern.
-    //
-    // Aus der Phase folgt er dagegen unmittelbar: ein Maximum liegt bei
-    // `versatz + periode * (1/4 + k)`, ein Minimum ein halbes Periodenmaß
-    // weiter. Gesetzt wird auf *jeden* sichtbaren Scheitel — so wandert einer
-    // rechts hinaus, während links der nächste hereinkommt.
-    // `aussen` sagt, wo bei diesem Scheitel die Außenseite der Schleife liegt:
-    // +1 unten, -1 oben. Beide Punkte sitzen am *selben* Scheitel — genau das
-    // sagt die Folie ja: an jeder Schleife wird gleichzeitig abgetragen und
-    // abgelagert, nur an verschiedenen Ufern.
-    let scheitel(anteil, aussen) = {
-      for k in range(-1, 3) {
-        let x = versatz + periode * (anteil + k)
-        if x >= 0pt and x <= w {
-          let y = h / 2 + amp * calc.sin((x - versatz) / periode * 2 * calc.pi)
-          place(dx: x - 5pt, dy: y + aussen * 9pt - 5pt,
-                circle(radius: 5pt, fill: t.accent))
-          place(dx: x - 5pt, dy: y - aussen * 9pt - 5pt,
-                circle(radius: 5pt, fill: ablagerung-farbe))
-        }
-      }
-    }
-    scheitel(0.25, 1)
-    scheitel(0.75, -1)
-  })
+#v(1fr)
+
+
+= The clock in your pocket
+
+== A millisecond is three hundred kilometres
+
+#speaker-note[
+  Let the loop run twice before saying anything. The rings only agree for a
+  fraction of a second each time round, and that is the whole slide: agreement
+  is a knife-edge in one number nobody has measured.
+]
+
+// The bias sweeps through zero and back, twice per loop. Written from a sine
+// so that frame 0 and the frame after the last are the same state. `flipbook`
+// places its frames at `i / frames` when looping, which lands just short of
+// the full turn and closes the loop without a repeated frame.
+//
+// A still picture cannot make this argument. It can show rings that meet or
+// rings that do not; it cannot show that the difference between the two is one
+// continuous number passing through zero.
+#let clock-frame(frac) = {
+  let ms = 0.5 * calc.sin(2 * calc.pi * frac)
+  let agree = calc.abs(ms) < 0.03
+  // Two decimals by hand: `str(calc.round(0.5, digits: 2))` gives "0.5", and a
+  // readout whose width jumps around draws the eye to the wrong thing.
+  let n = int(calc.round(calc.abs(ms) * 100))
+  let sign = if agree { "" } else if ms > 0 { "+" } else { "\u{2212}" }
+  let label = sign + "0." + (if n < 10 { "0" + str(n) } else { str(n) }) + " ms"
+  map-frame(
+    rings: 3,
+    bias: 46.0 * ms,
+    fix-at: if agree { me } else { none },
+    readout: box(
+      fill: white,
+      inset: (x: 7pt, y: 4pt),
+      radius: 4pt,
+      text(size: 0.45em, fill: if agree { fix } else { t.muted },
+           "your clock: " + label),
+    ),
+  )
 }
 
-// `auto` für die Zeichnung, `1fr` für den Text: das Daumenkino ist 300pt breit
-// und bekommt genau so viel, der Rest gehört den Stichpunkten. Mit zwei
-// `fr`-Anteilen bliebe links Leerlauf und rechts wäre es unnötig eng.
-// Senkrecht in die Mitte des Rumpfs: die Zeichnung ist niedriger als die
-// Folie, und oben angeschlagen sähe sie aus, als fehlte darunter etwas.
 #v(1fr)
 
 #side-by-side(
   split: (auto, 1fr),
-  flipbook(
-    render-maeander,
-    frames: 30, fps: 15, width: 300pt, height: 190pt, loop: true,
-  ),
-  [
-    #text(fill: t.accent, weight: "bold")[● Prallhang] — die Außenseite
-    trägt ab.
+  flipbook(clock-frame, frames: 26, fps: 12, width: map-w * 1pt, height: map-h * 1pt,
+           still: clock-frame(0.25)),
+  text(size: 0.78em)[
+    Your phone keeps time with a quartz crystal. It is wrong by something like
+    a millisecond.
 
-    #v(0.4em)
+    #statement(size: 1.1em, color: fix)[$1 "ms" times c approx 300 "km"$]
 
-    #text(fill: ablagerung-farbe, weight: "bold")[● Gleithang] — die
-    Innenseite lagert ab.
-
-    #v(0.6em)
-
-    Beides passiert an jeder Schleife gleichzeitig und ständig. Darum bleibt
-    die Schleife nicht stehen: Sie wandert als Ganzes flussabwärts.
+    The same error goes into all three ranges at once, so all three rings grow
+    or shrink together. Then no point lies on all of them.
   ],
 )
 
 #v(1fr)
 
-== Kritische Geschwindigkeiten
-
-#transition("cube")
+== Three unknowns
 
 #speaker-note[
-  Hier nicht vorgreifen: Die zweite Ungleichung kommt erst auf der nächsten
-  Folie, als derselbe Flug rückwärts gelesen.
+  This slide is only here so the next one can happen. Read the tuple aloud and
+  move on.
 ]
 
-// Quelle des Morphs. Die drei `v` sehen identisch aus — ohne Namen würde der
-// Formabgleich sie nach *Position* paaren, und auf der nächsten Folie stehen
-// sie in umgekehrter Reihenfolge. `pin` gibt jedem `v` eine feste Identität,
-// die der Flug verfolgt statt der bloßen Form.
-#statement(color: t.accent)[
-  #morph(<schwellen>, $ #pin(<erosion>, $v_E$) > #pin(<transport>, $v_T$)
-                        > #pin(<ablagerung>, $v_A$) $)
+#v(1fr)
+
+// Source of the morph. The three coordinates are pinned so that each flies to
+// its own place on the next slide instead of to whichever letter happens to be
+// nearest. The tuple grows a fourth entry, so everything after `x` shifts.
+#statement(color: fix)[
+  #morph(<unknowns>, $ (#pin(<x>, $x$), #pin(<y>, $y$), #pin(<z>, $z$)) $)
 ]
 
-#anim([Ein ruhendes Korn braucht mehr Schwung als ein bereits bewegtes: Die
-       Schwelle zum *Losreißen* $v_E$ liegt höher als die zum
-       *Weitertragen* $v_T$, und die zum *Liegenbleiben* $v_A$ liegt am
-       tiefsten.], at: "2-", enter: "fade-up")
+#v(0.4em)
 
-// Eine Folie ohne Titelbalken: `== #h(0pt)` gibt ihr keine Überschrift, der
-// Rumpf bekommt dafür die ganze Höhe.
-== #h(0pt)
+// The equation flies too, and it is the more important of the two: the claim
+// is that the next slide shows the *same* equation, not a new one.
+#align(center, morph(<ranges>, inline: false, $
+  sqrt((x - x_i)^2 + (y - y_i)^2 + (z - z_i)^2) = c dot.op Delta t_i
+$))
 
-#transition("zoom")
+#v(0.6em)
 
-// Dieselben drei Namen, jetzt in umgekehrter Reihenfolge: Ein Hochwasser
-// fließt langsamer aus, als es kam. Es unterschreitet zuerst $v_E$ — ohne
-// neue Körner zu lösen, aber die alten trägt es weiter, bis es zuletzt
-// unter $v_A$ fällt und auch sie liegen lässt. Dank `pin` fliegt jedes `v`
-// zu seinem eigenen Platz, nicht zu dem, das zufällig dort steht, wo es
-// hinkommt.
-#place(center + horizon,
-       morph(<schwellen>, text(size: 2.2em, fill: t.accent)[
-         $ #pin(<ablagerung>, $v_A$) < #pin(<transport>, $v_T$)
-           < #pin(<erosion>, $v_E$) $
-       ]))
+// `at: 2`, not `auto`. A morph does not consume a step. It has to stand from
+// the moment the slide is entered, or there would be nothing for the previous
+// slide to fly to, so `auto` here would resolve to step 1 and the sentence
+// would arrive together with the formula it comments on.
+//
+// Held to 76% of the width: at full width the sentence broke after "is the"
+// and left "truth." alone on a centred second line.
+#anim(align(center, block(width: 76%, text(size: 0.8em)[
+  Three satellites, #box($i = 1, 2, 3$): three equations, three unknowns, and
+  a solution: as long as #box($Delta t_i$) is the truth.
+])), at: 2)
+
+#v(1fr)
+
+== Four unknowns
+
+#speaker-note[
+  The turn of the talk. Let the flight finish before the sentence: the point is
+  that only one thing changed, and it is not the geometry.
+]
+
+#v(1fr)
+
+// Target of the morph. `b` has no pin and no counterpart, so it simply appears
+// where the others come to rest, which is exactly the reading we want: the
+// tuple did not change, it grew.
+#statement(color: fix)[
+  #morph(<unknowns>, $ (#pin(<x>, $x$), #pin(<y>, $y$), #pin(<z>, $z$), b) $)
+]
+
+#v(0.4em)
+
+#align(center, morph(<ranges>, inline: false, $
+  sqrt((x - x_i)^2 + (y - y_i)^2 + (z - z_i)^2) = c dot.op (Delta t_i - b)
+$))
+
+#v(0.6em)
+
+// A step of its own, after the flight has landed: the whole point is that only
+// the unknowns changed, and a sentence appearing mid-flight would compete with
+// the one thing worth watching.
+#anim(
+  callout(title: [The fourth satellite])[
+    It does not sharpen your position. It solves for #box($b$), the error in
+    your own clock. And a phone that has done this is holding atomic time as a
+    by-product.
+  ],
+  at: 2,
+  enter: "rise",
+)
+
+#v(1fr)
+
+
+= The clocks in orbit
+
+== Two effects, opposite signs
+
+#v(1fr)
+
+// A grid rather than two anims: the tiles are a comparison, and a comparison
+// wants both halves built the same way. They arrive one after the other so the
+// second lands as a contradiction of the first.
+#tiles(
+  columns: 2,
+  card(title: [Gravity], color: faster)[
+    Twenty thousand kilometres up the field is weaker, and a clock there ticks
+    *faster*, by about #text(fill: faster, weight: "bold")[+45 µs] a day.
+  ],
+  card(title: [Speed], color: slower)[
+    The same satellite circles at #box[3.9 km/s], and a moving clock ticks
+    *slower*,
+    by about #text(fill: slower, weight: "bold")[−7 µs] a day.
+  ],
+)
+
+#v(0.8em)
+
+#anim(statement(size: 1.3em, color: fix)[$+45 - 7 = +38 "µs" slash "day"$])
+
+#anim(align(center, text(size: 0.8em)[
+  They do not cancel. Gravity wins by a factor of six, and the satellites'
+  clocks run away from yours.
+]))
+
+#v(1fr)
+
+== The correction is a factory setting
+
+#v(1fr)
+
+#anim(statement(size: 1.35em, color: fix)[
+  $38 "µs" times c approx 11 "km"$
+])
+
+#anim(align(center, text(size: 0.85em)[
+  Every day, if nobody did anything about it.
+]))
+
+#v(0.9em)
+
+#anim(callout(title: [And nobody does, in flight])[
+  The oscillator on each satellite is built to run at 10.229 999 995 43 MHz, so
+  that from the ground it is heard at 10.23 MHz. The relativity correction is
+  not code that runs somewhere. It was ground into the crystal before launch.
+], enter: "rise")
+
+#v(1fr)
