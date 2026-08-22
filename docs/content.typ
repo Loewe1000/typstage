@@ -621,6 +621,38 @@ Ein `fr` *innerhalb* eines Rasters ist davon nicht betroffen:
 `anim(grid(rows: (1fr, 1fr), …))` verteilt das Raster unter sich selbst und
 weiß daher, wovon es einen Anteil nehmen soll.
 
+== Zwei Grenzen bei relativen Größen
+
+Ein verfolgtes Element wird für sich gemessen, und daraus folgen zwei Fälle, in
+denen die HTML-Ansicht vom PDF abweicht. Beide haben einen Ausweg von einer
+Zeile.
+
+*Prozentbreiten an einem inline verfolgten Element.* `morph` ist per Vorgabe
+inline und dann nur so breit wie sein Inhalt -- ein `width: 60%` darin zählt
+folglich von dieser Breite und kommt halbiert heraus. Wer eine Prozentbreite
+braucht, nimmt `inline: false` oder gleich ein absolutes Maß:
+
+#show-code(```typ
+#morph(<a>, rect(width: 60%), inline: false)   // 60% der Folie, wie im PDF
+```)
+
+*Eine `1fr`-Spalte neben einer `auto`-Spalte.* Ein blockweise verfolgtes Element
+bekommt den vollen Platz, den es angeboten bekommt -- das muss so sein, sonst
+hätte ein `align(center, …)` darin keinen Raum. In einer `auto`-Spalte ist der
+angebotene Platz aber das ganze Raster, und die `1fr`-Nachbarspalte wird auf
+null gedrückt. Eine feste Spaltenbreite statt `auto` löst es:
+
+#show-code(```typ
+#grid(columns: (1fr, 60pt), …, anim(…))   // statt (1fr, auto)
+```)
+
+#info[
+  Warum nicht anders: `measure(align(center, rect(80pt)), width: 400pt)` liefert
+  80pt, nicht 400 -- bei einer Blockgleichung genauso. Ob ein Inhalt den
+  angebotenen Platz füllen *will*, lässt sich also nicht messen. Beide Fälle
+  sähen im Messwert gleich aus und bräuchten entgegengesetzte Behandlung.
+]
+
 = Etwas vorführen statt behaupten
 
 Ziel dieses Kapitels: eine Folie, auf der etwas geschieht, das Typst selbst
