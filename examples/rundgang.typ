@@ -200,21 +200,49 @@ vor, kann das danebengehen — dann bekommt es mit `pin` einen Namen.
 
 = Medien
 
+// Die Zeichenfunktion bekommt einen eigenen Namen, damit `still` sie noch
+// einmal aufrufen kann — für das eine Bild, das im PDF steht.
+#let kurve(t) = {
+  // `t` läuft von 0 bis 1, und Typst zeichnet jedes Bild einzeln. Hier wächst
+  // eine Kurve von links nach rechts — man sieht dem Bild also an, dass es
+  // gezeichnet wird und nicht bloß verschoben.
+  let w = 300pt
+  let h = 150pt
+  let n = 60
+  // `calc.round` liefert einen Fließkommawert; `range` will einen ganzen.
+  let bis = calc.max(1, int(calc.round(n * t)))
+  let punkte = range(bis + 1).map(i => (
+    i / n * w,
+    h / 2 - 42pt * calc.sin(i / n * 3 * calc.pi),
+  ))
+  box(width: w, height: h, clip: true, {
+    place(rect(width: w, height: h, fill: luma(94%), stroke: none))
+    place(curve(
+      stroke: 4pt + accent,
+      curve.move(punkte.first()),
+      ..punkte.slice(1).map(p => curve.line(p)),
+    ))
+    place(dx: punkte.last().at(0) - 6pt, dy: punkte.last().at(1) - 6pt,
+          circle(radius: 6pt, fill: accent, stroke: none))
+  })
+}
+
 == Video und Daumenkino
 
 #side-by-side(
   split: (1fr, 1fr),
+  // `poster` ist das Bild, das steht, solange nichts läuft — und im PDF, wo
+  // gar nichts laufen kann. Ohne es bliebe dort ein leerer Kasten.
   video("demo.mp4", width: 100%, height: 150pt, muted: true, loop: true,
-        controls: false, radius: 6pt),
+        controls: false, radius: 6pt, poster: image("demo-poster.png")),
   flipbook(
-    t => {
-      // `t` läuft von 0 bis 1. Typst zeichnet jedes Bild selbst.
-      let x = 10pt + 120pt * t
-      block(width: 100%, height: 150pt, fill: luma(94%), {
-        place(left + horizon, dx: x, circle(radius: 16pt, fill: accent, stroke: none))
-      })
-    },
-    frames: 24, fps: 24, width: 100%, height: 150pt, pingpong: true,
+    kurve,
+    frames: 30, fps: 24, width: 300pt, height: 150pt, pingpong: true,
+    // Auf Papier gibt es keine Bewegung, also muss ein Bild genügen. `auto`
+    // nähme das erste — hier wäre das ein Punkt am linken Rand. `still` setzt
+    // stattdessen die fertige Kurve dorthin.
+    still: kurve(1.0),
+  ),
   ),
 )
 

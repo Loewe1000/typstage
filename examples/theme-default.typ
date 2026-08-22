@@ -139,16 +139,36 @@
       curve.move(punkte.first()),
       ..punkte.slice(1).map(p => curve.line(p)),
     ))
-    // Prallhang (Außenkurve, Erosion) und Gleithang (Innenkurve, Ablagerung)
-    // reiten auf derselben Kurve mit — sie wandern also automatisch mit ihr.
-    if sichtbar.len() > 0 {
-      let hoch = sichtbar.at(ys.position(y => y == calc.max(..ys)))
-      let tief = sichtbar.at(ys.position(y => y == calc.min(..ys)))
-      place(dx: hoch.at(0) - 6pt, dy: hoch.at(1) - 6pt,
-            circle(radius: 6pt, fill: t.accent))
-      place(dx: tief.at(0) - 6pt, dy: tief.at(1) - 6pt,
-            circle(radius: 6pt, fill: ablagerung-farbe))
+    // Prallhang (Außenkurve, Erosion) und Gleithang (Innenkurve, Ablagerung).
+    //
+    // Der Scheitel wird *gerechnet*, nicht gesucht. Über die sichtbare Breite
+    // passen knapp zwei Wellenberge; wer den höchsten Abtastpunkt nimmt, hängt
+    // am globalen Maximum — und welcher Berg das gerade ist, wechselt beim
+    // Wandern. Gemessen sprang der Punkt zwischen 65pt und 346pt hin und her,
+    // statt zu wandern.
+    //
+    // Aus der Phase folgt er dagegen unmittelbar: ein Maximum liegt bei
+    // `versatz + periode * (1/4 + k)`, ein Minimum ein halbes Periodenmaß
+    // weiter. Gesetzt wird auf *jeden* sichtbaren Scheitel — so wandert einer
+    // rechts hinaus, während links der nächste hereinkommt.
+    // `aussen` sagt, wo bei diesem Scheitel die Außenseite der Schleife liegt:
+    // +1 unten, -1 oben. Beide Punkte sitzen am *selben* Scheitel — genau das
+    // sagt die Folie ja: an jeder Schleife wird gleichzeitig abgetragen und
+    // abgelagert, nur an verschiedenen Ufern.
+    let scheitel(anteil, aussen) = {
+      for k in range(-1, 3) {
+        let x = versatz + periode * (anteil + k)
+        if x >= 0pt and x <= w {
+          let y = h / 2 + amp * calc.sin((x - versatz) / periode * 2 * calc.pi)
+          place(dx: x - 5pt, dy: y + aussen * 9pt - 5pt,
+                circle(radius: 5pt, fill: t.accent))
+          place(dx: x - 5pt, dy: y - aussen * 9pt - 5pt,
+                circle(radius: 5pt, fill: ablagerung-farbe))
+        }
+      }
     }
+    scheitel(0.25, 1)
+    scheitel(0.75, -1)
   })
 }
 
