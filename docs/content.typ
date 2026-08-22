@@ -594,6 +594,16 @@ Trägt die Vorfolie doch einen gleichnamigen Morph, ginge der Flug zwischen den
 beiden lautlos verloren -- die Formel erschiene einfach, statt zu fliegen. Das
 Paket prüft das beim Übersetzen und sagt es, statt es geschehen zu lassen.
 
+*Ein verschachteltes Element erbt sein Einblenden.* Steht ein verfolgtes Element
+in einem anderen und erscheinen beide im selben Schritt, dann übernimmt das
+innere `enter`, `duration` und `delay` vom äußeren, sofern es nichts Eigenes
+angibt. Nötig ist das, weil die Bilder im Browser nebeneinander liegen und nicht
+ineinander: Sie laufen nur dann im Gleichschritt, wenn sie dieselbe Bewegung mit
+denselben Werten ausführen. Ohne das Erben käme ein Morph im dritten Punkt einer
+gestaffelten Liste 120 Millisekunden vor seinem eigenen Stichpunkt. Wer etwas
+Eigenes angibt, behält es -- und wer einen anderen Schritt wählt, erbt nichts,
+denn dann sollen die beiden ja gerade nicht zusammen erscheinen.
+
 *Ein `fr`-Abstand gehört nicht ins verfolgte Element.* `fr` heißt „Anteil an
 dem, was übrig bleibt" -- und was übrig bleibt, verteilt der Elternteil unter
 den Geschwistern. Ein verfolgtes Element wird aber allein gemessen und sieht

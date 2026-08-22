@@ -104,7 +104,11 @@
       karte[parseInt(f.slice(3, 7), 16)] = {
         x: (r.left - bezug.left) / bezug.width,
         y: (r.top - bezug.top) / bezug.height,
-        w: r.width / bezug.width, h: r.height / bezug.height
+        w: r.width / bezug.width, h: r.height / bezug.height,
+        // Wer der Wirt ist, steht hier schon fest: ein Marker, der in einem
+        // Sprite liegt, gehört einem verschachtelten Element. Der Schrittwechsel
+        // braucht das, um Einblendwerte vom Elternteil zu erben.
+        wirt: wirt ? wirt.dataset.n : null
       };
     });
     return karte;
@@ -115,6 +119,23 @@
     el.style.top = (r.y * 100) + "%";
     el.style.width = (r.w * 100) + "%";
     el.style.height = (r.h * 100) + "%";
+  }
+
+  // Was ein verschachteltes Element nicht selbst angibt, erbt es von seinem
+  // Wirt — aber nur, wenn beide im selben Schritt erscheinen (gleiches `at`).
+  // Grund: Sprites hängen als Geschwister im Overlay, nicht ineinander. Ein
+  // `translateY` des Elternteils trägt das Kind also nicht mit; sie laufen nur
+  // dann im Gleichschritt, wenn sie dieselbe Bewegung mit denselben Werten
+  // ausführen. Wich einer ab — etwa `delay: 120` bei einer gestaffelten Liste
+  // gegen 0 beim Morph darin —, kam das Kind vor seinem eigenen Behälter.
+  function erbt(el, feld) {
+    if (el.dataset[feld] !== undefined) return el.dataset[feld];
+    if (!el.dataset.parent) return undefined;
+    var folie = el.closest(".ts-slide");
+    if (!folie) return undefined;
+    var wirt = folie.querySelector('.ts-el[data-n="' + el.dataset.parent + '"]');
+    if (!wirt || wirt.dataset.at !== el.dataset.at) return undefined;
+    return wirt.dataset[feld];
   }
 
   // In rounds: a nested element has no mark in the background — the outer
@@ -134,6 +155,7 @@
         var r = karte[+el.dataset.n];
         if (!r) { rest.push(el); return; }
         setzen(el, r);
+        if (r.wirt) el.dataset.parent = r.wirt; else delete el.dataset.parent;
         // Corner radius in points, scaled along with the stage.
         if (el.dataset.radius && +el.dataset.radius > 0) {
           el.style.borderRadius = (+el.dataset.radius * skala) + "px";
@@ -658,8 +680,8 @@
 
     SLIDES[dst.slide].querySelectorAll(".ts-el").forEach(function (el) {
       var an = activeAt(el.dataset.at, dst.step);
-      var d = +el.dataset.duration || CFG.duration;
-      var delay = back ? 0 : (+el.dataset.delay || 0);
+      var d = +erbt(el, "duration") || CFG.duration;
+      var delay = back ? 0 : (+erbt(el, "delay") || 0);
 
       if (instant || changed) {
         clearAnims(el);
@@ -670,11 +692,11 @@
 
       if (an && el.dataset.on !== "1") {
         el.dataset.on = "1";
-        fadeIn(el, el.dataset.enter || "fade-up", d, delay);
+        fadeIn(el, erbt(el, "enter") || "fade-up", d, delay);
       } else if (!an && el.dataset.on === "1") {
         delete el.dataset.on;
-        if (back) fadeOut(el, el.dataset.enter || "fade-up", d);
-        else fadeOut(el, el.dataset.exit || "fade", d * 0.75);
+        if (back) fadeOut(el, erbt(el, "enter") || "fade-up", d);
+        else fadeOut(el, erbt(el, "exit") || "fade", d * 0.75);
       }
     });
 
