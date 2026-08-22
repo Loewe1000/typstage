@@ -27,19 +27,15 @@
     Ein Fluss nimmt Material auf, trägt es fort und legt es wieder ab. Alle
     drei Vorgänge laufen zu jeder Zeit — nur an verschiedenen Stellen.
 
-    Im Oberlauf überwiegt das Aufnehmen, im Unterlauf das Ablegen. Dazwischen
-    hält sich beides ungefähr die Waage.
+    Im Oberlauf überwiegt das Aufnehmen, im Unterlauf das Ablegen.
   ],
   callout(title: [Merke])[
     Entscheidend ist die *Fließgeschwindigkeit*: Sie bestimmt, ob ein Korn
     liegen bleibt oder mitgeht.
 
-    Sie hängt am Gefälle, an der Wassermenge und an der Rauheit des Bettes —
-    und ändert sich innerhalb eines Querschnitts von Ufer zu Ufer.
+    Sie hängt am Gefälle, an der Wassermenge und an der Rauheit des Bettes.
   ],
 )
-
-#v(0.8em)
 
 #anim([Am Prallhang wird abgetragen, am Gleithang abgelagert. Genau deshalb
        wandert ein Mäander flussabwärts.], at: 2, enter: "fade-up")
