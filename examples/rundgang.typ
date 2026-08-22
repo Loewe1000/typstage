@@ -243,7 +243,6 @@ vor, kann das danebengehen — dann bekommt es mit `pin` einen Namen.
     // stattdessen die fertige Kurve dorthin.
     still: kurve(1.0),
   ),
-  ),
 )
 
 #anim([Links ein Video, rechts ein Daumenkino: Bild für Bild von Typst
