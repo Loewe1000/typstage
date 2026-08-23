@@ -25,8 +25,9 @@
 // says so: "content labelled multiple times", and the last one is used.
 
 #import "config.typ": *
-#import "internal.typ": (note-state, plain-text, slide-counter,
-                        umgebungs-block)
+#import "internal.typ": (deck-info, note-state, plain-text, slide-counter,
+                        sprite-number, step-cursor, step-here, umgebungs-block)
+#import "slides.typ": info
 #import "themes.typ": font-args
 
 /// The body of one slide, background included.
@@ -48,7 +49,14 @@
 /// `slide-chrome` draws it, `slide-body` has to place the title below it.
 #let lauf-hoehe(t, k) = if t.header == "run" { 27pt * k } else { 0pt }
 
-#let slide-chrome(n, total, geo, t, sect: none) = {
+#let slide-chrome(geo, t) = context {
+  // Every number below comes out of `info()`, and that is the point of the
+  // detour: the deck may call the same function, so a hand-built footer and
+  // this one read the same dictionary and cannot disagree.
+  let d = info()
+  let n = d.slide.number
+  let total = d.slide.total
+  let sect = d.section.title
   let k = geo.scale
   let m = margins(geo)
   let inner = geo.width - m.left - m.right
@@ -129,9 +137,32 @@
   })
 }
 
-#let slide-body(s, n, total, style, geo, t, chrome: true, sect: none) = block(
+#let slide-body(s, style, geo, t, chrome: true) = block(
   width: geo.width, height: geo.height,
 {
+  // A mark at the end of the slide, so that a footer inside it can ask the
+  // step cursor how far it got. The mark carries the slide's running number,
+  // which is what `info()` matches on.
+  //
+  // The reading is taken off the *counter* at this mark rather than filed into
+  // a state here and read back from there, and that is not a matter of taste.
+  // A cursor-reading group such as `stagger` or `tiles` builds its step
+  // numbers out of what it read, so the cursor already sits at the end of a
+  // chain several layout runs long; writing that value into a state puts one
+  // more run on top, and Typst allows five. Measured on a slide with two such
+  // groups: with the state, "did not converge" in both outputs; reading the
+  // counter at this mark, the same slide behaves exactly as it did before
+  // `info()` existed.
+  //
+  // `place`, so it takes no room in the flow. The block is exactly slide-high
+  // and already full; anything joined into it after the ground rect would sit
+  // in a flow that has nothing left to give.
+  //
+  // Machinery, not a shape, so it is named like the bridge's marker and not
+  // like the `ts-` labels a deck restyles.
+  let schritt-summe = place(top + left, context {
+    [#metadata(deck-info.get().nr) <typstage-slide-end>]
+  })
   // Everything below is measured on the default canvas and scaled with it, so
   // a smaller or wider slide keeps its proportions.
   let k = geo.scale
@@ -210,13 +241,15 @@
     // full slide height. In the flow it would push everything below it
     // away, and its `bottom` anchors would refer to itself instead of to
     // the slide.
-    if chrome { place(top + left, slide-chrome(n, total, geo, t, sect: sect)) }
+    if chrome { place(top + left, slide-chrome(geo, t)) }
 
     place(top + left, dx: m.left, dy: kopf + t.head-gap * k,
       block(width: inner,
             height: geo.height - kopf - (t.head-gap + t.foot-gap) * k,
             style(s.body)))
   }
+  // Last, because only here has the cursor seen every reveal of the slide.
+  schritt-summe
 })
 
 /// A hook that wraps a document template around every body and every sprite.
@@ -242,7 +275,7 @@
 /// Where a slide has a speaker note it stands in that room; where it has none,
 /// ruled lines take its place. Both are the same thing really: the space is
 /// for whatever is not on the slide itself.
-#let handout-body(all, total, style, geo, t, per-page) = {
+#let handout-body(all, facts, style, geo, t, per-page) = {
   set page(paper: "a4", margin: (x: 1.5cm, y: 1.4cm))
   set text(size: 10pt, fill: t.strong)
   let gap = 14pt
@@ -265,13 +298,10 @@
     } else { lines(height) }
   }
 
-  // Numbered first, so the count keeps running across the page breaks.
-  let numbered = ()
-  let n = 0
-  for s in all {
-    if s.kind == "slide" { n += 1 }
-    numbered.push((slide: s, number: n))
-  }
+  // Each slide with what the deck knows about it, so the count keeps running
+  // across the page breaks. The counting itself happened once, in
+  // `presentation`; here the entries are only paired up with their slides.
+  let numbered = all.enumerate().map(((i, s)) => (slide: s, fakten: facts.at(i)))
 
   let sheets = ()
   let batch = ()
@@ -304,7 +334,7 @@
       [#block(width: w, height: h, clip: true, {
         set block(fill: aussen.fill, stroke: aussen.stroke, radius: aussen.radius)
         scale(w / geo.width * 100%, origin: top + left,
-              slide-body(item.slide, item.number, total, style, geo, t))
+              slide-body(item.slide, style, geo, t))
       }) <ts-handout-frame>]
     }
 
@@ -313,6 +343,13 @@
       // package resolves its targets per slide, and without this every applet
       // in the deck would look as if it stood on the same one.
       slide-counter.step()
+      // What the deck knows about this slide, before it is laid out: the
+      // shrunk slide draws its own chrome and reads the numbers from here,
+      // exactly as the full-size one does.
+      deck-info.update(item.fakten)
+      step-cursor.update(0)
+      step-here.update(())
+      sprite-number.update(none)
       // The slide's own `speaker-note` may overwrite this while it is laid
       // out, which is why the note is only read afterwards.
       note-state.update(item.slide.note)

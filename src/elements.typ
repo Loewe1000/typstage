@@ -1,6 +1,6 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (html-output, name-of, pin-index, pin-marker,
+#import "internal.typ": (html-output, im-deck, name-of, pin-index, pin-marker,
                         step-cursor, track)
 
 /// Reveal content on particular steps.
@@ -109,10 +109,18 @@
                                          height: available.height))
     let w = calc.max(..natural.map(s => s.width), ..bounded.map(s => s.width))
     let h = calc.max(..natural.map(s => s.height), ..bounded.map(s => s.height))
-    if not html-output.get() {
-      return block(width: w, height: h, place(align, items.last()))
-    }
     let first = if start == auto { step-cursor.get().first() + 1 } else { start }
+    if not html-output.get() {
+      // Only the last version is set on paper, but the cursor moves as if all
+      // of them stood there. Every version is one step, and
+      // `info().step.total` has to report the same count in both outputs.
+      return {
+        if im-deck() {
+          step-cursor.update(c => calc.max(c, first + items.len() - 1))
+        }
+        block(width: w, height: h, place(align, items.last()))
+      }
+    }
     let last = items.len() - 1
     block(width: w, height: h, {
       for (i, v) in items.enumerate() {

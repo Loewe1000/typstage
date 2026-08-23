@@ -79,6 +79,26 @@
   if numbers.len() == 0 { 1 } else { calc.max(..numbers) }
 }
 
+/// Smallest step number a selector covers.
+///
+/// This is the step an element *first* stands on, and that is what
+/// `info().step.number` reports inside it. Not `max-step`, which answers a
+/// different question: how far the cursor has to be pushed so that whatever
+/// follows carries on after this element. For `"1-2"` the two differ, 1
+/// against 2, and only the 1 is the step on which the thing appears.
+///
+/// An open lower end (`"-3"`) and a selector without a number both mean the
+/// first step.
+#let min-step(at) = {
+  let werte = at.split(",").map(t => t.trim()).filter(t => t != "").map(t => {
+    if t.starts-with("-") { 1 } else {
+      let z = t.matches(regex("\d+"))
+      if z.len() == 0 { 1 } else { int(z.first().text) }
+    }
+  })
+  if werte.len() == 0 { 1 } else { calc.max(1, calc.min(..werte)) }
+}
+
 /// Does a selector cover the first step?
 ///
 /// Decides whether a morph is already present when the slide is entered.
@@ -201,6 +221,93 @@
 /// has to be able to tell them apart.
 #let slide-counter = counter("typstage-slide")
 
+/// What the deck knows about itself, written once per slide.
+///
+/// The value is `(nr: int, data: dictionary)`. `data` is exactly what `info()`
+/// hands out, minus the step reading; the presentation writes it here before
+/// the slide is laid out, and *everything* that prints one of those numbers
+/// reads it from here: the footer, the fraction, the progress bar, the running
+/// header, and a deck's own `info()`. That is the point of the detour. As long
+/// as there is one dictionary per slide, a hand-built footer and the built-in
+/// one cannot print different numbers, because there is nothing else to count.
+///
+/// `nr` counts every slide, title and section slides included, and is kept out
+/// of `data` on purpose: `slide.number` deliberately does *not* count those,
+/// and two numbers next to each other that differ by a title slide would be a
+/// trap. It is needed here only as the key under which a slide files its step
+/// count.
+#let deck-info = state("typstage-info", none)
+
+/// Is a presentation being laid out right now?
+///
+/// Steps mean something only inside one, and only there does the cursor get
+/// set back to nothing at the start of every slide. Outside, counting would
+/// not merely be pointless, it would not settle: `stagger` reads the cursor
+/// and hands `track` a selector built from what it read, so read and write
+/// chase each other with nothing to anchor them. Measured on the manual, which
+/// sets `stagger`, `alternatives` and `tiles` examples on their own on a page:
+/// 0, 10, 15, 18, 21 over five runs, and Typst gives up with "did not
+/// converge".
+///
+/// In HTML output `html-output` already draws the same line; this draws it for
+/// paged output, where the counting is new.
+///
+/// Must be called inside a context.
+#let im-deck() = deck-info.get() != none
+
+/// The steps the content being laid out right now stands inside, innermost
+/// last. Empty outside any tracked element.
+///
+/// A stack, and pushed and popped with `update(fn)` rather than saved with a
+/// `get()` and put back. That is the whole reason it is a stack, and it was
+/// paid for: with a `get()`, the value *written* depended on a value *read*,
+/// and Typst settles such a chain at one link per layout run. On a slide with
+/// four tracked elements the chain ran past the five runs Typst allows, and it
+/// said so: "did not converge", with the reading coming out 1, 1, 1, 1, 3 and
+/// only the run after that saying 4. An update that is a function of the
+/// previous value needs no read, so the whole stack settles in one run.
+///
+/// It says nothing about a sprite: there `sprite-number` answers, because the
+/// step of a sprite would take a layout run too long to travel through a state
+/// of its own.
+#let step-here = state("typstage-step-here", ())
+
+/// The step the content being laid out right now first stands on.
+///
+/// 1 outside any tracked element, and inside one the first step of its
+/// selector. Must be called inside a context.
+/// Which sprite is being laid out, by its element number, or `none`.
+///
+/// Set outright by `sprite-markup`, and the *number* is the point: it is the
+/// running index of the element, which settles as soon as the background frame
+/// has run. Its step does not, because the step comes off the cursor, and a
+/// cursor-reading group such as `tiles` or `stagger` between two reveals makes
+/// that a chain several layout runs long. Handing the step itself through a
+/// state put one more run on top of that chain, and Typst allows five:
+/// measured on `anim`, `tiles`, `anim` with an `info()` inside, the reading
+/// came out 1, 1, 1, 1, 3 and settled on 4 only afterwards, with "did not
+/// converge" to go with it. Reading the step out of `sprites` here instead of
+/// carrying it in costs nothing and lands in one run.
+#let sprite-number = state("typstage-sprite-nr", none)
+
+/// The step the content being laid out right now first stands on.
+///
+/// Three cases, in this order. Inside a tracked element the stack says it.
+/// Inside a sprite, whose body is the same content laid out a second time, the
+/// element's own entry in `sprites` says it, and that still holds after a
+/// nested element has come and gone. Anywhere else, content stands from the
+/// first step.
+///
+/// Must be called inside a context.
+#let step-jetzt() = {
+  let stapel = step-here.get()
+  if stapel.len() > 0 { return calc.max(1, stapel.last()) }
+  let nr = sprite-number.get()
+  if nr == none { return 1 }
+  let liste = sprites.get()
+  if nr >= 1 and nr <= liste.len() { calc.max(1, liste.at(nr - 1).step) } else { 1 }
+}
+
 /// A name, however it was written.
 ///
 /// Names identify things across slides: a morph that flies, a frame that
@@ -316,8 +423,6 @@
     + "fr is shared out by the parent among its siblings, and a tracked "
     + "element is measured on its own. Put the fr outside the anim/stagger, "
     + "or give the element a container with a known size.")
-  if not html-output.get() { return body }
-  element-counter.step()
   // `auto` takes the next step. An explicit selector pulls the cursor up to its
   // own highest step, so whatever follows carries on after it instead of
   // starting over.
@@ -326,18 +431,47 @@
   // (they are there from the start), and above all they must not push the
   // bullets beside them along: in a two-column slide the text next to an
   // applet belongs at step one, not behind the applet's tweens.
-  if at == auto { step-cursor.step() }
+  //
+  // The cursor runs in *both* outputs, and that is why the accounting stands
+  // above the branch below. Nothing is revealed on paper, but `info().step`
+  // has to report the same count there as in the browser, and the count is
+  // what the cursor holds at the end of the slide. A counter update draws
+  // nothing, so the page is unchanged by it. Verified on the six example
+  // decks: every PDF page pixel for pixel as before.
+  //
+  // Assigned to a name here, but placed further down all the same: a counter
+  // only moves where its update stands in the document. Left in the `let` it
+  // would join into the value instead of reaching the page.
+  let zaehlen = if im-deck() {
+    if at == auto { step-cursor.step() }
+    else if kind == "anim" {
+      step-cursor.update(c => calc.max(c, max-step(selector(at))))
+    }
+  } else { [] }
+  // On paper there is no overlay, no marker and no reveal, so the body simply
+  // stands where Typst puts it. The counting above still has to reach the
+  // document, hence the joined return rather than a bare one.
+  if not html-output.get() { return zaehlen + body }
+  zaehlen
+  element-counter.step()
   context {
     let n = element-counter.get().first()
     let selected = if at == auto {
       str(step-cursor.get().first()) + "-"
     } else { selector(at) }
-    // Placed, not assigned: a counter only moves when its update stands in the
-    // document. Tucked into a `let` it would join into the value instead and
-    // turn the selector into content.
-    if at != auto and kind == "anim" {
-      step-cursor.update(c => calc.max(c, max-step(selected)))
-    }
+    // The step this element first stands on, and what `info().step.number`
+    // reads inside its body. It travels into the sprite as well, because the
+    // body is laid out a second time there, long after the cursor has run on
+    // to the end of the slide.
+    let erster = min-step(selected)
+    // Pushed *before* the layout, not inside the hidden block further down,
+    // and that is not cosmetic: the body is measured before it is laid out,
+    // and a measurement reads the state as it stands at that point in the
+    // document. Verified: content whose length depends on a state measures
+    // 20.23pt before the update and 112.26pt after it. Pushed any later, and
+    // the marker would reserve the room for a step number the body no longer
+    // prints.
+    step-here.update(a => a + (erster,))
     layout(available => context {
       // Measured under the same width the element has in the background. That
       // measurement travels outward so the sprite gets exactly the same
@@ -427,7 +561,7 @@
       sprites.update(a => a + ((kind: kind, at: selected, extra: extra, body: body,
                                 raw-frames: raw-frames, width: w,
                                 height: m.height, region: region, pad: luft,
-                                style: style),))
+                                step: erster, style: style),))
       // A `box` is inline and puts its baseline on the bottom edge, and with a
       // two-line list item the bullet would drop a line. Block content gets a
       // `block`.
@@ -448,6 +582,9 @@
           body)))
       })
     })
+    // The element is done, so whatever stood around it stands again. Popped,
+    // never assigned back from a remembered value: see `step-here`.
+    step-here.update(a => if a.len() > 0 { a.slice(0, -1) } else { a })
   }
   })
 }

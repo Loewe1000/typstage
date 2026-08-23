@@ -1,6 +1,7 @@
 // Turning tracked elements into HTML.
 
 #import "config.typ": *
+#import "internal.typ": sprite-number
 #import "theme.typ": with-style
 
 /// One sprite: the element as its own small frame, plus everything the runtime
@@ -36,6 +37,7 @@
     html.elem("div", attrs: attrs, html.elem("iframe", attrs: a, []))
   } else if s.kind == "flipbook" {
     html.elem("div", attrs: attrs + ("data-frames": str(s.raw-frames.len())),
+      sprite-number.update(n) +
       s.raw-frames.map(f => html.elem("div", attrs: (class: "ts-frame"),
         html.frame(block(width: s.width, height: s.height,
                          template(with-style(s, block(
@@ -50,6 +52,11 @@
       // again
       // of an element that vanished into its parent's `hide()`.
       counter("typstage-n").update(n)
+      // And which element this is, so that a body printing
+      // `info().step.number` reads its own step here and not the slide's last
+      // one. Only the number travels; the step itself is looked up from
+      // `sprites`, for the reason given at `sprite-number`.
+      sprite-number.update(n)
       // The measured size on the outside, since that decides the frame, and
       // the region from back then on the inside. A relative measure in the body
       // therefore resolves exactly once, and against the same reference as in

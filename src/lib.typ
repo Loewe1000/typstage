@@ -15,7 +15,12 @@
 )
 
 #import "themes.typ": theme, themes
-#import "slides.typ": slide, section, title-slide, transition, speaker-note
+#import "slides.typ": (
+  slide, section, title-slide, transition, speaker-note,
+  // What the deck knows about itself, so a deck can build its own chrome
+  // instead of forking the theme.
+  info,
+)
 #import "elements.typ": alternatives, anim, morph, pause, pin, stagger
 #import "layout.typ": card, callout, side-by-side, statement, tiles
 #import "media.typ": video, embed, flipbook

@@ -1,8 +1,8 @@
 // Video, embedded documents and Typst-drawn animation, plus what takes their
 // place on paper.
 
-#import "internal.typ": (track, bridge-jobs, html-output, name-of,
-                         slide-counter)
+#import "internal.typ": (track, bridge-jobs, html-output, im-deck, name-of,
+                         step-cursor, slide-counter)
 #import "config.typ": doc-word
 
 /// The box that stands in for a moving element in the PDF.
@@ -133,6 +133,10 @@
     ))<typstage-bridge-target>]
   }
   context if not html-output.get() {
+  // The step counting of `track` does not run on paper, so the one case that
+  // consumes a step is done here: `info().step.total` has to report the same
+  // number in both outputs.
+  if at == auto and im-deck() { step-cursor.step() }
   fallback-box(fallback, if link != none { link } else { url }, width, height,
                if label == auto { doc-word("embedded") } else { label })
 } else {
@@ -164,6 +168,9 @@
   still: auto,
 ) = context if not html-output.get() {
   // On paper a single frame has to do. `still` picks which one.
+  // The step counting of `track` does not run here, so the one case that
+  // consumes a step is done by hand, as in `embed`.
+  if at == auto and im-deck() { step-cursor.step() }
   block(width: width, height: height,
         if still == auto { render(0.0) } else { still })
 } else {

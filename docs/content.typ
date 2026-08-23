@@ -2120,6 +2120,166 @@ Liste auch keiner.
 ]
 
 
+== `info()`: was das Deck über sich selbst weiß
+
+Labels sagen, wie eine gebaute Form aussieht. Sie sagen nicht, was in ihr
+steht. Die Foliennummer, der Bruch, der Kapitelname in der Kopfzeile -- diese
+Zahlen kannte bisher nur das Paket, und wer eine eigene Fußzeile bauen wollte,
+musste selbst mitzählen. `info()` gibt sie heraus:
+
+#show-code[```typ
+#context {
+  let deck = info()
+  [#deck.section.title #h(1fr) #deck.slide.number / #deck.slide.total]
+}
+```]
+
+Es ist dieselbe Lesung, die die eingebaute Fußzeile macht. Jede Zahl, die das
+Paket auf eine Folie druckt -- die Foliennummer, der Bruch, die Länge des
+Fortschrittsbalkens, die laufende Kopfzeile --, kommt aus diesem Wörterbuch und
+aus keiner zweiten Zählung. Eine selbstgebaute Fußzeile und die eingebaute
+können deshalb nicht verschiedene Zahlen drucken.
+
+Was zurückkommt:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Feld*], [*Was darin steht*]),
+  [`title`, `subtitle`], [Titel und Untertitel des Decks, so wie
+    `presentation` oder eine `title-slide` sie bekommen haben],
+  [`author`, `date`], [Ebendaher. `date` ist, was übergeben wurde: ein
+    `datetime` oder Inhalt],
+  [`slide.number`], [Diese Folie. Gezählt wie die Fußzeile zählt, Titel- und
+    Abschnittsfolien also nicht mit],
+  [`slide.total`], [So viele Folien werden gezählt],
+  [`slide.numbered`], [Ob diese Folie mitgezählt wird. Auf einer Titel- oder
+    Abschnittsfolie `false`],
+  [`step.number`], [Der Schritt, auf dem der aufrufende Inhalt selbst steht],
+  [`step.total`], [So viele Schritte hat diese Folie],
+  [`section.number`], [Der wievielte Abschnitt gerade läuft, `0` vor dem
+    ersten],
+  [`section.total`], [So viele Abschnitte hat das Deck],
+  [`section.title`], [Sein Titel, oder `none` vor dem ersten],
+)
+
+Eine Zahl steht bewusst daneben: Sprecheransicht und Übersicht zählen *alle*
+Folien, Titel- und Abschnittsfolien eingeschlossen, `info().slide.total` zählt
+wie die Fußzeile und lässt sie aus. Auf einem Prüfstück mit einer Titelfolie,
+zwei Abschnittsfolien und drei gewöhnlichen sind das 6 gegen 3.
+
+=== Zwei Zählungen, nicht eine
+
+Ein Deck, das Seiten zählt, käme mit einer Zahl aus. Dieses zählt in Folien
+*und* in Schritten, und die beiden sind verschiedene Dinge: eine Folie ist ein
+Bild, ein Schritt ist ein Tastendruck. Deshalb stehen sie getrennt und heißen
+so, wie sie im ganzen Handbuch heißen.
+
+`step.number` ist der Schritt, auf dem der aufrufende Inhalt selbst steht: im
+Rumpf einer Folie `1`, innerhalb eines `anim`, eines `stagger` oder einer
+`alternatives` der Schritt jener Einblendung -- und wo eine Einblendung über
+mehrere Schritte steht, ihr erster. Das ist der Unterschied, auf den
+es ankommt -- eine Anzeige, die den laufenden Schritt nennt, muss in den
+Einblendungen sitzen, denn der Browser setzt nichts neu:
+
+#show-code[```typ
+#let stand = context {
+  let d = info()
+  [Schritt #d.step.number von #d.step.total]
+}
+
+== Vier Fassungen
+#alternatives(stand, stand, stand, stand)
+```]
+
+Das druckt beim Blättern nacheinander „Schritt 1 von 4" bis „Schritt 4 von 4" -- gemessen an einem Prüfstück mit neun Schritten, an jedem einzelnen davon.
+
+Auf dem Papier gibt es keinen laufenden Schritt: die Seite zeigt die Folie im
+Endzustand, alles auf einmal. Dort ist `step.number` deshalb gleich
+`step.total`.
+
+#info[
+  `step.total` zählt dasselbe wie die Laufzeit im Browser. Gegengeprüft an
+  einem Deck, das jeden Baustein einmal enthält, der einen Schritt verbraucht
+  -- `pause`, `stagger`, `anim` mit und ohne Nummer, `alternatives`, `tiles`,
+  `morph`, `video`, `flipbook`: auf allen neun Folien mit Rumpf nennt `info()`
+  dieselbe Zahl, die die Laufzeit im Browser zählt, und die PDF nennt sie
+  ebenfalls.
+]
+
+=== Wohin die eigene Fußzeile gehört
+
+Auf einer Titel- oder Abschnittsfolie zeichnet typstage keine Fußzeile. Wer
+eine eigene baut, steht dort vor der Frage, was in den Zahlenplatz gehört --
+und die Antwort ist: nichts. `slide.numbered` sagt, wann das der Fall ist:
+
+#show-code[```typ
+#let fusszeile = context {
+  let d = info()
+  let zahl = if d.slide.numbered [#d.slide.number / #d.slide.total] else []
+  place(bottom + right, text(size: 12pt, fill: muted, zahl))
+}
+```]
+
+Auf einer gewöhnlichen Folie steht sie im Rumpf, also in der Folie selbst:
+
+#show-code[```typ
+== Eine Folie
+#fusszeile
+Der Text der Folie.
+```]
+
+Auf der Titel- und den Abschnittsfolien muss sie ins Theme: die beiden Bilder
+sind Funktionen, und eine Funktion, die eine andere umschließt, ergänzt sie,
+statt sie zu ersetzen.
+
+#show-code[```typ
+#let basis = themes.default
+#let mit(f) = (t, s, geo) => { f(t, s, geo); fusszeile }
+
+#show: presentation.with(
+  theme: basis + (title-slide: mit(basis.title-slide), section: mit(basis.section)),
+)
+```]
+
+#warning[
+  *Nicht über `style:`.* Der Haken sieht nach der bequemen Abkürzung aus:
+  `style: it => { fusszeile; it }` schriebe die Fußzeile auf jede Folie, ohne
+  sie einzeln hinzuschreiben. Er ist aber zugleich die Vorlage, mit der jedes
+  bewegte Element ein zweites Mal gesetzt wird -- und alles, was dort
+  *zeichnet*, wird in jedem Sprite mitgezeichnet.
+
+  Gemessen an einem Deck mit drei Einblendungen je Folie: die Fußzeile stand
+  im Browser viermal auf der Folie statt einmal, und in einem Daumenkino aus
+  sechs Einzelbildern noch sechsmal zusätzlich. Im Rumpf gezählt, dasselbe
+  Deck, dieselben Sprites: einmal. Auf dem Papier fällt es nicht auf, dort gibt
+  es keine Sprites.
+
+  `style:` ist für Typografie da -- Schrift, Größe, Farbe, Zeilenabstand --,
+  und dafür ist es genau richtig: Hintergrund und Sprite brauchen dieselbe.
+]
+
+#info[
+  Eine im Rumpf platzierte Fußzeile sitzt am unteren Rand des *Rumpfes*, nicht
+  am unteren Rand der Folie; dazwischen liegt der `foot-gap` des Themes. Ein
+  `dy:` am `place` schiebt sie dorthin, wo sie hin soll.
+]
+
+#warning[
+  `info()` liest den Stand der Folie, die gerade gesetzt wird, und braucht
+  deshalb ein `context` um sich. *Vor* der Präsentation gibt es nichts zu
+  lesen; dort bricht es mit einer Meldung ab, statt Nullen zu liefern.
+
+  *Danach* nicht: wer die Folien als Argumente übergibt und unter den Aufruf
+  noch ein `info()` schreibt, bekommt weiter die Zahlen der letzten Folie. Das
+  ließe sich schließen, indem das Deck seinen Stand am Ende abräumt -- gemessen
+  kostet das aber Übersetzungs-Spielraum: eine Folie mit einer Einblendung
+  neben einem `tiles` ging damit von null auf drei
+  „did not converge"-Meldungen. Eine Ecke, in der niemand steht, ist das nicht
+  wert; in der Show-Regel-Form steht hinter dem Deck ohnehin nichts.
+]
+
+
 = API-Referenz
 
 Erzeugt aus den Kommentaren der Quelldateien. Die Reihenfolge folgt dem Aufbau

@@ -1181,6 +1181,161 @@ A section slide has no subtitle in typstage, so the list names none.
 ]
 
 
+== `info()`: what the deck knows about itself
+
+Labels say how a shape the package builds looks. They do not say what stands
+in it. The slide number, the fraction, the chapter in the running header --
+those numbers were the package's own, and anyone who wanted a footer of their
+own had to count along. `info()` hands them out:
+
+#show-code[```typ
+#context {
+  let deck = info()
+  [#deck.section.title #h(1fr) #deck.slide.number / #deck.slide.total]
+}
+```]
+
+It is the same reading the built-in footer does. Every number the package
+prints on a slide -- the slide number, the fraction, the length of the progress
+bar, the running header -- comes out of this dictionary and out of no second
+count. A hand-built footer and the built-in one cannot print different numbers.
+
+What comes back:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Field*], [*What is in it*]),
+  [`title`, `subtitle`], [The deck's title and subtitle, as `presentation` or a
+    `title-slide` received them],
+  [`author`, `date`], [From the same place. `date` is whatever was passed, a
+    `datetime` or content],
+  [`slide.number`], [This slide. Counted the way the footer counts, so title
+    and section slides are not in it],
+  [`slide.total`], [How many slides are counted],
+  [`slide.numbered`], [Whether this slide is one of them. `false` on a title
+    and on a section slide],
+  [`step.number`], [The step the calling content itself stands on],
+  [`step.total`], [How many steps this slide has],
+  [`section.number`], [Which section is running, `0` before the first],
+  [`section.total`], [How many sections the deck has],
+  [`section.title`], [Its title, or `none` before the first],
+)
+
+One number stands deliberately apart: the speaker view and the overview count
+*every* slide, title and section slides included, while `info().slide.total`
+counts the way the footer counts and leaves them out. On a sample with one
+title slide, two section slides and three ordinary ones, that is 6 against 3.
+
+=== Two counts, not one
+
+A deck that counts pages would get by with one number. This one counts slides
+*and* steps, and the two are different things: a slide is one picture, a step
+is one press of the arrow key. So they stand apart, and they are called what
+they are called throughout this manual.
+
+`step.number` is the step the calling content itself stands on: `1` in the body
+of a slide, and inside an `anim`, a `stagger` or an `alternatives` the step of
+that reveal -- and where a reveal covers several steps, the first of them. That is the difference that matters -- a display naming the
+current step has to sit inside the reveals, because the browser typesets
+nothing anew:
+
+#show-code[```typ
+#let where = context {
+  let d = info()
+  [Step #d.step.number of #d.step.total]
+}
+
+== Four versions
+#alternatives(where, where, where, where)
+```]
+
+Paging through, that prints "Step 1 of 4" up to "Step 4 of 4" -- measured on a
+sample with nine steps, at every one of them.
+
+On paper there is no current step: the page shows the slide in its final state,
+everything at once. There `step.number` equals `step.total`.
+
+#info[
+  `step.total` counts what the runtime in the browser counts. Cross-checked on
+  a deck holding one of every building block that consumes a step -- `pause`,
+  `stagger`, `anim` with and without a number, `alternatives`, `tiles`,
+  `morph`, `video`, `flipbook`: on all nine slides with a body `info()` names
+  the same number the runtime in the browser counts, and the PDF names it too.
+]
+
+=== Where a hand-built footer goes
+
+typstage draws no footer on a title or a section slide. Anyone building their
+own faces the question of what belongs in the counter slot there -- and the
+answer is nothing. `slide.numbered` says when that is the case:
+
+#show-code[```typ
+#let footline = context {
+  let d = info()
+  let number = if d.slide.numbered [#d.slide.number / #d.slide.total] else []
+  place(bottom + right, text(size: 12pt, fill: muted, number))
+}
+```]
+
+On an ordinary slide it goes into the body, that is, into the slide itself:
+
+#show-code[```typ
+== A slide
+#footline
+The text of the slide.
+```]
+
+On the title and the section slides it has to go into the theme: those two
+pictures are functions, and a function wrapped around another adds to it rather
+than replacing it.
+
+#show-code[```typ
+#let base = themes.default
+#let with-foot(f) = (t, s, geo) => { f(t, s, geo); footline }
+
+#show: presentation.with(
+  theme: base + (title-slide: with-foot(base.title-slide),
+                 section: with-foot(base.section)),
+)
+```]
+
+#warning[
+  *Not through `style:`.* The hook looks like the convenient shortcut:
+  `style: it => { footline; it }` would put the footer on every slide without
+  writing it out once per slide. But it is also the template each moving
+  element is typeset with a second time -- and whatever *draws* in there is
+  drawn again inside every sprite.
+
+  Measured on a deck with three reveals per slide: in the browser the footer
+  stood on the slide four times instead of once, and inside a flip book of six
+  frames another six times. Counted in the body, same deck, same sprites: once.
+  On paper it does not show, there are no sprites there.
+
+  `style:` is for typography -- typeface, size, colour, leading -- and for that
+  it is exactly right: background and sprite need the same.
+]
+
+#info[
+  A footer placed in the body sits at the bottom of the *body*, not at the
+  bottom of the slide; the theme's `foot-gap` lies in between. A `dy:` on the
+  `place` moves it where it belongs.
+]
+
+#warning[
+  `info()` reads the state of the slide being typeset and therefore needs a
+  `context` around it. *Before* the presentation there is nothing to read;
+  there it stops with a message rather than handing out zeros.
+
+  *After* it, no: whoever passes the slides as arguments and writes an `info()`
+  below the call still gets the last slide's numbers. Clearing the deck's own
+  record at the end would close that, but measured it costs layout headroom: a
+  slide with one reveal beside a `tiles` went from no warning to three
+  "did not converge" ones. A corner nobody stands in is not worth that, and in
+  the show-rule notation nothing comes after the deck anyway.
+]
+
+
 = Handing it on
 
 The aim of this chapter: getting the talk to where it will be given.

@@ -232,6 +232,40 @@
   })
   let total = all.filter(s => s.kind == "slide").len()
 
+  // Everything the deck knows about itself, one entry per slide, counted here
+  // and nowhere else. All three outputs read from this list, and so does a
+  // deck's own `info()`; that there is exactly one list is the whole reason a
+  // hand-built footer cannot disagree with the built-in one.
+  //
+  // `nr` counts every slide, title and section slides included, and stays out
+  // of the public dictionary: it is only the key under which a slide files its
+  // step count. `slide.number` deliberately counts differently.
+  let daten = {
+    let kopf = all.find(s => s.kind == "title")
+    if kopf != none {
+      (title: kopf.title, subtitle: kopf.subtitle,
+       author: kopf.author, date: kopf.date)
+    } else {
+      (title: title, subtitle: subtitle, author: author, date: date)
+    }
+  }
+  let sect-total = all.filter(s => s.kind == "section").len()
+  let facts = ()
+  let gezaehlt = 0
+  let kapitel = 0
+  let kapitel-titel = none
+  for (i, s) in all.enumerate() {
+    if s.kind == "slide" { gezaehlt += 1 }
+    if s.kind == "section" { kapitel += 1; kapitel-titel = s.title }
+    facts.push((
+      nr: i + 1,
+      data: daten + (
+        slide: (number: gezaehlt, total: total, numbered: s.kind == "slide"),
+        section: (number: kapitel, total: sect-total, title: kapitel-titel),
+      ),
+    ))
+  }
+
   // The branch has to enclose the *whole* build, not just the output: in
   // paged mode the module `html` does not even exist, so an `html.elem` in the
   // dead branch would already be an error.
@@ -240,50 +274,75 @@
     assert(type(per) == int and per >= 1 and per <= 6,
            message: "typstage: handout takes true or 1 to 6 slides per page")
     theme-state.update(theme)
-    handout-body(all, total, style, geo, theme, per)
+    html-output.update(false)
+    handout-body(all, facts, style, geo, theme, per)
   } else if target() != "html" {
     set page(width: geo.width, height: geo.height, margin: 0pt)
     theme-state.update(theme)
-    let n = 0
+    // Said out loud, not left to the default. `bundle()` writes several
+    // documents from one compilation, and a state carries on from one into the
+    // next: without this the slide deck and the handout of a bundle were still
+    // being built as if they were the browser's, and every tracked element
+    // stayed in `hide()` and was missing from the PDF. Measured on a bundle
+    // with an `anim` and an `alternatives`, and the same for the handout above.
+    html-output.update(false)
     let pages = ()
-    // Which section is currently running. The header in book style shows it
-    // on the right, the way a schoolbook shows the chapter. It is counted here
-    // in the loop rather than via a state: the order is fixed either way, so
-    // this stays one line instead of one more state.
-    let sect = none
-    for s in all {
-      if s.kind == "slide" { n += 1 }
-      if s.kind == "section" { sect = s.title }
+    for (i, s) in all.enumerate() {
       pages.push(slide-counter.step()
-                 + slide-body(s, n, total, style, geo, theme, sect: sect))
+                 + deck-info.update(facts.at(i))
+                 // Nothing is revealed on paper, but the cursor counts here
+                 // too, so that `info().step.total` reports the same number in
+                 // both outputs. It has to start over on every slide.
+                 + step-cursor.update(0)
+                 // Nothing on a page sits inside a reveal, so the step being
+                 // laid out is the first one. Said out loud for the sake of
+                 // `bundle()`, where the browser document ran first and left
+                 // its last value standing.
+                 + step-here.update(())
+                 + sprite-number.update(none)
+                 + slide-body(s, style, geo, theme))
     }
     pages.join(pagebreak(weak: true))
   } else {
     html-output.update(true)
     theme-state.update(theme)
     morph-index.update(())
-    let n = 0
     let parts = ()
     let chrome-teile = ()
-    let sect = none
-    for s in all {
-      if s.kind == "slide" { n += 1 }
-      if s.kind == "section" { sect = s.title }
-      let here = n
-      let hier-sect = sect
+    for (i, s) in all.enumerate() {
+      let hier = facts.at(i)
+      let here = hier.data.slide.number
       // Footer and progress come as their own layer above the stage, not
       // into the slide. Otherwise they would leave along with it on
       // transition, while the next one's comes in: two bars would be seen
       // crossing instead of one growing. Title and section slides carry
       // none; their entry stays empty so the count matches the slides.
+      //
+      // This layer is written out at the *end* of the document, long after
+      // the slides. What the chrome reads therefore has to be put back in
+      // front of each of its frames, or all of them would draw the numbers of
+      // the last slide.
       chrome-teile.push(html.elem("div", attrs: (class: "ts-chrome"),
         if s.kind == "slide" {
-          html.frame(slide-chrome(here, total, geo, theme, sect: hier-sect))
+          // The step is said out loud as well, even though the chrome prints
+          // no step: chrome stands inside no reveal, so its step is the first
+          // one. Without it the reading would hang off whatever the last
+          // sprite of the last slide left standing, and that lengthens the
+          // chain of things Typst has to settle for no gain. Measured on a
+          // `bundle()`, where the chain then ran past five attempts and Typst
+          // said "document did not converge".
+          deck-info.update(hier)
+          step-here.update(())
+          sprite-number.update(none)
+          html.frame(slide-chrome(geo, theme))
         } else { [] }))
       parts.push({
         slide-counter.step()
+        deck-info.update(hier)
         element-counter.update(0)
         step-cursor.update(0)
+        step-here.update(())
+        sprite-number.update(none)
         sprites.update(())
         bridge-jobs.update(())
         note-state.update(s.note)
@@ -293,17 +352,18 @@
         // while the frame is laid out would be entered any more.
         html.elem("section", attrs: (class: "ts-slide"), {
           html.elem("div", attrs: (class: "ts-bg"),
-                    html.frame(slide-body(s, here, total, style, geo, theme,
-                                         chrome: false, sect: hier-sect)))
+                    html.frame(slide-body(s, style, geo, theme, chrome: false)))
           // Second chrome, only for the print view (key `p`). There each
           // slide stands on its own page, there is no transition. And the
           // layer above the stage cannot travel along there, because the
           // slides stand one below another. On screen this one stays
           // hidden.
           if s.kind == "slide" {
-            html.elem("div", attrs: (class: "ts-chromep"),
-                      html.frame(slide-chrome(here, total, geo, theme,
-                                              sect: hier-sect)))
+            html.elem("div", attrs: (class: "ts-chromep"), {
+              step-here.update(())
+              sprite-number.update(none)
+              html.frame(slide-chrome(geo, theme))
+            })
           }
           context {
             let tr = transition-state.get()
