@@ -542,8 +542,16 @@
     el.querySelectorAll("path").forEach(function (n) {
       var sw = strichBreite(n);
       if (sw <= 0) return;              // glyph outline, not a drawn stroke
-      var r = n.getBoundingClientRect();
-      if (r.width <= 0 && r.height <= 0) return;
+      // Gemessen wie bei den Glyphen und nicht mit `getBoundingClientRect`.
+      // Firefox rechnet dort den Strich mit, und zwar großzügiger als um seine
+      // halbe Breite: an derselben Bruchlinie meldet es 18,9 mal 5,2, wo die
+      // Geometrie 13,7 mal 0 ist und Chrome auch 13,7 mal 0 meldet. Weil hier
+      // gleich darauf noch einmal um die halbe Strichbreite verbreitert wird,
+      // geriet der Geist doppelt so hoch, und `preserveAspectRatio="none"` zog
+      // die Linie darauf. Gemeldet aus dem Forum als Bruchstriche, die während
+      // des Fluges kurz dick werden, in Chrome aber nicht.
+      var r = glyphKasten(n);
+      if (!r || (r.width <= 0 && r.height <= 0)) return;
       // Widen on screen too by half the stroke width, otherwise the ghost
       // double's box would be zero in one direction.
       var c = n.getScreenCTM();
