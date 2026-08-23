@@ -866,6 +866,11 @@ draws scales along.
   document, so shared typography has to go here. A `#set text` after the show
   rule reaches the slides but not the flying pieces, and the difference only
   shows up mid-flight.
+
+  For the shapes typstage draws itself there is a second route: label rules
+  before `#show: presentation`. They reach more than `style` does, because
+  they also reach the header, the footer and the title slide. See /Labels:
+  reaching every shape the package builds/ below.
 ]
 
 == Building blocks for the body
@@ -879,6 +884,302 @@ draws scales along.
   hand-counted `at:` on each.
 / `statement`: One large sentence, centred, for the slide that carries a single
   claim.
+
+== Labels: reaching every shape the package builds
+
+Every shape typstage draws on a slide itself -- the ground, the header band,
+the slide title, the footer, the progress indicator, the card, the callout,
+the statement, the title and section slides, the box that stands in for a
+video -- carries a fixed Typst label. That makes it addressable from outside:
+an ordinary `show` rule is enough, no theme key, no fork.
+
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+
+#show label("ts-slide-header-band"): set rect(fill: rgb("#4c1d95"))
+#show label("ts-slide-title"): set text(fill: rgb("#fde047"), style: "italic")
+#show label("ts-card"): set block(fill: rgb("#eef2ff"))
+#show label("ts-statement"): set text(fill: rgb("#be123c"), weight: "bold")
+
+#show: presentation.with(theme: themes.default)
+```]
+
+Two kinds of rule cover all of it, split by what they touch: the *surfaces* --
+grounds, bands, hairlines, bars, boxes -- take `set rect(..)`,
+`set block(..)`, `set circle(..)` or `set line(..)`; the *type* takes
+`set text(..)` with size, weight, colour, font and tracking. Both act at
+compile time, so the result is the same in the HTML and in the PDF -- with one
+exception: what is only drawn in the PDF, because the browser puts the real
+`<video>` or `<iframe>` in its place, is only seen there. That concerns the
+six labels under /Media and handout/.
+
+#warning[
+  *For the surfaces* the short form works and the long one does not:
+
+  ```typ
+  #show label("ts-slide-progress"): set rect(fill: green)          // yes
+  #show label("ts-slide-progress"): it => { set rect(fill: green); it }   // no
+  ```
+
+  The short form puts the style rule *around* the element it matched, the long
+  one puts it *inside* -- and inside the rectangle there is no second rectangle
+  left for it to reach. Anyone who knows the two spellings as equivalent from
+  other packages runs aground here.
+
+  For the 15 type labels the two spellings are equivalent: what sits inside
+  the matched element there is the text, and a rule reaches that from within
+  as well.
+]
+
+=== Where the rule has to stand
+
+*Before* `#show: presentation`. That one place reaches everything: the slide
+background, the chrome layer with header, footer and progress, the title slide
+and every moving piece.
+
+The `style` hook does *not* reach the same. It is wrapped around the slide
+*body*, and header, footer, progress and the title and section slides are
+built beside it, not inside it. Measured, all 37 rules one at a time: from inside
+`style` exactly the 13 that stand in the slide body take effect -- the
+building blocks `ts-card…`, `ts-callout…`, `ts-statement`, and the three
+stand-in surfaces `ts-media-…`. The other 24 stay silent there, without a
+warning. `style` remains the right place for typography that concerns the
+whole body; for labels, the place before `#show: presentation` is the one.
+
+#warning[
+  A `show` rule written *after* `#show: presentation` does not reach a tracked
+  element (`anim`, `morph`). The reason is the one given under Typography: in
+  the browser every moving piece is typeset a second time in a frame of its
+  own, and that frame never sees a `#show` rule from the document body.
+
+  ```typ
+  #show: presentation.with(theme: themes.default)
+  #show label("ts-statement"): set text(fill: green)   // too late
+  == A slide
+  #statement[still]
+  #anim(statement[moving])
+  ```
+
+  In this file `still` comes out green and `moving` black: four coloured areas
+  in the background, none in the overlay. With the same rule one line further
+  up it is four and six, and both look alike. The PDF does not show the
+  difference, because nothing is typeset twice there.
+
+  This holds for every `#show` rule, not only for label rules; it is not a
+  quirk of the labels.
+]
+
+=== What a label rule changes and what it does not
+
+Reachable is whatever the package does *not* write as an explicit argument.
+For type that is everything; for the surfaces it is `fill` and `stroke`
+everywhere and `radius` wherever the shape has a rounding, because those are
+exactly what typstage gives its shapes through a `set` rule.
+
+`width` stands there as an argument everywhere and is therefore nowhere
+reachable. `height` has three exceptions worth naming: `ts-card`,
+`ts-card-bar` and `ts-callout` get their height as `auto`, and `auto` is not a
+value that could beat a rule. Not in a row of equal height either: measured on
+the painted surface itself, `height:` reaches them there as well.
+
+#show-code[```typ
+#show label("ts-card"): set block(height: 150pt)   // works
+#show label("ts-card"): set block(width: 30%)      // does not
+```]
+
+The first line blows the card up to 150 pt and pushes the callout under it off
+the slide. On the chrome surfaces, the grounds and the handout frame neither
+one does anything; what a `width` rule seems to change there are the blocks
+*inside* the content, see the next box.
+
+The slide's *arrangement* is not reachable either. How tall the header builds,
+how far the rule sits under the title, where the bar goes -- that is produced
+in `place` and `layout` while the layout composes itself, and no `show` rule
+reaches inside it. The theme keys are there for that (`head-gap`,
+`band-height`, `rule-size` and the rest); they stay exactly as they were.
+
+#warning[
+  A rule on `block` or `rect` reaches *inwards*: it holds for the labelled
+  surface and for every block inside it. For `fill`, `stroke` and `radius`
+  that is caught -- the card puts back inside whatever the document had set,
+  or its own colour would run out over the rounded corners. For the spacings
+  it is not caught, and then a label rule moves the slide:
+
+  ```typ
+  #show label("ts-card"): set block(below: 60pt)
+  == A slide
+  #card(title: [Card])[Body]
+  #callout(title: [Note])[Remember this]
+  ```
+
+  Measured with `pdftotext -bbox` on exactly this slide: the callout moves
+  down by 31.2 pt, and everything below it with it. The number is `60pt` minus
+  the block spacing of 1.2 em, at 24 pt text 28.8 pt, *per edge*. Setting
+  `above` and `below` at once, with something above the card, gives both edges
+  and so twice the shift.
+
+  That is not a promise but a side effect of Typst's style rules. Labels are
+  meant for type and surface; for spacings, use the building blocks' own
+  arguments or the theme keys.
+]
+
+=== The complete inventory
+
+What stands here exists; what exists stands here. The names follow one scheme:
+`ts-`, then the *place*, then the *part* -- the part always comes after the
+place, never before. Places are `slide` (the ordinary slide), `title-slide`,
+`section-slide`, `card`, `callout`, `statement`, `media` and `handout`.
+
+Two pairs differ only in word order, and reaching for the wrong one is silent
+-- it simply does nothing. So here they are side by side:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: none,
+  table.header([*Name*], [*Place and part*]),
+  [`ts-slide-title`], [Place `slide`, part `title`: the title of an ordinary
+    slide],
+  [`ts-title-slide-title`], [Place `title-slide`, part `title`: the title of
+    the title slide],
+  [`ts-slide-title-rule`], [Place `slide`: the rule under the slide title],
+  [`ts-title-slide-rule`], [Place `title-slide`: the accent stroke on the
+    title slide],
+)
+
+The mnemonic: `slide` in *front* means the ordinary slide; `slide` behind
+`title` or `section` means that kind of slide.
+
+A label the current theme does not draw -- a header band under
+`header: "run"`, say -- is not on that slide, and a rule on it then does
+nothing.
+
+*The ordinary slide*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-slide-ground`], [The slide's ground], [`rect`],
+  [`ts-slide-header-band`], [The header band, only under `header: "band"`],
+    [`rect`],
+  [`ts-slide-header-text`], [The running header of number and section, only
+    under `header: "run"`], [`text`],
+  [`ts-slide-header-rule`], [The hairline under it, only under
+    `header: "run"`], [`rect`],
+  [`ts-slide-title`], [The slide title, under all three header styles],
+    [`text`],
+  [`ts-slide-title-rule`], [The rule under the title, only when
+    `rule-size > 0pt`], [`rect`],
+  [`ts-slide-footer`], [The footer line], [`text`],
+  [`ts-slide-number`], [The slide number in it], [`text`],
+  [`ts-slide-footer-rule`], [The hairline above it, only when
+    `footer-rule > 0pt`], [`rect`],
+  [`ts-slide-progress`], [The progress bar, or under `progress: "tick"` the
+    marker that travels], [`rect`],
+  [`ts-slide-progress-track`], [The track it travels along, only under
+    `progress: "tick"`], [`rect`],
+)
+
+*The title slide*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-title-slide-ground`], [Its ground], [`rect`],
+  [`ts-title-slide-band`], [The band along the top edge, only in
+    `themes.lesson`], [`rect`],
+  [`ts-title-slide-title`], [Its title], [`text`],
+  [`ts-title-slide-subtitle`], [Its subtitle], [`text`],
+  [`ts-title-slide-rule`], [The accent stroke; `themes.editorial` has two,
+    `themes.plain` none], [`rect`],
+  [`ts-title-slide-byline`], [The line of author and date], [`text`],
+)
+
+*The section slide*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-section-slide-ground`], [Its ground], [`rect`],
+  [`ts-section-slide-bar`], [The bar along the left edge, only in
+    `themes.lesson`], [`rect`],
+  [`ts-section-slide-title`], [Its title], [`text`],
+  [`ts-section-slide-rule`], [The accent stroke; `themes.night` has two,
+    `themes.lesson` none], [`rect`],
+)
+
+A section slide has no subtitle in typstage, so the list names none.
+
+*The building blocks in the body*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-card`], [The card: surface, border, rounding and all of its contents],
+    [`block`],
+  [`ts-card-bar`], [The coloured tab above it, only under `box: "bar"`],
+    [`block`],
+  [`ts-card-title`], [Its caption], [`text`],
+  [`ts-card-disc`], [The disc of the number, only with `number:`], [`circle`],
+  [`ts-card-number`], [The numeral in it], [`text`],
+  [`ts-card-body`], [Its body], [`text`],
+  [`ts-callout`], [The callout: surface, bar, rounding. The bar on the left is
+    not a label of its own, it is this one's left `stroke` --
+    `set block(stroke: (left: 4pt + red))` recolours it], [`block`],
+  [`ts-callout-title`], [Its caption], [`text`],
+  [`ts-callout-body`], [Its body], [`text`],
+  [`ts-statement`], [The large statement. `size` acts as a factor on it,
+    because `statement` measures in `em`], [`text`],
+)
+
+*Media and handout*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-media-fallback`], [The box that stands in for a moving element in the
+    PDF. A container only, with no colour and no border of its own, so a
+    `radius` rule on it is not visible while a `fill` rule is], [`block`],
+  [`ts-media-fallback-empty`], [The grey box inside it when no `fallback:` was
+    given. That one does have a surface], [`block`],
+  [`ts-media-poster`], [The grey area of a `video` without a `poster:`],
+    [`rect`],
+  [`ts-handout-frame`], [The framed box of one slide on the handout page],
+    [`block`],
+  [`ts-handout-lines`], [The writing lines beside or below it], [`line`],
+  [`ts-handout-note`], [The speaker note, where there is one], [`text`],
+)
+
+#info[
+  Three things that belong with this.
+
+  *A theme with its own title slide draws none of these labels.*
+  `title-slide` and `section` in a theme are functions and paint their picture
+  themselves; whoever brings their own loses the six respectively four labels
+  of that slide kind, and nothing warns about it. The five bundled ones draw
+  what their picture needs and no more: band and bar exist only in
+  `themes.lesson`, `themes.plain` has no accent stroke on its title slide,
+  `themes.lesson` none on its section slide. Which theme draws what stands in
+  the /What it is/ column.
+
+  *The invisible markers carry none.* Every moving element paints a
+  transparent rectangle around itself so the browser can find it again, and
+  `pin` does the same for a single glyph. That is machinery, not a shape;
+  both stay nameless.
+
+  *Typst labels and the runtime's CSS classes are two separate namespaces.*
+  `.ts-slide` in the stylesheet is a slide's `<section>` in the browser,
+  `ts-slide-title` is a Typst label -- one hyphen apart and unrelated. Typst's
+  HTML export does put a `data-typst-label` attribute on some shapes, on the
+  building blocks of the body for instance, and on the type shapes it does
+  not. That is Typst's own by-product, not a promise of this package: do not
+  build CSS on it.
+]
+
 
 = Handing it on
 

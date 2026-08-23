@@ -8,9 +8,25 @@
 // said by the theme (see `themes.typ`). Every number below is either a
 // measure from the theme or a point value on the default canvas, scaled
 // along with `k`.
+//
+// Every shape drawn here carries a label, so a deck can restyle it with an
+// ordinary `show` rule instead of forking the theme. One rule of thumb keeps
+// those labels usable, and it was learned the hard way from Typst's
+// precedence: a label goes *inside* the `text(..)` or the `set rect(..)` that
+// gives the shape its default look, never around it. An explicit constructor
+// argument beats a `set` rule, so `[#text(fill: x)[..] <l>]` could never be
+// recolored, while `text(fill: x, [#.. <l>])` can. Measured on four minimal
+// cases, and it holds for `rect` and `block` the same way.
+//
+// Nesting two labels is fine. `[#gruppe <aussen>]` around a group that
+// already carries a label attaches to the enclosing group, not to the same
+// element, so both rules run and the inner one wins wherever they set the
+// same property. Only two labels on the *same* element collide, and Typst
+// says so: "content labelled multiple times", and the last one is used.
 
 #import "config.typ": *
-#import "internal.typ": note-state, plain-text, slide-counter
+#import "internal.typ": (note-state, plain-text, slide-counter,
+                        umgebungs-block)
 #import "themes.typ": font-args
 
 /// The body of one slide, background included.
@@ -43,22 +59,32 @@
     // the footer, otherwise the orientation it is meant to give would
     // travel out with the slide.
     if t.header == "run" {
-      let zeile = text(size: 11.5pt * k, fill: t.muted, {
+      let zeile = text(size: 11.5pt * k, fill: t.muted, [#{
         str(n)
         if sect != none [ #h(1fr) #sect ]
-      })
+      } <ts-slide-header-text>])
       place(top + left, dx: m.left, dy: m.top * 0.62,
             block(width: inner, zeile))
-      place(top + left, dx: m.left, dy: m.top * 0.62 + 17pt * k,
-            rect(width: inner, height: 0.9pt * k, fill: t.rule-fill, stroke: none))
+      place(top + left, dx: m.left, dy: m.top * 0.62 + 17pt * k, {
+        set rect(fill: t.rule-fill, stroke: none)
+        [#rect(width: inner, height: 0.9pt * k) <ts-slide-header-rule>]
+      })
     }
     // Footer: the number, optionally with the total, and a hairline above
     // it.
     if t.footer-rule > 0pt {
-      place(bottom + left, dx: m.left, dy: -(t.foot-gap + 6pt) * k,
-            rect(width: inner, height: t.footer-rule * k, fill: t.border, stroke: none))
+      place(bottom + left, dx: m.left, dy: -(t.foot-gap + 6pt) * k, {
+        set rect(fill: t.border, stroke: none)
+        [#rect(width: inner, height: t.footer-rule * k) <ts-slide-footer-rule>]
+      })
     }
-    let zahl = if t.footer == "fraction" { str(n) + " / " + str(total) } else { str(n) }
+    // Two labels, one inside the other: the footer line is what a deck
+    // restyles as a whole, the number is the part it may want smaller or in
+    // another color on its own. Both attach, because the outer one lands on
+    // the enclosing group rather than on the same element.
+    let zahl = [#[#{
+      if t.footer == "fraction" { str(n) + " / " + str(total) } else { str(n) }
+    } <ts-slide-number>] <ts-slide-footer>]
     if t.footer == "center" {
       place(bottom + center, dy: -13pt * k, text(size: 12pt * k, fill: t.muted, zahl))
     } else if t.footer != "none" {
@@ -69,11 +95,15 @@
     // travels along its track: even at seventy slides that still shows
     // where you are, while the bar there only grows longer very slowly.
     if t.progress == "bar" {
-      place(bottom + left,
-            rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
+      place(bottom + left, {
+        set rect(fill: t.accent, stroke: none)
+        [#rect(width: 100% * n / total, height: 2.5pt * k) <ts-slide-progress>]
+      })
     } else if t.progress == "top" {
-      place(top + left,
-            rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
+      place(top + left, {
+        set rect(fill: t.accent, stroke: none)
+        [#rect(width: 100% * n / total, height: 2.5pt * k) <ts-slide-progress>]
+      })
     } else if t.progress == "tick" {
       // The marker must be at least as wide as its own step, otherwise it
       // jumps over gaps instead of traveling. At nine slides the step was
@@ -87,10 +117,14 @@
       // marker was already advanced a bit on slide one and never reached
       // the end.
       let schritte = calc.max(1, total - 1)
-      place(bottom + left,
-            rect(width: 100%, height: 3pt * k, fill: t.accent.lighten(78%), stroke: none))
-      place(bottom + left, dx: (geo.width - breite) * (n - 1) / schritte,
-            rect(width: breite, height: 3pt * k, fill: t.accent, stroke: none))
+      place(bottom + left, {
+        set rect(fill: t.accent.lighten(78%), stroke: none)
+        [#rect(width: 100%, height: 3pt * k) <ts-slide-progress-track>]
+      })
+      place(bottom + left, dx: (geo.width - breite) * (n - 1) / schritte, {
+        set rect(fill: t.accent, stroke: none)
+        [#rect(width: breite, height: 3pt * k) <ts-slide-progress>]
+      })
     }
   })
 }
@@ -110,6 +144,10 @@
   // that sits further inside, and whatever is set there overrides the
   // theme.
   set text(..font-args(t.font), size: t.size * k, fill: t.ink)
+  // No label around these two: their parts carry their own, and a collective
+  // `ts-title-slide` would have read like `ts-slide-title` with the words
+  // swapped. A theme bringing its own title slide function draws none of
+  // them, and nothing warns about that.
   if s.kind == "title" {
     (t.title-slide)(t, s, geo)
   } else if s.kind == "section" {
@@ -136,11 +174,17 @@
     }
     let titel-text = text(
       ..font-args(t.title-font), size: t.title-size * k, weight: t.weight,
-      fill: t.title-fill, tracking: t.tracking * k, s.title,
+      fill: t.title-fill, tracking: t.tracking * k, [#s.title <ts-slide-title>],
     )
-    rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
+    {
+      set rect(fill: t.paper, stroke: none)
+      [#rect(width: 100%, height: 100%) <ts-slide-ground>]
+    }
     if titel and t.header == "band" {
-      place(top + left, rect(width: 100%, height: bar, fill: t.strong, stroke: none))
+      place(top + left, {
+        set rect(fill: t.strong, stroke: none)
+        [#rect(width: 100%, height: bar) <ts-slide-header-band>]
+      })
       place(top + left, dx: m.left,
         block(width: inner, height: bar, align(left + horizon, titel-text)))
     } else if titel {
@@ -151,9 +195,10 @@
       place(top + left, dx: m.left, dy: m.top + lauf, block(width: inner, {
         block(above: 0pt, below: 0pt, titel-text)
         if t.rule-size > 0pt {
-          block(above: t.title-size * 0.34 * k, below: 0pt,
-            rect(width: 100%, height: t.rule-size * k, fill: t.rule-fill,
-                 stroke: none))
+          block(above: t.title-size * 0.34 * k, below: 0pt, {
+            set rect(fill: t.rule-fill, stroke: none)
+            [#rect(width: 100%, height: t.rule-size * k) <ts-slide-title-rule>]
+          })
         }
       }))
     }
@@ -209,13 +254,14 @@
 
   let lines(height) = {
     let count = calc.max(2, int(height.pt() / 17))
-    stack(dir: ttb, spacing: 17pt,
-          ..range(count).map(_ => line(length: 100%, stroke: 0.4pt + luma(84%))))
+    set line(stroke: 0.4pt + luma(84%))
+    [#stack(dir: ttb, spacing: 17pt,
+            ..range(count).map(_ => line(length: 100%))) <ts-handout-lines>]
   }
   let room-for-notes(height) = context {
     let note = note-state.get()
     if note != none and plain-text(note).trim() != "" {
-      text(size: 9pt, fill: luma(35%), note)
+      text(size: 9pt, fill: luma(35%), [#note <ts-handout-note>])
     } else { lines(height) }
   }
 
@@ -248,11 +294,19 @@
       calc.min(room.width, share * (geo.width / geo.height))
     }
     let h = w * (geo.height / geo.width)
-    let framed(item) = block(
-      width: w, height: h, clip: true, radius: 2pt,
-      stroke: 0.5pt + luma(72%),
-      scale(w / geo.width * 100%, origin: top + left,
-            slide-body(item.slide, item.number, total, style, geo, t)))
+    // The frame's own look travels through a `set` rule, so a label rule can
+    // reach it; the shrunk slide inside gets the surrounding style put back,
+    // or it would inherit the frame's stroke and radius and draw a second
+    // border around itself.
+    let framed(item) = context {
+      let aussen = umgebungs-block()
+      set block(radius: 2pt, stroke: 0.5pt + luma(72%))
+      [#block(width: w, height: h, clip: true, {
+        set block(fill: aussen.fill, stroke: aussen.stroke, radius: aussen.radius)
+        scale(w / geo.width * 100%, origin: top + left,
+              slide-body(item.slide, item.number, total, style, geo, t))
+      }) <ts-handout-frame>]
+    }
 
     let rows = sheet.map(item => {
       // Counted here too, not only in the other two branches: a companion

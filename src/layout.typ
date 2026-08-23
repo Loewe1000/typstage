@@ -14,7 +14,7 @@
 // and only learns there under which theme it is set.
 
 #import "elements.typ": anim
-#import "internal.typ": step-cursor, zeilen-hoehe
+#import "internal.typ": step-cursor, umgebungs-block, zeilen-hoehe
 #import "config.typ": doc-word
 #import "themes.typ": theme-state
 
@@ -29,6 +29,13 @@
 /// No `clip: true`: Typst derives a clip path's identifier from the
 /// content, and the same box twice on a slide would produce the same
 /// identifier. The corners are therefore rounded by the bar itself.
+///
+/// Six labels for the six parts, so a deck can restyle them without touching
+/// the theme. `<ts-card>` is the box itself, and because its surface travels
+/// through a `set` rule rather than an argument, `set block(fill: ..)` on
+/// that label reaches it. `<ts-card-bar>` is the coloured tab, `<ts-card-title>`
+/// the caption, `<ts-card-disc>` the numbered disc, `<ts-card-number>` the
+/// numeral in it, `<ts-card-body>` the body.
 #let card(
   body,
   title: none,
@@ -68,23 +75,42 @@
   let radius = if radius != auto { radius } else if stil == "label" { 0pt } else { 7pt }
   let stroke = if stroke != auto { stroke }
                 else if stil == "label" { none } else { 0.7pt + t.border }
-  block(
+  // Surface, border and rounding travel through a `set` rule instead of
+  // standing as arguments on the block. Only that way does
+  // `show label("ts-card"): set block(fill: ..)` reach the box: an explicit
+  // argument beats any rule. What the surrounding document had set is read
+  // first and put back inside, or the box's own surface would run on into
+  // every block of its body and out over the rounded corners.
+  let aussen = umgebungs-block()
+  {
+  set block(fill: fill, stroke: stroke, radius: radius)
+  [#block(
     width: width, height: if zeile == none { auto } else { zeile },
-    radius: radius, fill: fill, stroke: stroke,
   {
     // Between the bar and the body, Typst would otherwise add its block
     // spacing: measured at 20pt for 17pt text, which left the text hanging
     // 30pt below the head but only 9pt above the bottom edge. Both blocks
     // give it up; the spacing comes solely from `inset`.
-    set block(spacing: 0pt)
+    set block(spacing: 0pt, fill: aussen.fill, stroke: aussen.stroke,
+              radius: aussen.radius)
     if title != none and stil == "bar" {
-      block(
-        width: 100%, fill: color,
-        radius: (top-left: radius, top-right: radius),
+      // No `stroke` here. The bar never had one of its own, so it picks up
+      // whatever the document set, and the line above has already put that
+      // back. Writing `stroke: none` would be an explicit value and would
+      // beat a deck's `#set block(stroke: ..)`, which is a change in a deck
+      // that uses no label at all.
+      set block(fill: color,
+                radius: (top-left: radius, top-right: radius))
+      [#block(
+        width: 100%,
         inset: (x: 11pt, y: 6pt),
-        text(size: 0.62em, weight: "bold", fill: white, tracking: 0.6pt,
-             upper(title)),
-      )
+        {
+          set block(fill: aussen.fill, stroke: aussen.stroke,
+                    radius: aussen.radius)
+          text(size: 0.62em, weight: "bold", fill: white, tracking: 0.6pt,
+               [#upper(title) <ts-card-title>])
+        },
+      ) <ts-card-bar>]
     }
     block(width: 100%, inset: inset, {
     // In the label style, the caption sits inside the box and shares the
@@ -92,28 +118,38 @@
     // white: here the label is a heading, not a tab.
     if title != none and stil == "label" {
       block(above: 0pt, below: 0.45em,
-        text(size: 0.78em, weight: "bold", fill: color, title))
+        text(size: 0.78em, weight: "bold", fill: color, [#title <ts-card-title>]))
     }
-    if number == none { body } else {
+    let rumpf = [#body <ts-card-body>]
+    if number == none { rumpf } else {
       grid(
         columns: (auto, 1fr), column-gutter: 8pt, align: (left + top, left + top),
-        box(baseline: 0.24em, circle(
-          radius: 0.62em, fill: color, stroke: none,
-          align(center + horizon,
-                text(size: 0.62em, weight: "bold", fill: white, str(number))),
-        )),
-        body,
+        box(baseline: 0.24em, {
+          set circle(fill: color, stroke: none)
+          [#circle(
+            radius: 0.62em,
+            align(center + horizon,
+                  text(size: 0.62em, weight: "bold", fill: white,
+                       [#str(number) <ts-card-number>])),
+          ) <ts-card-disc>]
+        }),
+        rumpf,
       )
     }
     })
   },
-  )
+  ) <ts-card>]
+  }
 }
 
 /// A highlighted key sentence: Beamer's `alertblock`.
 ///
 /// The bar on the left marks it on every slide at a glance as "the thing to
 /// remember", without it looking like a second box.
+///
+/// Labelled `<ts-callout>`, `<ts-callout-title>` and `<ts-callout-body>`. As
+/// in `card`, the surface goes through a `set` rule, so a label rule reaches
+/// `fill`, `stroke` and `radius`.
 #let callout(
   body,
   title: auto,
@@ -132,11 +168,16 @@
   let grund = if t.inverted { color.darken(68%) } else { color.lighten(90%) }
   let beschriftung = if t.inverted { color.lighten(15%) } else { color.darken(12%) }
   let zeile = zeilen-hoehe.get()
-  block(
+  // As in `card`: the surface goes through a rule so a label can reach it,
+  // and the document's own block style is put back inside.
+  let aussen = umgebungs-block()
+  {
+  set block(fill: grund, stroke: (left: 3.5pt + color), radius: radius)
+  [#block(
     width: width, height: if zeile == none { auto } else { zeile },
-    radius: radius, fill: grund,
-    stroke: (left: 3.5pt + color), inset: inset,
+    inset: inset,
     {
+      set block(fill: aussen.fill, stroke: aussen.stroke, radius: aussen.radius)
       // Not text, `v()` and body one after another: between two paragraphs
       // Typst additionally inserts `par.spacing`, 29pt for 24pt text, which
       // adds to the explicit spacing. Measured at 34pt instead of the
@@ -145,15 +186,17 @@
       if title != none {
         block(above: 0pt, below: 0pt,
           text(size: 0.62em, weight: "bold", fill: beschriftung,
-               tracking: 0.6pt, upper(title)))
+               tracking: 0.6pt, [#upper(title) <ts-callout-title>]))
       }
       // Relative to the text size, so the spacing is right at every theme
       // size: fixed points would look too airy at 15pt and cramped at 31pt.
       // More air than in the box: there the colored bar separates label and
       // text, here both sit on the same background and need the spacing.
-      block(above: if title == none { 0pt } else { 0.6em }, below: 0pt, body)
+      block(above: if title == none { 0pt } else { 0.6em }, below: 0pt,
+        [#body <ts-callout-body>])
     },
-  )
+  ) <ts-callout>]
+  }
 }
 
 /// Two or more columns side by side.
@@ -259,17 +302,20 @@
 /// Explicitly demands the full width: a tracked element becomes as wide
 /// as its content, and a bare `align(center, …)` inside it would have no
 /// room to center in and would sit unchanged on the left.
+///
+/// Labelled `<ts-statement>`. `size` is measured in `em`, so a
+/// `set text(size: …)` from a label rule multiplies rather than replaces it.
 #let statement(
   body,
   size: 1.6em,
   color: none,
   above: 0.6em,
   below: 0.6em,
-) = block(width: 100%, {
+) = [#block(width: 100%, {
   v(above)
   // `fill: auto` does not exist for `text`: without a color, none is set
   // at all, so that the surrounding one applies.
   let gesetzt = text(size: size, body)
   align(center, if color == none { gesetzt } else { text(fill: color, gesetzt) })
   v(below)
-})
+}) <ts-statement>]

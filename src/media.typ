@@ -10,24 +10,32 @@
 /// `fallback` is arbitrary content: a CeTZ drawing, an image, a table. Left
 /// out, a labelled placeholder remains. `link` goes underneath and is
 /// clickable in the PDF: whoever holds the handout gets to the live thing.
-#let fallback-box(fallback, link-target, width, height, label) = block(
+///
+/// Labelled `<ts-media-fallback>`. The outer block is only a container and
+/// carries no surface of its own; the grey box that appears when no
+/// `fallback` was given is `<ts-media-fallback-empty>` and has one.
+#let fallback-box(fallback, link-target, width, height, label) = [#block(
   width: width, height: height, {
     let main = if link-target == none { 100% } else { 88% }
     if fallback != none {
       block(width: 100%, height: main, align(center + horizon, fallback))
     } else {
-      block(width: 100%, height: main, fill: luma(95%),
-            stroke: 0.5pt + luma(80%), radius: 4pt,
-            align(center + horizon, text(size: 0.75em, fill: luma(45%), label)))
+      set block(fill: luma(95%), stroke: 0.5pt + luma(80%), radius: 4pt)
+      [#block(width: 100%, height: main,
+              align(center + horizon, text(size: 0.75em, fill: luma(45%), label)))
+       <ts-media-fallback-empty>]
     }
     if link-target != none {
       align(center, text(size: 0.62em, fill: luma(45%),
                          link(link-target, link-target)))
     }
   },
-)
+) <ts-media-fallback>]
 
 /// A real HTML5 video over the slide.
+///
+/// Without a `poster:` the placeholder on paper is labelled
+/// `<ts-media-poster>`.
 #let video(
   src,
   width: 100%,
@@ -43,7 +51,10 @@
 ) = track(
   "video",
   box(width: width, height: height, clip: true, radius: radius,
-      if poster == none { rect(width: 100%, height: 100%, fill: luma(92%)) } else {
+      if poster == none {
+        set rect(fill: luma(92%))
+        [#rect(width: 100%, height: 100%) <ts-media-poster>]
+      } else {
         { set image(width: 100%, height: 100%, fit: "cover"); poster }
       }),
   at: at,

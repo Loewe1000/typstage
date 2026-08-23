@@ -16,6 +16,30 @@
 
 #import "config.typ": margins
 
+/// The full-bleed ground of a title or section slide.
+///
+/// A `set` rule rather than an argument, so a `show label(..): set rect(..)`
+/// in a deck reaches it. An explicit `fill:` on the rect could not be
+/// overridden by any rule.
+#let grund(farbe, marke) = {
+  set rect(fill: farbe, stroke: none)
+  if marke == "title" {
+    [#rect(width: 100%, height: 100%) <ts-title-slide-ground>]
+  } else {
+    [#rect(width: 100%, height: 100%) <ts-section-slide-ground>]
+  }
+}
+
+/// One of the short accent strokes a title or section slide is built from.
+#let zierlinie(breite, hoehe, farbe, marke) = {
+  set rect(fill: farbe, stroke: none)
+  if marke == "title" {
+    [#rect(width: breite, height: hoehe) <ts-title-slide-rule>]
+  } else {
+    [#rect(width: breite, height: hoehe) <ts-section-slide-rule>]
+  }
+}
+
 /// Font arguments that simply leave out a `none`.
 ///
 /// `text(font: none)` does not exist: anyone who does not want to
@@ -64,10 +88,10 @@
 } else { d }
 
 /// The line with author and date, as it stands under every title slide.
-#let by-line(t, s, k) = text(size: 12pt * k, fill: t.muted, {
+#let by-line(t, s, k) = text(size: 12pt * k, fill: t.muted, [#{
   s.author
   if s.date != none [ · #datum(s.date) ]
-})
+} <ts-title-slide-byline>])
 
 // ── default ────────────────────────────────────────────────────────────────
 
@@ -75,15 +99,15 @@
 #let band-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
-  rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
+  grund(t.paper, "title")
   place(top + left, dx: m.left, dy: geo.height * 0.32, {
     stapel(
       text(..font-args(t.title-font), size: 34pt * k, weight: "bold",
-           fill: t.strong, s.title),
+           fill: t.strong, [#s.title <ts-title-slide-title>]),
       6pt * k,
-      rect(width: 190pt * k, height: 2.5pt * k, fill: t.accent, stroke: none),
+      zierlinie(190pt * k, 2.5pt * k, t.accent, "title"),
       8pt * k,
-      text(size: 17pt * k, fill: t.muted, s.subtitle),
+      text(size: 17pt * k, fill: t.muted, [#s.subtitle <ts-title-slide-subtitle>]),
     )
   })
   place(bottom + left, dx: m.left, dy: -m.bottom, by-line(t, s, k))
@@ -93,13 +117,13 @@
 #let band-section(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
-  rect(width: 100%, height: 100%, fill: t.strong, stroke: none)
+  grund(t.strong, "section")
   place(horizon + left, dx: m.left, {
     stapel(
-      rect(width: 62pt * k, height: 2.5pt * k, fill: t.accent, stroke: none),
+      zierlinie(62pt * k, 2.5pt * k, t.accent, "section"),
       10pt * k,
       text(..font-args(t.title-font), size: 30pt * k, weight: "bold",
-           fill: white, s.title),
+           fill: white, [#s.title <ts-section-slide-title>]),
     )
   })
 }
@@ -110,17 +134,20 @@
 #let lesson-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
-  rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
-  place(top + left, rect(width: 100%, height: 12pt * k, fill: t.accent, stroke: none))
+  grund(t.paper, "title")
+  place(top + left, {
+    set rect(fill: t.accent, stroke: none)
+    [#rect(width: 100%, height: 12pt * k) <ts-title-slide-band>]
+  })
   place(center + horizon, dy: -10pt * k, block(width: geo.width - 2 * m.left, {
     set align(center)
     stapel(
       text(..font-args(t.title-font), size: 38pt * k, weight: "bold",
-           fill: t.strong, s.title),
+           fill: t.strong, [#s.title <ts-title-slide-title>]),
       14pt * k,
-      rect(width: 130pt * k, height: 3pt * k, fill: t.accent, stroke: none),
+      zierlinie(130pt * k, 3pt * k, t.accent, "title"),
       14pt * k,
-      text(size: 18pt * k, fill: t.muted, s.subtitle),
+      text(size: 18pt * k, fill: t.muted, [#s.subtitle <ts-title-slide-subtitle>]),
     )
   }))
   place(bottom + center, dy: -m.bottom, by-line(t, s, k))
@@ -131,11 +158,15 @@
   let k = geo.scale
   let m = margins(geo)
   let balken = 16pt * k
-  rect(width: 100%, height: 100%, fill: t.accent.lighten(88%), stroke: none)
-  place(top + left, rect(width: balken, height: 100%, fill: t.accent, stroke: none))
+  grund(t.accent.lighten(88%), "section")
+  place(top + left, {
+    set rect(fill: t.accent, stroke: none)
+    [#rect(width: balken, height: 100%) <ts-section-slide-bar>]
+  })
   place(horizon + left, dx: m.left + balken,
     block(width: geo.width - 2 * m.left - balken,
-      text(..font-args(t.title-font), size: 32pt * k, weight: "bold", fill: t.strong, s.title)))
+      text(..font-args(t.title-font), size: 32pt * k, weight: "bold", fill: t.strong,
+           [#s.title <ts-section-slide-title>])))
 }
 
 // ── night ──────────────────────────────────────────────────────────────────
@@ -145,16 +176,16 @@
 #let night-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
-  rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
+  grund(t.paper, "title")
   place(center + horizon, block(width: geo.width * 0.74, {
     set align(center)
     stapel(
       text(..font-args(t.title-font), size: 40pt * k, weight: "bold",
-           fill: t.ink, s.title),
+           fill: t.ink, [#s.title <ts-title-slide-title>]),
       16pt * k,
-      rect(width: 90pt * k, height: 2pt * k, fill: t.accent, stroke: none),
+      zierlinie(90pt * k, 2pt * k, t.accent, "title"),
       16pt * k,
-      text(size: 17pt * k, fill: t.muted, s.subtitle),
+      text(size: 17pt * k, fill: t.muted, [#s.subtitle <ts-title-slide-subtitle>]),
     )
   }))
   place(bottom + center, dy: -m.bottom, by-line(t, s, k))
@@ -163,16 +194,16 @@
 /// Two accent lines, with the title in the accent color between them.
 #let night-section(t, s, geo) = {
   let k = geo.scale
-  rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
+  grund(t.paper, "section")
   place(center + horizon, block(width: geo.width * 0.56, {
     set align(center)
     stapel(
-      rect(width: 100%, height: 1pt * k, fill: t.accent, stroke: none),
+      zierlinie(100%, 1pt * k, t.accent, "section"),
       18pt * k,
       text(..font-args(t.title-font), size: 30pt * k, weight: "bold",
-           fill: t.accent, s.title),
+           fill: t.accent, [#s.title <ts-section-slide-title>]),
       18pt * k,
-      rect(width: 100%, height: 1pt * k, fill: t.accent, stroke: none),
+      zierlinie(100%, 1pt * k, t.accent, "section"),
     )
   }))
 }
@@ -183,20 +214,20 @@
 #let plain-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
-  rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
+  grund(t.paper, "title")
   place(top + left, dx: m.left, dy: geo.height * 0.42, block(width: geo.width * 0.7, {
     stapel(
       text(..font-args(t.title-font), size: 30pt * k, fill: t.strong,
-           tracking: 0.3pt * k, s.title),
+           tracking: 0.3pt * k, [#s.title <ts-title-slide-title>]),
       12pt * k,
-      text(size: 15pt * k, fill: t.muted, s.subtitle),
+      text(size: 15pt * k, fill: t.muted, [#s.subtitle <ts-title-slide-subtitle>]),
     )
   }))
   place(bottom + left, dx: m.left, dy: -m.bottom,
-    text(size: 10pt * k, fill: t.muted, {
+    text(size: 10pt * k, fill: t.muted, [#{
       s.author
       if s.date != none [ · #datum(s.date) ]
-    }))
+    } <ts-title-slide-byline>]))
 }
 
 /// The title sits where the slide title would otherwise stand, just at
@@ -204,13 +235,13 @@
 #let plain-section(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
-  rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
+  grund(t.paper, "section")
   place(horizon + left, dx: m.left, block(width: geo.width * 0.7, {
     stapel(
       text(..font-args(t.title-font), size: 26pt * k, fill: t.strong,
-           tracking: 0.3pt * k, s.title),
+           tracking: 0.3pt * k, [#s.title <ts-section-slide-title>]),
       11pt * k,
-      rect(width: 40pt * k, height: 0.8pt * k, fill: t.muted, stroke: none),
+      zierlinie(40pt * k, 0.8pt * k, t.muted, "section"),
     )
   }))
 }
@@ -222,38 +253,39 @@
 #let editorial-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
-  rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
+  grund(t.paper, "title")
   place(center + horizon, dy: -8pt * k, block(width: geo.width * 0.68, {
     set align(center)
     stapel(
-      rect(width: 64pt * k, height: 0.9pt * k, fill: t.accent, stroke: none),
+      zierlinie(64pt * k, 0.9pt * k, t.accent, "title"),
       18pt * k,
       text(..font-args(t.title-font), size: 34pt * k, fill: t.strong,
-           tracking: 0.5pt * k, s.title),
+           tracking: 0.5pt * k, [#s.title <ts-title-slide-title>]),
       12pt * k,
-      text(size: 16pt * k, style: "italic", fill: t.muted, s.subtitle),
+      text(size: 16pt * k, style: "italic", fill: t.muted,
+           [#s.subtitle <ts-title-slide-subtitle>]),
       20pt * k,
-      rect(width: 64pt * k, height: 0.9pt * k, fill: t.accent, stroke: none),
+      zierlinie(64pt * k, 0.9pt * k, t.accent, "title"),
     )
   }))
   place(bottom + center, dy: -m.bottom,
-    text(size: 11pt * k, fill: t.muted, tracking: 1.4pt * k, upper({
+    text(size: 11pt * k, fill: t.muted, tracking: 1.4pt * k, [#upper({
       s.author
       if s.date != none [ · #datum(s.date) ]
-    })))
+    }) <ts-title-slide-byline>]))
 }
 
 /// Full-bleed surface in the primary color, title in paper color on top.
 #let editorial-section(t, s, geo) = {
   let k = geo.scale
-  rect(width: 100%, height: 100%, fill: t.strong, stroke: none)
+  grund(t.strong, "section")
   place(center + horizon, block(width: geo.width * 0.7, {
     set align(center)
     stapel(
-      rect(width: 44pt * k, height: 0.9pt * k, fill: t.accent, stroke: none),
+      zierlinie(44pt * k, 0.9pt * k, t.accent, "section"),
       20pt * k,
       text(..font-args(t.title-font), size: 30pt * k, fill: t.paper,
-           tracking: 0.5pt * k, s.title),
+           tracking: 0.5pt * k, [#s.title <ts-section-slide-title>]),
     )
   }))
 }
@@ -277,6 +309,23 @@
 /// text takes up around 3.0% of the slide width and the title 3.9%. The
 /// earlier 19pt/23pt were at 2.3% and 2.7%: noticeably smaller than what
 /// you would want to read from the back row.
+///
+/// What the theme draws also carries labels, and those are the second way to
+/// reach it. Names follow one scheme, place first and part second. On an
+/// ordinary slide `ts-slide-ground`, `ts-slide-header-band`,
+/// `ts-slide-header-text`, `ts-slide-header-rule`, `ts-slide-title`,
+/// `ts-slide-title-rule`, `ts-slide-footer`, `ts-slide-number`,
+/// `ts-slide-footer-rule`, `ts-slide-progress` and `ts-slide-progress-track`;
+/// on the title slide `ts-title-slide-ground`, `ts-title-slide-band`,
+/// `ts-title-slide-title`, `ts-title-slide-subtitle`, `ts-title-slide-rule`
+/// and `ts-title-slide-byline`; on the section slide
+/// `ts-section-slide-ground`, `ts-section-slide-bar`,
+/// `ts-section-slide-title` and `ts-section-slide-rule`. A `show` rule on one
+/// of them changes type or fill without a key having to exist for it; the
+/// keys below stay what they are and keep the arrangement.
+///
+/// A theme that brings its own `title-slide` or `section` function draws none
+/// of those labels, and nothing warns about it.
 ///
 /// Comments must NOT go into the parameter list: tidy splits it at the
 /// commas and expects a colon in every piece; the API reference breaks

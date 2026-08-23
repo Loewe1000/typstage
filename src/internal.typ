@@ -101,6 +101,82 @@
 /// its name with one on the slide before it, or the flight there is lost.
 #let morph-index = state("typstage-morphs", ())
 
+/// A stroke that no longer folds into the one it is set inside.
+///
+/// A `stroke` keeps `auto` for whatever it does not name, and `auto` is
+/// filled in from the enclosing stroke rather than from the default. That
+/// matters here because the box hands its own border to a `set` rule and
+/// puts the document's back inside: a deck's `#set block(stroke: red)` names
+/// only the paint, so inside the box's `0.7pt + border` it came out 0.7pt red
+/// instead of 1pt red. Measured on the card's colored tab, in all five
+/// themes.
+///
+/// Every field has to be pinned, not just the thickness. Pinning only that
+/// one left the same fold a row further along: `#set block(stroke: 3pt)`
+/// names the thickness and leaves the paint on `auto`, and the inner edges
+/// then came out in the box's border grey instead of black. Measured on a
+/// deck without a single label, seven spellings affected, among them
+/// `stroke: 3pt` and `stroke: (dash: "dashed")`.
+#let fester-strich(v) = {
+  let einer(x) = if type(x) == stroke {
+    stroke(
+      paint: if x.paint == auto { black } else { x.paint },
+      thickness: if x.thickness == auto { 1pt } else { x.thickness },
+      cap: if x.cap == auto { "butt" } else { x.cap },
+      join: if x.join == auto { "miter" } else { x.join },
+      dash: if x.dash == auto { none } else { x.dash },
+      miter-limit: if x.miter-limit == auto { 4.0 } else { x.miter-limit },
+    )
+  } else { x }
+  if type(v) == dictionary {
+    v.pairs().map(((k, x)) => (k, einer(x))).to-dict()
+  } else { einer(v) }
+}
+
+/// The block style the surrounding document has set.
+///
+/// `card`, `callout` and the handout frame hand their own surface to a `set`
+/// rule instead of writing it as an argument, because only then can a
+/// `show label(..): set block(fill: ..)` in a deck reach it. That rule would
+/// otherwise run on into every block of their contents and out over the
+/// rounded corners, so it is put back inside, and this is what gets put back.
+///
+/// Not simply `none` and `0pt`. Everything Typst reports here is *partial*,
+/// and a partial value folds into the one it is set inside instead of
+/// replacing it. Three shapes of that, all measured on a deck that carries no
+/// label at all.
+///
+/// An unset `stroke` or `radius` comes back as an *empty dictionary*, and
+/// setting that again changes nothing: that is how the callout's left bar
+/// first ended up beside every line of its own text. It becomes `none` and
+/// `0pt` by hand.
+///
+/// A dictionary names only the sides it was given, so `stroke: (left: green)`
+/// would leave the box's own border on the other three. The missing sides and
+/// corners are filled in.
+///
+/// And a stroke keeps `auto` for what it does not name: `stroke: red` inside
+/// the card's `0.7pt + border` drew 0.7pt red instead of 1pt red. That is what
+/// `fester-strich` is for.
+///
+/// Must be called inside a context.
+#let umgebungs-block() = {
+  let leer(v) = type(v) == dictionary and v.len() == 0
+  let voll(v, seiten, fehlt) = if type(v) != dictionary { v } else {
+    seiten.map(k => (k, v.at(k, default: fehlt))).to-dict()
+  }
+  (
+    fill: block.fill,
+    stroke: if leer(block.stroke) { none } else {
+      fester-strich(voll(block.stroke, ("top", "right", "bottom", "left"), none))
+    },
+    radius: if leer(block.radius) { 0pt } else {
+      voll(block.radius,
+           ("top-left", "top-right", "bottom-left", "bottom-right"), 0pt)
+    },
+  )
+}
+
 /// The height of the row a box is currently standing in, or `none`.
 ///
 /// `side-by-side(equal: true)` measures its columns, fixes the largest

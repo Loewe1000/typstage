@@ -1634,6 +1634,11 @@ Haken `style`: eine Funktion, die um jeden Folienrumpf gelegt wird.
   kleinen Rahmen; dieser Rahmen kennt die `#show`-Regeln der Folie nicht.
   `style` wird auf beides gelegt -- auf den Folienrumpf und auf jedes bewegte
   Element --, und nur so sehen Hintergrund und Bewegtes gleich aus.
+
+  Für die Formen, die typstage selbst zeichnet, gibt es einen zweiten Weg:
+  Label-Regeln vor `#show: presentation`. Sie erreichen mehr als `style`, denn
+  sie erreichen auch Kopf, Fuß und Titelfolie. Siehe /Labels: jede gebaute Form
+  ansprechen/ weiter unten.
 ]
 
 #tip[
@@ -1813,6 +1818,307 @@ soll:
 
 In der Argumentform sind alle drei Schreibweisen erlaubt: `slide[Rumpf]` ohne
 Titel, `slide(none)[Rumpf]` ausdrücklich ohne, `slide([Titel])[Rumpf]` mit.
+
+== Labels: jede gebaute Form ansprechen
+
+Jede Form, die typstage auf einer Folie selbst zeichnet -- die Grundfläche, das
+Kopfband, der Folientitel, die Fußzeile, der Fortschritt, der Kasten, der
+Merksatz, die große Aussage, Titel- und Abschnittsfolie, die Ersatzfläche eines
+Videos --, trägt ein festes Typst-Label. Damit ist sie von außen ansprechbar:
+eine gewöhnliche `show`-Regel genügt, kein Theme-Schlüssel, kein Fork.
+
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+
+#show label("ts-slide-header-band"): set rect(fill: rgb("#4c1d95"))
+#show label("ts-slide-title"): set text(fill: rgb("#fde047"), style: "italic")
+#show label("ts-card"): set block(fill: rgb("#eef2ff"))
+#show label("ts-statement"): set text(fill: rgb("#be123c"), weight: "bold")
+
+#show: presentation.with(theme: themes.default)
+```]
+
+Zwei Sorten Regeln decken alles ab, getrennt danach, was sie anfassen: die
+*Flächen* -- Grundflächen, Bänder, Haarlinien, Balken, Kästen -- nehmen
+`set rect(..)`, `set block(..)`, `set circle(..)` oder `set line(..)`, die
+*Schriften* nehmen `set text(..)` mit Größe, Schnitt, Farbe, Schriftart,
+Laufweite. Beides wirkt zur Übersetzungszeit, und deshalb steht das Ergebnis
+gleich in der HTML und im PDF -- mit einer Ausnahme: Was nur im PDF gezeichnet
+wird, weil im Browser das echte `<video>` oder `<iframe>` an seiner Stelle
+steht, sieht man auch nur dort. Das betrifft die sechs Labels unter
+/Medien und Handout/.
+
+#warning[
+  *Bei den Flächen* wirkt die Kurzform, die Langform nicht:
+
+  ```typ
+  #show label("ts-slide-progress"): set rect(fill: green)          // ja
+  #show label("ts-slide-progress"): it => { set rect(fill: green); it }   // nein
+  ```
+
+  Die Kurzform legt die Stilregel *um* das gefundene Element, die Langform
+  *hinein* -- und im Rechteck steckt kein zweites Rechteck, auf das sie noch
+  wirken könnte. Wer die beiden Schreibweisen aus anderen Paketen als
+  gleichwertig kennt, läuft hier auf.
+
+  Bei den 15 Schrift-Labels sind beide Schreibweisen gleichwertig: dort steckt
+  im gefundenen Element der Text, und den erreicht eine Regel auch von innen.
+]
+
+=== Wo die Regel stehen muss
+
+*Vor* `#show: presentation`. Diese eine Stelle erreicht alles: den
+Folienhintergrund, die Chrome-Schicht mit Kopf, Fuß und Fortschritt, die
+Titelfolie und jedes bewegte Element.
+
+Der Haken `style` erreicht *nicht* dasselbe. Er wird um den *Folienrumpf*
+gelegt, und Kopf, Fuß, Fortschritt sowie Titel- und Abschnittsfolie entstehen
+daneben, nicht darin. Gemessen, jede der 37 Regeln einzeln: aus `style`
+heraus wirken genau die 13, die im Folienrumpf stehen -- die Bausteine
+`ts-card…`, `ts-callout…`, `ts-statement` und die drei Ersatzflächen
+`ts-media-…`. Die übrigen 24 bleiben dort stumm, ohne Warnung. `style` bleibt richtig für
+Typografie, die den ganzen Rumpf betrifft; für Labels ist die Stelle vor
+`#show: presentation` die richtige.
+
+#warning[
+  Eine `show`-Regel, die *hinter* `#show: presentation` steht, erreicht ein
+  getracktes Element (`anim`, `morph`) nicht. Der Grund steht schon im
+  Abschnitt über Typografie: Im Browser wird jedes bewegte Element ein zweites
+  Mal gesetzt, in einem eigenen Rahmen, und dieser Rahmen kennt die
+  `#show`-Regeln aus dem Dokumentrumpf nicht.
+
+  ```typ
+  #show: presentation.with(theme: themes.default)
+  #show label("ts-statement"): set text(fill: green)   // zu spät
+  == Eine Folie
+  #statement[fest]
+  #anim(statement[bewegt])
+  ```
+
+  In dieser Datei ist `fest` grün und `bewegt` schwarz: vier eingefärbte
+  Flächen im Hintergrund, null in der Überlagerung. Steht dieselbe Regel eine
+  Zeile weiter oben, sind es vier und sechs, und beide sehen gleich aus. Im
+  PDF fällt der Unterschied nicht auf, weil dort nichts zweimal gesetzt wird.
+
+  Das gilt für jede `#show`-Regel, nicht nur für Label-Regeln; es ist keine
+  Eigenheit der Labels.
+]
+
+=== Was eine Label-Regel ändert und was nicht
+
+Erreichbar ist, was das Paket *nicht* als ausdrückliches Argument schreibt.
+Für die Schrift ist das alles; für die Flächen sind es `fill` und `stroke`
+überall und `radius` überall dort, wo die Form eine Rundung hat -- genau die
+gibt typstage seinen Formen über eine `set`-Regel.
+
+`width` steht überall als Argument und ist deshalb nirgends erreichbar. Bei
+`height` gibt es drei Ausnahmen, und sie sind es wert, genannt zu werden:
+`ts-card`, `ts-card-bar` und `ts-callout` bekommen ihre Höhe als `auto`, und
+`auto` ist kein Wert, der eine Regel schlagen könnte. Auch in einer Reihe
+gleicher Höhe nicht: nachgemessen an der bemalten Fläche selbst wirkt
+`height:` dort ebenso.
+
+#show-code[```typ
+#show label("ts-card"): set block(height: 150pt)   // wirkt
+#show label("ts-card"): set block(width: 30%)      // wirkt nicht
+```]
+
+Die erste Zeile bläht den Kasten auf 150 pt auf und schiebt den Merksatz
+darunter aus der Folie. Bei den Chrome-Flächen, den Grundflächen und dem
+Handout-Rahmen wirkt weder das eine noch das andere; was dort eine
+`width`-Regel scheinbar ändert, sind die Blöcke *im* Inhalt, siehe den
+nächsten Kasten.
+
+Nicht erreichbar ist auch die *Anordnung* der Folie. Wie hoch der Kopf baut,
+wie weit die Linie unter dem Titel steht, wo der Balken sitzt -- das entsteht
+in `place` und `layout`, während sich das Layout zusammensetzt, und keine
+`show`-Regel reicht dort hinein. Dafür sind die Theme-Schlüssel da
+(`head-gap`, `band-height`, `rule-size` und die übrigen); sie bleiben
+unverändert bestehen.
+
+#warning[
+  Eine Regel auf `block` oder `rect` reicht nach *innen*: Sie gilt für die
+  gelabelte Fläche und für jeden Block darin. Bei `fill`, `stroke` und
+  `radius` ist das abgefangen -- der Kasten setzt innen wieder her, was das
+  Dokument gesetzt hatte, sonst liefe seine Farbe über die runden Ecken
+  hinaus. Bei den Abständen ist es nicht abgefangen, und dann verschiebt eine
+  Label-Regel die Folie:
+
+  ```typ
+  #show label("ts-card"): set block(below: 60pt)
+  == Eine Folie
+  #card(title: [Kasten])[Rumpf]
+  #callout(title: [Merke])[Merksatz]
+  ```
+
+  Gemessen mit `pdftotext -bbox` an genau dieser Folie: Der Merksatz rückt um
+  31,2 pt nach unten, und alles unter ihm mit. Die Zahl ist `60pt` minus dem
+  Blockabstand von 1,2 em, bei 24 pt Text also 28,8 pt, *je Kante*. Wer
+  `above` und `below` zugleich setzt und einen Kasten hat, über dem noch etwas
+  steht, bekommt beide Kanten und damit das Doppelte.
+
+  Das ist keine Zusage, sondern eine Nebenwirkung von Typsts Stilregeln.
+  Labels sind für Schrift und Fläche gedacht; wer Abstände will, nimmt die
+  Argumente der Bausteine oder die Theme-Schlüssel.
+]
+
+=== Das vollständige Verzeichnis
+
+Was hier steht, gibt es; was es gibt, steht hier. Die Namen folgen einem
+Schema: `ts-`, dann der *Ort*, dann der *Teil* -- der Teil steht immer hinter
+dem Ort, nie davor. Orte sind `slide` (die gewöhnliche Folie), `title-slide`,
+`section-slide`, `card`, `callout`, `statement`, `media` und `handout`.
+
+Zwei Paare unterscheiden sich nur in der Wortstellung, und ein Fehlgriff
+bleibt stumm -- er tut einfach nichts. Deshalb hier nebeneinander:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: none,
+  table.header([*Name*], [*Ort und Teil*]),
+  [`ts-slide-title`], [Ort `slide`, Teil `title`: der Titel einer
+    gewöhnlichen Folie],
+  [`ts-title-slide-title`], [Ort `title-slide`, Teil `title`: der Titel der
+    Titelfolie],
+  [`ts-slide-title-rule`], [Ort `slide`: die Linie unter dem Folientitel],
+  [`ts-title-slide-rule`], [Ort `title-slide`: die Zierlinie auf der
+    Titelfolie],
+)
+
+Die Merkhilfe: Steht `slide` *vorn*, geht es um die gewöhnliche Folie; steht
+es hinter `title` oder `section`, um jene Folienart.
+
+Ein Label, das dieses Theme gerade nicht zeichnet -- ein Kopfband bei
+`header: "run"` etwa --, gibt es auf dieser Folie nicht, und eine Regel darauf
+tut dann nichts.
+
+*Die gewöhnliche Folie*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-slide-ground`], [Die Grundfläche der Folie], [`rect`],
+  [`ts-slide-header-band`], [Das Kopfband, nur bei `header: "band"`], [`rect`],
+  [`ts-slide-header-text`], [Die laufende Kopfzeile aus Nummer und Abschnitt,
+    nur bei `header: "run"`], [`text`],
+  [`ts-slide-header-rule`], [Die Haarlinie darunter, nur bei `header: "run"`],
+    [`rect`],
+  [`ts-slide-title`], [Der Folientitel, bei allen drei Kopfarten], [`text`],
+  [`ts-slide-title-rule`], [Die Linie unter dem Titel, nur wenn
+    `rule-size > 0pt`], [`rect`],
+  [`ts-slide-footer`], [Die Fußzeile], [`text`],
+  [`ts-slide-number`], [Die Foliennummer darin], [`text`],
+  [`ts-slide-footer-rule`], [Die Haarlinie darüber, nur wenn
+    `footer-rule > 0pt`], [`rect`],
+  [`ts-slide-progress`], [Der Fortschrittsbalken, bei `progress: "tick"` der
+    wandernde Reiter], [`rect`],
+  [`ts-slide-progress-track`], [Die Bahn, auf der er wandert, nur bei
+    `progress: "tick"`], [`rect`],
+)
+
+*Die Titelfolie*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-title-slide-ground`], [Ihre Grundfläche], [`rect`],
+  [`ts-title-slide-band`], [Das Band am oberen Rand, nur in `themes.lesson`],
+    [`rect`],
+  [`ts-title-slide-title`], [Ihr Titel], [`text`],
+  [`ts-title-slide-subtitle`], [Ihr Untertitel], [`text`],
+  [`ts-title-slide-rule`], [Die Zierlinie; `themes.editorial` hat zwei,
+    `themes.plain` keine], [`rect`],
+  [`ts-title-slide-byline`], [Die Zeile aus Verfasser und Datum], [`text`],
+)
+
+*Die Abschnittsfolie*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-section-slide-ground`], [Ihre Grundfläche], [`rect`],
+  [`ts-section-slide-bar`], [Der Balken am linken Rand, nur in
+    `themes.lesson`], [`rect`],
+  [`ts-section-slide-title`], [Ihr Titel], [`text`],
+  [`ts-section-slide-rule`], [Die Zierlinie; `themes.night` hat zwei,
+    `themes.lesson` keine], [`rect`],
+)
+
+Eine Abschnittsfolie hat in typstage keinen Untertitel, deshalb steht in der
+Liste auch keiner.
+
+*Die Bausteine im Folienrumpf*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-card`], [Der Kasten: Fläche, Rand, Rundung und alles darin], [`block`],
+  [`ts-card-bar`], [Der farbige Reiter über ihm, nur bei `box: "bar"`],
+    [`block`],
+  [`ts-card-title`], [Seine Überschrift], [`text`],
+  [`ts-card-disc`], [Die Scheibe der Nummer, nur bei `number:`], [`circle`],
+  [`ts-card-number`], [Die Ziffer darin], [`text`],
+  [`ts-card-body`], [Sein Rumpf], [`text`],
+  [`ts-callout`], [Der Merksatz: Fläche, Balken, Rundung. Der Balken links
+    ist kein eigenes Label, er ist der linke `stroke` dieses hier --
+    `set block(stroke: (left: 4pt + red))` färbt ihn um], [`block`],
+  [`ts-callout-title`], [Seine Überschrift], [`text`],
+  [`ts-callout-body`], [Sein Rumpf], [`text`],
+  [`ts-statement`], [Die große Aussage. `size` wirkt als Faktor darauf, weil
+    `statement` in `em` misst], [`text`],
+)
+
+*Medien und Handout*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-media-fallback`], [Die Ersatzfläche, die im PDF für ein bewegtes
+    Element steht. Nur eine Hülle, ohne eigene Farbe und ohne Rand: eine
+    `radius`-Regel darauf sieht man deshalb nicht, eine `fill`-Regel schon],
+    [`block`],
+  [`ts-media-fallback-empty`], [Der graue Kasten darin, wenn kein `fallback:`
+    angegeben ist. Er hat eine Fläche], [`block`],
+  [`ts-media-poster`], [Die graue Fläche eines `video` ohne `poster:`],
+    [`rect`],
+  [`ts-handout-frame`], [Der gerahmte Kasten einer Folie auf der
+    Handout-Seite], [`block`],
+  [`ts-handout-lines`], [Die Schreiblinien daneben oder darunter], [`line`],
+  [`ts-handout-note`], [Die Sprechernotiz, wo es eine gibt], [`text`],
+)
+
+#info[
+  Drei Dinge, die dazugehören.
+
+  *Ein Theme mit eigener Titelfolie zeichnet keins dieser Labels.*
+  `title-slide` und `section` im Theme sind Funktionen und malen ihr Bild
+  selbst; wer eine eigene mitbringt, verliert die sechs beziehungsweise vier
+  Labels dieser Folienart, und nichts warnt davor. Die mitgelieferten fünf
+  zeichnen, was ihr Bild braucht, und nicht mehr: Band und Balken gibt es nur
+  in `themes.lesson`, `themes.plain` hat keine Zierlinie auf der Titelfolie,
+  `themes.lesson` keine auf der Abschnittsfolie. Was welches Theme zeichnet,
+  steht in der Spalte /Was es ist/.
+
+  *Die unsichtbaren Markierungen tragen keins.* Jedes bewegte Element malt ein
+  durchsichtiges Rechteck um sich, an dem der Browser es wiederfindet, und
+  `pin` macht dasselbe für ein einzelnes Zeichen. Das ist Maschinerie und
+  keine Form; beides bleibt namenlos.
+
+  *Typst-Labels und die CSS-Klassen der Laufzeit sind zwei getrennte
+  Namensräume.* `.ts-slide` im Stylesheet ist der `<section>` einer Folie im
+  Browser, `ts-slide-title` ein Typst-Label -- sie liegen einen Bindestrich
+  auseinander und haben nichts miteinander zu tun. Typsts HTML-Ausgabe legt
+  allerdings an manche Formen ein `data-typst-label`-Attribut, an die
+  Bausteine des Rumpfes zum Beispiel, an die Schriftformen nicht. Es ist
+  Beiwerk von Typst, kein Versprechen dieses Pakets: Verlass dich für CSS
+  nicht darauf.
+]
+
 
 = API-Referenz
 
