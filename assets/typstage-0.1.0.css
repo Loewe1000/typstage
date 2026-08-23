@@ -2,7 +2,12 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
   font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
-#ts-stage{position:absolute;inset:0;margin:auto;overflow:hidden;background:#fafafa}
+/* `manipulation` nimmt dem Tippen die Wartezeit: ohne das hält ein Browser
+   auf dem Telefon jeden Tipp etwa eine drittel Sekunde zurück, weil daraus
+   noch ein Doppeltipp zum Zoomen werden könnte. Zwei Finger zum Zoomen
+   bleiben erlaubt. */
+#ts-stage{position:absolute;inset:0;margin:auto;overflow:hidden;background:#fafafa;
+  touch-action:manipulation}
 .ts-slide{position:absolute;inset:0;visibility:hidden;opacity:0}
 .ts-slide[data-on]{visibility:visible;opacity:1}
 /* The outgoing slide stays visible only for as long as it fades out.

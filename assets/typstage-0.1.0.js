@@ -2311,6 +2311,78 @@
     if (e.target.closest && e.target.closest(".ts-embed")) return;
     goto(current + (e.clientX < innerWidth * 0.25 ? -1 : 1));
   });
+  // ── Swiping ───────────────────────────────────────────────────────────────
+  //
+  // A phone has no arrow keys. Tapping already pages, because a tap raises a
+  // click, but a swipe is the gesture people reach for there, and doing
+  // nothing at all is the wrong answer.
+  //
+  // The direction is the natural one: the finger pushes the slide out of the
+  // frame towards the left, so the next one comes in behind it. That matches
+  // what the slide transition does anyway.
+  //
+  // In the speaker view the finger draws on the stage, so a swipe there must
+  // not page. Outside the stage it may: the note and the preview are a fine
+  // place to swipe on a tablet.
+  var WISCH = null;
+
+  function wischErlaubt(z) {
+    if (OVERVIEW.dataset.on) return false;
+    if (!z || !z.closest) return true;
+    if (z.closest(".ts-embed")) return false;
+    if (ROLLE === "speaker" && z.closest("#ts-stage")) return false;
+    // In der Sprecheransicht hat fast alles seine eigene Bedeutung, vom
+    // Farbtupfer bis zum Eingabefeld. Ein Tipp darf dort nichts blättern,
+    // ein Wisch schon; das trennt die Prüfung weiter unten.
+    return true;
+  }
+
+  addEventListener("touchstart", function (e) {
+    // Zwei Finger sind ein Zoom und keine Geste von uns.
+    if (e.touches.length !== 1 || !wischErlaubt(e.target)) { WISCH = null; return; }
+    var t = e.touches[0];
+    WISCH = { x: t.clientX, y: t.clientY, zeit: Date.now() };
+  }, { passive: true });
+
+  addEventListener("touchmove", function (e) {
+    if (WISCH && e.touches.length !== 1) WISCH = null;
+  }, { passive: true });
+
+  addEventListener("touchend", function (e) {
+    if (!WISCH) return;
+    var t = e.changedTouches[0], a = WISCH;
+    WISCH = null;
+    if (!t) return;
+    var dx = t.clientX - a.x, dy = t.clientY - a.y, dauer = Date.now() - a.zeit;
+    // Die Schranke wächst mit dem Gerät: 48 Pixel sind auf einem Telefon ein
+    // Wisch, auf einem großen Tablet ein Zucken.
+    var genug = Math.max(48, innerWidth * 0.07);
+    var wisch = dauer <= 900 && Math.abs(dx) >= genug
+                && Math.abs(dx) >= Math.abs(dy) * 1.3;
+    // Ein Tipp muss hier mitbehandelt werden und darf nicht dem Klick
+    // überlassen bleiben.
+    //
+    // Auf einem iPhone tat das Tippen gar nichts, während dieselbe Stelle in
+    // Chrome blätterte. Der Grund liegt nicht bei uns: iOS Safari baut aus
+    // einer Berührung nur dann einen Klick, wenn das getroffene Element ihm
+    // anklickbar vorkommt, also ein Verweis, ein Knopf, ein Formularfeld oder
+    // etwas mit eigenem Klickzuhörer ist. Die Bühne ist keins davon, und ein
+    // Zuhörer am Fenster hört diesen Klick deshalb nie. Ein nachgestelltes
+    // Telefon in Chrome zeigt das nicht, weil Chrome den Klick immer baut.
+    var tipp = !wisch && dauer <= 500
+               && Math.abs(dx) < 12 && Math.abs(dy) < 12
+               && ROLLE !== "speaker";
+    if (!wisch && !tipp) return;
+    // `preventDefault` hält den Klick zurück, den ein Browser sonst hinterher
+    // aus derselben Berührung baut. Ohne das bliebe die Geste zwar richtig,
+    // der Klick blätterte aber gleich noch einmal.
+    e.preventDefault();
+    if (wisch) { goto(current + (dx < 0 ? 1 : -1)); return; }
+    goto(current + (t.clientX < innerWidth * 0.25 ? -1 : 1));
+  }, { passive: false });
+
+  addEventListener("touchcancel", function () { WISCH = null; }, { passive: true });
+
   addEventListener("hashchange", function () {
     // In the speaker window the hash is the role, not a step number. It is
     // neither written nor read there.

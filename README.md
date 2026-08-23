@@ -160,9 +160,10 @@ three steps, and `→` goes to the next one wherever it is.
 | `n` | open the speaker view in a second window |
 | `?` | the key map |
 
-Clicking the left quarter of the window goes back, anywhere else forward. The
-address bar carries the current step (`#12`), so a reloaded window stands where
-it stood.
+Clicking the left quarter of the window goes back, anywhere else forward. On a
+phone or tablet the same works with a finger, and so does swiping: right to
+left brings the next slide, the other way the previous one. The address bar
+carries the current step (`#12`), so a reloaded window stands where it stood.
 
 ## The speaker view
 

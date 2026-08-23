@@ -152,6 +152,19 @@ derselben oder auf der nächsten Folie liegt.
 Ein Klick in das linke Viertel des Fensters blättert zurück, jeder andere
 vorwärts; innerhalb eines eingebetteten Elements bleibt der Klick bei diesem.
 
+Auf einem Telefon oder Tablet gilt dasselbe mit dem Finger, und dazu der Wisch:
+von rechts nach links kommt die nächste Folie, andersherum die vorige. Die
+Richtung ist die natürliche, der Finger schiebt die Folie aus dem Bild.
+
+#warning[
+  Das Tippen hängt dabei ausdrücklich *nicht* am Klick. iOS Safari baut aus
+  einer Berührung nur dann einen Klick, wenn ihm das getroffene Element
+  anklickbar vorkommt, also ein Verweis, ein Knopf oder etwas mit eigenem
+  Klickzuhörer. Eine Folie ist keins davon, und auf einem iPhone geschah
+  deshalb beim Tippen gar nichts, während dieselbe Stelle in Chrome blätterte.
+  Ein nachgestelltes Telefon zeigt das nicht, weil Chrome den Klick immer baut.
+]
+
 == Die Sprecheransicht
 
 `n` öffnet dieselbe Datei ein zweites Mal, mit `#speaker` an der Adresse, in
