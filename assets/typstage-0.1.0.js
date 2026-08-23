@@ -311,11 +311,40 @@
     return felder;
   }
 
+  // Der Kasten einer Glyphe in Bildschirmkoordinaten.
+  //
+  // Nicht `getBoundingClientRect()`, obwohl das der naheliegende Weg wäre: auf
+  // einem `<use>` liefert Firefox dafür nicht den Kasten der Glyphe, sondern
+  // den des ganzen SVG. Gemessen an einer Gleichung mit 23 Zeichen gab Chrome
+  // 25x23, 16x24, 34x34 und Firefox 476x43 für *jedes* Zeichen. Da der Geist
+  // seine Größe aus diesem Kasten bekommt, wurde dort jeder Buchstabe auf die
+  // Breite der Formel gezogen. Genau das war als „alle Buchstaben quergezogen"
+  // gemeldet worden.
+  //
+  // `getBBox()` stimmt dagegen in beiden Motoren überein (16x14, 10x15, 21x21),
+  // und `getScreenCTM()` rechnet es in Bildschirmmaße um. Alle vier Ecken, weil
+  // eine Matrix auch drehen und scheren kann. In Chrome kommt damit auf das
+  // Pixel dasselbe heraus wie zuvor.
+  function glyphKasten(u) {
+    var b, m;
+    try { b = u.getBBox(); m = u.getScreenCTM(); } catch (e) { return null; }
+    if (!m || !b || (!b.width && !b.height)) return null;
+    var xs = [], ys = [];
+    for (var i = 0; i < 4; i++) {
+      var x = b.x + (i & 1 ? b.width : 0), y = b.y + (i & 2 ? b.height : 0);
+      xs.push(m.a * x + m.c * y + m.e);
+      ys.push(m.b * x + m.d * y + m.f);
+    }
+    var l = Math.min.apply(null, xs), r = Math.max.apply(null, xs);
+    var o = Math.min.apply(null, ys), un = Math.max.apply(null, ys);
+    return { left: l, top: o, right: r, bottom: un, width: r - l, height: un - o };
+  }
+
   function glyphs(el) {
     var out = [], felder = pinFelder(el);
     el.querySelectorAll("use").forEach(function (u) {
-      var r = u.getBoundingClientRect();
-      if (r.width <= 0 || r.height <= 0) return;
+      var r = glyphKasten(u);
+      if (!r || r.width <= 0 || r.height <= 0) return;
       var id = u.getAttribute("xlink:href") || u.getAttribute("href") || "";
       // Die Glyphe gehört zu dem Pin, in dessen Feld ihre Mitte liegt. Bei
       // geschachtelten Pins gewinnt das kleinste — sonst schluckte ein Pin um
