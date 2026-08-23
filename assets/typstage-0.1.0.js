@@ -11,6 +11,22 @@
   var SPRECHERBOX = document.getElementById("ts-speaker");
   var INK = document.getElementById("ts-ink");
 
+  // ── Links that point outside ──────────────────────────────────────────────
+  //
+  // A link on a slide leads away from the deck. Opening it in the same tab
+  // would take the talk with it, and there is no way back that a speaker wants
+  // to look for in front of a room.
+  //
+  // The anchors come out of `html.frame` and sit inside the SVG, where they
+  // carry `href` as well as `xlink:href`. Both are read, because which of the
+  // two Typst writes is not ours to decide.
+  document.querySelectorAll("a").forEach(function (a) {
+    var href = a.getAttribute("href") || a.getAttribute("xlink:href") || "";
+    if (!/^https?:/i.test(href)) return;
+    a.setAttribute("target", "_blank");
+    a.setAttribute("rel", "noopener");
+  });
+
   // ── The role, once and for good ───────────────────────────────────────────
   //
   // The same file carries two views: the talk and, with `#speaker` in the
@@ -274,12 +290,12 @@
             // the inner viewport keeps its size and no `resize` fires in
             // there. The message says "your box is new", and what to do about
             // it is the embedded document's business, not ours.
-            // Beide Maße, denn sie sagen Verschiedenes: `w` und `h` sind
-            // der Kasten in Punkten der Folie und damit in jedem Fenster
-            // dieselbe Zahl, `px` ist derselbe Kasten in Bildschirmpunkten
-            // und in jedem Fenster eine andere. Wer scharf zeichnen will,
-            // braucht die zweite; wer in allen Fenstern dasselbe zeigen
-            // will, die erste.
+            // Both measurements, because they say different things. `w` and
+            // `h` are the box in points of the slide and therefore the same
+            // number in every window; `px` is the same box in screen points
+            // and a different number in every window. Whoever wants to draw
+            // sharply needs the second, whoever wants every window to show
+            // the same thing needs the first.
             try {
               frame.contentWindow.postMessage({ typstage: 1, mass: 1,
                 w: w, h: h, px: skala }, "*");
@@ -542,14 +558,14 @@
     el.querySelectorAll("path").forEach(function (n) {
       var sw = strichBreite(n);
       if (sw <= 0) return;              // glyph outline, not a drawn stroke
-      // Gemessen wie bei den Glyphen und nicht mit `getBoundingClientRect`.
-      // Firefox rechnet dort den Strich mit, und zwar großzügiger als um seine
-      // halbe Breite: an derselben Bruchlinie meldet es 18,9 mal 5,2, wo die
-      // Geometrie 13,7 mal 0 ist und Chrome auch 13,7 mal 0 meldet. Weil hier
-      // gleich darauf noch einmal um die halbe Strichbreite verbreitert wird,
-      // geriet der Geist doppelt so hoch, und `preserveAspectRatio="none"` zog
-      // die Linie darauf. Gemeldet aus dem Forum als Bruchstriche, die während
-      // des Fluges kurz dick werden, in Chrome aber nicht.
+      // Measured the way the glyphs are, not with `getBoundingClientRect`.
+      // Firefox counts the stroke into that box, and more generously than by
+      // half its width: on the same fraction bar it reports 18.9 by 5.2 where
+      // the geometry is 13.7 by 0, and Chrome reports 13.7 by 0 as well.
+      // Because half a stroke width is added on each side right afterwards,
+      // the ghost came out twice as tall, and `preserveAspectRatio="none"`
+      // stretched the line onto it. Reported from the forum as fraction bars
+      // that briefly thicken during a flight, though not in Chrome.
       var r = glyphKasten(n);
       if (!r || (r.width <= 0 && r.height <= 0)) return;
       // Widen on screen too by half the stroke width, otherwise the ghost
@@ -2656,6 +2672,9 @@
     if (ROLLE === "speaker") return;
     if (OVERVIEW.dataset.on) return;
     if (e.target.closest && e.target.closest(".ts-embed")) return;
+    // A click on a link follows the link. Paging as well would leave the
+    // talk on a different slide than the one the speaker pointed at.
+    if (e.target.closest && e.target.closest("a")) return;
     goto(current + (e.clientX < innerWidth * 0.25 ? -1 : 1));
   });
   // ── Swiping ───────────────────────────────────────────────────────────────
