@@ -8,6 +8,11 @@
 
 #let pkg = toml("../typst.toml")
 
+// Die Sprache ausdrücklich. Typsts Vorgabe ist Englisch, und ohne diese Zeile
+// trennte ein deutscher Text nach englischen Regeln, setzte englische
+// Anführungszeichen und bekäme die englischen Wörter der Vorlage.
+#set text(lang: "de")
+
 #show: docs.with(
   toml: pkg,
   authors: pkg.package.authors,
@@ -23,6 +28,7 @@
     // Absolut, nicht relativ: derselbe Eintrag steht auch auf der Titelseite
     // des PDFs, und dort führt ein Pfad ins Leere.
     (name: "Beispiele", url: "https://loewe1000.github.io/typstage/beispiele/"),
+    (name: "English", url: "https://loewe1000.github.io/typstage/en.html"),
   ),
   notices: ([Teil des Schule-Typst-Ökosystems],),
 )

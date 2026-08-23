@@ -321,8 +321,12 @@ else, no Node, no bundler.
 The [manual](https://loewe1000.github.io/typstage/) covers steps, magic move,
 transitions, media, the bridge and a full API reference. It is published from
 this repository, together with the [example decks](https://loewe1000.github.io/typstage/beispiele/).
-It is also available as a [PDF](https://loewe1000.github.io/typstage/typstage.pdf).
-Both are German; the source is `docs/content.typ`.
+The German source is `docs/content.typ`, the English one `docs/content-en.typ`.
+
+| | Website | PDF |
+| --- | --- | --- |
+| English | [en.html](https://loewe1000.github.io/typstage/en.html) | [typstage-en.pdf](https://loewe1000.github.io/typstage/typstage-en.pdf) |
+| German | [index](https://loewe1000.github.io/typstage/) | [typstage.pdf](https://loewe1000.github.io/typstage/typstage.pdf) |
 
 One run gives the printed manual, the website and its stylesheet:
 

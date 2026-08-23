@@ -170,10 +170,10 @@
 ///
 /// ```typ
 /// #stagger[
-///   - erst dies
-///   - dann das
+///   - this first
+///   - then this
 /// ]
-/// #stagger(card[links], card[rechts])
+/// #stagger(card[left], card[right])
 /// ```
 ///
 /// For a list, the bullet marks are set here rather than left to `list`:

@@ -51,7 +51,29 @@ echo "=== typstage $VERSION ==="
   exit "${PIPESTATUS[0]}"
 )
 [[ -f "$ZIEL/index.html" ]] || { echo "FEHLER: Handbuch ohne index.html" >&2; exit 1; }
-echo "  → Handbuch: index.html, docs.css$(cd "$ZIEL" && ls *.pdf 2>/dev/null | sed 's/^/, /' | tr -d '\n')"
+echo "  → Handbuch: index.html, docs.css, typstage.pdf"
+
+# --- Englisches Handbuch ----------------------------------------------------
+# Eigener Lauf, weil `docs()` eine Show-Regel ist und je Datei genau zwei
+# Ausgaben schreibt. Die Datei nennt ihre Ausgaben selbst (`en.html`,
+# `typstage-en.pdf`), landet also neben der deutschen, ohne sie zu überschreiben;
+# `docs.css` schreiben beide, mit demselben Inhalt.
+if [[ -f "$WURZEL/docs/manual-en.typ" ]]; then
+  (
+    cd "$WURZEL/docs"
+    typst compile \
+      --format bundle \
+      --features bundle,html \
+      --package-path "$PAKETPFAD" \
+      --root "$WURZEL" \
+      manual-en.typ \
+      "$ZIEL" \
+      2>&1 | awk '!/^ *warning: (bundle|html) export/ && !/^ *= hint:/ && NF { print }'
+    exit "${PIPESTATUS[0]}"
+  )
+  [[ -f "$ZIEL/en.html" ]] || { echo "FEHLER: englisches Handbuch ohne en.html" >&2; exit 1; }
+  echo "  → Manual (en): en.html, typstage-en.pdf"
+fi
 
 # --- Beispielpräsentationen -------------------------------------------------
 namen=()
