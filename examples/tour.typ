@@ -485,7 +485,7 @@ and the wrong two find each other), the piece gets a name instead.
   // whatever height the slide gives it.
   + "svg{flex:1;min-height:0;width:100%;display:block;cursor:grab;touch-action:none}"
   + "svg:active{cursor:grabbing}"
-  + "#r{font-size:.72em;display:flex;gap:1.4em}"
+  + "#r{font-size:.62em;display:flex;flex-wrap:wrap;gap:.35em 1.2em}"
   + "#r b{font-variant-numeric:tabular-nums;font-weight:600}"
   + "</style>"
   + "<svg id=\"s\" viewBox=\"0 0 400 130\" preserveAspectRatio=\"none\">"
@@ -499,7 +499,7 @@ and the wrong two find each other), the piece gets a name instead.
   + "</svg>"
   + "<div id=\"r\"><span>frequency <b id=\"fv\">2.0</b></span>"
   + "<span>amplitude <b id=\"av\">0.60</b></span>"
-  + "<span style=\"opacity:.55\">drag anywhere on the wave</span></div>"
+  + "<span style=\"opacity:.55\">drag me</span></div>"
   + "<script>"
   + "var S=document.getElementById('s'),W=document.getElementById('w');"
   + "var n=2,m=0.6,zieht=0;"

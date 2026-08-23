@@ -2479,6 +2479,35 @@
   }
   addEventListener("resize", fit);
 
+  // A page that comes back from the background is not the page that went
+  // away. iOS restores it from its cache without firing a `resize`, and an
+  // embedded frame then stands at a scale that no longer matches the stage.
+  // Reported from an iPhone and seen in both directions: once the text in
+  // the frame came back too large for the slide, once the drawing in it came
+  // back at a quarter of its width.
+  //
+  // The frame is sized in slide points and then zoomed, and the stored
+  // measurement decides whether that is written again. If the browser drops
+  // the scale but keeps the attribute, the stored measurement says "already
+  // correct" and nothing ever repairs it. So it is thrown away here and
+  // everything is placed anew.
+  function neuVermessen() {
+    document.querySelectorAll(".ts-el iframe").forEach(function (f) {
+      delete f.dataset.mass;
+    });
+    fit();
+    // And once more on the next frame. Right after a restore the slide can
+    // still measure zero, and `stelle` then leaves everything standing.
+    if (window.requestAnimationFrame) requestAnimationFrame(function () { fit(); });
+  }
+  addEventListener("pageshow", neuVermessen);
+  addEventListener("orientationchange", neuVermessen);
+  // On `document`, not on the window: that is where the event is defined,
+  // and it saves the question of whether it bubbles.
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) neuVermessen();
+  });
+
   // ── Controls ───────────────────────────────────────────────────────────────
   var hintTimer;
   function hint(t) {
