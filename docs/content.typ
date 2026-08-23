@@ -145,11 +145,57 @@ derselben oder auf der nächsten Folie liegt.
   [`f`], [Vollbild],
   [`s`], [Notiz zur laufenden Folie kurz einblenden],
   [`p`], [Druckansicht: eine Folie je Seite, alles sichtbar],
+  [`n`], [die Sprecheransicht in einem zweiten Fenster öffnen],
   [`?`], [die Tastenbelegung einblenden],
 )
 
 Ein Klick in das linke Viertel des Fensters blättert zurück, jeder andere
 vorwärts; innerhalb eines eingebetteten Elements bleibt der Klick bei diesem.
+
+== Die Sprecheransicht
+
+`n` öffnet dieselbe Datei ein zweites Mal, mit `#speaker` an der Adresse, in
+einem zweiten Fenster. Das eine kommt auf den Beamer, das andere auf den
+Rechner vor dem Vortragenden. Beide reden über `postMessage` miteinander, und
+das trägt auch zwischen zwei lokalen Dateien; es braucht also so wenig einen
+Server wie alles andere hier.
+
+Zu sehen sind die laufende Folie groß, daneben der nächste *Schritt*, darunter
+die Notiz, dazu Uhrzeit, verstrichene Zeit und, wenn eine Zieldauer eingetippt
+ist, ob man vor oder hinter dem Plan liegt.
+
+#tip[
+  Die Vorschau zeigt den nächsten Schritt, nicht die nächste Folie. Ein Deck,
+  das in Schritten zählt, muss die Frage beantworten „was tut der nächste
+  Tastendruck", und das kann eine neue Folie sein oder eine weitere Enthüllung
+  auf derselben. Die Marke darüber sagt, welches von beidem.
+]
+
+Auf der laufenden Folie lässt sich dort zeichnen, und die Striche erscheinen
+auf der Leinwand. Sie bleiben an ihrer Folie kleben: wer vorblättert und
+zurückkommt, findet sie wieder. `x` löscht die der laufenden Folie, `z` nimmt
+den letzten Strich zurück, `c` wechselt die Farbe. `b` schaltet den Saal
+schwarz, `e` friert das Bild auf der Leinwand ein, während man bei sich schon
+weiterblättert.
+
+Gesteuert wird aus beiden Fenstern, und jedes von beiden darf neu geladen
+werden: sie finden sich wieder, und die Striche kommen mit.
+
+#warning[
+  Drei Grenzen, die man kennen sollte.
+
+  Die Striche werden *nicht* mitgedruckt. Die Druckansicht ist der saubere
+  Foliensatz, nicht das Tafelbild.
+
+  Schwarz und Einfrieren enden von selbst, sobald das Sprecherfenster
+  geschlossen wird, gemessen in gut acht Zehntelsekunden. Steht das Fenster
+  dagegen offen und trägt nur kein Deck mehr, greift erst eine Frist von einer
+  Minute. Wer in dieser Lage zusätzlich ein stockendes Vortragsfenster hat,
+  kann sie unbegrenzt hinauszögern; das ist die eine bekannte Ecke, in der der
+  Saal schwarz bleibt.
+
+  Geprüft ist all das in Chrome. Firefox und Safari sind nicht gemessen.
+]
 In der Übersicht führt ein Klick auf ein Vorschaubild zu dieser Folie.
 
 Die Adresszeile trägt den laufenden Schritt mit, `#12` etwa den zwölften. Ein

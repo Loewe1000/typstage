@@ -46,6 +46,13 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
   overflow:visible}
 .ts-ghost svg{width:100%!important;height:100%!important;display:block;
   overflow:visible!important}
+/* Die Zeichenebene. Wie #ts-chrome eine eigene Ebene über der Bühne, damit
+   sie beim Folienwechsel stehen bleibt statt mitzuwandern, nur liegt sie
+   über allem, was zur Folie gehört, denn was darauf gezeichnet wird, gehört
+   nicht zur Folie. Leer und durchlässig, solange niemand hineinzeichnet. */
+#ts-ink{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6}
+#ts-ink svg,#ts-ink canvas{position:absolute;inset:0;width:100%;height:100%;
+  display:block}
 #ts-overview{position:absolute;inset:0;background:#0f1116;display:none;
   grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;
   padding:16px;overflow:auto;z-index:50;align-content:start}
@@ -55,16 +62,151 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
 .ts-mini[data-hier]{outline-color:#eb5e28}
 .ts-mini svg{position:absolute;inset:0;width:100%!important;height:100%!important;
   display:block}
+/* Die Vorschau nimmt die Overlay-Ebene mit, damit sie einen *Schritt* zeigen
+   kann und nicht nur die nackte Folie. Deren Sprites sitzen in ihrem eigenen
+   Kasten und dürfen von der Regel darüber nicht darüber hinausgezogen
+   werden. */
+.ts-mini .ts-ov{position:absolute;inset:0;pointer-events:none}
+.ts-mini .ts-el svg{position:static;inset:auto}
 #ts-hint{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);
   color:#fff;font-size:13px;background:#000b;padding:8px 16px;border-radius:20px;
   opacity:0;transition:opacity .25s;pointer-events:none;z-index:60;max-width:70vw}
 #ts-hint[data-on]{opacity:1}
+/* ── Sprecheransicht ──────────────────────────────────────────────────────
+   Sie steht in derselben Datei; welche Rolle gilt, hängt die Laufzeit als
+   `data-ts-rolle` an das Wurzelelement. Der Behälter deckt die Bühne zu,
+   statt sie auszublenden: `display:none` nähme ihr jede Ausdehnung, und die
+   Morphs vermessen sich mit getBoundingClientRect, sie messen dann null.
+   Zugedeckt bleibt alles heil, und zu sehen ist trotzdem nur die Ansicht. */
+#ts-speaker{display:none}
+html[data-ts-rolle="speaker"] #ts-speaker{display:grid;position:fixed;inset:0;
+  z-index:70;background:#0f1116;color:#f4f4f5;overflow:hidden;
+  grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:10px 12px;
+  font-size:14px}
+/* Der Hinweisbalken liegt sonst unter dem Behälter und wäre nicht zu sehen,
+   die Übersicht ebenso. */
+html[data-ts-rolle="speaker"] #ts-hint{z-index:80}
+html[data-ts-rolle="speaker"] #ts-overview{z-index:90}
+/* Die laufende Folie wird nicht nachgebaut: sie ist die echte Bühne dieses
+   Fensters, nur an ihren Platz im Gerüst gerückt statt zugedeckt. So zeigt
+   sie den laufenden Schritt samt Übergängen, und die Zeichenebene liegt ohne
+   Zutun schon darüber. Maße und Ort setzt `fit`. Sichtbar erst, wenn der
+   Platz steht, sonst säße sie einen Wimpernschlag lang oben links. */
+html[data-ts-rolle="speaker"] #ts-stage{position:fixed;inset:auto;margin:0;
+  z-index:71;opacity:0;cursor:crosshair;touch-action:none;
+  box-shadow:0 0 0 1px #ffffff26,0 10px 34px #0009}
+html[data-ts-rolle="speaker"][data-ts-fertig="1"] #ts-stage{opacity:1}
+/* In der Sprecheransicht ist die Folie eine Zeichenfläche, und zwar ganz.
+   Ein eingebettetes Dokument fängt den Zeiger sonst ab: ein Strich, der
+   darauf beginnt, entstünde gar nicht, während einer, der daneben beginnt,
+   ungehindert darüber zieht. Zwei Regeln für dieselbe Fläche sind eine zu
+   viel. Bedient wird ein solches Dokument im Vortragsfenster, wo es
+   weiterhin auf den Zeiger hört. */
+html[data-ts-rolle="speaker"] .ts-embed,
+html[data-ts-rolle="speaker"] .ts-bridged,
+html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
+.ts-sp-kopf{display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap;
+  border-bottom:1px solid #ffffff1a;padding-bottom:8px}
+.ts-sp-feld{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ts-sp-marke{font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:#ffffff8c;white-space:nowrap}
+.ts-sp-wert{font-size:23px;line-height:1.1;font-variant-numeric:tabular-nums}
+.ts-sp-wert[data-lage="zurueck"]{color:#ff7a6b}
+.ts-sp-wert[data-lage="vor"]{color:#6fd79a}
+.ts-sp-wert[data-laeuft="0"]{color:#ffffff73}
+.ts-sp-ziel{width:4.6em;background:#ffffff14;border:1px solid #ffffff33;
+  color:inherit;border-radius:6px;padding:2px 6px;font:inherit;font-size:21px;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+/* Zwei Reihen: oben die laufende Folie und daneben die Vorschau, darunter
+   die Notiz über die ganze Breite. Die Folie hält ihr Seitenverhältnis, also
+   bleibt unter ihr ein Streifen frei, sobald das Fenster hoch ist; dort steht
+   die Notiz, statt in eine schmale Spalte gequetscht zu werden. Wie breit die
+   erste Spalte ist, rechnet `sprecherSpalten` aus, denn das hängt an der
+   Fensterhöhe und nicht nur an der Breite. */
+.ts-sp-leib{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr);gap:12px 14px;min-height:0}
+/* Der Platz der Bühne ist leer: die Bühne selbst schwebt darüber. Damit die
+   Reihe trotzdem die richtige Höhe bekommt, hält der Kasten das
+   Seitenverhältnis der Folie, wie es die Bildchen auch tun. */
+.ts-sp-platz{grid-column:1;grid-row:1;height:0;
+  padding-bottom:var(--ts-ratio,56.25%);min-width:0}
+.ts-sp-vor{grid-column:2;grid-row:1;min-width:0;overflow:hidden}
+.ts-sp-notizkasten{grid-column:1/3;grid-row:2}
+/* Flach: die Folie ist schon so hoch wie der Leib, neben ihr bliebe sonst
+   eine große leere Fläche. Dann stehen Vorschau und Notiz dort
+   untereinander. Welche der beiden Formen gilt, rechnet `sprecherSpalten`
+   aus und hängt es als `data-form` an. */
+.ts-sp-leib[data-form="flach"] .ts-sp-platz{grid-row:1/3}
+.ts-sp-leib[data-form="flach"] .ts-sp-notizkasten{grid-column:2;grid-row:2}
+/* Hochkant: die Bühne legt sich quer über beide Spalten, Vorschau und Notiz
+   teilen sich die Reihe darunter. Sonst wäre bei einem stehenden Fenster der
+   Notizkasten die größte Fläche der Ansicht, und nicht die laufende Folie. */
+.ts-sp-leib[data-form="hochkant"] .ts-sp-platz{grid-column:1/3;grid-row:1}
+.ts-sp-leib[data-form="hochkant"] .ts-sp-vor{grid-column:1;grid-row:2}
+.ts-sp-leib[data-form="hochkant"] .ts-sp-notizkasten{grid-column:2;grid-row:2}
+.ts-sp-vorbild{margin-top:5px;border-radius:4px;overflow:hidden}
+.ts-sp-vorbild .ts-mini{cursor:default}
+/* Kein nächster Schritt mehr: statt eines Bildes die Ansage, in derselben
+   Form, damit der Kasten nicht springt. */
+.ts-sp-ende{position:relative;height:0;padding-bottom:var(--ts-ratio,56.25%);
+  border:1px dashed #ffffff33;border-radius:4px}
+.ts-sp-ende span{position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;color:#ffffff8c}
+.ts-sp-notizkasten{display:grid;grid-template-rows:auto minmax(0,1fr);
+  min-height:0;border-top:1px solid #ffffff14;padding-top:6px;position:relative}
+/* Eine Zeile, die am unteren Rand einfach abgeschnitten ist, liest sich, als
+   sei die Notiz zu Ende. Der Verlauf und der Pfeil erscheinen nur, wenn
+   wirklich noch etwas kommt; gerollt wird mit den Pfeiltasten hoch und
+   runter, denn beim Vortrag ist die Hand nicht an der Maus. */
+.ts-sp-notizkasten[data-mehr]::after{content:"↓";position:absolute;
+  left:0;right:0;bottom:0;height:2.4em;pointer-events:none;text-align:right;
+  padding-right:10px;color:#ffffffa6;font-size:13px;line-height:4em;
+  background:linear-gradient(to bottom,#0f111600,#0f1116d9 60%,#0f1116)}
+.ts-sp-notiz{overflow:auto;white-space:pre-wrap;line-height:1.45;margin-top:6px;
+  padding-right:6px;overflow-wrap:break-word}
+.ts-sp-notiz[data-leer]{color:#ffffff59;font-style:italic}
+.ts-sp-fuss{display:flex;gap:16px;align-items:center;flex-wrap:wrap;
+  border-top:1px solid #ffffff1a;padding-top:8px;color:#ffffff8c;font-size:12px}
+.ts-sp-stift{display:flex;gap:7px;align-items:center}
+.ts-sp-tupf{width:19px;height:19px;border-radius:50%;padding:0;cursor:pointer;
+  border:2px solid transparent;outline:1px solid #ffffff33}
+.ts-sp-tupf[data-an]{border-color:#fff}
+.ts-sp-lage{display:flex;gap:8px}
+.ts-sp-lage span{background:#ff7a6b;color:#14161c;border-radius:4px;
+  padding:1px 8px;font-weight:600;letter-spacing:.04em}
+.ts-sp-lage .ts-sp-eis{background:#4cc9f0}
+.ts-sp-lage .ts-sp-weg{background:#ffd166}
+.ts-sp-hilfe{margin-left:auto;text-align:right;line-height:1.5;font-size:13px;
+  color:#ffffffb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Ein Vortragsrechner kann klein sein. Bei schmalem Fenster rückt die
+   laufende Folie näher an die Spalte daneben, statt sie zu erdrücken. */
+@media (max-width:1100px){
+  .ts-sp-leib{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+  .ts-sp-wert{font-size:19px}
+  .ts-sp-ziel{font-size:17px}
+  .ts-sp-kopf{gap:14px}
+}
+/* Schwarzschalten: der Saal wird dunkel, im Vortragsfenster. Das Gegenstück
+   zum Einfrieren, das nicht hier steht, sondern in `fernGoto`, wo der
+   Schritt ankommt, den der Vortrag dann nicht zeigt. Ohne das Attribut kostet
+   der Block nichts. */
+html[data-ts-schwarz="1"],html[data-ts-schwarz="1"] body{background:#000}
+html[data-ts-schwarz="1"] #ts-stage,html[data-ts-schwarz="1"] #ts-chrome,
+html[data-ts-schwarz="1"] #ts-fly,html[data-ts-schwarz="1"] #ts-ink{opacity:0}
 @media print{
   html,body{overflow:visible;background:#fff;height:auto}
   #ts-stage{position:static;width:100%!important;height:auto!important}
   .ts-slide{position:relative;visibility:visible!important;opacity:1!important;
     break-after:page;width:100%;height:0;padding-bottom:var(--ts-ratio,56.25%)}
   .ts-el{opacity:1!important;visibility:visible!important}
-  #ts-overview,#ts-hint,#ts-fly,#ts-chrome{display:none!important}
+  #ts-overview,#ts-hint,#ts-fly,#ts-chrome,#ts-ink,
+  #ts-speaker{display:none!important}
+  /* Gedruckt wird aus beiden Fenstern dasselbe. Die Regeln der
+     Sprecheransicht sind spezifischer als die Druckregel darüber und
+     müssten sie sonst überstimmen: die Bühne bliebe klein, an ihrem Platz
+     festgenagelt und bei Schwarzschaltung unsichtbar. */
+  html[data-ts-rolle="speaker"] #ts-stage,html[data-ts-schwarz="1"] #ts-stage{
+    position:static;inset:auto;margin:0;width:100%!important;
+    height:auto!important;opacity:1;z-index:auto;box-shadow:none}
   .ts-chromep{display:block;position:absolute;inset:0}
 }

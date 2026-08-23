@@ -157,11 +157,34 @@ three steps, and `→` goes to the next one wherever it is.
 | `f` | full screen |
 | `s` | the speaker note for this slide |
 | `p` | print view: one slide per page, everything visible |
+| `n` | open the speaker view in a second window |
 | `?` | the key map |
 
 Clicking the left quarter of the window goes back, anywhere else forward. The
 address bar carries the current step (`#12`), so a reloaded window stands where
 it stood.
+
+## The speaker view
+
+`n` opens the same file a second time, with `#speaker` on the address, in a
+second window. Put that one on your laptop and the first one on the projector.
+The two talk to each other with `postMessage`, which works between two local
+files as well, so this needs no server either.
+
+The speaker view shows the running slide large, the next **step** beside it
+(not the next slide: a deck that counts in steps has to answer what the next
+keypress does), the note below, and a clock, an elapsed timer and a pace
+against a target duration you can type in.
+
+You can draw on the running slide there, and the strokes appear on the
+projected one. Strokes stick to their slide, so paging away and back brings
+them with you; `x` clears the current slide, `z` takes back the last stroke,
+`c` changes colour. `b` blacks the room out, `e` freezes the projected image
+while you page ahead in private, and both end by themselves if the speaker
+window goes away.
+
+Steering works from either window, and either one may be reloaded: they find
+each other again and the strokes come back.
 
 ## On paper
 

@@ -60,20 +60,55 @@
 #let runtime-css = read("../assets/typstage-" + runtime-version + ".css")
 #let runtime-js = read("../assets/typstage-" + runtime-version + ".js")
 
-/// Die zwei Sätze, die die Laufzeit selbst anzeigt — der Hinweis bei `s` ohne
-/// Notiz und die Tastenhilfe bei `?`.
+/// Die Wörter, die die Laufzeit selbst anzeigt: der Hinweis bei `s` ohne
+/// Notiz, die Tastenhilfe bei `?`, und die Beschriftungen der
+/// Sprecheransicht.
 ///
 /// Sie folgen `text.lang`, damit ein deutsches Deck deutsche und ein
 /// englisches englische Wörter zeigt. Wer eine Sprache vermisst, reicht sie
 /// über `words:` an `presentation` herein; Englisch ist der Rückfall.
+///
+/// `sp` steht für die Sprecheransicht. Die Schlüssel darin gehen unverändert
+/// ins JSON und werden im Laufzeitcode so gelesen, deshalb tragen sie dort
+/// keine Bindestriche.
 #let runtime-words(lang) = {
   let listen = (
     de: (no-note: "keine Notiz",
-         help: "← → blättern · o Übersicht · f Vollbild · s Notiz · p Druck"),
+         help: "← → blättern · o Übersicht · f Vollbild · s Notiz · n Sprecheransicht · p Druck",
+         help-speaker-short: "← → blättern · b schwarz · e einfrieren · x Folie löschen · ? alle Tasten",
+         help-speaker: "← → blättern · ↑ ↓ Notiz rollen · Pos1 zum Anfang · Ende zum Schluss · b schwarz · e einfrieren · t Zieldauer · r Uhr zurück · c Farbe · z Strich zurück · x Folie löschen · + − Notizgröße · o Übersicht · s Notiz im Balken · f Vollbild · n Vortrag nach vorn · p Druck",
+         sp: (clock: "Uhrzeit", elapsed: "verstrichen", target: "Ziel (min)",
+              left: "Rest", pace: "Plan", progress: "Fortschritt",
+              note: "Notiz", next: "als Nächstes",
+              nextStep: "nächster Schritt", nextSlide: "nächste Folie",
+              end: "Ende des Vortrags", slide: "Folie", step: "Schritt",
+              ahead: "vor Plan", behind: "hinter Plan", onplan: "im Plan",
+              black: "schwarz", frozen: "eingefroren", pen: "Stift",
+              lost: "kein Vortragsfenster")),
     en: (no-note: "no note",
-         help: "← → page · o overview · f full screen · s note · p print"),
+         help: "← → page · o overview · f full screen · s note · n speaker view · p print",
+         help-speaker-short: "← → page · b black · e freeze · x clear slide · ? all keys",
+         help-speaker: "← → page · ↑ ↓ scroll note · Home to start · End to finish · b black · e freeze · t target · r reset clock · c colour · z undo stroke · x clear slide · + − note size · o overview · s note in bar · f full screen · n raise talk · p print",
+         sp: (clock: "clock", elapsed: "elapsed", target: "target (min)",
+              left: "remaining", pace: "pace", progress: "progress",
+              note: "note", next: "up next",
+              nextStep: "next step", nextSlide: "next slide",
+              end: "end of talk", slide: "slide", step: "step",
+              ahead: "ahead", behind: "behind", onplan: "on plan",
+              black: "black", frozen: "frozen", pen: "pen",
+              lost: "no talk window")),
     fr: (no-note: "aucune note",
-         help: "← → naviguer · o aperçu · f plein écran · s note · p imprimer"),
+         help: "← → naviguer · o aperçu · f plein écran · s note · n vue présentateur · p imprimer",
+         help-speaker-short: "← → naviguer · b noir · e figer · x effacer la diapo · ? toutes les touches",
+         help-speaker: "← → naviguer · ↑ ↓ défiler la note · Origine au début · Fin à la fin · b noir · e figer · t durée visée · r remettre à zéro · c couleur · z annuler le trait · x effacer la diapo · + − taille de la note · o aperçu · s note dans la barre · f plein écran · n ramener l'exposé · p imprimer",
+         sp: (clock: "heure", elapsed: "écoulé", target: "durée (min)",
+              left: "restant", pace: "rythme", progress: "avancement",
+              note: "note", next: "ensuite",
+              nextStep: "étape suivante", nextSlide: "diapo suivante",
+              end: "fin de l'exposé", slide: "diapo", step: "étape",
+              ahead: "en avance", behind: "en retard", onplan: "dans les temps",
+              black: "noir", frozen: "figé", pen: "stylo",
+              lost: "pas de fenêtre d'exposé")),
   )
   listen.at(lang, default: listen.en)
 }

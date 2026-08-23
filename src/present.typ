@@ -337,6 +337,11 @@
       parts.join()
       html.elem("div", attrs: (id: "ts-chrome"), chrome-teile.join())
       html.elem("div", attrs: (id: "ts-fly"), [])
+      // Die Zeichenebene, leer. Sie liegt wie die Chrome-Ebene über der Bühne
+      // und wandert beim Folienwechsel nicht mit: was auf die Folie gezeichnet
+      // wird, gehört nicht zur Folie. Gefüllt wird sie zur Laufzeit, von der
+      // Sprecheransicht aus.
+      html.elem("div", attrs: (id: "ts-ink"), [])
     })
     // Ein verzögerter Morph steht im ersten Schritt seiner Folie noch nicht.
     // Das ist unschädlich, solange die Vorfolie keinen gleichnamigen Morph
@@ -357,6 +362,10 @@
 
     html.elem("div", attrs: (id: "ts-overview"), [])
     html.elem("div", attrs: (id: "ts-hint"), [])
+    // Der Behälter der Sprecheransicht, leer. Dieselbe Datei trägt beide
+    // Ansichten; welche gilt, entscheidet `#speaker` an der Adresse, und die
+    // Laufzeit deckt damit die Bühne zu.
+    html.elem("div", attrs: (id: "ts-speaker"), [])
     let worte = runtime-words(text.lang)
     html.elem("script", attrs: (id: "ts-cfg", type: "application/json"),
       "{\"duration\":" + str(duration)
@@ -372,6 +381,9 @@
         + ",\"words\":" + json.encode((
             noNote: worte.no-note,
             help: worte.help,
+            helpSpeaker: worte.help-speaker,
+            helpSpeakerShort: worte.help-speaker-short,
+            sp: worte.sp,
           )) + "}")
     if assets == "inline" { html.elem("script", runtime-js) } else { links.js }
   }
