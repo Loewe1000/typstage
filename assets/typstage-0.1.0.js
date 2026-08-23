@@ -274,8 +274,15 @@
             // the inner viewport keeps its size and no `resize` fires in
             // there. The message says "your box is new", and what to do about
             // it is the embedded document's business, not ours.
+            // Beide Maße, denn sie sagen Verschiedenes: `w` und `h` sind
+            // der Kasten in Punkten der Folie und damit in jedem Fenster
+            // dieselbe Zahl, `px` ist derselbe Kasten in Bildschirmpunkten
+            // und in jedem Fenster eine andere. Wer scharf zeichnen will,
+            // braucht die zweite; wer in allen Fenstern dasselbe zeigen
+            // will, die erste.
             try {
-              frame.contentWindow.postMessage({ typstage: 1, mass: 1 }, "*");
+              frame.contentWindow.postMessage({ typstage: 1, mass: 1,
+                w: w, h: h, px: skala }, "*");
             } catch (e) {}
             // The older, direct way, for a companion package that predates
             // the message.
