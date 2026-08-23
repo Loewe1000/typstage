@@ -105,18 +105,42 @@ html[data-ts-rolle="speaker"][data-ts-fertig="1"] #ts-stage{opacity:1}
 html[data-ts-rolle="speaker"] .ts-embed,
 html[data-ts-rolle="speaker"] .ts-bridged,
 html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
-.ts-sp-kopf{display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap;
-  border-bottom:1px solid #ffffff1a;padding-bottom:8px}
-.ts-sp-feld{display:flex;flex-direction:column;gap:3px;min-width:0}
+/* Der Kopf: zwei Gruppen an den beiden Rändern, nicht sechs gleich laute
+   Spalten links gedrängt. Je Gruppe eine große Zahl, alles Weitere klein
+   daneben; das trägt die Hierarchie, nicht die Farbe. Farbe bleibt dem
+   Plan vorbehalten, wo sie etwas bedeutet. */
+.ts-sp-kopf{display:flex;justify-content:space-between;align-items:flex-end;
+  gap:24px;flex-wrap:wrap;border-bottom:1px solid #ffffff1a;padding-bottom:9px}
+.ts-sp-gruppe{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ts-sp-rechts{align-items:flex-end;text-align:right}
+.ts-sp-haupt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ts-sp-gross{font-size:30px;line-height:1;font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em}
+.ts-sp-gross[data-laeuft="0"]{color:#ffffff63}
+.ts-sp-neben{display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;
+  font-variant-numeric:tabular-nums}
+.ts-sp-rechts .ts-sp-neben{justify-content:flex-end}
+.ts-sp-paar{display:inline-flex;gap:5px;align-items:baseline;white-space:nowrap}
+.ts-sp-klein{font-size:15px;font-weight:400;color:#ffffffd6}
+.ts-sp-klein[data-lage="zurueck"]{color:#ff7a6b}
+.ts-sp-klein[data-lage="vor"]{color:#6fd79a}
+.ts-sp-wort{font-style:normal;font-size:11px;letter-spacing:.07em;
+  text-transform:uppercase;color:#ffffff70}
 .ts-sp-marke{font-size:11px;letter-spacing:.08em;text-transform:uppercase;
-  color:#ffffff8c;white-space:nowrap}
+  color:#ffffff70;white-space:nowrap}
 .ts-sp-wert{font-size:23px;line-height:1.1;font-variant-numeric:tabular-nums}
 .ts-sp-wert[data-lage="zurueck"]{color:#ff7a6b}
 .ts-sp-wert[data-lage="vor"]{color:#6fd79a}
 .ts-sp-wert[data-laeuft="0"]{color:#ffffff73}
-.ts-sp-ziel{width:4.6em;background:#ffffff14;border:1px solid #ffffff33;
-  color:inherit;border-radius:6px;padding:2px 6px;font:inherit;font-size:21px;
-  font-variant-numeric:tabular-nums;line-height:1.1}
+/* Ein Balken statt eines weiteren Zahlenpaars: er sagt ohne Worte, wo man
+   steht, und ist damit das zweite Hierarchiemittel neben der Schriftgröße. */
+.ts-sp-balken{width:190px;max-width:38vw;height:3px;border-radius:2px;
+  background:#ffffff1f;overflow:hidden}
+.ts-sp-balken i{display:block;height:100%;background:#ffffff8c;
+  transition:width .25s ease-out}
+.ts-sp-ziel{width:3.4em;background:#ffffff12;border:1px solid #ffffff2b;
+  color:inherit;border-radius:5px;padding:1px 5px;font:inherit;font-size:15px;
+  font-variant-numeric:tabular-nums;line-height:1.25}
 /* Zwei Reihen: oben die laufende Folie und daneben die Vorschau, darunter
    die Notiz über die ganze Breite. Die Folie hält ihr Seitenverhältnis, also
    bleibt unter ihr ein Streifen frei, sobald das Fenster hoch ist; dort steht
@@ -183,8 +207,12 @@ html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
 @media (max-width:1100px){
   .ts-sp-leib{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
   .ts-sp-wert{font-size:19px}
-  .ts-sp-ziel{font-size:17px}
+  .ts-sp-gross{font-size:24px}
+  .ts-sp-klein{font-size:14px}
+  .ts-sp-ziel{font-size:14px}
   .ts-sp-kopf{gap:14px}
+  .ts-sp-neben{gap:11px}
+  .ts-sp-balken{width:130px}
 }
 /* Schwarzschalten: der Saal wird dunkel, im Vortragsfenster. Das Gegenstück
    zum Einfrieren, das nicht hier steht, sondern in `fernGoto`, wo der

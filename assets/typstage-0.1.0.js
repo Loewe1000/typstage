@@ -1416,6 +1416,22 @@
     bau("div", "ts-sp-marke", d).textContent = name;
     return bau("div", "ts-sp-wert", d);
   }
+  // Die eine große Zahl einer Gruppe. Sie trägt die Hierarchie, damit nicht
+  // sechs gleich laute Spalten nebeneinanderstehen und der Blick sich seinen
+  // Anker selbst suchen muss.
+  function haupt(wohin, name) {
+    var d = bau("div", "ts-sp-haupt", wohin);
+    bau("div", "ts-sp-marke", d).textContent = name;
+    return bau("div", "ts-sp-gross", d);
+  }
+  // Ein stiller Wert: Zahl zuerst, Wort klein dahinter. In einer Zeile
+  // nebeneinander gelesen wie „12:56 verbleibend".
+  function neben(wohin, name) {
+    var sp = bau("span", "ts-sp-paar", wohin);
+    var w = bau("b", "ts-sp-klein", sp);
+    bau("i", "ts-sp-wort", sp).textContent = name;
+    return w;
+  }
   function zwei(z) { return (z < 10 ? "0" : "") + z; }
   function mmss(sek) {
     var v = sek < 0 ? "-" : "";
@@ -1487,16 +1503,22 @@
   function sprecherAufbau() {
     if (ROLLE !== "speaker" || !SPRECHERBOX) return;
 
-    // Der Kopf: Uhrzeit, verstrichene Zeit, Plan, Fortschritt.
+    // Der Kopf trägt zwei Gruppen: links die Zeit, rechts der Ort im Vortrag.
+    // Vorher standen sechs gleichrangige Spalten nebeneinander, alle links
+    // gedrängt, und rechts blieb Platz liegen. Jetzt hat jede Gruppe eine
+    // große Zahl, alles Weitere steht klein daneben, und die beiden Gruppen
+    // sitzen an den beiden Rändern.
     var kopf = bau("div", "ts-sp-kopf", SPRECHERBOX);
-    ELN.uhr = feld(kopf, wort("clock", "clock"));
-    ELN.zeit = feld(kopf, wort("elapsed", "elapsed"));
-    var zf = bau("div", "ts-sp-feld", kopf);
-    bau("div", "ts-sp-marke", zf).textContent = wort("target", "target (min)");
+    var gZeit = bau("div", "ts-sp-gruppe", kopf);
+    ELN.zeit = haupt(gZeit, wort("elapsed", "elapsed"));
+    var zeile = bau("div", "ts-sp-neben", gZeit);
+    ELN.uhr = neben(zeile, wort("clock", "clock"));
+    var zf = bau("span", "ts-sp-paar", zeile);
     var inp = document.createElement("input");
     inp.type = "number"; inp.min = "0"; inp.step = "1";
     inp.className = "ts-sp-ziel"; inp.id = "ts-sp-ziel";
     zf.appendChild(inp);
+    bau("i", "ts-sp-wort", zf).textContent = wort("target", "target (min)");
     inp.addEventListener("input", function () {
       ZIEL_MIN = Math.max(0, +inp.value || 0);
       sprecherUhr();
@@ -1513,9 +1535,22 @@
       ev.stopPropagation();
     });
     ELN.ziel = inp;
-    ELN.rest = feld(kopf, wort("left", "remaining"));
-    ELN.takt = feld(kopf, wort("pace", "pace"));
-    ELN.fort = feld(kopf, wort("progress", "progress"));
+    ELN.rest = neben(zeile, wort("left", "remaining"));
+    ELN.takt = neben(zeile, wort("pace", "pace"));
+    // Ohne Zieldauer gibt es weder Rest noch Plan. Statt zweimal einen Punkt
+    // neben einem lauten Etikett zu zeigen, verschwinden beide Paare, bis
+    // eine Dauer dasteht. Das ist die Hälfte dessen, was den Kopf voll
+    // aussehen ließ.
+    ELN.restPaar = ELN.rest.parentNode;
+    ELN.taktPaar = ELN.takt.parentNode;
+
+    var gOrt = bau("div", "ts-sp-gruppe ts-sp-rechts", kopf);
+    ELN.fort = haupt(gOrt, wort("slide", "slide"));
+    var zeile2 = bau("div", "ts-sp-neben", gOrt);
+    ELN.fortSchritt = neben(zeile2, wort("step", "step"));
+    // Ein Balken sagt ohne Worte, wo man steht. Er ist das zweite
+    // Hierarchiemittel neben der Schriftgröße und braucht keine Beschriftung.
+    ELN.balken = bau("i", "", bau("div", "ts-sp-balken", gOrt));
 
     // Der Leib: links die laufende Folie, rechts Vorschau und Notiz.
     LEIB = bau("div", "ts-sp-leib", SPRECHERBOX);
@@ -1731,6 +1766,9 @@
   function sprecherUhr() {
     if (!gebaut) return;
     verbindungStand();
+    var zeigen = ZIEL_MIN > 0 && STEPS.length > 0 ? "" : "none";
+    if (ELN.restPaar) ELN.restPaar.style.display = zeigen;
+    if (ELN.taktPaar) ELN.taktPaar.style.display = zeigen;
     var j = new Date();
     ELN.uhr.textContent = zwei(j.getHours()) + ":" + zwei(j.getMinutes())
                           + ":" + zwei(j.getSeconds());
@@ -1778,9 +1816,10 @@
     ELN.notiz.textContent = n || (W.noNote || "no note");
     if (n) delete ELN.notiz.dataset.leer; else ELN.notiz.dataset.leer = "1";
 
-    ELN.fort.textContent = wort("slide", "slide") + " " + (st.slide + 1) + "/"
-      + SLIDES.length + "   " + wort("step", "step") + " " + (current + 1)
-      + "/" + STEPS.length;
+    ELN.fort.textContent = (st.slide + 1) + " / " + SLIDES.length;
+    ELN.fortSchritt.textContent = (current + 1) + " / " + STEPS.length;
+    ELN.balken.style.width =
+      (STEPS.length < 2 ? 100 : (current * 100 / (STEPS.length - 1))) + "%";
 
     // Die Vorschau kostet einen Klon der Folie. Sie wird deshalb nur neu
     // gebaut, wenn sie etwas anderes zeigen soll als eben noch.
