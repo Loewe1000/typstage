@@ -269,8 +269,16 @@
             frame.style.height = (ohneZoom ? h * skala : h) + "px";
             frame.style.transform = "";
             frame.style.zoom = ohneZoom ? "" : skala;
-            // Embedded apps read the pixel density while drawing; after a
-            // change they have to recompute.
+            // An embedded app that draws has to be told, because its own
+            // window need not have changed at all: where only the zoom moves,
+            // the inner viewport keeps its size and no `resize` fires in
+            // there. The message says "your box is new", and what to do about
+            // it is the embedded document's business, not ours.
+            try {
+              frame.contentWindow.postMessage({ typstage: 1, mass: 1 }, "*");
+            } catch (e) {}
+            // The older, direct way, for a companion package that predates
+            // the message.
             try { frame.contentWindow.ggbApplet.recalculateEnvironments(); }
             catch (e) {}
           }
