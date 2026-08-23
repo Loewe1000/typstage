@@ -198,6 +198,29 @@ Fenster gerade hat. Wo das eingebettete Dokument sich selbst spiegeln kann, wie
 ein GeoGebra-Applet über `typstage-geogebra`, bedient man das lebende vor sich
 und die Kopie auf der Leinwand zieht nach.
 
+=== Ein Rahmen, der den Fokus hat
+
+Wer eine Einbettung anklickt, gibt ihr den Fokus. Von da an landet jede Taste
+darin, das Fenster ringsum hört nichts, und der Vortrag blättert nicht mehr.
+
+Die Tasten des Vortrags werden ihm deshalb aus jedem Rahmen zurückgereicht, in
+den dieses Fenster hineinlesen darf. Drei Bedingungen halten das ehrlich: das
+eingebettete Dokument darf die Taste nicht schon genommen haben, die Taste muss
+eine sein, die der Vortrag benutzt, und das Getippte darf kein Textfeld sein,
+sonst öffnete ein `n` in einem Formular ein zweites Fenster.
+
+#tip[
+  Nachgemessen an einem GeoGebra-Applet, bevor darüber entschieden wurde: der
+  Fokus sitzt auf seiner Zeichenfläche, es sieht alle siebzehn geprüften
+  Tasten, ruft bei keiner `preventDefault` und ändert nichts an der
+  Konstruktion. Ohne Werkzeugleiste und ohne Eingabezeile hat es für die
+  Tastatur keine Verwendung. Ein Dokument, das eine Taste haben will, nimmt sie
+  auf dem üblichen Weg, und dann behält es sie auch.
+]
+
+Alles außerhalb dieser Menge bleibt beim Rahmen. `Entf` ist das Beispiel: die
+Taste gehört dem Eingebetteten, und der Vortrag sieht sie nie.
+
 Gesteuert wird aus beiden Fenstern, und jedes von beiden darf neu geladen
 werden: sie finden sich wieder, und die Striche kommen mit.
 

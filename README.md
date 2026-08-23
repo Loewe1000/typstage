@@ -340,9 +340,19 @@ the package, so build it from a clone.
 
 ## Companion packages
 
-`typstage-geogebra` adds GeoGebra applets. It is a package of its own so that a
-deck without applets carries none of it; everything it needs from the core is
-`embed(bridge: …)` and `bridge-job`.
+[**typstage-geogebra**](https://github.com/Loewe1000/typstage-geogebra) adds
+GeoGebra applets. GeoGebra builds the construction, the slides supply the
+dramaturgy: jobs sit on steps, so a value changes, an object appears or the
+viewport moves when the presenter pages. From the speaker view the applet in
+front of you is the live one, and the projected copy follows what your hand
+does to it.
+
+It is a package of its own so that a deck without applets carries none of it;
+everything it needs from the core is `embed(bridge: …)` and `bridge-job`.
+Its [two example decks](https://loewe1000.github.io/typstage-geogebra/beispiele/)
+run in the browser, and the manual is there in
+[English](https://loewe1000.github.io/typstage-geogebra/en.html) and
+[German](https://loewe1000.github.io/typstage-geogebra/).
 
 ## License
 

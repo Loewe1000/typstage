@@ -103,6 +103,11 @@ html[data-ts-rolle="speaker"] #ts-stage{position:fixed;inset:auto;margin:0;
   z-index:71;opacity:0;cursor:crosshair;touch-action:none;
   box-shadow:0 0 0 1px #ffffff26,0 10px 34px #0009}
 html[data-ts-rolle="speaker"][data-ts-fertig="1"] #ts-stage{opacity:1}
+/* The pointer says which of the two modes is on, and it says it where the
+   eye already is. A cross hair is a pen about to draw; a hand is a hand
+   about to operate something. */
+html[data-ts-rolle="speaker"][data-ts-modus="zeiger"] #ts-stage{cursor:pointer}
+html[data-ts-rolle="speaker"][data-ts-modus="zeiger"] #ts-stage:active{cursor:grabbing}
 /* In the speaker view the slide is a drawing surface, entirely so. An
    embedded document would otherwise intercept the pointer: a stroke
    beginning on it would not come into being at all, while one beginning

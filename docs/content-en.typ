@@ -607,6 +607,29 @@ A click pages forward, a click in the left quarter pages back. The address bar
 carries the running step, `#12` being the twelfth, so a reloaded window stands
 in the same place and a number typed by hand jumps there.
 
+=== A frame that has the focus
+
+Click an embedded frame and it holds the focus. From then on every key lands
+inside it, the window around it hears nothing, and the talk stops paging.
+
+The keys the talk uses are therefore handed back to it out of any frame this
+window may read into. Three conditions keep that honest: the embedded document
+must not have taken the key already, the key must be one the talk actually
+uses, and what was typed into must not be a text field, or an `n` typed into a
+form would open a second window.
+
+#tip[
+  Measured on a GeoGebra applet before deciding this. Focus sits on its
+  canvas, it sees all seventeen keys that were tried, it calls
+  `preventDefault` on none of them, and it changes nothing in the
+  construction: without a toolbar and without an algebra input it has no use
+  for the keyboard at all. A document that does want a key takes it in the
+  ordinary way, by preventing the default, and then it keeps it.
+]
+
+Everything outside that set stays with the frame. `Delete` is the example: it
+belongs to whatever is embedded, and the talk never sees it.
+
 == On a phone or a tablet
 
 A tap pages, in the same two halves as a click. A swipe pages in the natural

@@ -550,16 +550,10 @@ and the wrong two find each other), the piece gets a name instead.
                 ..punkte.slice(1).map(curve.line))
         }),
   stagger[
-    - No `bridge:` on this one and no jobs. The slide sends it nothing. The
-      only thing it answers to is a hand.
-    - In the speaker view `m` swaps the pen for the pointer. Press, drag and
-      release travel as fractions of the stage, so a small laptop window and a
-      large canvas hit the same point of the document.
-    - It reaches listeners, not the browser's own widgets: a click lands, a
-      native slider does not move. Build the control yourself and it works.
-    - Where the embedded document can mirror itself, as a GeoGebra applet does
-      through `typstage-geogebra`, the copy in front of the speaker is operated
-      instead and reports what came of it.
+    - No `bridge:` here and no jobs. This frame answers to a hand alone.
+    - In the speaker view `m` swaps the pen for the pointer. The gesture
+      travels as fractions of the stage, so both windows hit the same point.
+    - It reaches listeners, not native widgets. Build the control yourself.
   ],
 )
 

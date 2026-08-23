@@ -164,6 +164,63 @@
     return wirt.dataset[feld];
   }
 
+  // ── Keys out of an embedded frame ─────────────────────────────────────────
+  //
+  // A frame that has been clicked holds the focus, and from then on every key
+  // lands inside it. The window around it hears nothing, so the talk stops
+  // paging: reported from a real desk, and in the speaker view it is worse,
+  // because `m` is in there too and one cannot even switch back to the pen.
+  //
+  // Measured on a GeoGebra applet before deciding what to do about it. Focus
+  // sits on its `canvas`, it sees all seventeen keys tried, it calls
+  // `preventDefault` on none of them, and it changes nothing in the
+  // construction. In this configuration, without toolbar and without an
+  // algebra input, the applet has no use for the keyboard at all. So the keys
+  // belong to the talk, and they are handed back to it.
+  //
+  // Three conditions, so this stays true for a document that does want keys:
+  // it must not have taken the key already (`defaultPrevented`), the key must
+  // be one the talk actually uses, and whatever was typed into must not be a
+  // text field, or typing an `n` into a form would open a second window.
+  var TASTEN_DECK = {
+    ArrowRight: 1, ArrowLeft: 1, ArrowUp: 1, ArrowDown: 1,
+    PageDown: 1, PageUp: 1, " ": 1, Home: 1, End: 1, Escape: 1,
+    o: 1, f: 1, s: 1, p: 1, n: 1, "?": 1,
+    b: 1, e: 1, t: 1, r: 1, m: 1, c: 1, z: 1, x: 1,
+    "+": 1, "=": 1, "-": 1, "_": 1
+  };
+  function tastenBruecke(frame) {
+    // A foreign origin cannot be reached, and it will not become reachable.
+    if (frame.tsTastenFremd) return;
+    var d = null;
+    try { d = frame.contentDocument; } catch (x) { frame.tsTastenFremd = 1; return; }
+    // The document is remembered, not a yes or no. A `srcdoc` frame starts on
+    // a throwaway `about:blank` and replaces it a moment later, and whoever
+    // ticks himself off after the first attempt has hung his listener on the
+    // document that was thrown away. Measured: in the talk window the timing
+    // happened to work out, in the speaker view it did not, and there the
+    // arrow key stayed dead.
+    if (!frame.tsTastenLoad) {
+      frame.tsTastenLoad = 1;
+      frame.addEventListener("load", function () { tastenBruecke(frame); });
+    }
+    if (!d || frame.tsTastenDoc === d) return;
+    frame.tsTastenDoc = d;
+    d.addEventListener("keydown", function (e) {
+      if (e.defaultPrevented) return;
+      if (!TASTEN_DECK[e.key]) return;
+      if (tippt(e)) return;
+      // Dispatched at our own document, so both receivers see it exactly as
+      // they see a key of their own. No loop: this one is not in the frame.
+      document.dispatchEvent(new KeyboardEvent("keydown", {
+        key: e.key, code: e.code, bubbles: true, cancelable: true,
+        ctrlKey: e.ctrlKey, altKey: e.altKey,
+        shiftKey: e.shiftKey, metaKey: e.metaKey
+      }));
+      e.preventDefault();
+    });
+  }
+
   // In rounds: a nested element has no mark in the background, the outer
   // element's hide() swallows it, but it has one in the outer element's
   // sprite. That one has to be placed first.
@@ -198,6 +255,7 @@
         // window stays 400 points but its pixel density rises with it.
         var frame = el.querySelector("iframe");
         if (frame) {
+          tastenBruecke(frame);
           var w = r.w * CFG.width, h = r.h * CFG.height;
           var neu = w + "px|" + h + "px|" + skala;
           if (frame.dataset.mass !== neu) {
