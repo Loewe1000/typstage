@@ -366,8 +366,13 @@ A hospital compared several ways of removing kidney stones. Take two of them.
 
 == Which number is right?
 
+// Both cards the same height. Without `equal` each one stands as tall as its
+// own text, and two boxes of the same weight look like two of different
+// weight.
 #side-by-side(
   split: (1fr, 1fr),
+  equal: true,
+  align: top,
   card(title: [If you run the hospital], color: quiet)[
     "What share of our patients recovered last year?" That is the pooled
     number. 83 % against 78 % is the honest record of what happened,

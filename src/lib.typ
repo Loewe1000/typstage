@@ -20,4 +20,4 @@
 #import "layout.typ": card, callout, side-by-side, statement, tiles
 #import "media.typ": video, embed, flipbook
 #import "bridge.typ": bridge-job, bridge-targets
-#import "present.typ": presentation
+#import "present.typ": presentation, bundle

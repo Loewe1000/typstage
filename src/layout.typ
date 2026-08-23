@@ -14,7 +14,7 @@
 // erfährt erst dort, unter welchem Theme er gesetzt wird.
 
 #import "elements.typ": anim
-#import "internal.typ": step-cursor
+#import "internal.typ": step-cursor, zeilen-hoehe
 #import "themes.typ": theme-state
 
 /// Ein benannter Kasten — Beamers `block`.
@@ -45,6 +45,14 @@
   // Schulbuch: keine Kante, keine Rundung, eine getönte Fläche, und die
   // Beschriftung steht in der Farbe *im* Kasten statt auf einem Balken.
   let stil = t.at("box", default: "bar")
+  // In einer Zeile mit fester Höhe füllt der Kasten sie aus. Sonst bliebe der
+  // kürzere der beiden oben stehen und die Zeile hätte nichts gewonnen.
+  //
+  // Das Maß kommt als Länge und nicht als `100%`: ein Prozentmaß löst hier
+  // gegen die Region auf, nicht gegen die Rasterzeile. Nachgemessen sah man
+  // davon nur die Oberkante des Kastens, weil der Rest weit unterhalb der
+  // Folie lag.
+  let zeile = zeilen-hoehe.get()
   let eigene-farbe = color != auto
   let color = if color == auto { t.strong } else { color }
   // Beim Etikettenstil trägt die Tönung dieselbe Bedeutung wie die Schrift
@@ -60,7 +68,8 @@
   let stroke = if stroke != auto { stroke }
                 else if stil == "label" { none } else { 0.7pt + t.border }
   block(
-    width: width, radius: radius, fill: fill, stroke: stroke,
+    width: width, height: if zeile == none { auto } else { zeile },
+    radius: radius, fill: fill, stroke: stroke,
   {
     // Zwischen Streifen und Rumpf setzt Typst sonst seinen Blockabstand —
     // gemessen 20pt bei 17pt Schrift, wodurch der Text 30pt unter dem Kopf
@@ -118,8 +127,10 @@
   // die Farbe abgedunkelt statt aufgehellt, und die Beschriftung aufgehellt.
   let grund = if t.inverted { color.darken(68%) } else { color.lighten(90%) }
   let beschriftung = if t.inverted { color.lighten(15%) } else { color.darken(12%) }
+  let zeile = zeilen-hoehe.get()
   block(
-    width: width, radius: radius, fill: grund,
+    width: width, height: if zeile == none { auto } else { zeile },
+    radius: radius, fill: grund,
     stroke: (left: 3.5pt + color), inset: inset,
     {
       // Nicht Text, `v()` und Rumpf hintereinander: zwischen zwei Absätzen
@@ -153,6 +164,7 @@
   split: (1.25fr, 1fr),
   gutter: 18pt,
   align: horizon,
+  equal: false,
 ) = {
   let spalten = parts.pos()
   assert(spalten.len() >= 2,
@@ -162,10 +174,35 @@
   assert(parts.named().len() == 0,
          message: "typstage: side-by-side() does not know "
                 + parts.named().keys().join(", ")
-                + " — it takes split, gutter and align.")
+                + " — it takes split, gutter, align and equal.")
   let breiten = if spalten.len() == split.len() { split }
                 else { (1fr,) * spalten.len() }
-  grid(columns: breiten, column-gutter: gutter, align: align, ..spalten)
+  if not equal {
+    return grid(columns: breiten, column-gutter: gutter, align: align, ..spalten)
+  }
+  // Gleich hohe Spalten. Ohne das steht jeder Kasten so hoch wie sein eigener
+  // Text, und zwei Karten nebeneinander sind verschieden hoch, obwohl sie
+  // dasselbe Gewicht haben sollen.
+  //
+  // Der Weg führt über eine ausdrücklich gesetzte Zeilenhöhe: erst die Spalten
+  // messen, dann die größte als `rows` festlegen. Ein `height: 100%` im Kasten
+  // allein täte es nicht, denn Prozent löst gegen die Region auf und machte
+  // beide folienhoch.
+  let roh = grid(columns: breiten, column-gutter: gutter, align: align, ..spalten)
+  layout(available => context {
+    // Die Höhe der Zeile ist die des Rasters, wie es von allein steht, und die
+    // ist die der höchsten Spalte. Sie beim Raster zu erfragen ist genauer als
+    // sie auszurechnen: die Spaltenbreiten aus `split` von Hand aufzuteilen
+    // hieße, `fr`-Anteile, feste Maße und `auto` selbst gegeneinander zu
+    // verrechnen, und läge bei jeder Rundung daneben.
+    //
+    // Gemessen wird das rohe Raster, in dem noch keine Zeilenhöhe steht: die
+    // Kästen sind darin so hoch wie ihr Inhalt, und genau das soll das Maß
+    // sein.
+    let h = measure(roh, width: available.width).height
+    grid(columns: breiten, column-gutter: gutter, align: align, rows: (h,),
+      ..spalten.map(p => zeilen-hoehe.update(h) + p + zeilen-hoehe.update(none)))
+  })
 }
 
 /// Ein Kachelraster, das sich von selbst staffelt.

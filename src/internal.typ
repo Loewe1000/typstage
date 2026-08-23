@@ -101,6 +101,18 @@
 /// mit einem auf der Vorfolie teilen, sonst geht der Flug dorthin verloren.
 #let morph-index = state("typstage-morphs", ())
 
+/// Die Höhe der Zeile, in der ein Kasten gerade steht, oder `none`.
+///
+/// `side-by-side(equal: true)` misst seine Spalten, setzt die größte Höhe fest
+/// und trägt sie hier ein; `card` und `callout` lesen sie und füllen dann ihre
+/// Zelle aus. Ohne diesen Umweg ginge es nicht: ein `height: 100%` im Kasten
+/// löst gegen die *Region* auf, nicht gegen die Rasterzeile, und wäre damit
+/// folienhoch statt zeilenhoch. Nachgemessen: zwei Kästen mit `height: 100%`
+/// in einem Raster mit `rows: auto` wurden beide 250 Pixel hoch auf einer
+/// 278 Pixel hohen Seite. Erst eine ausdrücklich gesetzte Zeilenhöhe macht aus
+/// `100%` die Zeile.
+#let zeilen-hoehe = state("typstage-zeile", none)
+
 /// The running step cursor: the highest step handed out on this slide so far.
 ///
 /// A counter, not a state — and that is the whole trick. Reading a state and

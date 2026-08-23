@@ -1169,6 +1169,46 @@ auf die PDF; die HTML-Ausgabe übergeht es. Die Folien werden dabei nicht neu
 gesetzt, sondern nur verkleinert -- ein Handout kann deshalb nicht von dem
 abweichen, was auf der Leinwand stand.
 
+=== Alle drei Ausgaben in einem Lauf
+
+Seit Typst 0.15 kann eine Übersetzung mehrere Dateien schreiben. Das passt zu
+diesem Paket, denn Vortrag, Foliensatz und Handout unterscheiden sich ohnehin
+nur im Ziel und in einer Angabe. `bundle` schreibt alle drei auf einmal:
+
+#show-code[```typ
+#bundle(
+  theme: themes.lesson,
+  title: [Completing the Square],
+  handout: "handout.pdf",
+)[
+  = Ein Abschnitt
+  == Eine Folie
+  Text.
+]
+```]
+
+#show-code[```sh
+typst compile --features bundle,html --format bundle vortrag.typ ausgabe
+```]
+
+`html`, `slides` und `handout` sind Dateinamen, `none` lässt die jeweilige
+Ausgabe weg, `per-sheet` sind die Folien je Handout-Blatt. Alles Übrige geht
+unverändert an `presentation`.
+
+Die Zähler fangen dabei je Ausgabe neu an, nachgemessen am Foliensatz: er
+nummeriert 1, 2, 3 und zählt nicht dort weiter, wo die HTML-Fassung aufgehört
+hat, obwohl Typst die Introspektion über das ganze Bündel führt.
+
+#warning[
+  Zweierlei ist zu beachten. Das Bündel ist bei Typst ausdrücklich
+  experimentell und ohne die Schalter `--features bundle,html` nicht zu haben.
+  Und eine Datei, die `bundle` benutzt, lässt sich *nur* mit `--format bundle`
+  übersetzen; ein gewöhnliches `typst compile vortrag.typ vortrag.pdf` bricht
+  mit „constructing a document is only supported in the bundle target" ab. Wer
+  beide Wege offenhalten will, legt den Rumpf in ein `#let` und ruft
+  `presentation` von Hand.
+]
+
 Neben oder unter jeder Folie steht ihre Notiz; wo eine Folie keine hat, treten
 Schreiblinien an ihre Stelle. Welches von beiden, entscheidet die Anzahl: Eine
 16:9-Folie neben einer Notizspalte ist breit und niedrig, und bei bis zu zwei
@@ -1600,6 +1640,19 @@ Applet, rechts der Text.
 mehr, weil dort meist die Anschauung steht. Mehr als zwei Spalten sind erlaubt
 -- dann bekommen alle dieselbe Breite, sofern `split:` nicht ebenso viele Werte
 nennt.
+
+`equal: true` macht alle Spalten gleich hoch. Ohne das steht jeder Kasten so
+hoch wie sein eigener Text, und zwei Karten nebeneinander sehen verschieden
+gewichtet aus, obwohl sie es nicht sind. Dazu wird die Zeile einmal gemessen,
+ihre größte Höhe festgesetzt, und `card` und `callout` füllen sie aus.
+
+#warning[
+  Ein `height: 100%` im Kasten allein täte es nicht. Ein Prozentmaß löst gegen
+  die *Region* auf und nicht gegen die Rasterzeile; gemessen wurden zwei
+  Kästen so beide seitenhoch statt gleich hoch. Deshalb reicht `side-by-side`
+  die gemessene Länge weiter, und deshalb wirkt `equal` nur auf `card` und
+  `callout` und nicht auf beliebigen Inhalt.
+]
 
 === tiles -- das Kachelraster
 

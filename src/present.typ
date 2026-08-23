@@ -376,3 +376,61 @@
     if assets == "inline" { html.elem("script", runtime-js) } else { links.js }
   }
 }
+
+/// Alle Ausgaben in einem Lauf.
+///
+/// Typst kann seit 0.15 mehrere Dateien aus einer Übersetzung schreiben. Das
+/// passt zu diesem Paket, denn hier steckt ohnehin alles in einer Quelle: der
+/// Vortrag, der Foliensatz und das Handout unterscheiden sich nur im Ziel und
+/// in einer Angabe. Statt dreimal zu übersetzen, einmal:
+///
+/// ```sh
+/// typst compile --features bundle,html --format bundle vortrag.typ ausgabe
+/// ```
+///
+/// ```typ
+/// #bundle(
+///   theme: themes.lesson,
+///   title: [Completing the Square],
+///   handout: "handout.pdf",
+/// )[
+///   = Ein Abschnitt
+///   == Eine Folie
+///   Text.
+/// ]
+/// ```
+///
+/// `html`, `slides` und `handout` sind Dateinamen; `none` lässt die jeweilige
+/// Ausgabe weg. `per-sheet` sind die Folien je Handout-Blatt. Alles Übrige
+/// geht unverändert an `presentation`.
+///
+/// Zwei Dinge, die man wissen muss. Das Bündel ist bei Typst ausdrücklich
+/// experimentell. Und eine Datei, die `bundle` benutzt, lässt sich *nur* mit
+/// `--format bundle` übersetzen: `typst compile vortrag.typ vortrag.pdf` bricht
+/// mit „constructing a document is only supported in the bundle target" ab.
+/// Wer beides will, schreibt den Rumpf in ein `#let` und ruft `presentation`
+/// von Hand.
+///
+/// Nachgemessen: die Zähler fangen je Ausgabe neu an. Der Foliensatz nummeriert
+/// seine Folien 1, 2, 3 und zählt nicht dort weiter, wo die HTML-Fassung
+/// aufgehört hat, obwohl Typst die Introspektion über das ganze Bündel führt.
+#let bundle(
+  body,
+  html: "talk.html",
+  slides: "slides.pdf",
+  handout: none,
+  per-sheet: 3,
+  ..args,
+) = {
+  assert(html != none or slides != none or handout != none,
+         message: "typstage: bundle() wants at least one output")
+  if html != none {
+    document(html, { show: presentation.with(..args); body })
+  }
+  if slides != none {
+    document(slides, { show: presentation.with(..args); body })
+  }
+  if handout != none {
+    document(handout, { show: presentation.with(handout: per-sheet, ..args); body })
+  }
+}
