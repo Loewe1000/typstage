@@ -1,34 +1,35 @@
-// Das Aussehen einer Präsentation — fünf Themes und der Bauplan dahinter.
+// The look of a presentation: five themes and the blueprint behind them.
 //
-// Ein Theme ist ein *Wörterbuch*. Fast alles darin ist ein Wert: eine Farbe,
-// eine Schrift, ein Maß — oder ein kurzes Wort für eine der wenigen Bauformen
-// (`header`, `footer`, `progress`). Nur zwei Einträge sind Funktionen: die
-// Titel- und die Abschnittsfolie. Die beiden sind ganze Bilder und keine
-// Abwandlung voneinander; sie ließen sich nur mit einem Dutzend weiterer
-// Schalter beschreiben, und dann wären sie noch immer alle gleich gebaut.
+// A theme is a *dictionary*. Almost everything in it is a value: a color,
+// a font, a measure, or a short word for one of the few construction
+// kinds (`header`, `footer`, `progress`). Only two entries are functions:
+// the title slide and the section slide. The two are whole pictures, not
+// a variation of one another; they could only be described with a dozen
+// more switches, and even then they would still all be built the same
+// way.
 //
 //   #show: presentation.with(theme: themes.night)
 //   #show: presentation.with(theme: themes.lesson + (accent: blue))
 //
-// Die zweite Zeile ist der ganze Trick beim Abwandeln: ein Theme ist ein
-// Wörterbuch, und `+` schreibt einzelne Einträge um.
+// The second line is the whole trick to varying a theme: a theme is a
+// dictionary, and `+` overwrites individual entries.
 
 #import "config.typ": margins
 
-/// Schriftargumente, die ein `none` einfach weglassen.
+/// Font arguments that simply leave out a `none`.
 ///
-/// `text(font: none)` gibt es nicht — wer keine Schrift vorschreiben will,
-/// darf das Argument gar nicht erst setzen.
+/// `text(font: none)` does not exist: anyone who does not want to
+/// prescribe a font must not set the argument at all.
 #let font-args(f) = if f == none { (:) } else { (font: f) }
 
-/// Stücke untereinander, mit genau dem angegebenen Abstand.
+/// Pieces stacked one below another, with exactly the given spacing.
 ///
-/// Die Argumente wechseln sich ab: Inhalt, Abstand, Inhalt, Abstand, Inhalt.
-/// Nötig, weil Typst zwischen zwei Absätzen `par.spacing` und zwischen zwei
-/// Blöcken `block.spacing` einschiebt — beides addiert sich zu einem
-/// ausdrücklichen `v()`. Auf einer Titelfolie mit 24pt Grundschrift waren das
-/// gemessen 29pt zusätzlich, die den Aufbau auseinanderzogen. Hier zählt nur,
-/// was dasteht.
+/// The arguments alternate: content, spacing, content, spacing, content.
+/// Necessary because Typst inserts `par.spacing` between two paragraphs
+/// and `block.spacing` between two blocks: both add to an explicit
+/// `v()`. On a title slide with 24pt base text, that was measured at
+/// 29pt extra, which pulled the layout apart. Here only what is written
+/// counts.
 #let stapel(..teile) = {
   let xs = teile.pos()
   for (i, x) in xs.enumerate() {
@@ -39,28 +40,30 @@
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  Titel- und Abschnittsfolien
+//  Title and section slides
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// Jede dieser Funktionen bekommt `(t, s, geo)`: das Theme, die Folie (mit
-// `title`, `subtitle`, `author`, `date`) und den Canvas. `geo.scale` ist der
-// Faktor, mit dem alle Maße mitwachsen — jede Zahl unten ist in Punkten des
-// Vorgabe-Canvas gemeint und wird damit multipliziert.
+// Each of these functions receives `(t, s, geo)`: the theme, the slide
+// (with `title`, `subtitle`, `author`, `date`) and the canvas.
+// `geo.scale` is the factor by which all measures grow along: every
+// number below is meant in points of the default canvas and gets
+// multiplied by it.
 
-/// Das Datum, wie es unter einem Titel steht.
+/// The date, as it appears under a title.
 ///
-/// `date` darf beides sein. Ein `datetime` wird in der hiesigen Schreibweise
-/// gesetzt; wer eine andere will, gibt gleich Inhalt an: `date: [15 September
-/// 2026]`. Vorher riefen drei Titelfolien `display` ohne zu fragen. Ein
-/// englisches Deck bekam damit zwangsläufig „15.09.2026" unter den Titel, und
-/// Inhalt mitzugeben brach den Bau ab, weil Inhalt kein `display` kennt. Der
-/// erste Anlauf hat nur diese eine Zeile hier geheilt und die beiden anderen
-/// Stellen übersehen; deshalb steht die Umrechnung jetzt an einem Ort.
+/// `date` may be either. A `datetime` is set in the local notation;
+/// anyone who wants a different one supplies content directly: `date:
+/// [15 September 2026]`. Previously, three title slide functions called
+/// `display` without asking. An English deck thereby inevitably got
+/// "15.09.2026" under the title, and passing content broke the build,
+/// because content does not know `display`. The first attempt only fixed
+/// this one line here and overlooked the other two places; that is why
+/// the conversion now lives in a single place.
 #let datum(d) = if type(d) == datetime {
   d.display("[day].[month].[year]")
 } else { d }
 
-/// Die Zeile mit Autor und Datum, wie sie unter jeder Titelfolie steht.
+/// The line with author and date, as it stands under every title slide.
 #let by-line(t, s, k) = text(size: 12pt * k, fill: t.muted, {
   s.author
   if s.date != none [ · #datum(s.date) ]
@@ -68,7 +71,7 @@
 
 // ── default ────────────────────────────────────────────────────────────────
 
-/// Titel links auf halber Höhe, darunter ein kurzer Akzentstrich.
+/// Title on the left at half height, with a short accent stroke below it.
 #let band-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
@@ -86,7 +89,7 @@
   place(bottom + left, dx: m.left, dy: -m.bottom, by-line(t, s, k))
 }
 
-/// Dunkle Vollfläche, Akzentstrich über dem Titel.
+/// Dark full-bleed surface, accent stroke above the title.
 #let band-section(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
@@ -103,7 +106,7 @@
 
 // ── lesson ─────────────────────────────────────────────────────────────────
 
-/// Mittig und groß, mit einem Akzentband über der ganzen Breite.
+/// Centered and large, with an accent band across the full width.
 #let lesson-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
@@ -123,7 +126,7 @@
   place(bottom + center, dy: -m.bottom, by-line(t, s, k))
 }
 
-/// Getönter Grund, breiter Akzentbalken an der linken Kante.
+/// Tinted background, wide accent bar along the left edge.
 #let lesson-section(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
@@ -137,8 +140,8 @@
 
 // ── night ──────────────────────────────────────────────────────────────────
 
-/// Alles in der Mitte, nichts am Rand — im dunklen Raum sieht man ohnehin nur
-/// die hellen Stellen.
+/// Everything in the middle, nothing at the edge: in a dark room you only
+/// see the bright spots anyway.
 #let night-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
@@ -157,7 +160,7 @@
   place(bottom + center, dy: -m.bottom, by-line(t, s, k))
 }
 
-/// Zwei Akzentlinien, dazwischen der Titel in Akzentfarbe.
+/// Two accent lines, with the title in the accent color between them.
 #let night-section(t, s, geo) = {
   let k = geo.scale
   rect(width: 100%, height: 100%, fill: t.paper, stroke: none)
@@ -176,7 +179,7 @@
 
 // ── plain ──────────────────────────────────────────────────────────────────
 
-/// Nur Text, links, weit unten. Kein Strich, keine Fläche, keine Farbe.
+/// Only text, left, far down. No stroke, no surface, no color.
 #let plain-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
@@ -196,7 +199,8 @@
     }))
 }
 
-/// Der Titel steht, wo sonst der Folientitel stünde — nur auf halber Höhe.
+/// The title sits where the slide title would otherwise stand, just at
+/// half height.
 #let plain-section(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
@@ -213,8 +217,8 @@
 
 // ── editorial ──────────────────────────────────────────────────────────────
 
-/// Ein Titelblatt: zwei Haarlinien, dazwischen der Titel, darunter der
-/// Untertitel kursiv.
+/// A title page: two hairlines, the title between them, the subtitle in
+/// italics below.
 #let editorial-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
@@ -239,7 +243,7 @@
     })))
 }
 
-/// Vollfläche in der tragenden Farbe, Titel in Papierfarbe darauf.
+/// Full-bleed surface in the primary color, title in paper color on top.
 #let editorial-section(t, s, geo) = {
   let k = geo.scale
   rect(width: 100%, height: 100%, fill: t.strong, stroke: none)
@@ -256,27 +260,27 @@
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  Der Bauplan
+//  The blueprint
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Baut ein Theme. Ohne Argument ergibt es das voreingestellte
-/// Aussehen — `themes.default` ist genau das.
+/// Builds a theme. Without an argument it produces the default
+/// appearance: `themes.default` is exactly that.
 ///
-/// Die Einträge in Gruppen: Farben (`paper ink strong accent muted
-/// surface border inverted`), Typografie (`font title-font size
-/// title-size weight tracking`), die gewöhnliche Folie (`header
-/// title-fill rule-size rule-fill head-gap foot-gap band-height box
-/// footer footer-rule progress`) und die beiden ganzen Bilder
-/// (`title-slide`, `section`).
+/// The entries in groups: colors (`paper ink strong accent muted
+/// surface border inverted`), typography (`font title-font size
+/// title-size weight tracking`), the ordinary slide (`header title-fill
+/// rule-size rule-fill head-gap foot-gap band-height box footer
+/// footer-rule progress`) and the two whole pictures (`title-slide`,
+/// `section`).
 ///
-/// Schriftgrößen: gemessen an Beamer und Metropolis, wo der Fließtext
-/// rund 3,0 % der Folienbreite einnimmt und der Titel 3,9 %. Die
-/// früheren 19pt/23pt lagen bei 2,3 % und 2,7 % — spürbar kleiner,
-/// als man es aus der letzten Reihe lesen möchte.
+/// Font sizes: measured against Beamer and Metropolis, where the body
+/// text takes up around 3.0% of the slide width and the title 3.9%. The
+/// earlier 19pt/23pt were at 2.3% and 2.7%: noticeably smaller than what
+/// you would want to read from the back row.
 ///
-/// Kommentare dürfen NICHT in die Parameterliste: tidy zerlegt sie an
-/// den Kommas und erwartet in jedem Stück einen Doppelpunkt — die
-/// API-Referenz bricht daran ab.
+/// Comments must NOT go into the parameter list: tidy splits it at the
+/// commas and expects a colon in every piece; the API reference breaks
+/// on that.
 #let theme(
   paper: rgb("#fafafa"),
   ink: black,
@@ -306,8 +310,8 @@
   title-slide: band-title-slide,
   section: band-section,
 ) = {
-  // Ein Tippfehler in einer dieser drei täte sonst schlicht nichts — die
-  // Fußzeile bliebe weg, und niemand wüsste, warum.
+  // A typo in one of these three would otherwise simply do nothing: the
+  // footer would stay missing, and nobody would know why.
   assert(header in ("band", "plain", "run"),
          message: "typstage: theme(header: ..) is \"band\", \"plain\" or \"run\"")
   assert(footer in ("fraction", "number", "center", "none"),
@@ -333,63 +337,65 @@
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  Die fünf
+//  The five
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Die mitgelieferten Themes — `themes.default`, `themes.lesson`,
-/// `themes.night`, `themes.plain`, `themes.editorial`.
+/// The bundled themes: `themes.default`, `themes.lesson`, `themes.night`,
+/// `themes.plain`, `themes.editorial`.
 ///
-/// Sie sind für verschiedene Anlässe gemacht und nicht dieselbe Folie in fünf
-/// Farben: der Titel steht mal in einem Balken, mal frei, mal unter einer
-/// Linie; der Fortschritt wächst, wandert oder fehlt ganz.
+/// They are made for different occasions, not the same slide in five
+/// colors: the title sits sometimes in a bar, sometimes free, sometimes
+/// under a line; the progress indicator grows, travels, or is missing
+/// entirely.
 #let themes = (
-  // Der Vortrag im hellen Saal. Das Aussehen, das typstage von jeher hat, und
-  // die Vorgabe: dunkler Titelbalken, orangefarbener Fortschritt.
+  // The talk in a bright hall. The look typstage has always had, and the
+  // default: dark title bar, orange progress.
   default: theme(),
 
-  // Der Unterricht. Größere Schrift, kein Balken — der Titel steht auf dem
-  // Papier und wird von einem kräftigen Strich unterlegt; unten wandert eine
-  // Marke auf ihrer Schiene, damit die Klasse sieht, wie weit die Stunde ist.
-  // Nach dem Vorbild deutscher Mathe-Schulbücher. Die Farben sind nicht
-  // gewählt, sondern aus einer Musterseite von „Fundamente der Mathematik"
-  // (Cornelsen, 10. Schuljahr) ausgemessen: das Zinnoberrot der Überschriften
-  // und der Merkkästen, das Cyanblau der Beispiele und der Kopflinie, dazu die
-  // beiden Tönungen. Was dort trägt, ist nicht Größe und nicht Fettung,
-  // sondern *Farbe als Bedeutung*: warm für „das musst du wissen", kühl für
-  // „so sieht es aus". Deshalb ist die Überschrift hier kleiner als zuvor und
-  // die Linie darunter eine Haarlinie statt eines Balkens.
+  // The classroom. Larger text, no bar: the title sits on the paper and
+  // is underlined by a bold stroke; below, a marker travels along its
+  // track, so the class can see how far into the lesson they are.
+  // Modeled on German maths textbooks. The colors were not chosen but
+  // measured from a sample page of "Fundamente der Mathematik" (Cornelsen,
+  // 10th grade): the vermilion of the headings and the note boxes, the
+  // cyan blue of the examples and the header line, plus the two tints.
+  // What carries meaning there is neither size nor boldness, but *color
+  // as meaning*: warm for "this you must know", cool for "this is what it
+  // looks like". That is why the heading here is smaller than before and
+  // the line beneath it a hairline instead of a bar.
   lesson: theme(
     paper: white,
     ink: rgb("#16181c"),
-    // Etwas tiefer als das gemessene #d8391a: auf einer Leinwand leuchtet ein
-    // Zinnober stärker als auf Papier.
+    // Slightly deeper than the measured #d8391a: on a screen a vermilion
+    // glows stronger than on paper.
     strong: rgb("#c1361c"),
     accent: rgb("#2b7fb8"),
     muted: rgb("#767b84"),
-    // Die Tönung des Merkkastens. Gemessen war sie #fdf0df; auf einer Folie
-    // bedeckt so ein Kasten ein Vielfaches der Fläche, die er im Buch hat, und
-    // dieselbe Sättigung wirkt dort schnell bunt. Deshalb heller.
+    // The tint of the note box. Measured it was #fdf0df; on a slide such
+    // a box covers many times the area it has in the book, and the same
+    // saturation quickly looks garish there. Hence lighter.
     surface: rgb("#fdf6ee"),
     border: rgb("#f0e2d2"),
     font: ("Source Sans 3", "Source Sans Pro", "Open Sans", "DejaVu Sans"),
     size: 20pt,
     title-size: 24pt,
-    // Halbfett statt fett. Die Überschrift steht ohnehin schon in einer
-    // eigenen Farbe und in eigener Größe; Fettung wäre das dritte Signal für
-    // dieselbe Sache.
+    // Semibold instead of bold. The heading already stands in its own
+    // color and its own size; boldness would be a third signal for the
+    // same thing.
     weight: 600,
     title-fill: rgb("#c1361c"),
-    // Keine Linie unter dem Titel. Im Buch gehört die farbige Linie zur
-    // Kopfzeile der Seite und nicht zur Überschrift; darunter gesetzt macht
-    // sie aus zwei Dingen eines in zwei Farben. Die Überschrift trägt ihre
-    // Hierarchie in der Farbe, mehr braucht sie nicht.
+    // No line under the title. In the book, the colored line belongs to
+    // the page's running header, not to the heading; placed underneath it
+    // turns two things into one in two colors. The heading carries its
+    // hierarchy in its color; it needs nothing more.
     rule-size: 0pt,
     head-gap: 26pt,
-    // Kopfzeile statt Fusszeile: Foliennummer links, Abschnitt rechts, eine
-    // Haarlinie darunter, genau wie die Kopfzeile einer Schulbuchseite. Damit
-    // faellt beides unten weg. Die Zahl steht schon oben, und der wandernde
-    // Fortschrittsstrich hat nichts erklaert, was die Kopfzeile nicht besser
-    // sagt: sie nennt das Kapitel, in dem man ist, nicht bloss den Bruchteil.
+    // Header instead of footer: slide number on the left, section on the
+    // right, a hairline underneath, exactly like the running header of a
+    // textbook page. That drops both at the bottom. The number already
+    // stands at the top, and the traveling progress stroke never
+    // explained anything the header does not say better: it names the
+    // chapter you are in, not merely the fraction.
     header: "run",
     footer: "none",
     progress: "none",
@@ -398,8 +404,9 @@
     section: lesson-section,
   ),
 
-  // Der abgedunkelte Raum. Tiefer Grund, heller Satz, kühler Akzent; der
-  // Fortschritt liegt als dünne Linie an der Oberkante, wo er nicht blendet.
+  // The dimmed room. Deep background, light text, cool accent; the
+  // progress sits as a thin line along the top edge, where it does not
+  // dazzle.
   night: theme(
     paper: rgb("#0f1319"),
     ink: rgb("#e6ebf2"),
@@ -421,9 +428,9 @@
     section: night-section,
   ),
 
-  // So wenig wie möglich. Weiß, schwarz, ein Grau — keine Farbe, keine
-  // Fläche, kein Fortschritt. Der Titel ist klein und lässt dem Rumpf viel
-  // Luft; was zu sehen ist, ist der Inhalt.
+  // As little as possible. White, black, one gray: no color, no surface,
+  // no progress. The title is small and leaves the body plenty of room;
+  // what you see is the content.
   plain: theme(
     paper: white,
     ink: black,
@@ -447,9 +454,9 @@
     section: plain-section,
   ),
 
-  // Mit Charakter: Werkdruckpapier, Antiqua, Haarlinien. Der Titel steht über
-  // einer feinen Linie, die Seitenzahl mittig unter einer zweiten — ein Buch,
-  // keine Folie.
+  // With character: laid paper, an old-style serif, hairlines. The title
+  // sits above a fine line, the page number centered under a second one:
+  // a book, not a slide.
   editorial: theme(
     paper: rgb("#f7f2e6"),
     ink: rgb("#2a2622"),
@@ -460,14 +467,15 @@
     border: rgb("#ded2ba"),
     font: ("Iowan Old Style", "Charter", "Libertinus Serif"),
     title-font: ("Optima", "Palatino", "Libertinus Serif"),
-    // 20pt, nicht 18pt. Nominell war editorial mit plain das kleinste Theme,
-    // in Wirklichkeit das kleinste überhaupt: Iowan setzt seine x-Höhe auf 0,48
-    // der Schriftgröße, Inter auf 0,55. Gemessen an einem gerenderten „x" waren
-    // das 8,64pt gegen 10,44pt in night und 11,64pt in default, also ein
-    // Viertel kleiner als das größte Theme, obwohl die Zahl daneben nur um
-    // sechs Punkte abwich. Bei 20pt sind es 9,60pt und damit dasselbe wie in
-    // lesson (9,72pt). Der Titel wächst mit, sonst fiele sein Abstand zum
-    // Rumpf von 1,33 auf 1,2.
+    // 20pt, not 18pt. Nominally, editorial was tied with plain as the
+    // smallest theme, but in reality it was the smallest by far: Iowan
+    // sets its x-height at 0.48 of the font size, Inter at 0.55. Measured
+    // on a rendered "x", that was 8.64pt against 10.44pt in night and
+    // 11.64pt in default, so a quarter smaller than the largest theme,
+    // even though the number next to it differed by only six points. At
+    // 20pt it is 9.60pt, the same as in lesson (9.72pt). The title grows
+    // along with it, otherwise its ratio to the body would fall from 1.33
+    // to 1.2.
     size: 20pt,
     title-size: 26pt,
     weight: "regular",
@@ -487,11 +495,11 @@
 )
 
 
-/// Das Theme, unter dem gerade gesetzt wird.
+/// The theme currently being set under.
 ///
-/// `card` und `callout` stehen *im* Folienrumpf und wissen von sich aus nichts
-/// von der Präsentation. Ohne diesen Zustand müsste jede Karte ihre Farben
-/// mitbekommen; so holt sie sie sich. `presentation` schreibt ihn einmal, ganz
-/// am Anfang — und wer eine Karte außerhalb einer Präsentation benutzt, bekommt
-/// die Vorgabe.
+/// `card` and `callout` sit *inside* the slide body and know nothing
+/// about the presentation on their own. Without this state, every card
+/// would have to be handed its colors; this way it fetches them itself.
+/// `presentation` writes it once, right at the start, and anyone using a
+/// card outside a presentation gets the default.
 #let theme-state = state("typstage-theme", themes.default)

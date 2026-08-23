@@ -11,31 +11,30 @@
   var SPRECHERBOX = document.getElementById("ts-speaker");
   var INK = document.getElementById("ts-ink");
 
-  // ── Die Rolle, einmal und für immer ───────────────────────────────────────
+  // ── The role, once and for good ───────────────────────────────────────────
   //
-  // Dieselbe Datei trägt zwei Ansichten: den Vortrag und, mit `#speaker` an
-  // der Adresse, die Sprecheransicht. Welche gemeint ist, steht im Hash, und
-  // genau da liegt die Falle, denn der Hash gehört sonst dem laufenden
-  // Schritt: `goto` schreibt ihn fort. Das erste `goto` würde `#speaker`
-  // überschreiben, und die Ansicht kippte mitten im Laden zurück. Deshalb wird
-  // die Rolle hier einmal gelesen und danach nie wieder aus dem Hash geholt;
-  // im Sprecherfenster wird der Hash überdies gar nicht mehr angefasst.
+  // The same file carries two views: the talk and, with `#speaker` in the
+  // address, the speaker view. Which one is meant sits in the hash, and that
+  // is exactly the trap, because the hash otherwise belongs to the running
+  // step: `goto` keeps writing it forward. The first `goto` would overwrite
+  // `#speaker`, and the view would flip back mid-load. So the role is read
+  // here once and never fetched from the hash again; in the speaker window
+  // the hash is not touched at all anymore.
   var ROLLE = (location.hash.slice(1).split(/[&=]/)[0] || "").toLowerCase()
               === "speaker" ? "speaker" : "stage";
   if (ROLLE === "speaker") document.documentElement.dataset.tsRolle = "speaker";
 
-  // ── Doppelte SVG-Kennungen entschärfen ───────────────────────────────────
+  // ── Defusing duplicate SVG ids ────────────────────────────────────────────
   //
-  // Typst leitet die Kennungen in einem SVG aus dem Inhalt ab. Derselbe
-  // beschnittene Kasten zweimal auf einer Folie — einmal im Hintergrund und
-  // einmal als Sprite, oder schlicht zweimal — ergibt deshalb dieselbe
-  // `<clipPath id>` zweimal. In HTML muss eine Kennung eindeutig sein, also
-  // bindet `url(#…)` ans erste Vorkommen: der zweite Kasten wird gegen fremde
-  // Maße beschnitten und verschwindet meist ganz. Dasselbe trifft die
-  // `<symbol id>` der Glyphen.
+  // Typst derives the ids in an SVG from the content. The same clipped box
+  // twice on one slide, once in the background and once as a sprite, or
+  // simply twice, therefore produces the same `<clipPath id>` twice. In HTML
+  // an id has to be unique, so `url(#...)` binds to the first occurrence: the
+  // second box gets clipped against foreign dimensions and mostly disappears
+  // entirely. The same hits the glyphs' `<symbol id>`.
   //
-  // Umbenannt wird nur, was wirklich doppelt ist, und Verweise werden nur
-  // innerhalb desselben SVG umgebogen — dort, wo sie hingehören.
+  // Only what is really duplicated gets renamed, and references are only
+  // rewired within the same SVG, which is where they belong.
   (function () {
     var gesehen = Object.create(null), lauf = 0;
     document.querySelectorAll("svg").forEach(function (svg) {
@@ -70,7 +69,7 @@
   }
 
   // ── Step list ─────────────────────────────────────────────────────────────
-  // A slide's step count comes from the selectors — those of its elements
+  // A slide's step count comes from the selectors: those of its elements
   // and those of the bridge jobs.
   var STEPS = [];
   SLIDES.forEach(function (f, i) {
@@ -85,17 +84,16 @@
     for (var k = 1; k <= n; k++) STEPS.push({ slide: i, step: k });
   });
 
-  // ── Welches Deck ist das hier ─────────────────────────────────────────────
+  // ── Which deck this is ────────────────────────────────────────────────────
   //
-  // Bei `file://` teilen sich in Chrome *alle* lokalen Dateien denselben
-  // Ursprung: `location.origin` ist wörtlich "file://". Alles, was am Ursprung
-  // hängt, gehört damit nicht diesem Deck, sondern jeder Datei auf der
-  // Platte. Zwei Stellen brauchen deshalb eine Kennung, die das Deck meint
-  // und nicht den Ursprung: das Gedächtnis über das Neuladen hinweg, und der
-  // Handschlag zwischen den Fenstern.
+  // Under `file://`, Chrome has *all* local files share the same origin:
+  // `location.origin` is literally "file://". Anything hung off the origin
+  // therefore belongs not to this deck but to every file on the disk. Two
+  // places need an id that means the deck and not the origin: the memory
+  // across reloads, and the handshake between the windows.
   //
-  // Der Pfad unterscheidet die Dateien, die Zählung dahinter unterscheidet
-  // zwei Stände derselben Datei.
+  // The path tells the files apart, the count behind it tells apart two
+  // states of the same file.
   var DECK = location.pathname + "|" + SLIDES.length + "." + STEPS.length;
 
   // ── Selektoren: "2-", "1-2", "2,4", "3" ───────────────────────────────────
@@ -116,7 +114,7 @@
   // ── Geometry ──────────────────────────────────────────────────────────────
   // Marks live in the background SVG. getCTM() maps them into viewBox
   // coordinates; the result is stored as ratios so any window size fits.
-  // Collect every mark currently drawn in the slide — background as well as
+  // Collect every mark currently drawn in the slide: background as well as
   // sprites that already found their place.
   function marken(slide, bezug) {
     var karte = {};
@@ -133,9 +131,9 @@
         x: (r.left - bezug.left) / bezug.width,
         y: (r.top - bezug.top) / bezug.height,
         w: r.width / bezug.width, h: r.height / bezug.height,
-        // Wer der Wirt ist, steht hier schon fest: ein Marker, der in einem
-        // Sprite liegt, gehört einem verschachtelten Element. Der Schrittwechsel
-        // braucht das, um Einblendwerte vom Elternteil zu erben.
+        // Who the wirt (host) is is already settled here: a marker inside a
+        // sprite belongs to a nested element. The step change needs this to
+        // inherit fade-in values from the parent.
         wirt: wirt ? wirt.dataset.n : null
       };
     });
@@ -149,13 +147,13 @@
     el.style.height = (r.h * 100) + "%";
   }
 
-  // Was ein verschachteltes Element nicht selbst angibt, erbt es von seinem
-  // Wirt — aber nur, wenn beide im selben Schritt erscheinen (gleiches `at`).
-  // Grund: Sprites hängen als Geschwister im Overlay, nicht ineinander. Ein
-  // `translateY` des Elternteils trägt das Kind also nicht mit; sie laufen nur
-  // dann im Gleichschritt, wenn sie dieselbe Bewegung mit denselben Werten
-  // ausführen. Wich einer ab — etwa `delay: 120` bei einer gestaffelten Liste
-  // gegen 0 beim Morph darin —, kam das Kind vor seinem eigenen Behälter.
+  // What a nested element does not specify itself, it inherits from its wirt
+  // (host), but only if both appear in the same step (same `at`). Reason:
+  // sprites hang as siblings in the overlay, not nested inside one another. A
+  // `translateY` on the parent therefore does not carry the child along; they
+  // only stay in lockstep if they run the same motion with the same values.
+  // If one diverged, say `delay: 120` on a staggered list against 0 on the
+  // morph inside it, the child arrived before its own container.
   function erbt(el, feld) {
     if (el.dataset[feld] !== undefined) return el.dataset[feld];
     if (!el.dataset.parent) return undefined;
@@ -166,9 +164,9 @@
     return wirt.dataset[feld];
   }
 
-  // In rounds: a nested element has no mark in the background — the outer
-  // element's hide() swallows it — but in the outer element's sprite. That
-  // one has to be placed first.
+  // In rounds: a nested element has no mark in the background, the outer
+  // element's hide() swallows it, but it has one in the outer element's
+  // sprite. That one has to be placed first.
   function stelle(i) {
     var svg = SLIDES[i].querySelector(".ts-bg svg");
     if (!svg) return;
@@ -178,7 +176,7 @@
     for (var runde = 0; runde < 4 && offen.length; runde++) {
       var karte = marken(SLIDES[i], bezug);
       var rest = [];
-      var skala = bezug.width / CFG.width;   // Bildschirmpixel je Punkt
+      var skala = bezug.width / CFG.width;   // screen pixels per point
       offen.forEach(function (el) {
         var r = karte[+el.dataset.n];
         if (!r) { rest.push(el); return; }
@@ -191,12 +189,12 @@
         }
         // An iframe measures in real CSS pixels and knows nothing of the
         // stage: in a large window its content would stay small inside a big
-        // box. So it is given the size in slide units and then zoomed — that
+        // box. So it is given the size in slide units and then zoomed, that
         // way it always sees the same area.
         //
         // Scaled with `zoom`, not `transform: scale()`. A transform stretches
         // the finished raster; the frame drew 400 pixels wide and would be
-        // blown up to 460 — blurry. `zoom` acts before rasterising: the inner
+        // blown up to 460, blurry. `zoom` acts before rasterising: the inner
         // window stays 400 points but its pixel density rises with it.
         var frame = el.querySelector("iframe");
         if (frame) {
@@ -204,16 +202,16 @@
           var neu = w + "px|" + h + "px|" + skala;
           if (frame.dataset.mass !== neu) {
             frame.dataset.mass = neu;
-            // `zoom: false` heißt: den Rahmen in echten Bildschirmpixeln
-            // aufspannen und den Inhalt selbst umbrechen lassen. Das ist der
-            // Sinn der Abwahl — sonst sähe ein eingebettetes Dokument immer
-            // denselben Ausschnitt, nur größer gerastert.
+            // `zoom: false` means: span the frame in real screen pixels and
+            // let the content reflow itself. That is the point of opting
+            // out. Otherwise an embedded document would always show the same
+            // crop, just rasterised larger.
             var ohneZoom = el.dataset.zoom === "0";
             frame.style.width = (ohneZoom ? w * skala : w) + "px";
             frame.style.height = (ohneZoom ? h * skala : h) + "px";
             frame.style.transform = "";
             frame.style.zoom = ohneZoom ? "" : skala;
-            // Embedded apps read the pixel density while drawing — after a
+            // Embedded apps read the pixel density while drawing; after a
             // change they have to recompute.
             try { frame.contentWindow.ggbApplet.recalculateEnvironments(); }
             catch (e) {}
@@ -245,7 +243,7 @@
   };
 
   // An animation with `fill: both` pins its end value even long after it is
-  // done. Whoever sets the state anew has to clear it first — otherwise it
+  // done. Whoever sets the state anew has to clear it first, otherwise it
   // wins against the value that was set.
   function clearAnims(el) {
     el.getAnimations().forEach(function (a) { try { a.cancel(); } catch (e) {} });
@@ -254,7 +252,7 @@
   function fadeIn(el, name, dur, delay) {
     clearAnims(el);
     // "none" means no effect. Animating from 1 to 1 would not merely be
-    // pointless — played backwards it would keep the element visible.
+    // pointless: played backwards it would keep the element visible.
     if (name === "none") { el.style.opacity = "1"; return; }
     var f = EFFECT[name] || EFFECT["fade"];
     el.style.opacity = "";
@@ -275,7 +273,7 @@
   // ── Magic move ────────────────────────────────────────────────────────────
   // Typst bakes the font size into the outline: the same glyph has different
   // path data at 20pt and at 34pt, and therefore different symbol ids. For
-  // pairing, the outline is normalised to its largest coordinate — what
+  // pairing, the outline is normalised to its largest coordinate: what
   // remains is the shape, and the size drops out.
   var sigCache = {};
   function signatur(id) {
@@ -296,9 +294,10 @@
     return sig;
   }
 
-  // Pins liegen als durchsichtige Rechtecke hinter ihrem Inhalt — dieselbe
-  // Bauart wie die Elementmarken, nur mit #fd statt #fe. Die Zahl darin ist
-  // aus dem Namen gerechnet, gleiche Namen ergeben also dieselbe Zahl.
+  // Pins sit as transparent rectangles behind their content, the same
+  // construction as the element marks, only with #fd instead of #fe. The
+  // number inside is computed from the name, so equal names give the same
+  // number.
   function pinFelder(el) {
     var felder = [];
     el.querySelectorAll("path").forEach(function (p) {
@@ -311,20 +310,20 @@
     return felder;
   }
 
-  // Der Kasten einer Glyphe in Bildschirmkoordinaten.
+  // A glyph's box in screen coordinates.
   //
-  // Nicht `getBoundingClientRect()`, obwohl das der naheliegende Weg wäre: auf
-  // einem `<use>` liefert Firefox dafür nicht den Kasten der Glyphe, sondern
-  // den des ganzen SVG. Gemessen an einer Gleichung mit 23 Zeichen gab Chrome
-  // 25x23, 16x24, 34x34 und Firefox 476x43 für *jedes* Zeichen. Da der Geist
-  // seine Größe aus diesem Kasten bekommt, wurde dort jeder Buchstabe auf die
-  // Breite der Formel gezogen. Genau das war als „alle Buchstaben quergezogen"
-  // gemeldet worden.
+  // Not `getBoundingClientRect()`, even though that would be the obvious
+  // route: on a `<use>`, Firefox returns for it not the glyph's box but the
+  // whole SVG's. Measured on an equation with 23 characters, Chrome gave
+  // 25x23, 16x24, 34x34, and Firefox gave 476x43 for *every* character. Since
+  // the ghost gets its size from this box, every letter there was stretched
+  // to the width of the formula. That is exactly what was reported as "all
+  // the letters smeared sideways".
   //
-  // `getBBox()` stimmt dagegen in beiden Motoren überein (16x14, 10x15, 21x21),
-  // und `getScreenCTM()` rechnet es in Bildschirmmaße um. Alle vier Ecken, weil
-  // eine Matrix auch drehen und scheren kann. In Chrome kommt damit auf das
-  // Pixel dasselbe heraus wie zuvor.
+  // `getBBox()`, by contrast, agrees between both engines (16x14, 10x15,
+  // 21x21), and `getScreenCTM()` converts it into screen dimensions. All four
+  // corners, because a matrix can also rotate and shear. In Chrome this comes
+  // out to the same pixel value as before.
   function glyphKasten(u) {
     var b, m;
     try { b = u.getBBox(); m = u.getScreenCTM(); } catch (e) { return null; }
@@ -346,9 +345,9 @@
       var r = glyphKasten(u);
       if (!r || r.width <= 0 || r.height <= 0) return;
       var id = u.getAttribute("xlink:href") || u.getAttribute("href") || "";
-      // Die Glyphe gehört zu dem Pin, in dessen Feld ihre Mitte liegt. Bei
-      // geschachtelten Pins gewinnt das kleinste — sonst schluckte ein Pin um
-      // den ganzen Term die Namen der Zeichen darin.
+      // The glyph belongs to the pin in whose field its center lies. With
+      // nested pins the smallest one wins, otherwise a pin around the whole
+      // term would swallow the names of the characters inside it.
       var mx = r.left + r.width / 2, my = r.top + r.height / 2;
       var pin = null, klein = Infinity;
       for (var i = 0; i < felder.length; i++) {
@@ -363,12 +362,13 @@
   }
 
   // First in reading order by shape, then whatever is left goes to its
-  // nearest counterpart — otherwise a glyph would be dropped merely because
+  // nearest counterpart, otherwise a glyph would be dropped merely because
   // it changed places.
   function pairs(a, b) {
     var frei = b.slice(), zug = [];
-    // Erst die Pins: gleiche Namen finden zueinander, bevor die Form befragt
-    // wird. Ein Pin ohne Gegenstück fällt danach in den Formabgleich zurück.
+    // Pins first: equal names find each other before the shape is
+    // consulted. A pin without a counterpart then falls back to the shape
+    // match.
     var fest = [];
     a.forEach(function (g) {
       if (g.pin === null || g.pin === undefined) return;
@@ -393,20 +393,21 @@
       zug.push([g, frei[t]]);
       frei.splice(t, 1);
     });
-    // Kein Rückfall auf das nächstgelegene freie Zeichen. Wer keine gleiche
-    // Form findet, blendet an seinem Platz aus, und das neue blendet an seinem
-    // ein. Ein Doppelpunkt, der sich in einen Buchstaben zieht, ist kein Flug,
-    // sondern ein Schmieren — und welches Zeichen räumlich am nächsten liegt,
-    // sagt nichts darüber, ob die beiden etwas miteinander zu tun haben.
+    // No fallback to the nearest free character. Whoever finds no matching
+    // shape fades out at its own place, and the new one fades in at its own.
+    // A colon that stretches into a letter is not a flight but a smear, and
+    // which character happens to sit closest spatially says nothing about
+    // whether the two have anything to do with each other.
     //
-    // Wer zwei Zeichen aufeinander beziehen will, deren Form sich unterscheidet,
-    // gibt ihnen mit `pin` denselben Namen. Das ist ausgesprochen und
-    // nachvollziehbar; Nachbarschaft ist es nicht.
+    // Anyone who wants to relate two characters whose shape differs gives
+    // them the same name with `pin`. That is explicit and traceable;
+    // proximity is not.
 
-    // Ein Pin darf sich zweimal aufs Ziel legen: dann teilt sich das Zeichen
-    // sichtbar in zwei. Genau das braucht die Potenzregel — der Exponent tritt
-    // vorn als Faktor auf und bleibt zugleich oben stehen. Gesucht wird
-    // deshalb auch unter den bereits vergebenen Quellen.
+    // A pin is allowed to land on the target twice: then the character
+    // visibly splits into two. That is exactly what the power rule needs;
+    // the exponent appears up front as a factor and at the same time stays
+    // up top. So the search also covers sources that have already been
+    // assigned.
     for (var i = frei.length - 1; i >= 0; i--) {
       var z = frei[i];
       if (z.pin === null || z.pin === undefined) continue;
@@ -418,7 +419,7 @@
         }
       }
     }
-    // `rest` are target glyphs without a source — those have to fade in.
+    // `rest` are target glyphs without a source, those have to fade in.
     return { zug: zug, rest: frei };
   }
 
@@ -429,8 +430,8 @@
     return svg.getScreenCTM().inverse().multiply(node.getScreenCTM());
   }
 
-  // Die Strichstärke, sofern der Knoten überhaupt strichelt. Glyphen-Umrisse
-  // haben nur eine Füllung und liefern 0 — daran lassen sie sich erkennen.
+  // The stroke width, provided the node strokes at all. Glyph outlines only
+  // have a fill and yield 0, which is how they can be told apart.
   function strichBreite(node) {
     var st = node.getAttribute("stroke");
     if (!st || st === "none") return 0;
@@ -440,8 +441,9 @@
 
   function kastenInBenutzer(node, svg, m) {
     var b = node.getBBox(), p = svg.createSVGPoint(), xs = [], ys = [];
-    // `getBBox` misst die Geometrie ohne den Strich. Ein waagerechter
-    // Wurzelstrich ist damit null hoch, und sein Doppel bliebe unsichtbar.
+    // `getBBox` measures the geometry without the stroke. A horizontal
+    // radical bar is thus zero tall, and its ghost double would stay
+    // invisible.
     var sw = strichBreite(node);
     if (sw > 0) {
       b = { x: b.x - sw / 2, y: b.y - sw / 2,
@@ -458,19 +460,19 @@
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   }
 
-  // Was gezeichnet und nicht gesetzt ist: Wurzelbögen, Bruchstriche,
-  // Gleichheitsbalken, Rahmen. `glyphs()` sammelt nur `<use>`, diese Teile also
-  // nicht — und weil `[data-hold]` das ganze Element verbirgt, waren sie
-  // während des Fluges verschwunden und erschienen erst am Ende schlagartig.
+  // What is drawn and not set: radical arcs, fraction bars, equals bars,
+  // frames. `glyphs()` only collects `<use>`, so not these parts, and
+  // because `[data-hold]` hides the whole element, they used to vanish
+  // during the flight and appear abruptly only at the end.
   function striche(el) {
     var out = [];
     el.querySelectorAll("path").forEach(function (n) {
       var sw = strichBreite(n);
-      if (sw <= 0) return;              // Glyphen-Umriss, kein gezeichneter Strich
+      if (sw <= 0) return;              // glyph outline, not a drawn stroke
       var r = n.getBoundingClientRect();
       if (r.width <= 0 && r.height <= 0) return;
-      // Auch auf dem Schirm um die halbe Strichstärke weiten, sonst wäre der
-      // Kasten des Doppels in einer Richtung null.
+      // Widen on screen too by half the stroke width, otherwise the ghost
+      // double's box would be zero in one direction.
       var c = n.getScreenCTM();
       var px = sw * (c ? Math.hypot(c.a, c.c) : 1) / 2;
       var py = sw * (c ? Math.hypot(c.b, c.d) : 1) / 2;
@@ -542,16 +544,16 @@
       any = true;
       var d = +dst.dataset.fly || +src.dataset.fly || fallback;
       var qr = src.getBoundingClientRect(), zr = dst.getBoundingClientRect();
-      // Von beiden Seiten, wie schon die Flugdauer eine Zeile darüber: Beim
-      // Zurückblättern tauschen Quelle und Ziel die Rollen, und wer `match` nur
-      // am Ziel liest, findet dort die Vorgabe. In theme-editorial trägt die
-      // lange Zeile `match: "glyph"`; rückwärts ist sie die Quelle, und aus dem
-      // Flug wurde ein Blockschub.
+      // From both sides, like the flight duration a line above already:
+      // going backward, source and target swap roles, and reading `match`
+      // only on the target would then find the default there. In
+      // theme-editorial the long line carries `match: "glyph"`; going
+      // backward it is the source, and the flight turned into a block push.
       //
-      // `"auto"` zählt dabei als „nicht gewählt" und nicht als Antwort — der
-      // Wert steht als Vorgabe an *jedem* Morph, ein bloßes `||` käme deshalb
-      // nie bis zur Quelle durch. Eine ausdrückliche Wahl auf einer der beiden
-      // Seiten gilt für den Flug zwischen ihnen, in beide Richtungen.
+      // `"auto"` counts here as "not chosen" and not as an answer. The value
+      // sits as the default on *every* morph, so a mere `||` would never get
+      // through to the source. An explicit choice on either side applies to
+      // the flight between them, in both directions.
       var wie = dst.dataset.match;
       if (!wie || wie === "auto") wie = src.dataset.match || "auto";
       var qg = glyphs(src), zg = glyphs(dst);
@@ -604,9 +606,9 @@
           a.animate([{ opacity: 0 }, { opacity: 1 }],
             { duration: d * 0.5, delay: d * 0.5, easing: "ease-out", fill: "both" });
         });
-        // Striche gehen denselben Weg wie ein Zeichen ohne Partner: das alte
-        // blendet aus, das neue ein. Gepaart wird nicht — ein Wurzelbogen und
-        // ein Gleichheitsbalken haben nichts miteinander zu tun.
+        // Strokes take the same path as a character without a partner: the
+        // old one fades out, the new one fades in. They are not paired, a
+        // radical arc and an equals bar have nothing to do with each other.
         striche(src).forEach(function (n) {
           var a = glyphGeist(n, stage);
           attach(a);
@@ -622,25 +624,26 @@
         });
       } else {
         var takt2 = { duration: d, easing: EASE, fill: "forwards" };
-        // Jede Kopie liegt in *ihrem eigenen* Kasten und wird von dort bewegt.
+        // Each copy sits in *its own* box and is moved from there.
         //
-        // Vorher lagen beide im Kasten der Quelle. Für die Quelle stimmt das,
-        // für das Ziel nicht. Die Regel `.ts-ghost svg` zwingt das SVG auf
-        // volle Breite und Höhe der Kopie, das Ziel wurde also in ein fremdes
-        // Seitenverhältnis eingepasst; und weil ein SVG dabei sein eigenes
-        // Verhältnis wahrt, blieb Luft an zwei Rändern. Die anisotrope
-        // Skalierung danach nahm das nicht zurück. Am Ende des Fluges stand die
-        // Zeichnung deshalb in anderen Proportionen da als das echte Element,
-        // das eine Zehntelsekunde später an ihre Stelle trat.
+        // Previously both sat in the source's box. For the source that is
+        // correct, for the target it is not. The rule `.ts-ghost svg` forces
+        // the SVG to the full width and height of the copy, so the target
+        // was fitted into a foreign aspect ratio; and because an SVG keeps
+        // its own ratio while doing so, air remained on two edges. The
+        // anisotropic scaling afterward did not undo that. At the end of the
+        // flight the drawing therefore stood in different proportions than
+        // the real element that took its place a tenth of a second later.
         //
-        // Gemessen im Editorial-Deck, Bild für Bild: von 760ms bis 840ms
-        // bewegte sich nichts mehr, der Flug saß. Bei 920ms sprangen dann 824
-        // Pixel um, rückwärts 302. Genau das ist der Ruck, den man sieht.
+        // Measured in the editorial deck, frame by frame: from 760ms to
+        // 840ms nothing moved anymore, the flight had settled. At 920ms then
+        // 824 pixels jumped, 302 going backward. That is exactly the jerk
+        // you see.
         //
-        // Jetzt liegt das Ziel von Anfang an in seinem eigenen Kasten und
-        // startet zusammengestaucht auf dem der Quelle. Es endet bei
-        // scale(1,1) und ist damit Pixel für Pixel das, was danach dasteht:
-        // beide Richtungen 0 statt 824 und 302.
+        // Now the target sits in its own box from the start and begins
+        // squeezed down onto the source's. It ends at scale(1,1) and is
+        // thus pixel for pixel what stands there afterward: both directions
+        // 0 instead of 824 and 302.
         var kopie = function (was, kasten) {
           var k = was.cloneNode(true);
           k.className = "ts-ghost";
@@ -653,8 +656,8 @@
           k.style.height = kasten.height + "px";
           return k;
         };
-        // Der Ursprung der Geister liegt oben links (siehe CSS), deshalb setzt
-        // sich der Weg schlicht aus Verschiebung und Streckung zusammen.
+        // The ghosts' transform origin sits at top left (see CSS), so the
+        // path is simply composed of translation and scaling.
         var hin = function (von, nach) {
           return "translate(" + (nach.left - von.left) + "px," +
                  (nach.top - von.top) + "px) scale(" +
@@ -739,7 +742,7 @@
       if (!n) return;
       if (seen[n]) {
         console.warn("typstage: slide " + (i + 1) + " has two bridged elements"
-          + ' named "' + n + '" — both get every job. Give one its own name.');
+          + ' named "' + n + '". Both get every job, so give one its own name.');
       }
       seen[n] = 1;
     });
@@ -781,7 +784,7 @@
     var d = e.data;
     if (!d || d.typstage !== 1) return;
     if (d.failed) {
-      console.warn("motion: GeoGebra hat abgelehnt: " + d.failed.join(", "));
+      console.warn("typstage: GeoGebra refused: " + d.failed.join(", "));
       return;
     }
     if (d.ready == null) return;
@@ -796,30 +799,30 @@
     if (st) drive(st.slide, st.step, true);
   });
 
-  // ── Der Kanal zwischen den Fenstern ───────────────────────────────────────
+  // ── The channel between the windows ───────────────────────────────────────
   //
-  // Ein Vortrag und seine Sprecheransicht sind zwei Fenster auf derselben
-  // Datei. `window.open` setzt im geöffneten Fenster `window.opener`, und
-  // `postMessage` trägt über diesen Griff in beide Richtungen, auch von einer
-  // `file://`-Seite aus, wo `localStorage` nicht taugt: Firefox gibt seit 68
-  // jeder lokalen Datei einen eigenen Ursprung, und dann sieht keiner den
-  // Speicher des anderen.
+  // A talk and its speaker view are two windows on the same file.
+  // `window.open` sets `window.opener` in the opened window, and
+  // `postMessage` carries over this handle in both directions, even from a
+  // `file://` page, where `localStorage` is no good: since 68, Firefox gives
+  // every local file its own origin, and then neither sees the other's
+  // storage.
   //
-  // Jede Nachricht trägt `typstage: 1` und dazu ein eigenes Feld `kanal`.
-  // Das `typstage` allein reicht nicht: darüber läuft schon die Brücke zu den
-  // eingebetteten Dokumenten (`{typstage: 1, ready: 1}` und ihre Aufträge).
-  // Die beiden Empfänger sortieren einander deshalb am `kanal` aus: die
-  // Brücke steigt bei `d.ready == null` aus, dieser hier bei fehlendem
-  // `kanal`.
+  // Every message carries `typstage: 1` plus its own `kanal` field. The
+  // `typstage` alone is not enough: the bridge to the embedded documents
+  // already runs over it (`{typstage: 1, ready: 1}` and their jobs). The two
+  // receivers therefore sort each other out by `kanal`: the bridge bails out
+  // on `d.ready == null`, this one here on a missing `kanal`.
   //
-  // Ohne Partner tut hier alles nichts. Ein Deck, das nie ein zweites Fenster
-  // öffnet, verhält sich Zeile für Zeile wie zuvor.
-  var PARTNER = null;   // das andere Fenster, sobald es sich gemeldet hat
-  var KIND = null;      // der Griff aus window.open, nur zum Wiederfinden
+  // Without a partner, everything here does nothing. A deck that never opens
+  // a second window behaves line for line as before.
+  var PARTNER = null;   // the other window, once it has checked in
+  var KIND = null;      // the handle from window.open, only for finding it again
   var HOERER = Object.create(null);
-  var stumm = 0;        // >0, solange wir einer Fernbedienung folgen
+  var stumm = 0;        // >0 while we are following a remote control
 
-  // Ein geschlossenes Fenster bleibt als Griff liegen, taugt aber nichts mehr.
+  // A closed window remains lying around as a handle, but it is no longer
+  // any good.
   function partner() {
     if (PARTNER) { try { if (PARTNER.closed) PARTNER = null; } catch (x) {} }
     return PARTNER;
@@ -830,30 +833,30 @@
     if (!p) return false;
     var m = { typstage: 1, kanal: art, deck: DECK };
     if (daten) for (var k in daten) m[k] = daten[k];
-    // Bei `file://` ist der Ursprung "null"; ein genauer Zielursprung ließe
-    // die Nachricht fallen. Gefiltert wird stattdessen am Inhalt.
+    // Under `file://` the origin is "null"; an exact target origin would
+    // drop the message. Filtering happens on content instead.
     try { p.postMessage(m, "*"); } catch (x) { return false; }
     return true;
   }
 
-  // Für alles, was später dazukommt: eine eigene Nachrichtenart braucht keinen
-  // Eingriff in den Empfänger unten, nur ein `horch("meinding", fn)`.
+  // For anything added later: a new message kind needs no change to the
+  // receiver below, only a `horch("meinding", fn)`.
   function horch(art, fn) { (HOERER[art] || (HOERER[art] = [])).push(fn); }
 
-  // ── Ein Strom statt einzelner Nachrichten ─────────────────────────────────
+  // ── A stream instead of individual messages ───────────────────────────────
   //
-  // Manches kommt nicht alle paar Sekunden, sondern im Takt der Maus: ein
-  // Strich, den einer in der Sprecheransicht zieht, ist eine Folge von
-  // Punkten. Eine Nachricht je Punkt wäre Verschwendung, denn jede kostet auf der
-  // Gegenseite einen eigenen Durchlauf durch den Empfänger, und bei
-  // gedrückter Maus sind das Hunderte.
+  // Some things do not arrive every few seconds but at the pace of the
+  // mouse: a stroke someone draws in the speaker view is a sequence of
+  // points. One message per point would be wasteful, since each one costs
+  // the other side its own pass through the receiver, and with the mouse
+  // held down that is hundreds.
   //
-  // `strom` sammelt deshalb und schickt einmal je Bild ein Bündel:
-  // `{kanal: art, punkte: [...]}`. Der Empfänger drüben bekommt dieselbe Art
-  // wie bei `sende`, nur eben mit `punkte` statt eines einzelnen Werts.
-  // Gesammelt wird nur, wenn überhaupt jemand zuhört; und wer in einem
-  // verdeckten Fenster sammelt, bekommt kein Bild, deshalb die Schranke, die
-  // ein volles Bündel notfalls auch ohne Bild losschickt.
+  // `strom` therefore collects and sends one bundle per frame:
+  // `{kanal: art, punkte: [...]}`. The receiver on the other side gets the
+  // same kind as with `sende`, just with `punkte` instead of a single value.
+  // Collecting only happens when someone is actually listening; and whoever
+  // collects in a hidden window gets no frame, hence the cap that sends off
+  // a full bundle even without a frame if it has to.
   var STROM = null, stromTakt = 0, STROM_MAX = 128;
   function strom(art, punkt) {
     if (!partner()) return false;
@@ -867,8 +870,8 @@
     }
     return true;
   }
-  // Ein Bild, das noch aussteht, während die Schranke schon geleert hat,
-  // findet dann nichts mehr vor und kehrt gleich um. Abbestellen lohnt nicht.
+  // A frame still pending while the cap has already emptied finds nothing
+  // left and turns right back around. Cancelling it is not worth it.
   function stromAus() {
     stromTakt = 0;
     var s = STROM;
@@ -877,13 +880,14 @@
     for (var art in s) sende(art, { punkte: s[art] });
   }
 
-  // Ein Schritt, der von drüben kommt, darf nicht zurückgemeldet werden:
-  // sonst schickten sich die beiden Fenster dieselbe Zahl ohne Ende hin und
-  // her. `stumm` legt `melde` für die Dauer des Sprungs still.
-  // Eingefroren heißt: der Vortrag nimmt den fremden Schritt entgegen, zeigt
-  // ihn aber nicht. Er merkt sich nur, wo der Vortragende inzwischen steht,
-  // und holt es beim Auftauen nach. Ohne Sprecherfenster ist `FROST` null und
-  // die Zeile kostet nichts.
+  // A step that comes from the other side must not be reported back:
+  // otherwise the two windows would send each other the same number back
+  // and forth forever. `stumm` silences `melde` for the duration of the
+  // jump.
+  // Frozen means: the talk accepts the remote step but does not display it.
+  // It only remembers where the speaker has moved to in the meantime, and
+  // catches up on thawing. Without a speaker window, `FROST` is null and
+  // this line costs nothing.
   var FROST = 0, FROST_ZIEL = null;
   function fernGoto(n, instant) {
     if (typeof n !== "number" || isNaN(n) || n === current) return;
@@ -892,45 +896,46 @@
     try { goto(n, instant); } finally { stumm--; }
   }
 
-  // Jeder Schrittwechsel geht hinüber: der Vortrag meldet, wo er steht, die
-  // Sprecheransicht bittet um den Schritt. Beim Vortrag ist die Bitte ein
-  // richtiger Wechsel mit Übergang, die Meldung an die Sprecheransicht dagegen
-  // ein Sprung ohne Bewegung, dort wird die Bühne ohnehin zugedeckt.
+  // Every step change goes across: the talk reports where it stands, the
+  // speaker view requests the step. On the talk side the request is a real
+  // change with a transition; the report to the speaker view, by contrast,
+  // is a jump without motion, since the stage is covered up there anyway.
   function melde(n) {
     if (stumm) return;
     sende(ROLLE === "speaker" ? "gehe" : "schritt", { n: n });
   }
 
-  // ── Wer ist drüben, und ist er noch derselbe ──────────────────────────────
+  // ── Who is on the other side, and are they still the same ────────────────
   //
-  // Jedes Fenster bekommt beim Laden eine Kennung. Sie steht in der Antwort
-  // auf `hallo`, und daran erkennt die Gegenseite, ob dort noch dasselbe
-  // Fenster sitzt oder ein neu geladenes. Das ist der ganze Unterschied
-  // zwischen "die Meldung wiederholt sich" und "drüben hat jemand neu
-  // geladen", und ohne ihn liefen die beiden nach einem Neuladen des
-  // Vortragsfensters still auseinander: `window.opener` überlebt drüben das
-  // Neuladen, der Griff in der Gegenrichtung nicht.
+  // Every window gets an id when it loads. It sits in the reply to `hallo`,
+  // and that is how the other side can tell whether the same window is
+  // still sitting there or a freshly loaded one. That is the whole
+  // difference between "the report is repeating" and "someone over there
+  // reloaded", and without it the two would silently drift apart after a
+  // reload of the talk window: `window.opener` survives a reload over
+  // there, the handle in the opposite direction does not.
   var SITZUNG = String(Date.now()) + "." + Math.floor(Math.random() * 1e6);
-  var FERN_SITZUNG = null;   // die Kennung, die zuletzt von drüben kam
-  var FRISCH = 1;            // dieses Fenster hat sich noch nie abgeglichen
-  var LETZTER_SCHLAG = Date.now();   // wann zuletzt überhaupt etwas ankam
-  var SICHT_GESENDET = 0;            // wann zuletzt ein eigener Sichtbefehl ging
+  var FERN_SITZUNG = null;   // the id that last came from the other side
+  var FRISCH = 1;            // this window has never synced yet
+  var LETZTER_SCHLAG = Date.now();   // when anything last arrived at all
+  var SICHT_GESENDET = 0;            // when this window last sent its own view command
 
-  // Die Begrüßung, also die Antwort auf `hallo`. Sie wiederholt sich im Takt
-  // des Herzschlags, gehandelt wird deshalb nur bei einer neuen Kennung.
+  // The greeting, i.e. the reply to `hallo`. It repeats at the pace of the
+  // heartbeat, so it is only acted on for a new id.
   //
-  // Wer neu geladen ist, übernimmt den Stand des anderen; wer schon lief,
-  // gibt seinen weiter. Damit findet ein neu geladenes Vortragsfenster
-  // zurück, ohne dass die Ansicht ihren Platz verliert, und eine neu
-  // geöffnete Ansicht zeigt, was im Saal wirklich steht, statt "hell und
-  // aufgetaut" zu behaupten, während es dort schwarz ist.
+  // Whoever just reloaded adopts the other's state; whoever was already
+  // running passes its own on. That way a freshly reloaded talk window
+  // finds its way back without the view losing its place, and a freshly
+  // opened view shows what actually stands in the hall, instead of
+  // claiming "bright and thawed" while it is black there.
   function begruessung(d) {
-    // Zuerst und bei jedem Schlag: was der Vortrag von sich aus entschieden
-    // hat, gilt. Er ist das Fenster, das die Sicht wirklich zeigt; hier steht
-    // nur die Anzeige darüber. Hebt er Schwarz oder Frost selbst auf, stünde
-    // hier sonst weiter "eingefroren", und die Tasten wären verkehrt herum:
-    // der erste Druck auf `b` schaltete aus, was gar nicht mehr an war, und
-    // fror dabei den Vortrag wieder ein, weil beide Werte zusammen gehen.
+    // First, and on every beat: whatever the talk itself has decided holds.
+    // It is the window that actually shows the view; here there is only the
+    // indicator about it. If it lifts black or frost itself, this would
+    // otherwise keep saying "frozen", and the keys would be backward: the
+    // first press of `b` would switch off something that was not even on
+    // anymore, and would freeze the talk again in the process, because both
+    // values go together.
     sichtAbgleichen(d.schwarz, d.frost);
     if (d.sitzung === FERN_SITZUNG) return;
     var warFrisch = FRISCH;
@@ -941,14 +946,14 @@
       sichtUebernehmen(d.schwarz, d.frost);
       return;
     }
-    // Ein neuer Partner bekommt alles, was hier steht: die Sicht, den Schritt
-    // und die Striche.
+    // A new partner gets everything that stands here: the view, the step,
+    // and the ink strokes.
     //
-    // Die Sicht zuerst, und das ist keine Geschmacksfrage. Ein neu geladenes
-    // Vortragsfenster ist aufgetaut; käme `gehe` vor `sicht`, führte es den
-    // Sprung aus, ehe es wieder einfriert, und das Einfrieren bräche beim
-    // Neuladen still. In dieser Reihenfolge landet der Schritt in
-    // `FROST_ZIEL`, wo er hingehört.
+    // The view first, and that is not a matter of taste. A freshly loaded
+    // talk window is thawed; if `gehe` came before `sicht`, it would carry
+    // out the jump before freezing again, and the freeze would silently
+    // break on reload. In this order the step lands in `FROST_ZIEL`, where
+    // it belongs.
     sichtSenden();
     sende("gehe", { n: current });
     if (TINTE_AN) sende("tintestand", { liste: tinteAbschrift() });
@@ -957,15 +962,15 @@
   addEventListener("message", function (e) {
     var d = e.data;
     if (!d || d.typstage !== 1 || !d.kanal) return;
-    // Zwei Fenster gehören nur dann zusammen, wenn sie dasselbe Deck zeigen.
-    // Ohne diese Zeile paart sich eine Sprecheransicht anstandslos mit einem
-    // fremden Vortrag: navigiert einer im selben Tab zu einem anderen Deck,
-    // steuerte die Ansicht danach etwas, das sie gar nicht zeigt. Vor allem
-    // anderen geprüft, damit auch der Partnergriff nicht gesetzt wird.
+    // Two windows only belong together if they show the same deck. Without
+    // this line, a speaker view would happily pair up with a foreign talk:
+    // if someone navigates to a different deck in the same tab, the view
+    // would then control something it does not even show. Checked before
+    // anything else, so that the partner handle is not set either.
     if (d.deck !== DECK) return;
-    // Wer schreibt, ist ab jetzt der Partner. Das trägt über ein Neuladen
-    // hinweg: das nachgeladene Fenster meldet sich erneut, und der tote Griff
-    // wird dabei schlicht überschrieben.
+    // Whoever writes is the partner from now on. This carries across a
+    // reload: the reloaded window checks in again, and the dead handle
+    // simply gets overwritten in the process.
     if (e.source) PARTNER = e.source;
     LETZTER_SCHLAG = Date.now();
     if (d.kanal === "hallo") {
@@ -974,14 +979,15 @@
                          sitzung: SITZUNG,
                          schwarz: document.documentElement.dataset.tsSchwarz ? 1 : 0,
                          frost: FROST });
-      // Den Bestand nur an ein frisch geladenes Gegenüber. Sonst schöben
-      // sich die beiden im Takt des Herzschlags dieselben Striche zu.
+      // The stock only goes to a freshly loaded counterpart. Otherwise the
+      // two would keep pushing the same strokes back and forth at the pace
+      // of the heartbeat.
       if (d.frisch && TINTE_AN) sende("tintestand", { liste: tinteAbschrift() });
     } else if (d.kanal === "schritt") {
-      // Mit Kennung ist es eine Begrüßung, ohne ein wirklicher Schrittwechsel.
-      // Der Unterschied zählt: der Begrüßung blind zu folgen hieße, jede
-      // Sekunde dorthin zu springen, wo der Vortrag steht, und genau das ist
-      // beim Einfrieren nicht gewollt.
+      // With an id it is a greeting, without one a real step change. The
+      // difference matters: blindly following the greeting would mean
+      // jumping every second to wherever the talk stands, and that is
+      // exactly what is not wanted while frozen.
       if (d.sitzung !== undefined) begruessung(d);
       else fernGoto(d.n, true);
     } else if (d.kanal === "gehe") {
@@ -991,18 +997,18 @@
     if (hs) for (var i = 0; i < hs.length; i++) hs[i](d, e);
   });
 
-  // Das geöffnete Fenster meldet sich beim Öffner, und zwar dauerhaft.
+  // The opened window checks in with its opener, and does so permanently.
   //
-  // Einmal reichte nicht. `window.opener` überlebt ein Neuladen des
-  // Vortragsfensters, der Griff dorthin überlebt es nicht: nach einem
-  // Neuladen weiß der Vortrag von niemandem mehr, und weil er sich nie von
-  // sich aus meldet, blieben die beiden für immer getrennt. Eine Nachricht je
-  // Sekunde führt sie wieder zusammen und kostet nichts.
+  // Once was not enough. `window.opener` survives a reload of the talk
+  // window, the handle to it does not: after a reload, the talk no longer
+  // knows of anyone, and because it never checks in on its own, the two
+  // would stay separated forever. One message per second brings them back
+  // together and costs nothing.
   function anmelden() {
     if (ROLLE !== "speaker") return false;
     var o = null;
-    // Erst das Fenster, das diese Ansicht selbst aufgemacht hat: nur das gibt
-    // es, wenn der Vortrag zwischendurch geschlossen wurde.
+    // First the window that opened this view itself: that is the only one
+    // that exists once the talk has been closed in the meantime.
     try { if (KIND && !KIND.closed) o = KIND; } catch (x) {}
     if (!o) { try { o = window.opener; } catch (x) {} }
     if (!o) return false;
@@ -1016,22 +1022,22 @@
     setInterval(anmelden, 1000);
   }
 
-  // Die Taste öffnet das zweite Fenster. Ohne Nutzergeste fiele `window.open`
-  // dem Popup-Blocker zum Opfer, der Tastendruck ist die Geste. Der Name im
-  // zweiten Argument sorgt dafür, dass ein zweiter Druck dasselbe Fenster
-  // trifft statt ein drittes zu öffnen.
+  // The key opens the second window. Without a user gesture, `window.open`
+  // would fall victim to the popup blocker; the keypress is the gesture.
+  // The name in the second argument makes sure a second press hits the same
+  // window instead of opening a third.
   function oeffneSprecher() {
     if (ROLLE === "speaker") {
-      // Andersherum: aus der Sprecheransicht holt die Taste den Vortrag nach
-      // vorn, statt eine Sprecheransicht der Sprecheransicht aufzumachen.
+      // The other way round: from the speaker view the key brings the talk
+      // forward, instead of opening a speaker view of the speaker view.
       var o = partner();
       if (o) { try { o.focus(); } catch (x) {} return o; }
       try { if (KIND && !KIND.closed) { KIND.focus(); return KIND; } } catch (y) {}
-      // Ist der Vortrag zu, holt dieselbe Taste einen neuen. Sonst blätterte
-      // und zeichnete die Ansicht für immer ins Leere, und an den Saal käme
-      // niemand mehr heran. Das neue Fenster meldet sich, bekommt über die
-      // Begrüßung den laufenden Schritt samt Strichen und steht damit da, wo
-      // die Ansicht steht.
+      // If the talk is closed, the same key gets a new one. Otherwise the
+      // view would page and draw into the void forever, and no one could
+      // reach the hall anymore. The new window checks in, gets the running
+      // step along with the strokes via the greeting, and thus stands where
+      // the view stands.
       KIND = window.open(location.href.split("#")[0], "typstage-stage",
                         "width=1280,height=800");
       return KIND;
@@ -1045,30 +1051,30 @@
     return KIND;
   }
 
-  // ── Striche auf der Folie ─────────────────────────────────────────────────
+  // ── Strokes on the slide ───────────────────────────────────────────────────
   //
-  // Gezeichnet wird in der Sprecheransicht, zu sehen ist es im Vortrag: der
-  // Vortragende hat Maus und Trackpad vor sich, die Leinwand hat er nicht.
-  // Gerechnet wird deshalb in Anteilen der Bühne (0 bis 1) statt in Pixeln.
-  // Zwei Fenster sind selten gleich groß; ein Pixelwert säße drüben an einer
-  // anderen Stelle, ein Anteil sitzt an derselben.
+  // Drawing happens in the speaker view, seeing it happens in the talk: the
+  // speaker has mouse and trackpad in front of them, not the canvas. So the
+  // computation happens in fractions of the stage (0 to 1) instead of
+  // pixels. Two windows are rarely the same size; a pixel value would sit
+  // in a different spot over there, a fraction sits in the same one.
   //
-  // Die Striche kleben an ihrer Folie. `TINTE[folie]` ist die Liste ihrer
-  // Striche, und in der Zeichenebene liegen immer nur die der laufenden
-  // Folie. Wer vorblättert und zurückkommt, findet sie wieder.
+  // The strokes stick to their slide. `TINTE[folie]` is the list of its
+  // strokes, and the drawing layer always only holds those of the running
+  // slide. Whoever pages forward and comes back finds them again.
   //
-  // Solange niemand gezeichnet hat, ist `TINTE_AN` null und dieser ganze
-  // Abschnitt rührt nichts an: ein Deck ohne Sprecherfenster merkt von ihm
-  // nichts.
+  // As long as no one has drawn, `TINTE_AN` is null and this whole section
+  // does not touch anything: a deck without a speaker window notices
+  // nothing of it.
   var TINTE = [], TINTE_AN = 0, TINTE_SVG = null, TINTE_FOLIE = -1;
   var FARBEN = ["#eb5e28", "#ffd166", "#4cc9f0", "#f4f4f5"];
-  var STRICH_PT = 3.2;    // Strichstärke in Punkten der Bühne, skaliert mit ihr
+  var STRICH_PT = 3.2;    // stroke width in points of the stage, scaled with it
 
   function tinteListe(i) { return TINTE[i] || (TINTE[i] = []); }
 
-  // Ein SVG im Maß der Bühne. Der viewBox ist das Folienformat selbst, dann
-  // stimmen Seitenverhältnis und Strichstärke ohne weitere Rechnung, und die
-  // Anteile werden schlicht mit Breite und Höhe multipliziert.
+  // An SVG sized to the stage. The viewBox is the slide format itself, so
+  // aspect ratio and stroke width work out without further calculation, and
+  // the fractions are simply multiplied by width and height.
   function tinteEbene() {
     if (TINTE_SVG && TINTE_SVG.parentNode === INK) return TINTE_SVG;
     while (INK.firstChild) INK.removeChild(INK.firstChild);
@@ -1087,9 +1093,9 @@
     return out.join(" ");
   }
 
-  // Ein Strich bekommt seine Linie einmal und behält sie. Nachgetragen wird je
-  // Bündel genau ein Attribut. Wer drüben je Punkt ein Element anlegte, machte
-  // das Bündeln beim Sender wieder zunichte.
+  // A stroke gets its line element once and keeps it. Exactly one attribute
+  // gets updated per bundle. Creating a new element per point on the
+  // receiving side would undo the bundling done at the sender.
   function tinteLinie(s, svg) {
     if (s.knoten && s.knoten.parentNode === svg) return s.knoten;
     var n = document.createElementNS(NS, "polyline");
@@ -1103,8 +1109,8 @@
     return n;
   }
 
-  // Die Striche der laufenden Folie in die Ebene, alles andere heraus. Steht
-  // schon die richtige Folie darin, ist nichts zu tun.
+  // The strokes of the running slide into the layer, everything else out.
+  // If the right slide is already sitting there, there is nothing to do.
   function tinteStand() {
     if (!TINTE_AN || !INK || current < 0 || !STEPS[current]) return;
     var si = STEPS[current].slide;
@@ -1124,10 +1130,10 @@
     return (current >= 0 && STEPS[current]) ? STEPS[current].slide : -1;
   }
 
-  // Ein einzelnes Ereignis in den Bestand: entweder ein Punkt, oder ein
-  // Befehl. Beides läuft durch denselben Strom, damit die Reihenfolge hält.
-  // Ein `sende` neben dem Strom käme vor dem noch ausstehenden Bündel an, und
-  // ein Löschen überholte die Punkte, die es löschen sollte.
+  // A single event into the stock: either a point, or a command. Both run
+  // through the same stream so the order holds. A `sende` alongside the
+  // stream would arrive before the still-pending bundle, and a delete would
+  // overtake the points it was supposed to delete.
   function tinteNimm(ev, schmutz) {
     if (!ev) return;
     TINTE_AN = 1;
@@ -1141,8 +1147,8 @@
     if (typeof ev.x !== "number" || typeof ev.y !== "number") return;
     var liste = tinteListe(ev.s);
     var s = liste[liste.length - 1];
-    // Die laufende Nummer trennt die Striche: eine neue Nummer heißt, dass
-    // die Maus zwischendurch los war.
+    // The running number separates the strokes: a new number means the
+    // mouse was released in between.
     if (!s || s.n !== ev.n) {
       s = { n: ev.n, farbe: ev.f || FARBEN[0], punkte: [], knoten: null };
       liste.push(s);
@@ -1151,7 +1157,7 @@
     if (ev.s === tinteFolie() && schmutz.indexOf(s) < 0) schmutz.push(s);
   }
 
-  // Ein ganzes Bündel auf einmal, und erst danach gezeichnet.
+  // A whole bundle at once, and only drawn afterward.
   function tinteBuendel(liste) {
     if (!INK || !liste || !liste.length) return;
     var schmutz = [];
@@ -1162,15 +1168,15 @@
       tinteLinie(schmutz[k], svg).setAttribute("points", tintePunkte(schmutz[k]));
     }
   }
-  // Der Vortrag hört zu. Die Sprecheransicht bekommt nichts davon, sie
-  // schickt nur; deshalb gibt es keine Rückkopplung.
+  // The talk listens. The speaker view gets none of it, it only sends;
+  // hence there is no feedback loop.
   horch("tinte", function (d) { tinteBuendel(d.punkte); });
 
-  // Was schon auf den Folien steht, geht bei der Anmeldung einmal hinüber.
-  // Sonst sähe eine neu geladene Sprecheransicht leere Folien, während im
-  // Saal die Striche von vorhin stehen, und der Vortragende radierte an
-  // etwas herum, das er gar nicht mehr vor sich hat. Die Knoten bleiben
-  // dabei zurück: ein DOM-Element lässt sich nicht verschicken.
+  // What already stands on the slides goes across once at check-in.
+  // Otherwise a freshly loaded speaker view would see empty slides while
+  // the strokes from before still stand in the hall, and the speaker would
+  // be erasing at something they no longer have in front of them. The
+  // nodes are left behind in the process: a DOM element cannot be sent.
   function tinteAbschrift() {
     var out = [];
     for (var i = 0; i < TINTE.length; i++) {
@@ -1188,8 +1194,8 @@
     for (var i = 0; i < liste.length; i++) {
       var q = liste[i];
       tinteListe(q.s).push({ n: q.n, farbe: q.f, punkte: q.p, knoten: null });
-      // Der nächste eigene Strich muss eine Nummer bekommen, die drüben noch
-      // nicht vergeben ist, sonst wüchse er an einen fremden an.
+      // The next stroke of our own must get a number not yet assigned on
+      // the other side, otherwise it would grow onto a foreign one.
       if (q.n >= STRICH_NR) STRICH_NR = q.n + 1;
       TINTE_AN = 1;
     }
@@ -1197,13 +1203,13 @@
   }
   horch("tintestand", function (d) { tinteEinlesen(d.liste); });
 
-  // ── Vortragsfenster: schwarz ──────────────────────────────────────────────
+  // ── Talk window: black ────────────────────────────────────────────────────
   //
-  // pdfpc trennt zwei Dinge, und das ist übernehmenswert: *schwarz* macht den
-  // Saal dunkel, *einfrieren* lässt das Bild stehen, während der Vortragende
-  // in seiner Ansicht schon weiterblättert. Das Erste hängt an einem Attribut
-  // am Wurzelelement und ist reine Darstellung; das Zweite steckt in
-  // `fernGoto`, denn dort kommt der fremde Schritt an.
+  // pdfpc separates two things, and that is worth adopting: *black* makes
+  // the hall dark, *freeze* leaves the picture standing while the speaker
+  // already keeps paging in their own view. The first hangs off an
+  // attribute on the root element and is pure presentation; the second
+  // sits inside `fernGoto`, because that is where the remote step arrives.
   var gehaltene = [];
   function schwarzMedien(an) {
     var st = STEPS[current];
@@ -1215,8 +1221,8 @@
       });
       return;
     }
-    // Nur das wieder anwerfen, was vorher auch lief: ein Video, das der
-    // Vortragende von Hand angehalten hatte, bleibt angehalten.
+    // Only restart what was running before: a video the speaker had paused
+    // by hand stays paused.
     gehaltene.forEach(function (v) {
       var p = v.play(); if (p && p.catch) p.catch(function () {});
     });
@@ -1224,7 +1230,7 @@
   }
   function auftauen() {
     FROST = 0;
-    // Beim Auftauen holt der Vortrag nach, was er verpasst hat.
+    // On thawing, the talk catches up on what it missed.
     if (FROST_ZIEL != null) { var z = FROST_ZIEL; FROST_ZIEL = null; fernGoto(z, false); }
   }
   function sichtLoesen() {
@@ -1236,13 +1242,13 @@
     sichtMerken();
   }
 
-  // Ein Neuladen des Vortragsfensters ließ den Saal für die Dauer des Ladens
-  // hell werden, bis der nächste Herzschlag das Schwarz zurückbrachte: ein
-  // sichtbarer Blitz auf eine Folie, die niemand sehen soll. `sessionStorage`
-  // gehört genau diesem einen Tab und überlebt genau dessen Neuladen, mehr
-  // wird davon nicht verlangt. Der Kanal bleibt `postMessage`; das hier ist
-  // nur ein Gedächtnis über das Laden hinweg, und schlägt es fehl, ist alles
-  // wie zuvor.
+  // A reload of the talk window used to let the hall go bright for the
+  // duration of loading, until the next heartbeat brought the black back:
+  // a visible flash onto a slide no one is supposed to see. `sessionStorage`
+  // belongs to exactly this one tab and survives exactly its reload,
+  // nothing more is asked of it. The channel remains `postMessage`; this
+  // here is only a memory across the load, and if it fails, everything is
+  // as before.
   function sichtMerken() {
     try {
       sessionStorage.setItem("ts-sicht:" + DECK,
@@ -1259,18 +1265,18 @@
       schwarzMedien(true);
     }
     if (alt.charAt(1) === "1") FROST = 1;
-    // Der Wächter hebt das gleich wieder auf, wenn niemand mehr da ist: eine
-    // Erinnerung ohne Partner ist genau der Fall, für den er gebaut ist.
+    // The guard lifts that again right away if no one is there anymore: a
+    // memory without a partner is exactly the case it was built for.
     wacheAn();
   }
 
-  // Ein Saal, der schwarz bleibt, weil das Fenster mit der Taste zugegangen
-  // ist, ist das Schlimmste, was diese Ansicht anrichten kann: im
-  // Vortragsfenster gibt es keine Taste dagegen, und es soll auch keine
-  // geben, denn ein Deck ohne Sprecheransicht darf keine neue kennen.
-  // Bleibt der Herzschlag aus oder ist der Partner fort, hebt der Vortrag
-  // Schwarz und Frost von sich aus auf. Der Wächter läuft erst, wenn eines
-  // von beidem an ist, und hört wieder auf, sobald beides aus ist.
+  // A hall that stays black because the window was closed with a keypress
+  // is the worst thing this view can cause: in the talk window there is no
+  // key against it, and there should not be one either, because a deck
+  // without a speaker view must not gain a new dependency on one. If the
+  // heartbeat stays absent or the partner is gone, the talk lifts black and
+  // frost on its own. The guard only runs once either one is on, and stops
+  // again as soon as both are off.
   var WACHE = 0, WACHE_SCHLAG = 0;
   function wacheAn() {
     if (WACHE) return;
@@ -1282,21 +1288,21 @@
       if (!FROST && !document.documentElement.dataset.tsSchwarz) {
         clearInterval(WACHE); WACHE = 0; return;
       }
-      // Gemessen wird der Partner, nicht die Uhr. `closed` am Fenstergriff
-      // ist genau dieses Signal: es ist synchron, es lügt nicht, und es ist
-      // eine der wenigen Eigenschaften, die auch über Ursprungsgrenzen hinweg
-      // lesbar sind. Es trägt damit dort, wo Firefox jeder lokalen Datei
-      // einen eigenen Ursprung gibt.
+      // What is measured is the partner, not the clock. `closed` on the
+      // window handle is exactly that signal: it is synchronous, it does
+      // not lie, and it is one of the few properties that can be read even
+      // across origin boundaries. That makes it work in the case where
+      // Firefox gives every local file its own origin.
       if (!partner()) { sichtLoesen(); return; }
-      // Stockte dieser Strang selbst, sagt ein altes `LETZTER_SCHLAG` nichts
-      // über den Partner aus: dessen Nachrichten liegen dann noch in der
-      // Schlange und werden gleich zugestellt. Wer das verwechselt, hebt das
-      // Einfrieren auf, weil das eigene Fenster einen Augenblick beschäftigt
-      // war. Deshalb setzt ein verspäteter eigener Schlag die Frist zurück.
+      // If this thread itself stalled, a stale `LETZTER_SCHLAG` says
+      // nothing about the partner: its messages are then still sitting in
+      // the queue and will be delivered momentarily. Whoever confuses that
+      // would lift the freeze because this window itself was busy for a
+      // moment. So a delayed beat of our own resets the deadline instead.
       if (eigenerVerzug > 2500) { LETZTER_SCHLAG = jetzt; return; }
-      // Was bleibt, ist ein grobes Netz für den einen Fall, den `closed`
-      // nicht kennt: das Fenster steht offen, trägt aber inzwischen eine
-      // andere Seite. Eine Minute, damit kein bloßes Stocken hineinfällt.
+      // What remains is a coarse net for the one case `closed` does not
+      // know: the window stands open but meanwhile carries a different
+      // page. One minute, so a mere stall does not fall into it.
       if (jetzt - LETZTER_SCHLAG > 60000) sichtLoesen();
     }, 1000);
   }
@@ -1314,18 +1320,18 @@
     sichtMerken();
   });
 
-  // ── Sprecheransicht: die Bausteine ────────────────────────────────────────
+  // ── Speaker view: the building blocks ─────────────────────────────────────
 
-  // Die Notiz einer Folie, leer wenn keine da ist. Sie steht als `data-note`
-  // an der Overlay-Ebene, weil die im Kontext der Folie gesetzt wurde.
+  // A slide's note, empty if there is none. It sits as `data-note` on the
+  // overlay layer, because that was set in the context of the slide.
   function notiz(i) {
     var f = SLIDES[i];
     return (f && attr(f, "note")) || "";
   }
 
-  // Was der nächste Tastendruck täte: ein weiterer Schritt auf derselben
-  // Folie, eine neue Folie, oder nichts mehr. `STEPS` weiß das, denn dort
-  // steht zu jedem Schritt seine Folie.
+  // What the next keypress would do: another step on the same slide, a new
+  // slide, or nothing more. `STEPS` knows this, because it holds each
+  // step's slide.
   function weiter(n) {
     if (n == null) n = current;
     var hier = STEPS[n], nach = STEPS[n + 1];
@@ -1337,15 +1343,15 @@
              index: n + 1, slide: nach.slide, step: nach.step };
   }
 
-  // Eine Folie als stehendes Bild, und zwar auf einem *bestimmten* Schritt.
-  // `miniatur` kann das nicht: dort ist nur der Hintergrund kopiert, und die
-  // eingeblendeten Teile liegen als Sprites in der Overlay-Ebene. Für die
-  // Vorschau ist das der ganze Unterschied, denn die Frage lautet nicht "wie
-  // sieht die nächste Folie aus", sondern "was steht nach dem nächsten
-  // Tastendruck da", und das ist oft dieselbe Folie mit einem Teil mehr.
+  // A slide as a still image, and specifically at a *particular* step.
+  // `miniatur` cannot do that: there only the background is copied, and the
+  // faded-in parts sit as sprites in the overlay layer. For the preview
+  // that is the whole difference, because the question is not "what does
+  // the next slide look like" but "what stands there after the next
+  // keypress", and that is often the same slide with one more part.
   //
-  // `stelle` zuerst, weil die Sprites ihre Plätze aus den Marken im
-  // Hintergrund holen. Eine Folie, die noch nie dran war, hat noch keine.
+  // `stelle` first, because the sprites get their places from the marks in
+  // the background. A slide that has never been on has none yet.
   function schrittBild(si, schritt) {
     var f = SLIDES[si];
     var m = document.createElement("div");
@@ -1357,9 +1363,9 @@
     var ov = f.querySelector(".ts-ov");
     if (ov) {
       var k = ov.cloneNode(true);
-      // Ein geklonter iframe lüde das fremde Dokument ein zweites Mal, ein
-      // geklontes Video spielte ein zweites Mal Ton. In ein Standbild gehört
-      // beides nicht.
+      // A cloned iframe would load the foreign document a second time, a
+      // cloned video would play sound a second time. Neither belongs in a
+      // still image.
       k.querySelectorAll("iframe,video,audio").forEach(function (x) { x.remove(); });
       k.querySelectorAll(".ts-el").forEach(function (el) {
         el.removeAttribute("data-hold");
@@ -1370,39 +1376,40 @@
     return m;
   }
 
-  // ── Sprecheransicht: die Ansicht ──────────────────────────────────────────
+  // ── Speaker view: the view ────────────────────────────────────────────────
   //
-  // Gebaut wird sie zur Laufzeit und nicht in die Datei geschrieben: dieselbe
-  // Datei trägt beide Ansichten, und das Vortragsfenster soll von dieser hier
-  // nichts merken.
+  // It is built at runtime and not written into the file: the same file
+  // carries both views, and the talk window is not supposed to notice
+  // anything of this one.
   //
-  // Die laufende Folie wird nicht nachgebaut. Sie ist die echte Bühne dieses
-  // Fensters, die ohnehin mitläuft; sie wird nur an ihren Platz gerückt statt
-  // zugedeckt. Das spart nicht nur den Nachbau: sie zeigt damit den laufenden
-  // Schritt samt Übergängen, und die Zeichenebene liegt ohne Zutun schon
-  // darüber, in genau derselben Geometrie wie drüben.
+  // The running slide is not rebuilt. It is this window's real stage,
+  // which runs along anyway; it is only moved to its place instead of
+  // being covered up. That does not only save the rebuild: it thereby
+  // shows the running step along with transitions, and the drawing layer
+  // already sits over it without any extra work, in exactly the same
+  // geometry as on the other side.
   var W = CFG.words || {};
   var SPW = W.sp || {};
   function wort(k, r) { return SPW[k] || r; }
 
-  var PLATZ = null;        // der Kasten im Gerüst, auf den die Bühne rückt
-  var LEIB = null;         // dessen Raster, dessen Spalten sich nach dem Fenster richten
-  var ELN = {};            // die Anzeigen, einmal gesucht
+  var PLATZ = null;        // the box in the frame the stage moves to
+  var LEIB = null;         // its grid, whose columns depend on the window
+  var ELN = {};            // the displays, looked up once
   var gebaut = 0;
-  var UHR_START = 0;       // ab wann gezählt wird, 0 = noch nicht angefangen
-  var ZIEL_MIN = 0;        // geplante Dauer in Minuten, 0 = kein Plan
+  var UHR_START = 0;       // since when counting runs, 0 = not started yet
+  var ZIEL_MIN = 0;        // planned duration in minutes, 0 = no plan
   var NOTIZ_PX = 21;
   var SCHWARZ = 0, EIS = 0;
   var VORSCHAU = "";
-  // Die laufende Nummer beginnt zufällig. Nach einem Neuladen der
-  // Sprecheransicht fingen sonst beide Seiten wieder bei eins an, und der
-  // erste neue Strich wüchse an den letzten alten an, statt ein eigener zu
-  // sein. Kommt die Abschrift von drüben, wird die Nummer ohnehin
-  // hochgesetzt; ohne Partner trägt der Zufall.
+  // The running number starts randomly. After a reload of the speaker
+  // view, both sides would otherwise start over at one, and the first new
+  // stroke would grow onto the last old one instead of being its own. If
+  // the transcript comes from the other side, the number gets bumped up
+  // anyway; without a partner, chance carries it.
   var STRICH_NR = Math.floor(Math.random() * 1e6), MALT = 0, FARBE = 0, LETZT = null;
-  // `OFFEN` ist der zurückgehaltene erste Punkt, `GESETZT` merkt, ob vom
-  // laufenden Strich schon etwas hinausging, `DRAUSSEN`, ob der Zeiger
-  // gerade neben der Folie steht.
+  // `OFFEN` is the held-back first point, `GESETZT` remembers whether
+  // anything of the running stroke has already gone out, `DRAUSSEN` whether
+  // the pointer currently stands beside the slide.
   var OFFEN = null, GESETZT = 0, DRAUSSEN = 0;
 
   function bau(tag, klasse, wohin) {
@@ -1416,16 +1423,16 @@
     bau("div", "ts-sp-marke", d).textContent = name;
     return bau("div", "ts-sp-wert", d);
   }
-  // Die eine große Zahl einer Gruppe. Sie trägt die Hierarchie, damit nicht
-  // sechs gleich laute Spalten nebeneinanderstehen und der Blick sich seinen
-  // Anker selbst suchen muss.
+  // The one large number of a group. It carries the hierarchy, so that six
+  // equally loud columns do not stand side by side and the eye has to find
+  // its own anchor.
   function haupt(wohin, name) {
     var d = bau("div", "ts-sp-haupt", wohin);
     bau("div", "ts-sp-marke", d).textContent = name;
     return bau("div", "ts-sp-gross", d);
   }
-  // Ein stiller Wert: Zahl zuerst, Wort klein dahinter. In einer Zeile
-  // nebeneinander gelesen wie „12:56 verbleibend".
+  // A quiet value: number first, word small behind it. Read side by side
+  // in one line like "12:56 remaining".
   function neben(wohin, name) {
     var sp = bau("span", "ts-sp-paar", wohin);
     var w = bau("b", "ts-sp-klein", sp);
@@ -1440,9 +1447,9 @@
     return v + (h ? h + ":" + zwei(m) : String(m)) + ":" + zwei(sek % 60);
   }
 
-  // Die Uhr läuft ab dem ersten Tastendruck, nicht ab dem Laden: wer die
-  // Ansicht früh aufmacht und noch mit dem Saal redet, will keine falsche
-  // Zahl vor sich haben.
+  // The clock runs from the first keypress, not from loading: whoever
+  // opens the view early and is still talking to the hall does not want a
+  // wrong number in front of them.
   function uhrAn() { if (!UHR_START) UHR_START = Date.now(); }
 
   function lageZeigen() {
@@ -1454,11 +1461,11 @@
     if (EIS) bau("span", "ts-sp-eis", ELN.lage).textContent = wort("frozen", "frozen");
   }
 
-  // Antwortet drüben niemand mehr, muss man das sehen. Sonst blättert der
-  // Vortragende weiter in eine Leinwand, die ihm längst nicht mehr folgt:
-  // das Fenster kann geschlossen sein, ein anderes Deck tragen, oder der
-  // Rechner am Beamer kann hängen. Fünf Sekunden, damit ein einzelner
-  // ausgefallener Herzschlag nichts meldet.
+  // If no one on the other side answers anymore, that has to be visible.
+  // Otherwise the speaker keeps paging into a canvas that has long since
+  // stopped following them: the window may be closed, carry a different
+  // deck, or the machine at the projector may have hung. Five seconds, so
+  // that a single dropped heartbeat reports nothing.
   var GETRENNT = 0;
   function verbindungStand() {
     if (ROLLE !== "speaker") return;
@@ -1473,10 +1480,10 @@
     sende("sicht", { schwarz: SCHWARZ, frost: EIS });
     lageZeigen();
   }
-  // Was drüben gilt, gilt auch hier, laufend und nicht nur beim Handschlag.
-  // Eine Antwort, die vor dem eigenen Tastendruck losgeschickt wurde, weiß
-  // von ihm noch nichts; kurz nach einem eigenen Befehl gilt deshalb der
-  // eigene, und der nächste Schlag bestätigt ihn ohnehin.
+  // What holds on the other side also holds here, continuously and not
+  // only at the handshake. A reply sent off before our own keypress knows
+  // nothing of it yet; shortly after a command of our own, our own value
+  // therefore wins, and the next beat confirms it anyway.
   function sichtAbgleichen(schwarz, frost) {
     if (ROLLE !== "speaker" || schwarz == null) return;
     if (Date.now() - SICHT_GESENDET < 1500) return;
@@ -1485,9 +1492,9 @@
     SCHWARZ = s; EIS = f;
     lageZeigen();
   }
-  // Was drüben gilt, gilt hier. Eine neu geöffnete Ansicht behauptete sonst
-  // "hell und aufgetaut", während der Saal schwarz ist, und der erste Druck
-  // auf `b` machte es schlimmer statt besser.
+  // What holds on the other side holds here. A freshly opened view would
+  // otherwise claim "bright and thawed" while the hall is black, and the
+  // first press of `b` would make it worse instead of better.
   function sichtUebernehmen(schwarz, frost) {
     if (ROLLE !== "speaker") return;
     SCHWARZ = schwarz ? 1 : 0;
@@ -1496,18 +1503,18 @@
   }
 
   function tinteSenden(ev) {
-    tinteBuendel([ev]);   // erst bei sich selbst, dann hinüber
+    tinteBuendel([ev]);   // at ourselves first, then across
     strom("tinte", ev);
   }
 
   function sprecherAufbau() {
     if (ROLLE !== "speaker" || !SPRECHERBOX) return;
 
-    // Der Kopf trägt zwei Gruppen: links die Zeit, rechts der Ort im Vortrag.
-    // Vorher standen sechs gleichrangige Spalten nebeneinander, alle links
-    // gedrängt, und rechts blieb Platz liegen. Jetzt hat jede Gruppe eine
-    // große Zahl, alles Weitere steht klein daneben, und die beiden Gruppen
-    // sitzen an den beiden Rändern.
+    // The head carries two groups: the time on the left, the position in
+    // the talk on the right. Previously six equally ranked columns stood
+    // side by side, all crowded to the left, with space left unused on the
+    // right. Now each group has one large number, everything else stands
+    // small beside it, and the two groups sit at the two edges.
     var kopf = bau("div", "ts-sp-kopf", SPRECHERBOX);
     var gZeit = bau("div", "ts-sp-gruppe", kopf);
     ELN.zeit = haupt(gZeit, wort("elapsed", "elapsed"));
@@ -1523,11 +1530,11 @@
       ZIEL_MIN = Math.max(0, +inp.value || 0);
       sprecherUhr();
     });
-    // Ohne diesen Ausgang wäre das Feld eine Falle: `tippt` hält die
-    // Pfeiltasten davon ab zu blättern, und ohne Maus käme man nicht mehr
-    // heraus. Enter nimmt den Wert, Escape lässt ihn ebenfalls stehen; beide
-    // geben die Tastatur zurück. `stopPropagation`, damit Escape nicht
-    // nebenbei die Übersicht aufklappt.
+    // Without this way out, the field would be a trap: `tippt` keeps the
+    // arrow keys from paging, and without a mouse there would be no way
+    // out. Enter takes the value, Escape leaves it standing too; both give
+    // the keyboard back. `stopPropagation`, so Escape does not also pop
+    // open the overview on the side.
     inp.addEventListener("keydown", function (ev) {
       if (ev.key !== "Enter" && ev.key !== "Escape") return;
       inp.blur();
@@ -1537,10 +1544,10 @@
     ELN.ziel = inp;
     ELN.rest = neben(zeile, wort("left", "remaining"));
     ELN.takt = neben(zeile, wort("pace", "pace"));
-    // Ohne Zieldauer gibt es weder Rest noch Plan. Statt zweimal einen Punkt
-    // neben einem lauten Etikett zu zeigen, verschwinden beide Paare, bis
-    // eine Dauer dasteht. Das ist die Hälfte dessen, was den Kopf voll
-    // aussehen ließ.
+    // Without a target duration there is neither a remainder nor a plan.
+    // Instead of showing a lone dot beside a loud label twice over, both
+    // pairs disappear until a duration is set. That is half of what made
+    // the head look cluttered.
     ELN.restPaar = ELN.rest.parentNode;
     ELN.taktPaar = ELN.takt.parentNode;
 
@@ -1548,11 +1555,11 @@
     ELN.fort = haupt(gOrt, wort("slide", "slide"));
     var zeile2 = bau("div", "ts-sp-neben", gOrt);
     ELN.fortSchritt = neben(zeile2, wort("step", "step"));
-    // Ein Balken sagt ohne Worte, wo man steht. Er ist das zweite
-    // Hierarchiemittel neben der Schriftgröße und braucht keine Beschriftung.
+    // A bar says without words where things stand. It is the second means
+    // of hierarchy alongside font size and needs no label.
     ELN.balken = bau("i", "", bau("div", "ts-sp-balken", gOrt));
 
-    // Der Leib: links die laufende Folie, rechts Vorschau und Notiz.
+    // The body: the running slide on the left, preview and note on the right.
     LEIB = bau("div", "ts-sp-leib", SPRECHERBOX);
     PLATZ = bau("div", "ts-sp-platz", LEIB);
     var vor = bau("div", "ts-sp-vor", LEIB);
@@ -1565,7 +1572,7 @@
     notizNachFenster();
     ELN.notiz.addEventListener("scroll", notizStand);
 
-    // Der Fuß: Farben, Zustand, Tastenhilfe.
+    // The foot: colors, state, key help.
     var fuss = bau("div", "ts-sp-fuss", SPRECHERBOX);
     var stift = bau("div", "ts-sp-stift", fuss);
     bau("span", "ts-sp-marke", stift).textContent = wort("pen", "pen");
@@ -1581,9 +1588,9 @@
     ELN.hilfe = bau("div", "ts-sp-hilfe", fuss);
     ELN.hilfe.textContent = W.helpSpeakerShort || W.helpSpeaker || W.help || "";
 
-    // Der Ton gehört in den Saal, nicht an den Platz des Vortragenden: die
-    // Bühne läuft hier voll mit, samt Video. Zu sehen ist das erwünscht,
-    // zweimal zu hören nicht.
+    // The sound belongs in the hall, not at the speaker's seat: the stage
+    // runs along here in full, video included. Seeing it is desired,
+    // hearing it twice is not.
     document.querySelectorAll("video,audio").forEach(function (v) { v.muted = true; });
 
     tasten();
@@ -1592,14 +1599,14 @@
     gebaut = 1;
     document.documentElement.dataset.tsFertig = "1";
 
-    // Die Uhr läuft, sobald sich drüben etwas bewegt, und nicht schon, wenn
-    // der Vortrag bloß meldet, wo er steht. Diese Meldung ist die Antwort auf
-    // die Anmeldung, und die Anmeldung wiederholt sich, bis sie ankommt:
-    // gezählt wird deshalb nicht, wie oft eine Meldung kam, sondern ob sie
-    // eine andere Zahl trägt als die vorige.
+    // The clock runs as soon as something moves on the other side, not
+    // already when the talk merely reports where it stands. This report is
+    // the reply to the check-in, and the check-in repeats until it
+    // arrives: so what is counted is not how often a report came in, but
+    // whether it carries a different number than the previous one.
     var fern = null;
     horch("schritt", function (d) {
-      if (d.sitzung !== undefined) return;   // eine Begrüßung, kein Schritt
+      if (d.sitzung !== undefined) return;   // a greeting, not a step
       if (fern !== null && fern !== d.n) uhrAn();
       fern = d.n;
     });
@@ -1619,11 +1626,11 @@
     }
   }
 
-  // Solange niemand die Größe von Hand gewählt hat, richtet sie sich nach dem
-  // Fenster: 21px sind auf einem großen Schirm richtig und in einem kleinen
-  // Fenster zu groß, dort blieben vier Zeilen. Das Fenster geht überdies klein
-  // auf und wird oft erst danach aufgezogen. Ein Druck auf + oder − beendet
-  // das Mitwachsen, denn dann gilt, was der Vortragende will.
+  // As long as no one has chosen the size by hand, it follows the window:
+  // 21px is right on a large screen and too big in a small window, where
+  // only four lines would remain. The window also opens small and is often
+  // only resized afterward. A press of + or - ends this following, because
+  // from then on what the speaker wants applies.
   var NOTIZ_HAND = 0;
   function notizNachFenster() {
     if (NOTIZ_HAND || !ELN.notiz) return;
@@ -1638,10 +1645,9 @@
     if (ELN.notiz) ELN.notiz.style.fontSize = NOTIZ_PX + "px";
     notizStand();
   }
-  // Eine Zeile, die am unteren Rand einfach abgeschnitten ist, liest sich,
-  // als sei die Notiz zu Ende. Deshalb ein Verlauf und ein Pfeil, sobald noch
-  // etwas kommt, und zwei Tasten zum Rollen: die Hände sind beim Vortrag
-  // nicht an der Maus.
+  // A line that is simply cut off at the bottom edge reads as if the note
+  // had ended. Hence a gradient and an arrow as soon as more is coming, and
+  // two keys for scrolling: during the talk the hands are not on the mouse.
   function notizStand() {
     if (!ELN.notiz || !ELN.notizKasten) return;
     var n = ELN.notiz;
@@ -1657,11 +1663,11 @@
     notizStand();
   }
 
-  // ── Die Tasten der Sprecheransicht ────────────────────────────────────────
+  // ── The speaker view's keys ───────────────────────────────────────────────
   //
-  // Ein eigener Empfänger, angemeldet erst im Aufbau: im Vortragsfenster gibt
-  // es ihn gar nicht. Blättern, Übersicht und Vollbild kommen aus der
-  // gemeinsamen Steuerung weiter oben und stehen hier nicht noch einmal.
+  // A receiver of its own, only registered during setup: in the talk
+  // window it does not exist at all. Paging, overview, and fullscreen come
+  // from the shared control further up and do not appear here again.
   function tasten() {
     addEventListener("keydown", function (e) {
       if (tippt(e)) return;
@@ -1670,8 +1676,8 @@
           k === "PageUp" || k === " " || k === "Home" || k === "End") {
         uhrAn(); return;
       }
-      // Hoch und runter sind in der gemeinsamen Steuerung frei und rollen
-      // hier die Notiz. Im Vortragsfenster gibt es diesen Empfänger nicht.
+      // Up and down are free in the shared control and scroll the note
+      // here. In the talk window this receiver does not exist.
       if (k === "ArrowDown") { notizRollen(1); e.preventDefault(); return; }
       if (k === "ArrowUp") { notizRollen(-1); e.preventDefault(); return; }
       if (k === "b") { SCHWARZ = SCHWARZ ? 0 : 1; sichtSenden(); }
@@ -1686,11 +1692,11 @@
     });
   }
 
-  // ── Zeichnen ──────────────────────────────────────────────────────────────
+  // ── Drawing ────────────────────────────────────────────────────────────────
   //
-  // Die Zeiger liegen auf der Bühne selbst, denn die liegt hier obenauf. Ein
-  // Klick blättert in dieser Rolle ohnehin nicht (siehe die Steuerung), der
-  // Platz ist also frei.
+  // The pointer handlers sit on the stage itself, since it sits on top
+  // here. A click does not page in this role anyway (see the control
+  // handler), so the place is free.
   function zeichnen() {
     function anteil(e) {
       var r = B.getBoundingClientRect();
@@ -1698,18 +1704,18 @@
       return { x: (e.clientX - r.left) / r.width,
                y: (e.clientY - r.top) / r.height };
     }
-    // Zittern kostet Bandbreite und bringt kein Bild. Ein schneller Strich
-    // hat große Abstände und verliert dadurch nichts.
+    // Jitter costs bandwidth and adds no visible picture. A fast stroke has
+    // large gaps and loses nothing by it.
     function weitGenug(p) {
       if (!LETZT) return true;
       var dx = p.x - LETZT.x, dy = p.y - LETZT.y;
-      return dx * dx + dy * dy > 0.000004;   // gut 0.2% der Bühnenbreite
+      return dx * dx + dy * dy > 0.000004;   // a good 0.2% of the stage width
     }
-    // Nichts außerhalb der Folie in den Bestand. Ein Zeiger, der über den
-    // Rand hinauszieht, lieferte sonst Werte wie 1.4 oder -0.2, die keiner je
-    // zu sehen bekommt (`#ts-ink` schneidet ab) und die trotzdem in jede
-    // Abschrift wandern. Kommt er zurück, fängt ein neuer Strich an, statt
-    // quer über die Folie zu springen.
+    // Nothing outside the slide into the stock. A pointer dragged past the
+    // edge would otherwise yield values like 1.4 or -0.2 that no one ever
+    // gets to see (`#ts-ink` clips them off) and that still travel into
+    // every transcript. If it comes back, a new stroke begins instead of
+    // jumping across the slide.
     function drin(p) { return p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1; }
     function punkt(e) {
       var p = anteil(e);
@@ -1720,10 +1726,10 @@
       }
       if (!weitGenug(p)) return;
       LETZT = p;
-      // Der erste Punkt wartet, bis ein zweiter kommt. Ein bloßer Klick legte
-      // sonst einen Strich aus einem Punkt an: `getBBox` ist 0 mal 0, zu
-      // sehen ist nichts, und das Rückgängig räumte danach diesen Geist weg
-      // statt des Strichs, den der Vortragende meinte.
+      // The first point waits until a second one arrives. A mere click
+      // would otherwise create a stroke out of one point: `getBBox` is 0 by
+      // 0, nothing is visible, and undo would then clear away this ghost
+      // instead of the stroke the speaker actually meant.
       if (OFFEN) { schicke(OFFEN); OFFEN = null; }
       else if (!GESETZT) { OFFEN = p; return; }
       schicke(p);
@@ -1736,16 +1742,17 @@
     B.addEventListener("pointerdown", function (e) {
       if (e.button !== 0) return;
       MALT = 1; STRICH_NR++; LETZT = null; DRAUSSEN = 0; OFFEN = null; GESETZT = 0;
-      // Ohne Fang endete der Strich, sobald der Zeiger die Bühne verlässt.
+      // Without capture, the stroke would end as soon as the pointer leaves
+      // the stage.
       try { B.setPointerCapture(e.pointerId); } catch (x) {}
       punkt(e);
       e.preventDefault();
     });
     B.addEventListener("pointermove", function (e) {
       if (!MALT) return;
-      // Der Browser fasst schnelle Bewegungen zu einem Ereignis zusammen und
-      // hebt die Zwischenpunkte auf. Wer sie nicht abholt, bekommt bei
-      // schnellem Zug eine eckige Linie.
+      // The browser coalesces fast movements into one event and keeps the
+      // in-between points aside. Whoever does not pick them up gets an
+      // angular line on a fast drag.
       var liste = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
       if (liste && liste.length) { for (var i = 0; i < liste.length; i++) punkt(liste[i]); }
       else punkt(e);
@@ -1753,8 +1760,8 @@
     });
     function schluss(e) {
       if (!MALT) return;
-      // Ein zurückgehaltener erster Punkt, dem nie ein zweiter folgte, war
-      // ein Klick und kein Strich. Er wird fallengelassen.
+      // A held-back first point that was never followed by a second was a
+      // click and not a stroke. It is dropped.
       MALT = 0; LETZT = null; OFFEN = null; GESETZT = 0;
       try { B.releasePointerCapture(e.pointerId); } catch (x) {}
     }
@@ -1762,7 +1769,7 @@
     B.addEventListener("pointercancel", schluss);
   }
 
-  // ── Die Uhr, viermal je Sekunde ───────────────────────────────────────────
+  // ── The clock, four times a second ────────────────────────────────────────
   function sprecherUhr() {
     if (!gebaut) return;
     verbindungStand();
@@ -1780,18 +1787,18 @@
       var rest = plan - v;
       ELN.rest.textContent = mmss(rest);
       ELN.rest.dataset.lage = rest < 0 ? "zurueck" : "";
-      // Solange die Uhr steht, gibt es keinen Plan, gegen den man liegen
-      // könnte. "vor Plan" wäre dann bloß eine Folge davon, dass die
-      // erwartete Position bei null Sekunden null ist.
+      // As long as the clock stands still, there is no plan to be ahead of
+      // or behind. "ahead of plan" would then merely be a consequence of
+      // the expected position being zero at zero seconds.
       if (!UHR_START) {
         ELN.takt.textContent = "·";
         ELN.takt.dataset.lage = "";
         return;
       }
-      // So rechnet reveal.js: die verstrichene Zeit im Verhältnis zur
-      // geplanten Dauer, aufgetragen auf die Gesamtschrittzahl. Der Abstand
-      // zwischen erwartetem und wirklichem Schritt, mal der Zeit je Schritt,
-      // ist der Vorsprung in Sekunden.
+      // This is how reveal.js computes it: the elapsed time relative to the
+      // planned duration, plotted onto the total step count. The distance
+      // between the expected and the actual step, times the time per step,
+      // is the lead in seconds.
       var proSchritt = plan / STEPS.length;
       var d = ((current + 1) - v / plan * STEPS.length) * proSchritt;
       var gut = Math.abs(d) < proSchritt;
@@ -1807,7 +1814,7 @@
     }
   }
 
-  // ── Nach jedem Schritt ────────────────────────────────────────────────────
+  // ── After every step ──────────────────────────────────────────────────────
   function sprecherStand() {
     if (ROLLE !== "speaker" || !SPRECHERBOX || !gebaut) return;
     var st = STEPS[current] || { slide: 0, step: 1 };
@@ -1821,8 +1828,8 @@
     ELN.balken.style.width =
       (STEPS.length < 2 ? 100 : (current * 100 / (STEPS.length - 1))) + "%";
 
-    // Die Vorschau kostet einen Klon der Folie. Sie wird deshalb nur neu
-    // gebaut, wenn sie etwas anderes zeigen soll als eben noch.
+    // The preview costs a clone of the slide. So it is only rebuilt when it
+    // is supposed to show something different than it just did.
     var w = weiter(current);
     var schluessel = w.art + "|" + w.slide + "|" + w.step;
     if (schluessel !== VORSCHAU) {
@@ -1833,9 +1840,9 @@
         var kasten = bau("div", "ts-sp-ende", ELN.vorBild);
         bau("span", "", kasten).textContent = wort("end", "end of talk");
       } else {
-        // Nur die Nummer hinter die Bezeichnung, nicht noch einmal das Wort
-        // „Folie": bei einem Folienwechsel stand sonst wörtlich „nächste Folie
-        // Folie 2.1" da.
+        // Only the number goes behind the label, not the word "slide" a
+        // second time: on a slide change it would otherwise literally say
+        // "next slide slide 2.1".
         ELN.vorMarke.textContent =
           (w.art === "folie" ? wort("nextSlide", "next slide")
                              : wort("nextStep", "next step"))
@@ -1873,10 +1880,10 @@
       SLIDES[dst.slide].dataset.on = "1";
     }
 
-    // Die Chrome-Ebene folgt der Folie, wandert aber nicht mit ihr: sie liegt
-    // über der Bühne und wird nur ein- und ausgeblendet. Außerhalb der beiden
-    // Zweige darüber, denn der eine gilt nur für die allererste Folie und der
-    // andere reicht den Wechsel an `transition` weiter.
+    // The chrome layer follows the slide but does not travel along with
+    // it: it sits above the stage and is only faded in and out. Outside
+    // the two branches above, because one applies only to the very first
+    // slide and the other passes the change on to `transition`.
     CHROME.forEach(function (c, i) {
       if (i === dst.slide) c.dataset.on = "1"; else delete c.dataset.on;
     });
@@ -1905,9 +1912,9 @@
 
     mediaOn(dst.slide);
     drive(dst.slide, dst.step, back || changed);
-    // Der laufende Schritt gehört in den Hash, aber nur im Vortragsfenster.
-    // Im Sprecherfenster steht dort `#speaker`, und das muss stehen bleiben:
-    // wer neu lädt, will die Sprecheransicht wiederhaben und nicht den Vortrag.
+    // The running step belongs in the hash, but only in the talk window.
+    // In the speaker window `#speaker` sits there, and that has to stay:
+    // whoever reloads wants the speaker view back, not the talk.
     if (ROLLE !== "speaker" && location.hash !== "#" + (n + 1)) {
       history.replaceState(null, "", "#" + (n + 1));
     }
@@ -2113,14 +2120,14 @@
 
   // ── Overview ──────────────────────────────────────────────────────────────
   //
-  // Eine Folie als stehendes Bildchen. Herausgelöst, weil die Sprecheransicht
-  // dasselbe braucht, dort für die Folie, die als nächste kommt.
+  // A slide as a still thumbnail. Factored out because the speaker view
+  // needs the same thing, there for the slide that comes next.
   //
-  // Fußzeile und Fortschritt liegen nicht mehr in `.ts-bg`, sondern in der
-  // Ebene über der Bühne. Fürs Vorschaubild wird deshalb die Druckkopie
-  // mitgenommen, die ohnehin in jeder Folie steckt — sonst wären die Bildchen
-  // ohne Seitenzahl. Was das Bildchen nicht zeigt, sind die bewegten Teile:
-  // es steht immer auf dem ersten Schritt seiner Folie.
+  // Footer and progress no longer sit in `.ts-bg` but in the layer above
+  // the stage. For the thumbnail, the print copy that is embedded in every
+  // slide anyway is therefore taken along, otherwise the thumbnails would
+  // have no page number. What the thumbnail does not show are the animated
+  // parts: it always stands at the first step of its slide.
   function miniatur(i) {
     var f = SLIDES[i];
     var m = document.createElement("div");
@@ -2154,51 +2161,51 @@
     }
   }
 
-  // ── Skalieren ─────────────────────────────────────────────────────────────
-  // Wie die drei Teile das Fenster aufteilen.
+  // ── Scaling ────────────────────────────────────────────────────────────────
+  // How the three parts divide up the window.
   //
-  // Die laufende Folie ist die Zeichenfläche und bekommt den meisten Platz.
-  // Sie hält dabei ihr Seitenverhältnis, und das entscheidet die Aufteilung:
+  // The running slide is the canvas and gets the most space. It keeps its
+  // aspect ratio while doing so, and that decides the layout:
   //
-  //   hoch:  unter der Folie bleibt ein Streifen frei, dort steht die Notiz
-  //          über die ganze Breite. Das ist der Normalfall.
-  //   flach: bei einem breiten, niedrigen Fenster ist die Folie schon so hoch
-  //          wie der Leib, und neben ihr bliebe eine große leere Fläche. Dann
-  //          ziehen Vorschau und Notiz untereinander dorthin.
+  //   tall:  a strip stays free below the slide, and the note sits there
+  //          across the full width. This is the normal case.
+  //   flat:  in a wide, low window the slide is already as tall as the
+  //          body, and a large empty area would remain beside it. Then
+  //          preview and note pull down there, stacked on top of each other.
   //
-  // Die Vorschau ist ein Blick und keine zweite Bühne: höchstens ein knappes
-  // Halb der laufenden Folie, sonst kehrte sich die Bauordnung um.
+  // The preview is a glance and not a second stage: at most a scant half of
+  // the running slide, otherwise the layout order would flip.
   function sprecherSpalten() {
     if (ROLLE !== "speaker" || !LEIB || !PLATZ) return;
     var r = LEIB.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var v = CFG.width / CFG.height;
     var frei = r.width - 14;
-    // Ist das Fenster hochkant, reicht die Höhe für eine Bühne über die ganze
-    // Breite und darunter bleibt immer noch viel übrig. Dann stünde die Notiz
-    // in einer Spalte, die größer wäre als die Bühne selbst, und die
-    // Bauordnung stünde auf dem Kopf. Also legt sich die Bühne oben quer, und
-    // Vorschau und Notiz teilen sich die Reihe darunter.
-    // So breit dürfte die Bühne, wenn die Notiz darunter ein gutes Drittel
-    // behält.
+    // If the window is portrait, the height suffices for a stage across the
+    // full width and plenty still remains below it. Then the note would
+    // stand in a column bigger than the stage itself, and the layout order
+    // would stand on its head. So the stage lays itself crosswise at the
+    // top, and preview and note share the row below it.
+    // This is how wide the stage would be allowed to be if the note below
+    // it keeps a good third.
     var breit = Math.min(frei * 0.72, r.height * 0.68 * v);
     var flach = (frei - breit) > breit * 0.75;
     if (flach) breit = Math.min(frei * 0.72, r.height * v);
     breit = Math.max(frei * 0.34, breit);
-    // Der Mindestwert darf die Bühne nicht höher machen als der Leib ist. Bei
-    // einem sehr breiten und sehr flachen Fenster ragte sie sonst unten aus
-    // ihrem Platz heraus, und die Ansicht bekam einen Bildlauf.
+    // The minimum value must not make the stage taller than the body is.
+    // In a very wide and very flat window it would otherwise stick out
+    // below its place, and the view would get a scrollbar.
     breit = Math.min(breit, frei, r.height * v);
 
-    // Und jetzt die Probe aufs Exempel. Durchgesetzt werden soll nicht ein
-    // Seitenverhältnis des Fensters, sondern das Ergebnis: die laufende Folie
-    // ist die größte Fläche der Ansicht. Also nachrechnen, was die Notiz in
-    // dieser Form bekäme, und auf die dritte ausweichen, wenn sie die Bühne
-    // überholte und die Höhe für eine Bühne über die ganze Breite reicht.
+    // And now the proof of the pudding. What is to be enforced is not some
+    // aspect ratio of the window, but the result: the running slide is the
+    // largest area of the view. So work out what the note would get in
+    // this layout, and switch to the third one if it overtook the stage
+    // and the height suffices for a stage across the full width.
     //
-    // Die alte Bedingung hing am Seitenverhältnis und ließ ein ganzes Band
-    // von Fenstergrößen durch, in dem die Notiz das Anderthalbfache der Bühne
-    // bekam. Am Ergebnis gemessen kann das nicht mehr passieren.
+    // The old condition hung on the aspect ratio and let through a whole
+    // band of window sizes in which the note got one and a half times the
+    // stage. Measured against the result, that can no longer happen.
     var vollHoch = frei / v;
     var vor = Math.min(frei - breit, breit * 0.45);
     var flBuehne = breit * breit / v;
@@ -2220,10 +2227,10 @@
     if (ELN.vorBild) {
       ELN.vorBild.style.maxWidth = Math.max(80, Math.round(breit * 0.45)) + "px";
     }
-    // Steht die Bühne in einem sehr flachen Fenster schon so hoch wie der
-    // Leib, bleibt neben ihr mehr Breite übrig, als eine Notiz braucht. Ohne
-    // Schranke wäre die Notiz dort die größte Fläche der Ansicht, und die
-    // Bauordnung stünde wieder auf dem Kopf.
+    // If the stage in a very flat window already stands as tall as the
+    // body, more width remains beside it than a note needs. Without a cap,
+    // the note there would be the largest area of the view, and the layout
+    // order would stand on its head again.
     if (ELN.notiz) {
       ELN.notiz.style.maxWidth = flach
         ? Math.round(breit * 1.15) + "px" : "";
@@ -2235,13 +2242,13 @@
   function fit() {
     var v = CFG.width / CFG.height;
     // Thumbnails and printed pages hold their shape with padding, which needs
-    // the ratio as a number — it is not 16:9 for every deck.
+    // the ratio as a number: it is not 16:9 for every deck.
     document.documentElement.style.setProperty(
       "--ts-ratio", (100 / v) + "%");
     sprecherSpalten();
-    // In der Sprecheransicht füllt die Bühne nicht das Fenster, sondern den
-    // für sie freigehaltenen Kasten im Gerüst. Sie bleibt dabei die echte
-    // Bühne: dieselben Folien, derselbe Schritt, dieselbe Zeichenebene.
+    // In the speaker view the stage does not fill the window but the box
+    // reserved for it in the frame. It remains the real stage while doing
+    // so: the same slides, the same step, the same drawing layer.
     var r = (ROLLE === "speaker" && PLATZ) ? PLATZ.getBoundingClientRect() : null;
     if (r && (r.width < 20 || r.height < 20)) r = null;
     var raumB = r ? r.width : innerWidth, raumH = r ? r.height : innerHeight;
@@ -2256,7 +2263,7 @@
   }
   addEventListener("resize", fit);
 
-  // ── Steuerung ─────────────────────────────────────────────────────────────
+  // ── Controls ───────────────────────────────────────────────────────────────
   var hintTimer;
   function hint(t) {
     HINT.textContent = t;
@@ -2264,8 +2271,8 @@
     clearTimeout(hintTimer);
     hintTimer = setTimeout(function () { delete HINT.dataset.on; }, 2600);
   }
-  // Die Sprecheransicht hat ein Eingabefeld für die geplante Dauer. Eine
-  // Leertaste darin ist ein Leerzeichen und kein Blättern.
+  // The speaker view has an input field for the planned duration. A space
+  // key inside it is a space character, not a page turn.
   function tippt(e) {
     var t = e.target;
     if (!t || !t.tagName) return false;
@@ -2290,35 +2297,37 @@
     } else if (e.key === "?") {
       hint((ROLLE === "speaker" && CFG.words.helpSpeaker) || CFG.words.help);
     } else if (e.key === "p") { print(); }
-    // Das zweite Fenster. Der Tastendruck ist zugleich die Nutzergeste, ohne
-    // die der Popup-Blocker `window.open` verschluckt.
+    // The second window. The keypress is at the same time the user
+    // gesture, without which the popup blocker would swallow
+    // `window.open`.
     else if (e.key === "n") { oeffneSprecher(); }
   });
   addEventListener("click", function (e) {
-    // In der Sprecheransicht deckt `#ts-speaker` die Bühne zu. Ein Klick dort
-    // gilt dem, was der nächste Agent hineinbaut, und soll nicht nebenbei
-    // weiterblättern.
+    // In the speaker view, `#ts-speaker` covers the stage. A click there
+    // applies to whatever gets built into it and should not also page
+    // forward on the side.
     if (ROLLE === "speaker") return;
     if (OVERVIEW.dataset.on) return;
     if (e.target.closest && e.target.closest(".ts-embed")) return;
     goto(current + (e.clientX < innerWidth * 0.25 ? -1 : 1));
   });
   addEventListener("hashchange", function () {
-    // Im Sprecherfenster ist der Hash die Rolle und keine Schrittzahl. Dort
-    // wird er weder geschrieben noch gelesen.
+    // In the speaker window the hash is the role, not a step number. It is
+    // neither written nor read there.
     if (ROLLE === "speaker") return;
     var n = +location.hash.slice(1) - 1;
     if (!isNaN(n) && n !== current) goto(n, true);
   });
 
   fit();
-  // Die Sprecheransicht fängt bei der ersten Folie an und wartet darauf, dass
-  // der Vortrag ihr sagt, wo er steht. Der Vortrag selbst nimmt die Zahl aus
-  // dem Hash, dieses eine Mal und danach nie wieder.
+  // The speaker view starts at the first slide and waits for the talk to
+  // tell it where it stands. The talk itself takes the number from the
+  // hash, this one time and never again after that.
   goto(ROLLE === "speaker"
        ? 0 : Math.max(0, (+location.hash.slice(1) || 1) - 1), true);
-  // Nach dem ersten `goto`, damit `schwarzMedien` die Folie kennt, und noch
-  // vor dem ersten Bild: so bleibt der Saal dunkel, statt kurz aufzublitzen.
+  // After the first `goto`, so `schwarzMedien` knows the slide, and still
+  // before the first frame: that way the hall stays dark instead of
+  // briefly flashing.
   sichtErinnern();
   sprecherAufbau();
   anmeldeSchleife();
@@ -2328,10 +2337,10 @@
     state: function () { return current; },
     geo: vermessen, build: CFG.build,
 
-    // ── Zweites Fenster ─────────────────────────────────────────────────────
-    // `rolle` ist "stage" oder "speaker" und steht ab dem Laden fest.
-    // `box` ist der leere Behälter der Sprecheransicht, `ink` die Ebene über
-    // der Bühne im Vortragsfenster, auf der Fremdes gezeichnet werden darf.
+    // ── Second window ────────────────────────────────────────────────────
+    // `rolle` is "stage" or "speaker" and is fixed from load time on.
+    // `box` is the empty container of the speaker view, `ink` the layer
+    // above the stage in the talk window where outside content may be drawn.
     rolle: ROLLE,
     box: SPRECHERBOX,
     ink: INK,
@@ -2345,8 +2354,8 @@
       verbunden: function () { return !!partner(); }
     },
 
-    // ── Sprecheransicht ─────────────────────────────────────────────────────
-    // Zum Nachmessen und für alles, was von außen daran will.
+    // ── Speaker view ────────────────────────────────────────────────────────
+    // For measuring, and for anything from outside that wants at it.
     sprecher: {
       zeit: function () { return UHR_START ? (Date.now() - UHR_START) / 1000 : 0; },
       ziel: function (m) {

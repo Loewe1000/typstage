@@ -25,7 +25,7 @@
     if s.extra.doc != none { a.insert("srcdoc", s.extra.doc) }
     // A bridged frame is marked so the runtime finds it and can post the jobs
     // of the current step into it.
-    // Nur die Abwahl muss übertragen werden; zoomen ist die Vorgabe.
+    // Only the opt out has to travel; zooming is the default.
     if s.extra.at("zoom", default: true) == false {
       attrs.insert("data-zoom", "0")
     }
@@ -45,27 +45,29 @@
     html.elem("div", attrs: attrs, {
       // The counter is set to this element's own number before the content is
       // laid out a second time. Nested elements then count on exactly as they
-      // did in the background — the numbering is a pre-order, its children
-      // carry n+1, n+2, … Only that way does the browser find again the marker
+      // did in the background. The numbering is a pre-order, its children
+      // carry n+1, n+2 and so on. Only that way does the browser find the marker
+      // again
       // of an element that vanished into its parent's `hide()`.
       counter("typstage-n").update(n)
-      // Außen die gemessene Größe — sie bestimmt den Rahmen —, innen die
-      // Region von damals. Dadurch löst ein relatives Maß im Rumpf genau
-      // einmal auf, und zwar gegen denselben Bezug wie im Hintergrund.
-      // `pad` ist fast immer 0pt und der Rahmen dann derselbe wie zuvor. Nur
-      // ein Element ohne Fläche bekommt Luft — dieselbe wie seine Marke, sonst
-      // säße der Inhalt versetzt darin.
-      // `place(top + left, …)` wie im Hintergrund, und aus demselben Grund: die
-      // Region ist breiter als der gemessene Rahmen, und ein überstehender
-      // Block wird darin sonst mittig ausgerichtet. Gemessen an einer
-      // zentrierten Formel — der Kasten saß richtig, die Zeichen wurden 293pt
-      // daneben gemalt, genau die halbe Differenz.
-      // `align(top + left, …)` in der Region: sie ist breiter als der gemessene
-      // Rahmen, und was Typst von sich aus mittig setzt — eine Blockgleichung
-      // etwa — landete darin in der Mitte statt dort, wo die Marke steht.
-      // Gemessen: der Kasten saß richtig, die Zeichen 293pt daneben, genau die
-      // halbe Differenz zwischen Region und Rahmen. Ein ausdrückliches `align`
-      // im Rumpf gewinnt weiterhin, es steht ja weiter innen.
+      // The measured size on the outside, since that decides the frame, and
+      // the region from back then on the inside. A relative measure in the body
+      // therefore resolves exactly once, and against the same reference as in
+      // the background.
+      // `pad` is almost always 0pt and the frame is then the same as before.
+      // Only an element without area gets air, the same as its marker, because
+      // otherwise its content would sit offset inside it.
+      // `place(top + left, …)` as in the background, and for the same reason:
+      // the region is wider than the measured frame, and a block that overhangs
+      // would otherwise be centred inside it. Measured on a centred equation:
+      // the box sat right, the glyphs were painted 293pt beside it, exactly
+      // half the difference.
+      // `align(top + left, …)` inside the region: it is wider than the measured
+      // frame, and whatever Typst centres on its own, a block equation for
+      // instance, ended up in the middle of it rather than where the marker
+      // stands. Measured: the box sat right, the glyphs 293pt beside it,
+      // exactly half the difference between region and frame. An explicit
+      // `align` in the body still wins, since it sits further in.
       let inhalt = template(with-style(s, block(
         width: s.region.width, height: s.region.height, s.body)))
       html.frame(if s.pad == 0pt {
@@ -80,11 +82,11 @@
 
 /// How CSS and JavaScript get into the page.
 ///
-/// - `"inline"` — both sit in the HTML. One file, nothing beside it, nothing
+/// - `"inline"`: both sit in the HTML. One file, nothing beside it, nothing
 ///   to fetch. This is the default.
-/// - `"split"` — the HTML points at `typstage-<version>.css` and `.js` next to
+/// - `"split"`: the HTML points at `typstage-<version>.css` and `.js` next to
 ///   it. Write both out from `runtime-files`.
-/// - `(cdn: "https://…")` — the same file names under the given address. Then
+/// - `(cdn: "https://…")`: the same file names under the given address. Then
 ///   nothing is created beside the HTML.
 #let asset-links(assets) = {
   let base = if type(assets) == dictionary and "cdn" in assets {

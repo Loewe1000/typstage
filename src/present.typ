@@ -1,4 +1,4 @@
-// Building the deck — the same source into two targets.
+// Building the deck: the same source into two targets.
 
 #import "config.typ": *
 #import "internal.typ": *
@@ -12,7 +12,7 @@
 ///
 /// `#set` in markup wraps everything after it, so a pause following one sits
 /// *inside* that wrapper. Without descending into it not a single pause would
-/// be found — and it would fail silently, which is the worst way to fail.
+/// be found, and it would fail silently, which is the worst way to fail.
 ///
 /// The style is carried along and put back around each piece: as a style rule
 /// that changes nothing about the layout, unlike wrapping in `anim`, which
@@ -43,14 +43,14 @@
 /// becomes an `anim` on its own step. Written out as a number, not `auto`, so
 /// a `stagger` further down carries on after the last pause.
 ///
-/// Every run becomes a block — a pause begins a new one, like a blank line.
+/// Every run becomes a block. A pause begins a new one, like a blank line.
 /// That is not cosmetic: in the browser a tracked element is a block anyway,
 /// while on paper it would flow on in the same paragraph. The same source has
 /// to set the same way in both, so both are told to.
 #let apply-pauses(body) = {
   if body == none { return body }
   let tokens = pause-tokens(body, x => x)
-  // Nothing to do — and then the body is handed back untouched rather than
+  // Nothing to do, and then the body is handed back untouched rather than
   // reassembled from its pieces.
   if not tokens.contains("pause") { return body }
   let runs = ()
@@ -60,25 +60,25 @@
     else { current.push(t) }
   }
   runs.push(current.join())
-  // Der erste Lauf steht ohne Hülle da, alle weiteren bekommen eine.
+  // The first run stands unwrapped, every further run gets a wrapper.
   //
-  // Die Hülle ist für die verfolgten Läufe nötig: `anim` misst seinen Inhalt,
-  // und ein Absatz ohne Breite schrumpft auf seine Schwärzung. Ein
-  // `align(center, …)` darin hätte dann keinen Raum zum Zentrieren und bliebe
-  // links stehen, obwohl er ohne die Pause mittig steht. `width: 100%` gibt
-  // ihm den Raum zurück.
+  // The wrapper is needed for the tracked runs: `anim` measures its content,
+  // and a paragraph without a width shrinks to its ink. An `align(center, …)`
+  // inside it would then have no room to center in and would stay flush
+  // left, even though without the pause it sits centered. `width: 100%`
+  // gives it the room back.
   //
-  // Der erste Lauf braucht das nicht, denn er sitzt unverpackt im Folienrumpf
-  // und der ist ohnehin so breit wie die Folie. Und er darf es nicht haben:
-  // ein `v(1fr)` darin löste sonst gegen die *automatische* Höhe dieser Hülle
-  // auf statt gegen die Folie, fraß den ganzen Rumpf und schob alles nach der
-  // ersten Pause aus der Folie hinaus. Wortlos — gemessen an einer Probe mit
-  // vier Folien fehlten im PDF alle Absätze hinter der ersten Pause, sobald
-  // irgendwo ein `v(1fr)` stand.
+  // The first run does not need this, since it sits unwrapped in the slide
+  // body, which is as wide as the slide anyway. And it must not have it: a
+  // `v(1fr)` inside it would then resolve against the *automatic* height of
+  // this wrapper instead of against the slide, eat the whole body and push
+  // everything after the first pause out of the slide. Silently: measured on
+  // a sample with four slides, the PDF was missing every paragraph after the
+  // first pause as soon as a `v(1fr)` appeared anywhere.
   //
-  // Nachgemessen, dass die Hülle hier nichts trug: alle sechs Beispiel-Decks
-  // ergeben davor und danach dieselbe Seitenzahl und denselben Text, und eine
-  // Probe mit `align(center)` vor einer Pause zentriert unverändert.
+  // Verified that the wrapper carries no weight here: all six example decks
+  // give the same page count and the same text before and after, and a
+  // sample with `align(center)` before a pause still centers unchanged.
   let out = runs.first()
   for (i, run) in runs.slice(1).enumerate() {
     out += anim(block(width: 100%, run), at: i + 2)
@@ -92,7 +92,7 @@
 ///
 /// *Rules wrap the rest of the document.* A `#set` or `#show` written after
 /// the presentation's own show rule puts everything following it into a
-/// `styled` element — the headings then sit one level deeper and the slides
+/// `styled` element. The headings then sit one level deeper and the slides
 /// vanish without a word. So `styled` is unpacked here and put back around
 /// each *run* of content between two headings. Around each run, not around
 /// each node: consecutive list items have to stay siblings inside the same
@@ -166,7 +166,7 @@
 /// #presentation(title-slide(title: [Title]), section[Part], slide([First])[…])
 /// ```
 ///
-/// … or as a show rule — then the headings separate the slides:
+/// … or as a show rule, and then the headings separate the slides:
 ///
 /// ```typ
 /// #show: presentation.with(title: [Title], transition: "slide")
@@ -182,16 +182,16 @@
 /// typst compile deck.typ deck.pdf
 /// ```
 ///
-/// `theme:` bestimmt das ganze Aussehen — Farben, Schrift, Titelbalken,
-/// Fußzeile, Fortschritt, Titel- und Abschnittsfolie. Mitgeliefert sind
-/// `themes.default` (die Vorgabe), `themes.lesson`, `themes.night`,
-/// `themes.plain` und `themes.editorial`; abwandeln lässt sich jedes davon mit
-/// `themes.night + (accent: blue)`. Der `style`-Haken bleibt davon unberührt
-/// und liegt weiter *innen*: was dort steht, überstimmt das Theme.
+/// `theme:` determines the whole look: colors, typeface, title bar,
+/// footer, progress, title and section slide. Bundled are `themes.default`
+/// (the default), `themes.lesson`, `themes.night`, `themes.plain` and
+/// `themes.editorial`; each of them can be varied with
+/// `themes.night + (accent: blue)`. The `style` hook stays untouched by this
+/// and sits further *inside*: whatever is set there overrides the theme.
 ///
 /// The PDF is a handout: one page per slide, every tracked element in its
-/// final state. What belongs only to the motion — notes, slide transitions,
-/// bridge jobs — are state updates without output and fall away by themselves.
+/// final state. What belongs only to the motion, the notes, the slide transitions,
+/// the bridge jobs, are state updates without output and fall away by themselves.
 #let presentation(
   ..slides,
   title: none,
@@ -213,7 +213,7 @@
   // `width: 800pt, height: 600pt`; everything the theme draws scales along.
   let geo = canvas(width: width, height: height, margin: margin)
   let given = slides.pos()
-  // A single piece of content means: this is the body of a show rule — that
+  // A single piece of content means: this is the body of a show rule, and that
   // gets split at its headings.
   let all = if given.len() == 1 and type(given.at(0)) == content {
     slides-from-body(given.at(0), title, subtitle, author, date)
@@ -246,10 +246,10 @@
     theme-state.update(theme)
     let n = 0
     let pages = ()
-    // Welcher Abschnitt gerade laeuft. Die Kopfzeile im Buchstil zeigt ihn
-    // rechts, wie ein Schulbuch das Kapitel zeigt. Mitgezaehlt wird er hier in
-    // der Schleife und nicht ueber einen Zustand: die Reihenfolge steht ohnehin
-    // fest, und so bleibt es eine Zeile statt eines Zustands mehr.
+    // Which section is currently running. The header in book style shows it
+    // on the right, the way a schoolbook shows the chapter. It is counted here
+    // in the loop rather than via a state: the order is fixed either way, so
+    // this stays one line instead of one more state.
     let sect = none
     for s in all {
       if s.kind == "slide" { n += 1 }
@@ -271,11 +271,11 @@
       if s.kind == "section" { sect = s.title }
       let here = n
       let hier-sect = sect
-      // Fußzeile und Fortschritt kommen als eigene Ebene über die Bühne, nicht
-      // in die Folie. Sonst führen sie beim Wechsel mit hinaus, während die der
-      // nächsten hereinkommt — man sähe zwei Balken kreuzen statt einen wachsen.
-      // Titel- und Abschnittsfolien tragen keins; für sie bleibt der Eintrag
-      // leer, damit die Zählung zu den Folien passt.
+      // Footer and progress come as their own layer above the stage, not
+      // into the slide. Otherwise they would leave along with it on
+      // transition, while the next one's comes in: two bars would be seen
+      // crossing instead of one growing. Title and section slides carry
+      // none; their entry stays empty so the count matches the slides.
       chrome-teile.push(html.elem("div", attrs: (class: "ts-chrome"),
         if s.kind == "slide" {
           html.frame(slide-chrome(here, total, geo, theme, sect: hier-sect))
@@ -289,17 +289,17 @@
         note-state.update(s.note)
         transition-state.update(s.at("transition", default: none))
         // Order is everything here: the frame has to come BEFORE the `context`
-        // that reads the sprite list — otherwise nothing that only registers
+        // that reads the sprite list. Otherwise nothing that only registers
         // while the frame is laid out would be entered any more.
         html.elem("section", attrs: (class: "ts-slide"), {
           html.elem("div", attrs: (class: "ts-bg"),
                     html.frame(slide-body(s, here, total, style, geo, theme,
                                          chrome: false, sect: hier-sect)))
-          // Zweites Chrome, nur für die Druckansicht (Taste `p`). Dort steht
-          // jede Folie für sich auf ihrer Seite, es gibt keinen Wechsel — und
-          // die Ebene über der Bühne kann dort nicht mitwandern, weil die
-          // Folien untereinander stehen. Auf dem Schirm bleibt dieses hier
-          // ausgeblendet.
+          // Second chrome, only for the print view (key `p`). There each
+          // slide stands on its own page, there is no transition. And the
+          // layer above the stage cannot travel along there, because the
+          // slides stand one below another. On screen this one stays
+          // hidden.
           if s.kind == "slide" {
             html.elem("div", attrs: (class: "ts-chromep"),
                       html.frame(slide-chrome(here, total, geo, theme,
@@ -315,10 +315,10 @@
               + (if note != "" { ("data-note": note) } else { (:) }),
               sprites.get().enumerate()
                 .map(((i, sp)) => sprite-markup(sp, i + 1, style)).join())
-            // Für die Prüfung am Dokumentende vermerken, welche Morphs auf
-            // dieser Folie liegen und ob sie ab Schritt eins stehen.
-            // Erst auswerten, dann eintragen: in der Update-Funktion wäre
-            // `sprites.get()` außerhalb jedes Kontexts und Typst bricht ab.
+            // For the check at the end of the document, note which morphs
+            // sit on this slide and whether they stand from step one.
+            // Evaluate first, then record: inside the update function
+            // `sprites.get()` would be outside any context and Typst aborts.
             let meine-morphs = sprites.get()
               .filter(sp => sp.kind == "morph")
               .map(sp => (slide: here, name: sp.extra.name,
@@ -337,17 +337,17 @@
       parts.join()
       html.elem("div", attrs: (id: "ts-chrome"), chrome-teile.join())
       html.elem("div", attrs: (id: "ts-fly"), [])
-      // Die Zeichenebene, leer. Sie liegt wie die Chrome-Ebene über der Bühne
-      // und wandert beim Folienwechsel nicht mit: was auf die Folie gezeichnet
-      // wird, gehört nicht zur Folie. Gefüllt wird sie zur Laufzeit, von der
-      // Sprecheransicht aus.
+      // The ink layer, empty. Like the chrome layer it sits above the stage
+      // and does not travel along on a slide change: what gets drawn on the
+      // slide does not belong to the slide. It is filled at runtime, from
+      // the speaker view.
       html.elem("div", attrs: (id: "ts-ink"), [])
     })
-    // Ein verzögerter Morph steht im ersten Schritt seiner Folie noch nicht.
-    // Das ist unschädlich, solange die Vorfolie keinen gleichnamigen Morph
-    // trägt — sonst geht der Flug zwischen den beiden verloren, und zwar
-    // lautlos: es gibt keine Fehlermeldung, die Formel erscheint einfach,
-    // statt zu fliegen. Deshalb hier eine Ansage beim Übersetzen.
+    // A delayed morph is not yet present on the first step of its slide.
+    // That is harmless as long as the slide before it does not carry a morph
+    // of the same name. Otherwise the flight between the two is lost, and
+    // silently: there is no error message, the formula simply appears
+    // instead of flying. Hence an announcement here at compile time.
     context {
       let alle-morphs = morph-index.get()
       for m in alle-morphs.filter(m => not m.ab-eins) {
@@ -355,16 +355,16 @@
         assert(vorher.len() == 0, message:
           "typstage: morph(" + m.name + ") on slide " + str(m.slide)
           + " starts after step one, but the slide before carries a morph of "
-          + "the same name — the flight between them would be lost without a "
+          + "the same name. The flight between them would be lost without a "
           + "word. Either drop the `at:` here, or rename one of the two.")
       }
     }
 
     html.elem("div", attrs: (id: "ts-overview"), [])
     html.elem("div", attrs: (id: "ts-hint"), [])
-    // Der Behälter der Sprecheransicht, leer. Dieselbe Datei trägt beide
-    // Ansichten; welche gilt, entscheidet `#speaker` an der Adresse, und die
-    // Laufzeit deckt damit die Bühne zu.
+    // The container of the speaker view, empty. The same file carries both
+    // views; which one applies is decided by `#speaker` in the address, and
+    // the runtime covers the stage with it.
     html.elem("div", attrs: (id: "ts-speaker"), [])
     let worte = runtime-words(text.lang)
     html.elem("script", attrs: (id: "ts-cfg", type: "application/json"),
@@ -375,9 +375,9 @@
         + ",\"transitionDuration\":" + str(transition-duration)
         + ",\"width\":" + str(geo.width.pt())
         + ",\"height\":" + str(geo.height.pt())
-        // Die Laufzeit zeigt zwei Sätze selbst an. Welche Sprache, entscheidet
-        // `text.lang` der Folie — nicht die Laufzeit, die kennt das Dokument
-        // nicht. Englisch ist der Rückfall.
+        // The runtime displays two sentences itself. Which language is
+        // decided by the slide's `text.lang`, not the runtime, which does
+        // not know the document. English is the fallback.
         + ",\"words\":" + json.encode((
             noNote: worte.no-note,
             help: worte.help,
@@ -389,15 +389,15 @@
   }
 }
 
-/// Alle Ausgaben in einem Lauf.
+/// All outputs in one run.
 ///
-/// Typst kann seit 0.15 mehrere Dateien aus einer Übersetzung schreiben. Das
-/// passt zu diesem Paket, denn hier steckt ohnehin alles in einer Quelle: der
-/// Vortrag, der Foliensatz und das Handout unterscheiden sich nur im Ziel und
-/// in einer Angabe. Statt dreimal zu übersetzen, einmal:
+/// Since 0.15 Typst can write several files from one compilation. That fits
+/// this package, since everything sits in one source anyway: the talk, the
+/// slide deck and the handout differ only in target and in one setting.
+/// Instead of compiling three times, once:
 ///
 /// ```sh
-/// typst compile --features bundle,html --format bundle vortrag.typ ausgabe
+/// typst compile --features bundle,html --format bundle talk.typ output
 /// ```
 ///
 /// ```typ
@@ -406,26 +406,25 @@
 ///   title: [Completing the Square],
 ///   handout: "handout.pdf",
 /// )[
-///   = Ein Abschnitt
-///   == Eine Folie
+///   = A section
+///   == A slide
 ///   Text.
 /// ]
 /// ```
 ///
-/// `html`, `slides` und `handout` sind Dateinamen; `none` lässt die jeweilige
-/// Ausgabe weg. `per-sheet` sind die Folien je Handout-Blatt. Alles Übrige
-/// geht unverändert an `presentation`.
+/// `html`, `slides` and `handout` are file names; `none` leaves out that
+/// output. `per-sheet` is the number of slides per handout page. Everything
+/// else goes to `presentation` unchanged.
 ///
-/// Zwei Dinge, die man wissen muss. Das Bündel ist bei Typst ausdrücklich
-/// experimentell. Und eine Datei, die `bundle` benutzt, lässt sich *nur* mit
-/// `--format bundle` übersetzen: `typst compile vortrag.typ vortrag.pdf` bricht
-/// mit „constructing a document is only supported in the bundle target" ab.
-/// Wer beides will, schreibt den Rumpf in ein `#let` und ruft `presentation`
-/// von Hand.
+/// Two things worth knowing. The bundle is explicitly experimental in Typst.
+/// And a file that uses `bundle` can *only* be compiled with `--format
+/// bundle`: `typst compile talk.typ talk.pdf` aborts with "constructing a
+/// document is only supported in the bundle target". Anyone who wants both
+/// writes the body into a `#let` and calls `presentation` by hand.
 ///
-/// Nachgemessen: die Zähler fangen je Ausgabe neu an. Der Foliensatz nummeriert
-/// seine Folien 1, 2, 3 und zählt nicht dort weiter, wo die HTML-Fassung
-/// aufgehört hat, obwohl Typst die Introspektion über das ganze Bündel führt.
+/// Verified: the counters start over for each output. The slide deck numbers
+/// its slides 1, 2, 3 and does not continue counting where the HTML version
+/// left off, even though Typst runs introspection across the whole bundle.
 #let bundle(
   body,
   html: "talk.html",

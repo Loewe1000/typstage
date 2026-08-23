@@ -5,11 +5,11 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
 #ts-stage{position:absolute;inset:0;margin:auto;overflow:hidden;background:#fafafa}
 .ts-slide{position:absolute;inset:0;visibility:hidden;opacity:0}
 .ts-slide[data-on]{visibility:visible;opacity:1}
-/* Die abtretende Folie bleibt nur so lange sichtbar, wie sie ausblendet —
-   `data-on` trägt derweil schon die neue, und zwar allein. */
-/* Auch die Deckkraft: ein Übergang wie `push` bewegt nur, ohne zu blenden —
-   ohne diese Zeile wäre die abtretende Folie schlicht unsichtbar. Wo eine
-   Animation die Deckkraft doch setzt, gewinnt sie ohnehin. */
+/* The outgoing slide stays visible only for as long as it fades out.
+   `data-on` already carries the new one in the meantime, and it alone. */
+/* Opacity too: a transition like `push` only moves without fading, so
+   without this line the outgoing slide would simply be invisible. Where an
+   animation does set the opacity, it wins anyway. */
 .ts-slide[data-off]{visibility:visible;opacity:1}
 .ts-bg{position:absolute;inset:0}
 .ts-bg svg{width:100%!important;height:100%!important;display:block}
@@ -27,17 +27,17 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
 .ts-video[data-controls="1"]{pointer-events:auto}
 .ts-frame{position:absolute;inset:0;visibility:hidden}
 .ts-frame[data-on]{visibility:visible}
-/* Über beiden Folien: der Übergang gibt einer von ihnen einen z-index, und
-   ohne eigenen läge die Flugebene darunter — die Geister verschwänden
-   mitten in der Bewegung hinter der abtretenden Folie. */
-/* Fußzeile und Fortschritt liegen über der Bühne, nicht in der Folie:
-   beim Folienwechsel sollen sie wechseln, nicht mitwandern. */
+/* Above both slides: the transition gives one of them a z-index, and
+   without its own the flight layer would sit underneath, and the ghosts
+   would vanish behind the outgoing slide mid-motion. */
+/* Footer and progress sit above the stage, not in the slide: on a slide
+   change they are supposed to switch, not travel along. */
 #ts-chrome{position:absolute;inset:0;pointer-events:none;z-index:4}
 .ts-chrome{position:absolute;inset:0;opacity:0;transition:opacity .22s ease-out}
-/* Wie beim Folienbild: das SVG kommt in seiner Punktgröße und muss auf die
-   Bühne eingepasst werden, sonst ragt der Fuß darunter hinaus. */
+/* As with the slide image: the SVG arrives at its point size and has to be
+   fitted onto the stage, otherwise the foot sticks out below it. */
 .ts-chrome svg{width:100%!important;height:100%!important;display:block}
-/* Das zweite Chrome je Folie ist nur für die Druckansicht da. */
+/* The second chrome per slide exists only for the print view. */
 .ts-chromep{display:none}
 .ts-chromep svg{width:100%!important;height:100%!important;display:block}
 .ts-chrome[data-on]{opacity:1}
@@ -46,10 +46,11 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
   overflow:visible}
 .ts-ghost svg{width:100%!important;height:100%!important;display:block;
   overflow:visible!important}
-/* Die Zeichenebene. Wie #ts-chrome eine eigene Ebene über der Bühne, damit
-   sie beim Folienwechsel stehen bleibt statt mitzuwandern, nur liegt sie
-   über allem, was zur Folie gehört, denn was darauf gezeichnet wird, gehört
-   nicht zur Folie. Leer und durchlässig, solange niemand hineinzeichnet. */
+/* The drawing layer. Like #ts-chrome, a layer of its own above the stage,
+   so it stays put on a slide change instead of travelling along, only it
+   sits above everything that belongs to the slide, because whatever is
+   drawn onto it does not belong to the slide. Empty and click-through as
+   long as no one is drawing into it. */
 #ts-ink{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6}
 #ts-ink svg,#ts-ink canvas{position:absolute;inset:0;width:100%;height:100%;
   display:block}
@@ -62,53 +63,54 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
 .ts-mini[data-hier]{outline-color:#eb5e28}
 .ts-mini svg{position:absolute;inset:0;width:100%!important;height:100%!important;
   display:block}
-/* Die Vorschau nimmt die Overlay-Ebene mit, damit sie einen *Schritt* zeigen
-   kann und nicht nur die nackte Folie. Deren Sprites sitzen in ihrem eigenen
-   Kasten und dürfen von der Regel darüber nicht darüber hinausgezogen
-   werden. */
+/* The preview takes the overlay layer along, so it can show a *step* and
+   not just the bare slide. Its sprites sit in their own box and must not
+   be stretched beyond it by the rule above. */
 .ts-mini .ts-ov{position:absolute;inset:0;pointer-events:none}
 .ts-mini .ts-el svg{position:static;inset:auto}
 #ts-hint{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);
   color:#fff;font-size:13px;background:#000b;padding:8px 16px;border-radius:20px;
   opacity:0;transition:opacity .25s;pointer-events:none;z-index:60;max-width:70vw}
 #ts-hint[data-on]{opacity:1}
-/* ── Sprecheransicht ──────────────────────────────────────────────────────
-   Sie steht in derselben Datei; welche Rolle gilt, hängt die Laufzeit als
-   `data-ts-rolle` an das Wurzelelement. Der Behälter deckt die Bühne zu,
-   statt sie auszublenden: `display:none` nähme ihr jede Ausdehnung, und die
-   Morphs vermessen sich mit getBoundingClientRect, sie messen dann null.
-   Zugedeckt bleibt alles heil, und zu sehen ist trotzdem nur die Ansicht. */
+/* ── Speaker view ───────────────────────────────────────────────────────
+   It sits in the same file; which role applies is hung onto the root
+   element at runtime as `data-ts-rolle`. The container covers the stage
+   instead of hiding it: `display:none` would take away all its dimensions,
+   and the morphs measure themselves with getBoundingClientRect, so they
+   would then measure zero. Covered up, everything stays intact, and yet
+   only the view is visible. */
 #ts-speaker{display:none}
 html[data-ts-rolle="speaker"] #ts-speaker{display:grid;position:fixed;inset:0;
   z-index:70;background:#0f1116;color:#f4f4f5;overflow:hidden;
   grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:10px 12px;
   font-size:14px}
-/* Der Hinweisbalken liegt sonst unter dem Behälter und wäre nicht zu sehen,
-   die Übersicht ebenso. */
+/* The hint bar would otherwise sit below the container and would not be
+   visible, the overview likewise. */
 html[data-ts-rolle="speaker"] #ts-hint{z-index:80}
 html[data-ts-rolle="speaker"] #ts-overview{z-index:90}
-/* Die laufende Folie wird nicht nachgebaut: sie ist die echte Bühne dieses
-   Fensters, nur an ihren Platz im Gerüst gerückt statt zugedeckt. So zeigt
-   sie den laufenden Schritt samt Übergängen, und die Zeichenebene liegt ohne
-   Zutun schon darüber. Maße und Ort setzt `fit`. Sichtbar erst, wenn der
-   Platz steht, sonst säße sie einen Wimpernschlag lang oben links. */
+/* The running slide is not rebuilt: it is this window's real stage, only
+   moved to its place in the frame instead of being covered up. That way it
+   shows the running step along with transitions, and the drawing layer
+   already sits above it without any extra work. `fit` sets its size and
+   position. Only visible once the place is set, otherwise it would sit at
+   the top left for the blink of an eye. */
 html[data-ts-rolle="speaker"] #ts-stage{position:fixed;inset:auto;margin:0;
   z-index:71;opacity:0;cursor:crosshair;touch-action:none;
   box-shadow:0 0 0 1px #ffffff26,0 10px 34px #0009}
 html[data-ts-rolle="speaker"][data-ts-fertig="1"] #ts-stage{opacity:1}
-/* In der Sprecheransicht ist die Folie eine Zeichenfläche, und zwar ganz.
-   Ein eingebettetes Dokument fängt den Zeiger sonst ab: ein Strich, der
-   darauf beginnt, entstünde gar nicht, während einer, der daneben beginnt,
-   ungehindert darüber zieht. Zwei Regeln für dieselbe Fläche sind eine zu
-   viel. Bedient wird ein solches Dokument im Vortragsfenster, wo es
-   weiterhin auf den Zeiger hört. */
+/* In the speaker view the slide is a drawing surface, entirely so. An
+   embedded document would otherwise intercept the pointer: a stroke
+   beginning on it would not come into being at all, while one beginning
+   beside it would drag unhindered across it. Two rules for the same
+   surface are one too many. Such a document is operated in the talk
+   window, where it keeps listening to the pointer. */
 html[data-ts-rolle="speaker"] .ts-embed,
 html[data-ts-rolle="speaker"] .ts-bridged,
 html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
-/* Der Kopf: zwei Gruppen an den beiden Rändern, nicht sechs gleich laute
-   Spalten links gedrängt. Je Gruppe eine große Zahl, alles Weitere klein
-   daneben; das trägt die Hierarchie, nicht die Farbe. Farbe bleibt dem
-   Plan vorbehalten, wo sie etwas bedeutet. */
+/* The head: two groups at the two edges, not six equally loud columns
+   crowded to the left. One large number per group, everything else small
+   beside it; that is what carries the hierarchy, not the color. Color
+   stays reserved for the plan, where it means something. */
 .ts-sp-kopf{display:flex;justify-content:space-between;align-items:flex-end;
   gap:24px;flex-wrap:wrap;border-bottom:1px solid #ffffff1a;padding-bottom:9px}
 .ts-sp-gruppe{display:flex;flex-direction:column;gap:5px;min-width:0}
@@ -132,8 +134,9 @@ html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
 .ts-sp-wert[data-lage="zurueck"]{color:#ff7a6b}
 .ts-sp-wert[data-lage="vor"]{color:#6fd79a}
 .ts-sp-wert[data-laeuft="0"]{color:#ffffff73}
-/* Ein Balken statt eines weiteren Zahlenpaars: er sagt ohne Worte, wo man
-   steht, und ist damit das zweite Hierarchiemittel neben der Schriftgröße. */
+/* A bar instead of yet another pair of numbers: it says without words
+   where things stand, and is thus the second means of hierarchy alongside
+   font size. */
 .ts-sp-balken{width:190px;max-width:38vw;height:3px;border-radius:2px;
   background:#ffffff1f;overflow:hidden}
 .ts-sp-balken i{display:block;height:100%;background:#ffffff8c;
@@ -141,47 +144,47 @@ html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
 .ts-sp-ziel{width:3.4em;background:#ffffff12;border:1px solid #ffffff2b;
   color:inherit;border-radius:5px;padding:1px 5px;font:inherit;font-size:15px;
   font-variant-numeric:tabular-nums;line-height:1.25}
-/* Zwei Reihen: oben die laufende Folie und daneben die Vorschau, darunter
-   die Notiz über die ganze Breite. Die Folie hält ihr Seitenverhältnis, also
-   bleibt unter ihr ein Streifen frei, sobald das Fenster hoch ist; dort steht
-   die Notiz, statt in eine schmale Spalte gequetscht zu werden. Wie breit die
-   erste Spalte ist, rechnet `sprecherSpalten` aus, denn das hängt an der
-   Fensterhöhe und nicht nur an der Breite. */
+/* Two rows: the running slide up top with the preview beside it, the note
+   below across the full width. The slide keeps its aspect ratio, so a
+   strip stays free below it once the window is tall; the note sits there,
+   instead of being squeezed into a narrow column. How wide the first
+   column is gets computed by `sprecherSpalten`, since that depends on the
+   window height and not only the width. */
 .ts-sp-leib{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);
   grid-template-rows:auto minmax(0,1fr);gap:12px 14px;min-height:0}
-/* Der Platz der Bühne ist leer: die Bühne selbst schwebt darüber. Damit die
-   Reihe trotzdem die richtige Höhe bekommt, hält der Kasten das
-   Seitenverhältnis der Folie, wie es die Bildchen auch tun. */
+/* The stage's place is empty: the stage itself floats above it. So the row
+   still gets the right height, the box keeps the slide's aspect ratio, the
+   same way the thumbnails do. */
 .ts-sp-platz{grid-column:1;grid-row:1;height:0;
   padding-bottom:var(--ts-ratio,56.25%);min-width:0}
 .ts-sp-vor{grid-column:2;grid-row:1;min-width:0;overflow:hidden}
 .ts-sp-notizkasten{grid-column:1/3;grid-row:2}
-/* Flach: die Folie ist schon so hoch wie der Leib, neben ihr bliebe sonst
-   eine große leere Fläche. Dann stehen Vorschau und Notiz dort
-   untereinander. Welche der beiden Formen gilt, rechnet `sprecherSpalten`
-   aus und hängt es als `data-form` an. */
+/* Flat: the slide is already as tall as the body, otherwise a large empty
+   area would remain beside it. Then preview and note stand there stacked
+   on top of each other. Which of the two layouts applies is computed by
+   `sprecherSpalten` and hung on as `data-form`. */
 .ts-sp-leib[data-form="flach"] .ts-sp-platz{grid-row:1/3}
 .ts-sp-leib[data-form="flach"] .ts-sp-notizkasten{grid-column:2;grid-row:2}
-/* Hochkant: die Bühne legt sich quer über beide Spalten, Vorschau und Notiz
-   teilen sich die Reihe darunter. Sonst wäre bei einem stehenden Fenster der
-   Notizkasten die größte Fläche der Ansicht, und nicht die laufende Folie. */
+/* Portrait: the stage lays itself crosswise over both columns, preview and
+   note share the row below it. Otherwise, in a portrait window, the note
+   box would be the largest area of the view instead of the running slide. */
 .ts-sp-leib[data-form="hochkant"] .ts-sp-platz{grid-column:1/3;grid-row:1}
 .ts-sp-leib[data-form="hochkant"] .ts-sp-vor{grid-column:1;grid-row:2}
 .ts-sp-leib[data-form="hochkant"] .ts-sp-notizkasten{grid-column:2;grid-row:2}
 .ts-sp-vorbild{margin-top:5px;border-radius:4px;overflow:hidden}
 .ts-sp-vorbild .ts-mini{cursor:default}
-/* Kein nächster Schritt mehr: statt eines Bildes die Ansage, in derselben
-   Form, damit der Kasten nicht springt. */
+/* No next step left: instead of an image, the announcement, in the same
+   shape so the box does not jump. */
 .ts-sp-ende{position:relative;height:0;padding-bottom:var(--ts-ratio,56.25%);
   border:1px dashed #ffffff33;border-radius:4px}
 .ts-sp-ende span{position:absolute;inset:0;display:flex;align-items:center;
   justify-content:center;color:#ffffff8c}
 .ts-sp-notizkasten{display:grid;grid-template-rows:auto minmax(0,1fr);
   min-height:0;border-top:1px solid #ffffff14;padding-top:6px;position:relative}
-/* Eine Zeile, die am unteren Rand einfach abgeschnitten ist, liest sich, als
-   sei die Notiz zu Ende. Der Verlauf und der Pfeil erscheinen nur, wenn
-   wirklich noch etwas kommt; gerollt wird mit den Pfeiltasten hoch und
-   runter, denn beim Vortrag ist die Hand nicht an der Maus. */
+/* A line that is simply cut off at the bottom edge reads as if the note
+   had ended. The gradient and the arrow appear only when there really is
+   more coming; scrolling happens with the up and down arrow keys, because
+   during the talk the hand is not on the mouse. */
 .ts-sp-notizkasten[data-mehr]::after{content:"↓";position:absolute;
   left:0;right:0;bottom:0;height:2.4em;pointer-events:none;text-align:right;
   padding-right:10px;color:#ffffffa6;font-size:13px;line-height:4em;
@@ -202,8 +205,8 @@ html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
 .ts-sp-lage .ts-sp-weg{background:#ffd166}
 .ts-sp-hilfe{margin-left:auto;text-align:right;line-height:1.5;font-size:13px;
   color:#ffffffb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* Ein Vortragsrechner kann klein sein. Bei schmalem Fenster rückt die
-   laufende Folie näher an die Spalte daneben, statt sie zu erdrücken. */
+/* A speaker's laptop can be small. In a narrow window the running slide
+   moves closer to the column beside it, instead of crowding it out. */
 @media (max-width:1100px){
   .ts-sp-leib{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
   .ts-sp-wert{font-size:19px}
@@ -214,10 +217,10 @@ html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
   .ts-sp-neben{gap:11px}
   .ts-sp-balken{width:130px}
 }
-/* Schwarzschalten: der Saal wird dunkel, im Vortragsfenster. Das Gegenstück
-   zum Einfrieren, das nicht hier steht, sondern in `fernGoto`, wo der
-   Schritt ankommt, den der Vortrag dann nicht zeigt. Ohne das Attribut kostet
-   der Block nichts. */
+/* Blacking out: the hall goes dark, in the talk window. The counterpart to
+   freezing, which does not sit here but in `fernGoto`, where the step
+   arrives that the talk then does not show. Without the attribute this
+   block costs nothing. */
 html[data-ts-schwarz="1"],html[data-ts-schwarz="1"] body{background:#000}
 html[data-ts-schwarz="1"] #ts-stage,html[data-ts-schwarz="1"] #ts-chrome,
 html[data-ts-schwarz="1"] #ts-fly,html[data-ts-schwarz="1"] #ts-ink{opacity:0}
@@ -229,10 +232,10 @@ html[data-ts-schwarz="1"] #ts-fly,html[data-ts-schwarz="1"] #ts-ink{opacity:0}
   .ts-el{opacity:1!important;visibility:visible!important}
   #ts-overview,#ts-hint,#ts-fly,#ts-chrome,#ts-ink,
   #ts-speaker{display:none!important}
-  /* Gedruckt wird aus beiden Fenstern dasselbe. Die Regeln der
-     Sprecheransicht sind spezifischer als die Druckregel darüber und
-     müssten sie sonst überstimmen: die Bühne bliebe klein, an ihrem Platz
-     festgenagelt und bei Schwarzschaltung unsichtbar. */
+  /* Printing produces the same thing from both windows. The speaker
+     view's rules are more specific than the print rule above and would
+     otherwise override it: the stage would stay small, nailed to its
+     place, and invisible while blacked out. */
   html[data-ts-rolle="speaker"] #ts-stage,html[data-ts-schwarz="1"] #ts-stage{
     position:static;inset:auto;margin:0;width:100%!important;
     height:auto!important;opacity:1;z-index:auto;box-shadow:none}

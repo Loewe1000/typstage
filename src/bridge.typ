@@ -1,6 +1,6 @@
 // The generic step bridge.
 //
-// An embedded document cannot be driven from Typst — but it can be told, on
+// An embedded document cannot be driven from Typst, but it can be told, on
 // every step, what to do. The core knows nothing about what is inside: it
 // collects named jobs per slide, hands them to the runtime as JSON, and the
 // runtime posts them into the frame whose element carries that name.
@@ -22,13 +22,13 @@
 ///   A job does not move the step cursor: an applet's tween and the bullet
 ///   explaining it usually belong on the *same* step, not one after the other.
 /// - `payload` is a dictionary. Its meaning is entirely up to the document on
-///   the other side — the core passes it through unread.
+///   the other side. The core passes it through unread.
 ///
 /// When paging backwards or entering a slide the runtime replays the whole run
 /// from its start with a `reset` flag, so jobs should be repeatable.
 ///
 /// *The document has to announce itself.* Nothing is sent to a frame that has
-/// not said hello — the runtime marks a frame live only after receiving
+/// not said hello. The runtime marks a frame live only after receiving
 ///
 /// ```js
 /// parent.postMessage({ typstage: 1, ready: 1 }, "*");
@@ -36,7 +36,7 @@
 ///
 /// from it. Both fields are needed: the runtime drops every message without
 /// `typstage: 1` before it ever looks at `ready`. Miss this and the jobs simply
-/// never arrive — there is no error, the applet just sits there.
+/// never arrive. There is no error, the applet just sits there.
 #let bridge-job(target, payload, at: "1-") = {
   if at == auto { step-cursor.step() }
   context {
@@ -52,7 +52,7 @@
 /// This is how a companion package can leave the applet unnamed: with exactly
 /// one bridged element on the slide there is nothing to choose between.
 ///
-/// Must be called in a context. Duplicates are dropped — a tracked element is
+/// Must be called in a context. Duplicates are dropped, because a tracked element is
 /// laid out twice, once in the background and once as its sprite, so it
 /// announces itself twice.
 #let bridge-targets() = {

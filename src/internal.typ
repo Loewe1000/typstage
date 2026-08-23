@@ -4,7 +4,7 @@
 //
 // *Geometry.* In HTML export `here().position()` returns `(0, 0)` everywhere,
 // so Typst no longer knows where it put anything. Instead every tracked
-// element paints a rectangle around itself in a signal colour — `#feHHLL00`,
+// element paints a rectangle around itself in a signal colour, `#feHHLL00`,
 // fully transparent, but recoverable in the emitted SVG as
 // `<path fill="#feHHLL00">` and measurable with `getBoundingClientRect()`.
 // `HHLL` is the element's running number. The browser reads back what Typst
@@ -21,7 +21,7 @@
 /// place would be circular and never converge. A counter is made for this.
 #let element-counter = counter("typstage-n")
 
-/// Marks that may sit anywhere in a slide body — even deeply nested, because a
+/// Marks that may sit anywhere in a slide body, even deeply nested, because a
 /// state update inside an `html.frame` is readable afterwards.
 #let sprites = state("typstage-sprites", ())
 #let note-state = state("typstage-note", none)
@@ -39,21 +39,21 @@
 /// into this; the core only hands the result to the runtime.
 #let bridge-jobs = state("typstage-bridge", ())
 
-/// Alpha 0 — invisible, but Typst keeps the path in the SVG.
+/// Alpha 0: invisible, but Typst keeps the path in the SVG.
 #let marker(n) = rgb(254, calc.div-euclid(n, 256), calc.rem(n, 256), 0%)
 
-/// Die Farbe einer Pin-Marke — wie `marker`, nur mit 253 im ersten Kanal.
-/// Daran unterscheidet die Laufzeit einen Pin von der Marke eines Elements.
+/// The colour of a pin marker. Like `marker`, only with 253 in the first
+/// channel. That is how the runtime tells a pin apart from an element's
+/// marker.
 #let pin-marker(n) = rgb(253, calc.div-euclid(n, 256), calc.rem(n, 256), 0%)
 
-/// Aus einem Namen eine Zahl von 0 bis 65535 (FNV-1a über die Bytes).
+/// Turn a name into a number from 0 to 65535 (FNV-1a over the bytes).
 ///
-/// Bewusst gerechnet statt gezählt: derselbe Name ergibt auf jeder Folie und
-/// in jedem Lauf dieselbe Zahl, ohne dass irgendwo eine Liste geführt und
-/// zwischen den Folien weitergereicht werden müsste. Zwei verschiedene Namen
-/// können dieselbe Zahl treffen — bei einer Handvoll Pins je Umformung ist das
-/// unwahrscheinlich, und die Folge wäre eine falsch gepaarte Glyphe, kein
-/// Fehler.
+/// Computed on purpose rather than counted: the same name gives the same
+/// number on every slide and in every run, without a list having to be kept
+/// anywhere and passed along between slides. Two different names can hit the
+/// same number. With a handful of pins per transformation that is unlikely,
+/// and the consequence would be a wrongly paired glyph, not an error.
 #let pin-index(name) = {
   let h = 2166136261
   for b in array(bytes(name)) {
@@ -79,10 +79,10 @@
   if numbers.len() == 0 { 1 } else { calc.max(..numbers) }
 }
 
-/// Deckt ein Selektor den ersten Schritt ab?
+/// Does a selector cover the first step?
 ///
-/// Entscheidet, ob ein Morph beim Betreten der Folie schon steht. `"1-"` und
-/// `"1,3"` tun es, `"2-"` und `"3"` nicht.
+/// Decides whether a morph is already present when the slide is entered.
+/// `"1-"` and `"1,3"` do, `"2-"` and `"3"` do not.
 #let ab-schritt-eins(sel) = {
   sel.split(",").any(teil => {
     let t = teil.trim()
@@ -96,38 +96,38 @@
   })
 }
 
-/// Alle Morphs des Dokuments: je Eintrag Folie, Name und ob er ab Schritt eins
-/// steht. Wird am Ende geprüft — ein verzögerter Morph darf seinen Namen nicht
-/// mit einem auf der Vorfolie teilen, sonst geht der Flug dorthin verloren.
+/// All morphs of the document: each entry is slide, name and whether it
+/// stands from step one. Checked at the end: a delayed morph must not share
+/// its name with one on the slide before it, or the flight there is lost.
 #let morph-index = state("typstage-morphs", ())
 
-/// Die Höhe der Zeile, in der ein Kasten gerade steht, oder `none`.
+/// The height of the row a box is currently standing in, or `none`.
 ///
-/// `side-by-side(equal: true)` misst seine Spalten, setzt die größte Höhe fest
-/// und trägt sie hier ein; `card` und `callout` lesen sie und füllen dann ihre
-/// Zelle aus. Ohne diesen Umweg ginge es nicht: ein `height: 100%` im Kasten
-/// löst gegen die *Region* auf, nicht gegen die Rasterzeile, und wäre damit
-/// folienhoch statt zeilenhoch. Nachgemessen: zwei Kästen mit `height: 100%`
-/// in einem Raster mit `rows: auto` wurden beide 250 Pixel hoch auf einer
-/// 278 Pixel hohen Seite. Erst eine ausdrücklich gesetzte Zeilenhöhe macht aus
-/// `100%` die Zeile.
+/// `side-by-side(equal: true)` measures its columns, fixes the largest
+/// height and records it here; `card` and `callout` read it and then fill
+/// their cell. There is no way around this detour: a `height: 100%` inside
+/// the box resolves against the *region*, not against the grid row, and
+/// would therefore be slide-high instead of row-high. Verified: two boxes
+/// with `height: 100%` in a grid with `rows: auto` both came out 250 pixels
+/// tall on a 278-pixel-tall page. Only an explicitly set row height turns
+/// `100%` into the row.
 #let zeilen-hoehe = state("typstage-zeile", none)
 
 /// The running step cursor: the highest step handed out on this slide so far.
 ///
-/// A counter, not a state — and that is the whole trick. Reading a state and
+/// A counter, not a state, and that is the whole trick. Reading a state and
 /// writing to it in the same place is circular and never settles; a counter is
 /// built for exactly this and converges.
 #let step-cursor = counter("typstage-step")
 
 /// Which slide we are on. Only used to scope things that a companion package
-/// looks up across the whole document — a query sees every slide at once and
+/// looks up across the whole document. A query sees every slide at once and
 /// has to be able to tell them apart.
 #let slide-counter = counter("typstage-slide")
 
 /// A name, however it was written.
 ///
-/// Names identify things across slides — a morph that flies, a frame that
+/// Names identify things across slides: a morph that flies, a frame that
 /// receives jobs. `<pythagoras>` reads better than `"pythagoras"` and Typst
 /// colours it as what it is, so both are allowed everywhere a name is taken.
 #let name-of(value) = {
@@ -145,7 +145,7 @@
 /// - `(1, 3)` → `"1,3"`
 /// - `"2-"`, `"1-2"`, `"2,4"`, `"-2"`, `"3"` stay as they are.
 ///
-/// `auto` is *not* resolved here — it needs the cursor and hence a context.
+/// `auto` is *not* resolved here. It needs the cursor and hence a context.
 #let selector(at) = {
   if type(at) == int { str(at) + "-" }
   else if type(at) == array {
@@ -156,30 +156,31 @@
 /// A tracked element: holds its place in the background, paints its marker and
 /// registers itself for the overlay.
 ///
-/// In paged output none of this applies — there is no overlay and there are no
+/// In paged output none of this applies. There is no overlay and there are no
 /// steps, so the element simply stands where Typst puts it.
 /// `width` decides how wide the tracked element becomes.
 ///
-/// - `auto` — as wide as its content. Right for inline things: a morphing
+/// - `auto`: as wide as its content. Right for inline things: a morphing
 ///   glyph should not claim the whole line.
-/// - a length — that width. Block elements default to the full available
+/// - a length: that width. Block elements default to the full available
 ///   width, because that is what a block *is*: without it an `align(center,
 ///   …)` inside `anim` has no room to centre in and silently stays left.
-/// Trägt der Rumpf auf oberster Ebene einen `fr`-Abstand?
+/// Does the body carry an `fr` spacer at its top level?
 ///
-/// `fr` heißt „Anteil an dem, was übrig bleibt" — und was übrig bleibt,
-/// verteilt der Elternteil unter den Geschwistern. Ein verfolgtes Element wird
-/// aber allein gemessen, und `measure` sieht die Geschwister nicht. Deshalb
-/// lässt sich ein `fr`, das *dem Element selbst* gilt, hier grundsätzlich nicht
-/// auflösen; ein `fr` weiter innen (etwa `grid(rows: (1fr, 1fr))`) ist davon
-/// nicht betroffen, weil es das Raster unter sich selbst verteilt.
+/// `fr` means "share of what is left over", and what is left over is
+/// distributed by the parent among the siblings. A tracked element, though,
+/// is measured on its own, and `measure` does not see the siblings.
+/// Therefore an `fr` that applies *to the element itself* cannot be resolved
+/// here as a matter of principle; an `fr` further inside (say
+/// `grid(rows: (1fr, 1fr))`) is not affected by this, because it distributes
+/// the grid among itself.
 #let fr-teile(body) = {
   let teile = if body == none { () }
               else if body.has("children") { body.children } else { (body,) }
   teile.filter(c => c.func() in (v, h) and type(c.amount) == fraction)
 }
 
-/// Besteht der Rumpf *nur* aus solchen Abständen (und Leerraum)?
+/// Does the body consist *only* of such spacers (and empty space)?
 #let nur-fr(body) = {
   let teile = if body == none { () }
               else if body.has("children") { body.children } else { (body,) }
@@ -189,22 +190,22 @@
     or c.func() in (leer, parbreak))
 }
 
-/// Will der Rumpf die angebotene Breite ausfüllen?
+/// Does the body want to fill the offered width?
 ///
-/// Der Unterschied lässt sich nicht messen: `measure(align(center, rect(80pt)),
-/// width: 400pt)` liefert 80pt, nicht 400 — eine Blockgleichung genauso. Beide
-/// brauchen aber den vollen Platz, sonst hat das `align` keinen Raum zum
-/// Zentrieren und die Gleichung keine Mitte.
+/// The difference cannot be measured: `measure(align(center, rect(80pt)),
+/// width: 400pt)` returns 80pt, not 400. A block equation does the same.
+/// Both need the full space regardless, or the `align` has no room to
+/// center in and the equation has no middle.
 ///
-/// Deshalb wird hier nicht gemessen, sondern nachgesehen. Ein paar Ebenen tief,
-/// denn `text(…)[$ x $]` verpackt die Gleichung in ein `styled` mit `child`,
-/// und ein Absatz in ein `sequence` mit `children` — auf der obersten Ebene
-/// steht selten das, worauf es ankommt.
+/// So this does not measure, it looks. A few levels deep, since
+/// `text(…)[$ x $]` wraps the equation in a `styled` with `child`, and a
+/// paragraph in a `sequence` with `children`: the top level rarely holds
+/// what matters.
 ///
-/// Davon hängt zweierlei ab: ob ein verfolgtes Element in einer
-/// `auto`-Rasterspalte die ganze Breite an sich zieht (und damit die
-/// `1fr`-Nachbarspalte auf null drückt), und ob Rahmen und Region gleich breit
-/// sein müssen, damit der Rumpf nicht neben seiner Marke landet.
+/// Two things depend on this: whether a tracked element in an `auto` grid
+/// column pulls the whole width to itself (and thereby pushes the `1fr`
+/// neighbour column to zero), and whether frame and region must be the same
+/// width so the body does not land next to its marker.
 #let will-fuellen(body, tiefe: 4) = {
   if body == none or tiefe <= 0 { return false }
   let f = body.func()
@@ -224,17 +225,18 @@
   // further in would still break the line it sits in.
   let shell-outer = if inline { box } else { it => it }
   shell-outer(context {
-  // Reiner `fr`-Abstand wird durchgereicht statt verfolgt. Gemessen käme er als
-  // volle Resthöhe heraus und schöbe die Geschwister aus der Folie (nachgemessen:
-  // 86% statt 76%). Durchgereicht verteilt ihn der Elternteil richtig — und an
-  // Leerraum ist ohnehin nichts zu animieren, es geht also nichts verloren.
-  // Auch der Schritt wird nicht verbraucht: er bliebe sonst leer.
+  // A pure `fr` spacer is passed through instead of tracked. Measured it
+  // would come out as the full remaining height and push the siblings out
+  // of the slide (verified: 86% instead of 76%). Passed through, the parent
+  // distributes it correctly, and there is nothing to animate in empty
+  // space anyway, so nothing is lost. The step is not consumed either: it
+  // would otherwise stay empty.
   if nur-fr(body) { return body }
-  // Gemischter Inhalt lässt sich nicht retten: der Abstand gehört dem
-  // Elternteil, der Rest dem Element. Lieber eine klare Ansage als eine Folie,
-  // auf der stillschweigend etwas verrutscht.
+  // Mixed content cannot be saved: the spacer belongs to the parent, the
+  // rest to the element. Better a clear error than a slide where something
+  // silently shifts out of place.
   assert(fr-teile(body).len() == 0, message:
-    "typstage: an fr spacer inside a tracked element cannot be resolved — "
+    "typstage: an fr spacer inside a tracked element cannot be resolved. "
     + "fr is shared out by the parent among its siblings, and a tracked "
     + "element is measured on its own. Put the fr outside the anim/stagger, "
     + "or give the element a container with a known size.")
@@ -245,7 +247,7 @@
   // starting over.
   //
   // Only reveals count. An applet, a video or a morph does not consume a step
-  // — they are there from the start —, and above all they must not push the
+  // (they are there from the start), and above all they must not push the
   // bullets beside them along: in a two-column slide the text next to an
   // applet belongs at step one, not behind the applet's tweens.
   if at == auto { step-cursor.step() }
@@ -263,25 +265,26 @@
     layout(available => context {
       // Measured under the same width the element has in the background. That
       // measurement travels outward so the sprite gets exactly the same
-      // layout — otherwise a `width: 100%` inside the free frame would come to
+      // layout. Otherwise a `width: 100%` inside the free frame would come to
       // nothing and boxes would lose their area.
       let room = if width == auto { available.width } else { width }
-      // Zweimal gemessen, und das Größere gilt. Beide Messungen sind nötig,
-      // aber aus verschiedenen Gründen:
+      // Measured twice, and the larger one counts. Both measurements are
+      // needed, but for different reasons:
       //
-      // *Mit* Höhenbezug ist das Einzige, was `height: 100%` und `1fr` im
-      // Rumpf überhaupt auflöst — ohne ihn gibt es nichts, wogegen ein
-      // Prozentsatz zählen könnte, und das Element fällt auf 0pt zusammen.
-      // Gemessen: bei 12 von 34 verfolgten Elementen eines Prüfdecks.
+      // *With* a height reference is the only thing that resolves
+      // `height: 100%` and `1fr` inside the body at all. Without it there is
+      // nothing for a percentage to count against, and the element collapses
+      // to 0pt. Measured: in 12 of 34 tracked elements of a test deck.
       //
-      // *Ohne* Höhenbezug bestimmt die **Lage**, nicht die Größe. Überlaufendes
-      // wird ohnehin außerhalb der SVG-Box gezeichnet, die Maße bleiben also
-      // gleich; aber mit der gekappten Höhe richtet etwa `side-by-side` (per
-      // Vorgabe `horizon`) das Element an der falschen Mitte aus. Gemessen: bis
-      // zu 84 Prozentpunkte Versatz, `lorem(200)` rutschte ganz aus der Folie.
+      // *Without* a height reference determines the **position**, not the
+      // size. Overflow is drawn outside the SVG box anyway, so the
+      // dimensions stay the same; but with the capped height, something
+      // like `side-by-side` (defaulting to `horizon`) aligns the element on
+      // the wrong middle. Measured: up to 84 percentage points of offset,
+      // `lorem(200)` slid entirely off the slide.
       //
-      // Ist die Höhe unbegrenzt, liefert die zweite Messung 0 und das Maximum
-      // fällt auf die erste zurück.
+      // If the height is unbounded, the second measurement returns 0 and
+      // the maximum falls back to the first.
       let natural = measure(body, width: room)
       let bounded = measure(body, width: room, height: available.height)
       let m = (
@@ -290,11 +293,12 @@
       )
       // What holds here has to be set again in the sprite: its own frame does
       // not know the slide's `set` rules.
-      // Der Sprite wird in einem eigenen Rahmen gesetzt und kennt die
-      // `set`-Regeln der Folie nicht. Was den Umbruch und die Höhe bestimmt,
-      // muss deshalb mitreisen — sonst füllt er seinen gemessenen Rahmen
-      // nicht aus: mit `#set par(leading: 2em)` maß der Hintergrund 63pt,
-      // der Sprite kam mit Vorgabe-Durchschuss auf 37pt und klebte oben.
+      // The sprite is set in its own frame and does not know the slide's
+      // `set` rules. What determines the line break and the height
+      // therefore has to travel along, or it will not fill its measured
+      // frame: with `#set par(leading: 2em)` the background measured 63pt,
+      // the sprite came out at 37pt with default leading and stuck to the
+      // top.
       let style = (
         size: text.size, fill: text.fill, font: text.font,
         weight: text.weight, style: text.style, lang: text.lang,
@@ -303,41 +307,43 @@
         justify: par.justify, first-line-indent: par.first-line-indent,
         hanging-indent: par.hanging-indent,
       )
-      // Nur was füllen *will*, bekommt den vollen Platz. Alles andere bleibt so
-      // breit wie sein Inhalt — sonst zieht ein verfolgtes Element in einer
-      // `auto`-Rasterspalte die ganze Breite an sich und drückt die
-      // `1fr`-Nachbarspalte auf null.
+      // Only what *wants* to fill gets the full space. Everything else
+      // stays as wide as its content, or a tracked element in an `auto`
+      // grid column pulls the whole width to itself and pushes the `1fr`
+      // neighbour column to zero.
       let fuellt = will-fuellen(body)
       let w = if inline or width != auto { m.width }
               else if fuellt { room }
               else { m.width }
-      // Ein Element ohne Fläche — eine Linie misst 0pt hoch, ihre Farbe liegt
-      // außerhalb des Kastens — bekommt eine Marke ohne Fläche, und die
-      // überspringt der Runtime (`if (!r.width && !r.height) return;`). Der
-      // Sprite würde nie positioniert und bliebe unsichtbar. Marke und Sprite
-      // bekommen deshalb Luft nach allen Seiten. Sie steht in `place`, ändert
-      // am Fluss also nichts: die Zeile bleibt so hoch wie ohne `anim`.
+      // An element without an area (a line measures 0pt tall, its stroke
+      // sits outside the box) gets a marker without an area, and the
+      // runtime skips that (`if (!r.width && !r.height) return;`). The
+      // sprite would never be positioned and would stay invisible. Marker
+      // and sprite therefore get breathing room on every side. It sits in
+      // `place`, so it changes nothing about the flow: the line stays as
+      // tall as it would without `anim`.
       //
-      // Das Maß ist geschätzt, nicht gemessen — die Farbe eines Strichs lässt
-      // sich in Typst nicht ausmessen. Eine Schrifthöhe deckt jede übliche
-      // Strichstärke; was dicker aufträgt, ist eine Zeichnung und bringt
-      // normalerweise ihren eigenen Kasten mit.
+      // The measure is estimated, not measured: the stroke width of a line
+      // cannot be measured in Typst. A font's height covers any common
+      // stroke width; anything thicker is a drawing and normally brings its
+      // own box along.
       let luft = if m.height == 0pt or m.width == 0pt { text.size } else { 0pt }
-      // Die *ursprüngliche* Region reist mit. Ohne sie steht der Rumpf im
-      // Sprite in einer Hülle der gemessenen Größe, und ein relatives Maß löst
-      // dort ein zweites Mal auf — aus `p%` wird `p²%`. Nur `100%` ist
-      // Fixpunkt, deshalb blieb es lange unbemerkt; `height: 50%` kam als 25%
-      // heraus, `morph` mit `width: 60%` als 36%.
-      // Die Höhe ist immer die echte Region, damit `height: 50%` gegen den
-      // richtigen Bezug auflöst. Bei der Breite hängt es davon ab, ob der Rumpf
-      // sich selbst mittig setzt:
+      // The *original* region travels along. Without it, the body sits in
+      // the sprite inside a wrapper of the measured size, and a relative
+      // measure resolves there a second time: `p%` becomes `p²%`. Only
+      // `100%` is a fixed point, which is why this went unnoticed for a
+      // long time; `height: 50%` came out as 25%, `morph` with
+      // `width: 60%` as 36%.
+      // The height is always the real region, so `height: 50%` resolves
+      // against the correct reference. For the width it depends on whether
+      // the body centers itself:
       //
-      // - Tut er es, müssen Rahmen und Region gleich breit sein. Sonst zentriert
-      //   er sich in der breiteren Region und wird neben seiner Marke gemalt —
-      //   nachgemessen 293pt daneben, genau die halbe Differenz.
-      // - Tut er es nicht, steht er links und liegt damit im Rahmen; dann darf
-      //   die Region die volle Breite haben, und `width: 50%` löst richtig auf
-      //   statt als 25% herauszukommen.
+      // - If it does, frame and region must be the same width. Otherwise it
+      //   centers itself in the wider region and is drawn next to its
+      //   marker: measured at 293pt off, exactly half the difference.
+      // - If it does not, it stands to the left and so sits inside the
+      //   frame; then the region may have the full width, and `width: 50%`
+      //   resolves correctly instead of coming out as 25%.
       let region = (
         width: if fuellt { w } else { room },
         height: if available.height == float("inf") { auto } else { available.height },
@@ -346,7 +352,7 @@
                                 raw-frames: raw-frames, width: w,
                                 height: m.height, region: region, pad: luft,
                                 style: style),))
-      // A `box` is inline and puts its baseline on the bottom edge — with a
+      // A `box` is inline and puts its baseline on the bottom edge, and with a
       // two-line list item the bullet would drop a line. Block content gets a
       // `block`.
       let shell = if inline { box } else { block }
@@ -356,9 +362,10 @@
                    fill: marker(n), stroke: none))
         // `hide` lays out but does not draw: the space is right, the content
         // is only visible in the overlay.
-        // Dieselbe Region wie beim Messen: sonst löst ein relatives Maß hier
-        // gegen die Hülle auf statt gegen den echten Behälter, und die Marke
-        // reserviert eine andere Höhe, als der Sprite später füllt.
+        // Same region as during measuring: otherwise a relative measure
+        // here resolves against the wrapper instead of the real container,
+        // and the marker reserves a different height than the sprite fills
+        // later.
         place(top + left, hide(block(
           width: region.width,
           height: if available.height == float("inf") { auto } else { available.height },

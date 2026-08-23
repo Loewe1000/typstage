@@ -4,9 +4,10 @@
 // by hand here. The default theme resembles Metropolis but is not the same
 // thing.
 //
-// Hier steht nur noch, *wie* gezeichnet wird — *was* gezeichnet wird, sagt das
-// Theme (siehe `themes.typ`). Jede Zahl unten ist entweder ein Maß aus dem
-// Theme oder ein Punktwert auf dem Vorgabe-Canvas, mit `k` mitskaliert.
+// What is written here is only *how* things are drawn: *what* is drawn is
+// said by the theme (see `themes.typ`). Every number below is either a
+// measure from the theme or a point value on the default canvas, scaled
+// along with `k`.
 
 #import "config.typ": *
 #import "internal.typ": note-state, plain-text, slide-counter
@@ -17,18 +18,18 @@
 /// The same block serves both outputs: in HTML it becomes the background layer
 /// under the overlay, on paper it is the page.
 ///
-/// `t` ist das Theme: alle Farben, Schriften und Maße kommen von dort, und die
-/// Titel- wie die Abschnittsfolie zeichnet es selbst.
-/// Fußzeile und Fortschritt — alles, was auf jeder Folie gleich aussieht und
-/// sich nur im Zählerstand unterscheidet.
+/// `t` is the theme: all colors, fonts and measures come from there, and
+/// it draws the title slide and the section slide itself.
+/// Footer and progress: everything that looks the same on every slide and
+/// differs only in the counter reading.
 ///
-/// Steht bewusst für sich: im Browser wird es *nicht* in die Folie gezeichnet,
-/// sondern als eigene Ebene darüber gelegt. Sonst führe der Balken beim
-/// Folienwechsel mit hinaus, während der nächste hereinkommt — man sähe zwei
-/// Balken kreuzen statt einen wachsen. Im PDF gibt es keinen Wechsel, dort
-/// gehört beides in die Seite.
-/// Wie hoch die Kopfzeile im Buchstil baut. Wird an zwei Stellen gebraucht:
-/// `slide-chrome` zeichnet sie, `slide-body` muss den Titel darunter setzen.
+/// Deliberately stands on its own: in the browser it is *not* drawn into
+/// the slide, but laid over it as its own layer. Otherwise the bar would
+/// travel out along with the slide on a transition, while the next one
+/// comes in: you would see two bars cross instead of one grow. In the PDF
+/// there is no transition, so there both belong on the page.
+/// How tall the header builds in the book style. Needed in two places:
+/// `slide-chrome` draws it, `slide-body` has to place the title below it.
 #let lauf-hoehe(t, k) = if t.header == "run" { 27pt * k } else { 0pt }
 
 #let slide-chrome(n, total, geo, t, sect: none) = {
@@ -36,10 +37,11 @@
   let m = margins(geo)
   let inner = geo.width - m.left - m.right
   block(width: geo.width, height: geo.height, {
-    // Die Kopfzeile eines Schulbuchs: Seitenzahl links, Kapitel rechts, eine
-    // Haarlinie darunter. Sie gehoert zur Ebene ueber der Buehne und nicht in
-    // die Folie. Beim Blaettern bleibt sie stehen, wie die Fusszeile auch,
-    // sonst fuehre die Orientierung mit hinaus, die sie geben soll.
+    // The textbook's running header: page number on the left, chapter on
+    // the right, a hairline underneath. It belongs to the layer above the
+    // stage, not to the slide. It stays in place while paging, as does
+    // the footer, otherwise the orientation it is meant to give would
+    // travel out with the slide.
     if t.header == "run" {
       let zeile = text(size: 11.5pt * k, fill: t.muted, {
         str(n)
@@ -50,8 +52,8 @@
       place(top + left, dx: m.left, dy: m.top * 0.62 + 17pt * k,
             rect(width: inner, height: 0.9pt * k, fill: t.rule-fill, stroke: none))
     }
-    // Fußzeile: die Zahl, wahlweise mit der Gesamtzahl, und eine Haarlinie
-    // darüber.
+    // Footer: the number, optionally with the total, and a hairline above
+    // it.
     if t.footer-rule > 0pt {
       place(bottom + left, dx: m.left, dy: -(t.foot-gap + 6pt) * k,
             rect(width: inner, height: t.footer-rule * k, fill: t.border, stroke: none))
@@ -63,9 +65,9 @@
       place(bottom + right, dx: -m.right, dy: -13pt * k,
             text(size: 12pt * k, fill: t.muted, zahl))
     }
-    // Fortschritt: ein wachsender Balken unten oder oben, oder eine Marke, die
-    // auf ihrer Schiene wandert — die zeigt auch bei siebzig Folien noch, wo
-    // man ist, während der Balken dort nur langsam länger wird.
+    // Progress: a growing bar at the bottom or top, or a marker that
+    // travels along its track: even at seventy slides that still shows
+    // where you are, while the bar there only grows longer very slowly.
     if t.progress == "bar" {
       place(bottom + left,
             rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
@@ -73,17 +75,17 @@
       place(top + left,
             rect(width: 100% * n / total, height: 2.5pt * k, fill: t.accent, stroke: none))
     } else if t.progress == "tick" {
-      // Die Marke muss mindestens so breit sein wie ihr eigener Schritt, sonst
-      // springt sie über Lücken statt zu wandern. Bei neun Folien lag der
-      // Schritt bei 90 Punkten und die Marke bei 34 — zwischen zwei Ständen
-      // klafften also 56 Punkte, in denen nichts war. Mit dem Faktor 1,35
-      // überlappen zwei aufeinanderfolgende Stände, und die Bewegung liest
-      // sich als Wandern.
+      // The marker must be at least as wide as its own step, otherwise it
+      // jumps over gaps instead of traveling. At nine slides the step was
+      // 90 points and the marker 34: between two positions there was thus
+      // a gap of 56 points with nothing in it. With the factor 1.35, two
+      // consecutive positions overlap, and the motion reads as traveling.
       let breite = calc.max(34pt * k, geo.width * 1.35 / total)
-      // Von 0 bis ganz rechts über `total - 1` Schritte: die erste Folie steht
-      // am Anfang der Schiene, die letzte am Ende. Vorher lief die Rechnung
-      // über `n / total`, wodurch die Marke schon auf Folie eins ein Stück
-      // vorgerückt war und das Ende nie erreichte.
+      // From 0 to all the way right over `total - 1` steps: the first
+      // slide stands at the start of the track, the last at the end.
+      // Previously the calculation ran over `n / total`, which meant the
+      // marker was already advanced a bit on slide one and never reached
+      // the end.
       let schritte = calc.max(1, total - 1)
       place(bottom + left,
             rect(width: 100%, height: 3pt * k, fill: t.accent.lighten(78%), stroke: none))
@@ -101,32 +103,33 @@
   let k = geo.scale
   let m = margins(geo)
   let inner = geo.width - m.left - m.right
-  // Schriftgröße: auf einem 841pt breiten Canvas ist Typsts Vorgabe von 11pt
-  // Kleingedrucktes; ein Theme setzt hier um die 19pt an.
+  // Font size: on an 841pt wide canvas, Typst's default of 11pt is fine
+  // print; a theme here sets around 19pt.
   //
-  // Schrift, Größe und Textfarbe stehen *hier* und nicht im `style`-Haken —
-  // der liegt weiter innen, und was dort steht, überstimmt das Theme.
+  // Font, size and text color are set *here*, not in the `style` hook:
+  // that sits further inside, and whatever is set there overrides the
+  // theme.
   set text(..font-args(t.font), size: t.size * k, fill: t.ink)
   if s.kind == "title" {
     (t.title-slide)(t, s, geo)
   } else if s.kind == "section" {
     (t.section)(t, s, geo)
   } else {
-    // Eine Folie ohne Titel bekommt keinen Balken: `slide(none)[…]` oder ein
-    // nacktes `==`. Der Rumpf rückt dann nach oben und bekommt die Höhe, die
-    // sonst der Balken belegt hätte — sonst wäre eine titellose Folie kleiner
-    // als eine mit Titel.
-    // `plain-text` liefert für eine leere Überschrift `none`, nicht "".
+    // A slide without a title gets no bar: `slide(none)[…]` or a bare
+    // `==`. The body then moves up and gets the height the bar would
+    // otherwise have occupied, since otherwise a titleless slide would be
+    // smaller than one with a title.
+    // `plain-text` returns `none` for an empty heading, not "".
     let roh = if s.title == none { none } else { plain-text(s.title) }
     let titel = roh != none and roh.trim() != ""
     let bar = t.band-height * k
     let strich = if t.rule-size > 0pt {
       t.rule-size * k + t.title-size * 0.34 * k
     } else { 0pt }
-    // Wie hoch der Kopf baut. Beim Balken steht das im Theme; ohne Balken wird
-    // die Höhe der Titelzeile gerechnet statt gemessen — messen hieße, den
-    // Titel zweimal zu setzen, und der Abstand darunter fängt die paar Punkte
-    // Unterschied ohnehin auf.
+    // How tall the head builds. With the bar, that is set in the theme;
+    // without a bar, the title line's height is computed rather than
+    // measured: measuring would mean setting the title twice, and the
+    // spacing below absorbs the few points of difference anyway.
     let lauf = lauf-hoehe(t, k)
     let kopf = if not titel { m.top + lauf } else if t.header == "band" { bar } else {
       m.top + lauf + t.title-size * 1.35 * k + strich
@@ -141,9 +144,10 @@
       place(top + left, dx: m.left,
         block(width: inner, height: bar, align(left + horizon, titel-text)))
     } else if titel {
-      // Dieselbe Falle wie im Merksatz: ohne gesetztes `above`/`below` läge
-      // zwischen Titel und Linie zusätzlich der Absatzabstand, und die Linie
-      // rutschte an den Inhalt statt an den Titel.
+      // The same trap as in the callout: without `above`/`below` set, the
+      // paragraph spacing would additionally sit between the title and
+      // the line, and the line would slide towards the content instead
+      // of the title.
       place(top + left, dx: m.left, dy: m.top + lauf, block(width: inner, {
         block(above: 0pt, below: 0pt, titel-text)
         if t.rule-size > 0pt {
@@ -153,12 +157,14 @@
         }
       }))
     }
-    // Fußzeile und Fortschritt zeichnet `slide-chrome`. Im PDF gehören sie in
-    // die Seite und werden hier mitgezeichnet; im Browser liegen sie als eigene
-    // Ebene über der Bühne, damit sie beim Folienwechsel nicht mitwandern.
-    // `place`, nicht in den Fluss: `slide-chrome` liefert einen Block in voller
-    // Folienhöhe. Im Fluss schöbe er alles darunter fort und seine
-    // `bottom`-Anker bezögen sich auf sich selbst statt auf die Folie.
+    // `slide-chrome` draws the footer and the progress indicator. In the
+    // PDF they belong on the page and are drawn along with it here; in
+    // the browser they sit as their own layer above the stage, so that
+    // they do not travel along on a slide transition.
+    // `place`, not into the flow: `slide-chrome` returns a block at the
+    // full slide height. In the flow it would push everything below it
+    // away, and its `bottom` anchors would refer to itself instead of to
+    // the slide.
     if chrome { place(top + left, slide-chrome(n, total, geo, t, sect: sect)) }
 
     place(top + left, dx: m.left, dy: kopf + t.head-gap * k,
@@ -169,7 +175,7 @@
 })
 
 /// A hook that wraps a document template around every body and every sprite.
-/// Both have to receive the same typography — they are laid out separately.
+/// Both have to receive the same typography: they are laid out separately.
 #let with-style(s, body) = {
   set text(size: s.style.size, fill: s.style.fill, font: s.style.font,
            weight: s.style.weight, style: s.style.style, lang: s.style.lang,
@@ -185,7 +191,7 @@
 
 /// Slides shrunk onto paper, with room beside or below each one.
 ///
-/// The `slide-body` above is reused unchanged and merely scaled — a handout
+/// The `slide-body` above is reused unchanged and merely scaled: a handout
 /// that redrew the slides could drift away from them.
 ///
 /// Where a slide has a speaker note it stands in that room; where it has none,
@@ -254,7 +260,7 @@
       // in the deck would look as if it stood on the same one.
       slide-counter.step()
       // The slide's own `speaker-note` may overwrite this while it is laid
-      // out — which is why the note is only read afterwards.
+      // out, which is why the note is only read afterwards.
       note-state.update(item.slide.note)
       if beside {
         grid(columns: (w, 1fr), column-gutter: column-gap, align: top,

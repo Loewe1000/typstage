@@ -15,8 +15,8 @@
 
 /// Work out the canvas from what the deck asked for.
 ///
-/// `scale` is the heart of it: everything the theme draws — header height,
-/// type sizes, rules — is given in points of the default canvas and multiplied
+/// `scale` is the heart of it: everything the theme draws, header height,
+/// type sizes and rules, is given in points of the default canvas and multiplied
 /// by this. A deck at half the width then looks the same, only smaller,
 /// instead of carrying a header built for a canvas twice its size.
 ///
@@ -33,10 +33,10 @@
   )
 }
 
-/// Die vier Ränder des Canvas, einzeln.
+/// The four margins of the canvas, individually.
 ///
-/// `margin` darf eine Länge oder ein Wörterbuch sein; ein Theme will die vier
-/// Werte einzeln haben und soll das nicht jedes Mal auseinandernehmen müssen.
+/// `margin` may be a length or a dictionary; a theme wants the four values
+/// individually and should not have to take it apart every time.
 #let margins(geo) = {
   let m = geo.margin
   if type(m) != dictionary { return (left: m, right: m, top: m, bottom: m) }
@@ -48,7 +48,7 @@
 }
 
 /// The default palette. Override it by wrapping the presentation in your own
-/// document template — see `style` on `presentation`.
+/// document template. See `style` on `presentation`.
 #let dark = rgb("#23303f")
 #let accent = rgb("#eb5e28")
 #let paper = rgb("#fafafa")
@@ -60,17 +60,35 @@
 #let runtime-css = read("../assets/typstage-" + runtime-version + ".css")
 #let runtime-js = read("../assets/typstage-" + runtime-version + ".js")
 
-/// Die Wörter, die die Laufzeit selbst anzeigt: der Hinweis bei `s` ohne
-/// Notiz, die Tastenhilfe bei `?`, und die Beschriftungen der
-/// Sprecheransicht.
+/// The words that the runtime itself displays: the hint at `s` without
+/// a note, the key help at `?`, and the labels of the speaker view.
 ///
-/// Sie folgen `text.lang`, damit ein deutsches Deck deutsche und ein
-/// englisches englische Wörter zeigt. Wer eine Sprache vermisst, reicht sie
-/// über `words:` an `presentation` herein; Englisch ist der Rückfall.
+/// They follow `text.lang`, so a German deck shows German words and an
+/// English deck shows English ones. Anyone missing a language passes it
+/// in via `words:` to `presentation`; English is the fallback.
 ///
-/// `sp` steht für die Sprecheransicht. Die Schlüssel darin gehen unverändert
-/// ins JSON und werden im Laufzeitcode so gelesen, deshalb tragen sie dort
-/// keine Bindestriche.
+/// `sp` stands for the speaker view. The keys inside it go unchanged
+/// into the JSON and are read that way in the runtime code, so they carry
+/// no hyphens there.
+/// Defaults that become visible on the slide, in the language of the document.
+///
+/// The runtime has `runtime-words` for that; this here is the counterpart
+/// for the Typst side, where `callout` and `embed` each carry a label. They
+/// used to be fixed in English, while everything next to them followed
+/// `text.lang`.
+#let doc-words = (
+  de: (note: [Merke], embedded: [Eingebetteter Inhalt]),
+  en: (note: [Note], embedded: [Embedded content]),
+  fr: (note: [À retenir], embedded: [Contenu intégré]),
+)
+
+/// Fetch one such default. Only callable in context, because `text.lang` is
+/// only settled there.
+#let doc-word(key) = {
+  let l = doc-words.at(text.lang, default: doc-words.en)
+  l.at(key, default: doc-words.en.at(key))
+}
+
 #let runtime-words(lang) = {
   let listen = (
     de: (no-note: "keine Notiz",
@@ -119,7 +137,7 @@
 /// The runtime files, ready to be written next to the HTML.
 ///
 /// Typst cannot create files. Whoever uses `assets: "split"` or a CDN writes
-/// them out once — the content comes from here so the copies cannot drift.
+/// them out once. The content comes from here so the copies cannot drift.
 #let runtime-files = (
   (name: asset-name("css"), content: runtime-css),
   (name: asset-name("js"), content: runtime-js),

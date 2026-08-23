@@ -4,12 +4,12 @@
 
 /// A regular slide.
 ///
-/// `title: none` — oder ein nacktes `==` in der Überschriftenform — lässt den
-/// Titelbalken weg; der Rumpf bekommt dann die ganze Fläche.
+/// `title: none`, or a bare `==` in heading form, leaves out the title bar;
+/// the body then gets the whole area.
 #let slide(title: none, note: none, transition: none, ..rest) = {
-  // Damit alle drei Schreibweisen gehen: `slide[Rumpf]` (ohne Titel),
-  // `slide([Titel])[Rumpf]` und `slide(none)[Rumpf]`. Ein einzelnes Stück ist
-  // der Rumpf, zwei sind Titel und Rumpf.
+  // So that all three notations work: `slide[body]` (without a title),
+  // `slide([title])[body]` and `slide(none)[body]`. A single piece is the
+  // body, two are title and body.
   let teile = rest.pos()
   let kopf = title
   let rumpf = []
@@ -33,21 +33,21 @@
   date: date, note: none, transition: none, body: none,
 )
 
-/// How this slide comes in — otherwise the presentation's setting applies.
+/// How this slide comes in, otherwise the presentation's setting applies.
 ///
-/// - `"none"` — hard cut.
-/// - `"fade"` — cross-fade, nothing moves.
-/// - `"slide"`, `"push"`, `"cover"`, `"uncover"` — sliding; `from` says where
+/// - `"none"`: hard cut.
+/// - `"fade"`: cross-fade, nothing moves.
+/// - `"slide"`, `"push"`, `"cover"`, `"uncover"`: sliding; `from` says where
 ///   the new slide comes from: `"right"` (default), `"left"`, `"top"`,
 ///   `"bottom"`. `push` shoves the old one out, `cover` lies down on top,
 ///   `uncover` pulls the old one away.
-/// - `"zoom"` — `direction: "in"` (default) grows the new one towards you,
+/// - `"zoom"`: `direction: "in"` (default) grows the new one towards you,
 ///   `"out"` lets it step back from the front.
-/// - `"blur"` — blurred across.
-/// - `"iris"`, `"wipe"` — an aperture. `direction: "open"` (default) opens the
+/// - `"blur"`: blurred across.
+/// - `"iris"`, `"wipe"`: an aperture. `direction: "open"` (default) opens the
 ///   new slide out, `"close"` shuts the old one over it. For the wipe, `from`
 ///   additionally says which edge it starts at.
-/// - `"flip"`, `"cube"` — rotation in space; `axis: "y"` (default) turns about
+/// - `"flip"`, `"cube"`: rotation in space; `axis: "y"` (default) turns about
 ///   the vertical, `"x"` about the horizontal.
 ///
 /// Backwards each one runs as a true reversal. If a morph meets the slide it

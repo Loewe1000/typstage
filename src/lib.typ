@@ -1,9 +1,9 @@
-// typstage — animated HTML presentations from a single Typst file, and a PDF
+// typstage: animated HTML presentations from a single Typst file, and a PDF
 // handout from the same source.
 //
 // This file is the package's whole public surface. Everything else lives in
 // the sibling modules and stays there: Typst has no `private`, and a leading
-// underscore is only a convention, so the boundary is drawn here instead — by
+// underscore is only a convention, so the boundary is drawn here instead, by
 // naming exactly what leaves the package.
 
 #import "config.typ": (

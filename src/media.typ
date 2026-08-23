@@ -1,12 +1,13 @@
-// Video, embedded documents and Typst-drawn animation — plus what takes their
+// Video, embedded documents and Typst-drawn animation, plus what takes their
 // place on paper.
 
 #import "internal.typ": (track, bridge-jobs, html-output, name-of,
                          slide-counter)
+#import "config.typ": doc-word
 
 /// The box that stands in for a moving element in the PDF.
 ///
-/// `fallback` is arbitrary content — a CeTZ drawing, an image, a table. Left
+/// `fallback` is arbitrary content: a CeTZ drawing, an image, a table. Left
 /// out, a labelled placeholder remains. `link` goes underneath and is
 /// clickable in the PDF: whoever holds the handout gets to the live thing.
 #let fallback-box(fallback, link-target, width, height, label) = block(
@@ -50,22 +51,23 @@
           controls: controls, radius: radius.pt(), enter: enter),
 )
 
-// Was jedem eingebetteten Dokument vorangestellt wird, damit es sich wie ein
-// Teil der Folie verhält statt wie eine Webseite in einem Loch.
+// What gets prepended to every embedded document so it behaves like a
+// part of the slide instead of a web page in a hole.
 //
-// Zwei Zeilen, ohne die `height: 100%` im Dokument ins Leere greift: ein
-// Prozentmaß braucht eine Höhe am Elternteil, und `body` hat von Haus aus
-// keine. Der Rahmen ist dann so hoch wie sein Inhalt und klebt oben in der
-// Box — der Rest der angegebenen Höhe bleibt leer.
+// Two lines, without which `height: 100%` in the document reaches into
+// nothing: a percentage measure needs a height on the parent, and `body`
+// has none by default. The frame then ends up as tall as its content and
+// sticks to the top of the box, leaving the rest of the given height
+// empty.
 //
-// Und die Schriftgröße: in einem gezoomten Rahmen ist ein CSS-Pixel genau ein
-// Punkt der Folie, dafür sorgt der Zoom des Runtimes. Also trägt die
-// Grundschrift dieselbe Zahl wie die des Vortrags, und alles, was darin in
-// `em` bemaßt ist, wächst mit den Folien mit. Ohne Zoom spannt der Rahmen
-// echte Bildschirmpixel auf — dann wäre dieselbe Zahl willkürlich, und es
-// bleibt bei der des Browsers.
+// And the font size: in a zoomed frame, a CSS pixel is exactly one point
+// of the slide, the runtime's zoom takes care of that. So the base font
+// carries the same number as the deck's, and everything inside sized in
+// `em` grows with the slides. Without zoom, the frame spans real screen
+// pixels: then the same number would be arbitrary, and it stays at the
+// browser's.
 //
-// Alles steht *vor* dem Dokument, damit dessen eigenes `<style>` gewinnt.
+// Everything sits *before* the document, so that its own `<style>` wins.
 #let grundstil(doc, zoom, an) = {
   if doc == none or not an { return doc }
   let regeln = (
@@ -74,7 +76,7 @@
   )
   if zoom {
     let farbe = if type(text.fill) == color { text.fill.to-hex() } else { "inherit" }
-    // `text.font` ist mal eine Zeichenkette, mal eine Liste — beides kommt vor.
+    // `text.font` is sometimes a string, sometimes a list: both occur.
     let familien = if type(text.font) == str { (text.font,) } else { text.font }
     let stapel = familien.map(f => "\"" + f + "\"") + ("system-ui", "sans-serif")
     regeln.push("body{font-family:" + stapel.join(",")
@@ -86,7 +88,7 @@
 
 /// Arbitrary web content in a sandboxed frame.
 ///
-/// `bridge` names the element so step jobs can be sent to it — that is how a
+/// `bridge` names the element so step jobs can be sent to it: that is how a
 /// companion package such as `typstage-geogebra` drives its applet without the
 /// core knowing anything about it.
 ///
@@ -108,7 +110,7 @@
   style: true,
   fallback: none,
   link: none,
-  label: [Embedded content],
+  label: auto,
 ) = {
   // Announced for the whole document, not just for what comes after it: a
   // companion package resolving `target: auto` has to find an applet that is
@@ -120,7 +122,8 @@
     ))<typstage-bridge-target>]
   }
   context if not html-output.get() {
-  fallback-box(fallback, if link != none { link } else { url }, width, height, label)
+  fallback-box(fallback, if link != none { link } else { url }, width, height,
+               if label == auto { doc-word("embedded") } else { label })
 } else {
   track(
     "embed",
@@ -135,7 +138,7 @@
 /// Animation drawn by Typst, frame by frame.
 ///
 /// `render` receives `t` running from 0.0 to 1.0. Every frame is rendered by
-/// Typst — CeTZ, Fletcher, equations, anything Typst can do. The frames sit in
+/// Typst: CeTZ, Fletcher, equations, anything Typst can do. The frames sit in
 /// the file as SVG and stay sharp at any size.
 #let flipbook(
   render,
@@ -158,18 +161,19 @@
     box(width: width, height: height, clip: true, render(0.0)),
     at: at,
     extra: (fps: fps, loop: loop, pingpong: pingpong, enter: enter),
-    // Wie `t` über die Bilder verteilt wird, hängt am Abspielmodus:
+    // How `t` is distributed over the frames depends on the playback mode:
     //
-    // Beim reinen Schleifen ist `t = 1` derselbe Zustand wie `t = 0` — eine
-    // Bewegung, die sich schließt, ist nach einer vollen Runde wieder am
-    // Anfang. Das letzte Bild wäre also eine Kopie des ersten, und in der
-    // Schleife stünde dasselbe Bild zwei Bilder lang. Nachgemessen am
-    // wandernden Mäander: Bild 0 und Bild 29 waren pixelgleich, Bild 28 wich um
-    // 7% ab. Deshalb `i / frames` — das letzte Bild liegt knapp *vor* dem
-    // Rundenschluss.
+    // In plain looping, `t = 1` is the same state as `t = 0`: a motion
+    // that closes on itself is back at the start after one full round.
+    // The last frame would thus be a copy of the first, and in the loop
+    // the same frame would sit for two frames' worth of time. Measured on
+    // the traveling meander: frame 0 and frame 29 were pixel-identical,
+    // frame 28 deviated by 7%. Hence `i / frames`: the last frame lies
+    // just *before* the round closes.
     //
-    // Bei `pingpong` ist `t = 1` dagegen der Wendepunkt und gehört dazu, ebenso
-    // beim einmaligen Abspielen, wo es der Endzustand ist.
+    // With `pingpong`, on the other hand, `t = 1` is the turning point and
+    // belongs to the sequence, as it does for a single playthrough, where
+    // it is the end state.
     raw-frames: range(frames).map(i => box(
       width: width, height: height, clip: true,
       render(if frames <= 1 { 0.0 }
