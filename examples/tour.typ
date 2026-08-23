@@ -14,8 +14,9 @@
 // a taste in colours.
 //
 // The slide transitions used below are "zoom", "fade", "push" and "cover". The
-// full set is none, fade, slide, push, cover, uncover, zoom, blur, iris; a typo
-// in one of them does not stop the build, it quietly becomes a cross-fade.
+// full set is none, fade, slide, push, cover, uncover, zoom, blur, iris, wipe,
+// flip and cube; a typo in one of them does not stop the build, it quietly
+// becomes a cross-fade.
 //
 // A body is a box of fixed height, so a short slide would stick to the top with
 // white space under it. `#v(1fr)` at both ends centres one; a pure `fr` spacer
@@ -451,6 +452,115 @@ and the wrong two find each other), the piece gets a name instead.
     #raw(bridge-targets().join(", ")).
   ],
   at: "4-", enter: "fade",
+)
+
+#v(1fr)
+
+== The pointer reaches in
+
+// This frame is *not* bridged. No `bridge:`, no jobs, nothing sent from the
+// slide at all. What it answers to is a hand, and in the speaker view that
+// hand is not in this window: `m` there swaps the pen for the pointer, the
+// press and the drag travel as fractions of the stage, and the talk window
+// turns them back into pixels of its own before dispatching the event inside
+// the frame. Two windows of very different sizes therefore land on the same
+// spot in the document.
+//
+// The wave is the control, and that is not decoration. A dispatched event
+// reaches every listener, but it does not drive the browser's own widgets: a
+// real `<input type=range>` was measured here and did not move, because a
+// browser only drags its own slider for input it trusts. A checkbox and a
+// button did answer, since a click carries its activation behaviour along.
+// So anything that listens for itself works, and the way to build for this is
+// to listen rather than to rely on a native control.
+//
+// Drawn as SVG rather than a canvas: a canvas allocates its pixels once, and
+// inside a zoomed frame it would be enlarged afterwards. An outline has none
+// to lose. `non-scaling-stroke` holds the line width where the viewBox is
+// stretched to the shape of the box.
+#let wave = (
+  "<style>"
+  + "body{display:flex;flex-direction:column;gap:.4em;overflow:hidden}"
+  // The wave takes what is left over after the readout, so the frame is filled
+  // whatever height the slide gives it.
+  + "svg{flex:1;min-height:0;width:100%;display:block;cursor:grab;touch-action:none}"
+  + "svg:active{cursor:grabbing}"
+  + "#r{font-size:.72em;display:flex;gap:1.4em}"
+  + "#r b{font-variant-numeric:tabular-nums;font-weight:600}"
+  + "</style>"
+  + "<svg id=\"s\" viewBox=\"0 0 400 130\" preserveAspectRatio=\"none\">"
+  + "<line x1=\"0\" y1=\"65\" x2=\"400\" y2=\"65\" vector-effect=\"non-scaling-stroke\""
+  + " stroke=\"" + themes.plain.border.to-hex() + "\" stroke-width=\"1\"/>"
+  + "<polyline id=\"w\" fill=\"none\" vector-effect=\"non-scaling-stroke\""
+  + " stroke=\"" + live.to-hex() + "\" stroke-width=\"2.4\" stroke-linejoin=\"round\"/>"
+  // A transparent sheet over the whole box, so a press anywhere counts and not
+  // only one that happens to hit the line.
+  + "<rect x=\"0\" y=\"0\" width=\"400\" height=\"130\" fill=\"transparent\"/>"
+  + "</svg>"
+  + "<div id=\"r\"><span>frequency <b id=\"fv\">2.0</b></span>"
+  + "<span>amplitude <b id=\"av\">0.60</b></span>"
+  + "<span style=\"opacity:.55\">drag anywhere on the wave</span></div>"
+  + "<script>"
+  + "var S=document.getElementById('s'),W=document.getElementById('w');"
+  + "var n=2,m=0.6,zieht=0;"
+  + "function draw(){var p=[],i,x;"
+  + "for(i=0;i<=240;i++){x=i*400/240;"
+  + "p.push(x.toFixed(1)+','+(65-Math.sin(i/240*n*2*Math.PI)*m*58).toFixed(1));}"
+  + "W.setAttribute('points',p.join(' '));"
+  + "document.getElementById('fv').textContent=n.toFixed(1);"
+  + "document.getElementById('av').textContent=m.toFixed(2);}"
+  // Absolute position, not a delta: across the box sets the frequency,
+  // distance from the middle line the amplitude. One gesture says both, and a
+  // press that arrives without a preceding move still means something.
+  + "function stelle(e){var b=S.getBoundingClientRect();if(!b.width)return;"
+  + "var x=(e.clientX-b.left)/b.width,y=(e.clientY-b.top)/b.height;"
+  + "n=Math.max(1,Math.min(6,1+x*5));"
+  + "m=Math.max(0.05,Math.min(1,Math.abs(0.5-y)*2));draw();}"
+  + "S.addEventListener('pointerdown',function(e){zieht=1;stelle(e);"
+  + "e.preventDefault();});"
+  // Move and release on the document: a pointer dragged past the edge of the
+  // sheet would otherwise leave the wave standing halfway.
+  + "document.addEventListener('pointermove',function(e){if(zieht)stelle(e);});"
+  + "document.addEventListener('pointerup',function(){zieht=0;});"
+  + "draw();"
+  + "</script>"
+)
+
+#speaker-note[
+  This is the slide to try it on. Press `m`, then drag across the wave. What
+  moves is the one in the hall; the frame in front of you is the same document
+  and follows the same gesture, so you can see what they see.
+]
+
+#v(1fr)
+
+#side-by-side(
+  split: (1.05fr, 1fr),
+  embed(html: wave, width: 100%, height: 205pt,
+        // On paper nothing is dragged, so the fallback is the wave at the
+        // setting it starts on.
+        fallback: {
+          let w = 190pt
+          let h = 66pt
+          let punkte = range(0, 145).map(i => {
+            let x = i / 144.0
+            (x * w, h / 2 - calc.sin(x * 2 * 2 * calc.pi) * h * 0.44)
+          })
+          curve(stroke: 2pt + live, curve.move(punkte.first()),
+                ..punkte.slice(1).map(curve.line))
+        }),
+  stagger[
+    - No `bridge:` on this one and no jobs. The slide sends it nothing. The
+      only thing it answers to is a hand.
+    - In the speaker view `m` swaps the pen for the pointer. Press, drag and
+      release travel as fractions of the stage, so a small laptop window and a
+      large canvas hit the same point of the document.
+    - It reaches listeners, not the browser's own widgets: a click lands, a
+      native slider does not move. Build the control yourself and it works.
+    - Where the embedded document can mirror itself, as a GeoGebra applet does
+      through `typstage-geogebra`, the copy in front of the speaker is operated
+      instead and reports what came of it.
+  ],
 )
 
 #v(1fr)
