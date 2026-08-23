@@ -2496,9 +2496,30 @@
       delete f.dataset.mass;
     });
     fit();
-    // And once more on the next frame. Right after a restore the slide can
-    // still measure zero, and `stelle` then leaves everything standing.
+    // And again afterwards. A measurement taken at the moment of the return
+    // is not to be trusted: iOS reports a viewport that is still on its way,
+    // and a scale computed from it would be written into the frame and stay
+    // there. Reported from the phone after the first attempt at this: the
+    // drawing then came back small every time instead of only sometimes.
     if (window.requestAnimationFrame) requestAnimationFrame(function () { fit(); });
+    setTimeout(fit, 250);
+  }
+
+  // The measurement that really settles it. Whatever the reason the stage
+  // ends up with a different box, the elements on it are placed again: a
+  // rotated phone, a window dragged to another screen, a restored page whose
+  // viewport arrived late. An event says *that* something happened, this says
+  // *when it is over*, and only the second one can be trusted.
+  //
+  // No loop: this only places what sits on the stage and never writes the
+  // stage's own size. Where the scale comes out the same, the stored
+  // measurement stops it before anything is written at all.
+  if (window.ResizeObserver) {
+    try {
+      new ResizeObserver(function () {
+        if (current >= 0 && STEPS[current]) stelle(STEPS[current].slide);
+      }).observe(B);
+    } catch (x) {}
   }
   addEventListener("pageshow", neuVermessen);
   addEventListener("orientationchange", neuVermessen);
