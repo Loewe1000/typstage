@@ -194,7 +194,11 @@ werden: sie finden sich wieder, und die Striche kommen mit.
   kann sie unbegrenzt hinauszögern; das ist die eine bekannte Ecke, in der der
   Saal schwarz bleibt.
 
-  Geprüft ist all das in Chrome. Firefox und Safari sind nicht gemessen.
+  Gemessen ist das in Chrome, Firefox 154 und Safari 26: die sechs
+  Beispiel-Decks laufen in allen dreien mit denselben Zahlen durch, und das
+  Sprecherfenster öffnet sich in allen dreien auf einen Tastendruck. Ein
+  *echter* Tastendruck ist dabei die Bedingung: `window.open` ohne
+  Nutzergeste fiele überall dem Popup-Blocker zum Opfer.
 ]
 In der Übersicht führt ein Klick auf ein Vorschaubild zu dieser Folie.
 
