@@ -184,6 +184,13 @@ them with you; `x` clears the current slide, `z` takes back the last stroke,
 while you page ahead in private, and both end by themselves if the speaker
 window goes away.
 
+`m` switches the pointer between pen and embed. In pointer mode the pen rests
+and a click on an embedded frame reaches the projected one instead: the same
+spot, the same gesture, in whatever size that window happens to have. Where the
+embedded document can mirror itself, as a GeoGebra applet does through
+`typstage-geogebra`, you operate the live one in front of you and the projected
+copy follows.
+
 Steering works from either window, and either one may be reloaded: they find
 each other again and the strokes come back.
 

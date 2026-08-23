@@ -787,6 +787,16 @@
       console.warn("typstage: GeoGebra refused: " + d.failed.join(", "));
       return;
     }
+    // An embedded document that can mirror itself reports what became of
+    // it after a hand touched it. The speaker view passes that on to the
+    // talk, which puts it into its own copy. That is the second way to
+    // operate an embed from the view, and the better one wherever it is
+    // available: the speaker works on a live applet in front of them
+    // instead of aiming at one across the room.
+    if (d.spiegel != null && d.stand) {
+      if (ROLLE === "speaker") strom("spiegel", { b: d.spiegel, s: d.stand });
+      return;
+    }
     if (d.ready == null) return;
     var lebt = null;
     document.querySelectorAll(".ts-bridged iframe").forEach(function (r) {
@@ -794,7 +804,12 @@
     });
     if (!lebt) return;
     lebt.dataset.live = "1";
-    lebt.closest(".ts-el").dataset.bereit = "1";
+    var wirt = lebt.closest(".ts-el");
+    wirt.dataset.bereit = "1";
+    // The document says of itself whether it mirrors. Only then does the
+    // style sheet hand it the pointer in the speaker view; everything else
+    // is served by the route across.
+    if (d.spiegel) wirt.dataset.spiegel = "1";
     var st = STEPS[current];
     if (st) drive(st.slide, st.step, true);
   });
@@ -1203,6 +1218,140 @@
   }
   horch("tintestand", function (d) { tinteEinlesen(d.liste); });
 
+  // ── The pointer through to the embed ──────────────────────────────────────
+  //
+  // Drawing is one of two things one wants to do on a running slide. The
+  // other is to operate what is embedded on it: turn a GeoGebra
+  // construction, press a button in an embedded page. Both want the same
+  // pointer, so a mode decides which of the two gets it. `m` switches.
+  //
+  // In pointer mode the position travels the same way the strokes do, in
+  // fractions of the stage, and the talk window dispatches the matching
+  // event inside its own frame at that spot. The speaker's own copy of the
+  // frame gets the same event at the same fraction, so both sides see the
+  // same gesture and the speaker is not operating something blind.
+  //
+  // This only reaches a frame this window may read into, which means an
+  // `embed(html:)` and thus a `srcdoc`. A foreign address is another
+  // origin, and there `postMessage` is the only way in; the embedded
+  // document has to answer it itself. That is what `data-spiegel` is for
+  // further down.
+  var MODUS = "stift";
+  var ZIEL_FERN = null;    // what took the press, so a drag stays with it
+
+  // Which frame lies under a point of the stage. Not `elementFromPoint`:
+  // in the speaker view the embeds are switched off for hit testing, and
+  // there they would never be found. Rectangles hold in both windows.
+  function zeigerRahmen(cx, cy) {
+    var st = STEPS[current];
+    if (!st || !SLIDES[st.slide]) return null;
+    var treffer = null;
+    SLIDES[st.slide].querySelectorAll(".ts-el iframe").forEach(function (f) {
+      var el = f.closest(".ts-el");
+      if (el) {
+        var cs = getComputedStyle(el);
+        // Something that is not on the slide yet must not catch the
+        // pointer either, otherwise a click would land on a frame the hall
+        // cannot even see.
+        if (cs.visibility === "hidden" || +cs.opacity < 0.05) return;
+      }
+      var r = f.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) treffer = f;
+    });
+    return treffer;
+  }
+
+  // One event into the frame. The constructors are taken from the frame's
+  // own window, so an `instanceof` inside it says yes.
+  function zeigerSchuss(win, ziel, typ, ix, iy, knopf, dy, klick) {
+    var basis = { bubbles: true, cancelable: true, composed: true, view: win,
+                  clientX: ix, clientY: iy, screenX: ix, screenY: iy,
+                  button: 0, buttons: knopf };
+    if (typ === "wheel") {
+      if (!win.WheelEvent) return;
+      var w = {}; for (var q in basis) w[q] = basis[q];
+      w.deltaY = dy; w.deltaMode = 0;
+      ziel.dispatchEvent(new win.WheelEvent("wheel", w));
+      return;
+    }
+    // First the pointer event, then the mouse event, exactly as the
+    // browser does it. And as the browser does it: whoever cancels the
+    // pointer event gets no mouse event afterward. Without this line, a
+    // page that listens to both would handle every gesture twice.
+    if (win.PointerEvent) {
+      var p = {}; for (var k in basis) p[k] = basis[k];
+      p.pointerId = 1; p.pointerType = "mouse"; p.isPrimary = true;
+      p.width = 1; p.height = 1; p.pressure = knopf ? 0.5 : 0;
+      if (!ziel.dispatchEvent(new win.PointerEvent("pointer" + typ, p))) return;
+    }
+    if (!win.MouseEvent) return;
+    ziel.dispatchEvent(new win.MouseEvent("mouse" + typ, basis));
+    // A click is only a click if press and release met the same element.
+    if (typ === "up" && klick) ziel.dispatchEvent(new win.MouseEvent("click", basis));
+  }
+
+  function zeigerZustellen(ev) {
+    if (!B || !ev || typeof ev.x !== "number") return;
+    var r = B.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    var cx = r.left + ev.x * r.width, cy = r.top + ev.y * r.height;
+    var f = zeigerRahmen(cx, cy);
+    if (!f) { if (ev.t === "up") ZIEL_FERN = null; return; }
+    var doc = null, win = null;
+    try { doc = f.contentDocument; win = f.contentWindow; } catch (x) {}
+    if (!doc || !win) return;
+    // The frame is spanned in slide units and zoomed onto the stage. Its
+    // rectangle is therefore the size on screen, while inside it counts
+    // unzoomed. Dividing by the zoom is the whole conversion.
+    var fr = f.getBoundingClientRect();
+    var z = parseFloat(f.style.zoom) || 1;
+    var ix = (cx - fr.left) / z, iy = (cy - fr.top) / z;
+    var unten = null;
+    try { unten = doc.elementFromPoint(ix, iy); } catch (y) {}
+    // While the button is down, everything goes to whoever took the press,
+    // even if the pointer has long since left it. That is what makes
+    // dragging a point work at all.
+    var ziel = (ev.t !== "down" && ZIEL_FERN && ZIEL_FERN.isConnected)
+      ? ZIEL_FERN : unten;
+    if (!ziel) return;
+    if (ev.t === "down") ZIEL_FERN = ziel;
+    zeigerSchuss(win, ziel, ev.t, ix, iy, ev.k || 0, ev.d || 0,
+                 ev.t === "up" && unten === ZIEL_FERN);
+    if (ev.t === "up") ZIEL_FERN = null;
+  }
+
+  function zeigerBuendel(liste) {
+    if (!liste) return;
+    for (var i = 0; i < liste.length; i++) zeigerZustellen(liste[i]);
+  }
+  // At ourselves first, then across, and through the stream so that the
+  // order of press, drag and release survives the crossing.
+  function zeigerSenden(ev) {
+    zeigerZustellen(ev);
+    strom("zeiger", ev);
+  }
+  horch("zeiger", function (d) { zeigerBuendel(d.punkte); });
+
+  // The counterpart in the talk window: what came from the view goes into
+  // the frame of the same name. Only on the running slide, since only that
+  // one is visible, and a state for a slide long since paged past would
+  // land in an applet that is reset from the base anyway on the next step.
+  horch("spiegel", function (d) {
+    if (ROLLE === "speaker" || !d.punkte) return;
+    var st = STEPS[current];
+    if (!st) return;
+    for (var i = 0; i < d.punkte.length; i++) {
+      var p = d.punkte[i];
+      SLIDES[st.slide].querySelectorAll(".ts-bridged").forEach(function (node) {
+        if (node.dataset.bridge !== p.b) return;
+        var f = node.querySelector("iframe");
+        if (!f || !f.contentWindow || f.dataset.live !== "1") return;
+        f.contentWindow.postMessage({ typstage: 1, spiegel: 1, stand: p.s }, "*");
+      });
+    }
+  });
+
   // ── Talk window: black ────────────────────────────────────────────────────
   //
   // pdfpc separates two things, and that is worth adopting: *black* makes
@@ -1411,6 +1560,9 @@
   // anything of the running stroke has already gone out, `DRAUSSEN` whether
   // the pointer currently stands beside the slide.
   var OFFEN = null, GESETZT = 0, DRAUSSEN = 0;
+  // `ZEIGT` is the same for pointer mode: the button is down and the
+  // gesture belongs to the embed.
+  var ZEIGT = 0;
 
   function bau(tag, klasse, wohin) {
     var e = document.createElement(tag);
@@ -1575,7 +1727,13 @@
     // The foot: colors, state, key help.
     var fuss = bau("div", "ts-sp-fuss", SPRECHERBOX);
     var stift = bau("div", "ts-sp-stift", fuss);
-    bau("span", "ts-sp-marke", stift).textContent = wort("pen", "pen");
+    // The label is the switch. Whoever reads what is on can also click it
+    // and does not have to know the key first.
+    var um = bau("button", "ts-sp-modus", stift);
+    um.type = "button";
+    um.addEventListener("click", modusUm);
+    ELN.modus = um;
+    ELN.stiftKasten = stift;
     ELN.tupf = [];
     FARBEN.forEach(function (f, i) {
       var t = bau("button", "ts-sp-tupf", stift);
@@ -1596,6 +1754,7 @@
     tasten();
     zeichnen();
     farbeSetzen(0);
+    modusSetzen("stift");
     gebaut = 1;
     document.documentElement.dataset.tsFertig = "1";
 
@@ -1616,6 +1775,23 @@
     sprecherUhr();
     fit();
   }
+
+  // Pen or pointer. Everything that hangs off it is one attribute on the
+  // root element, so the look follows without a second place to keep in
+  // step: in pointer mode the colour swatches step back, and an embed that
+  // mirrors itself gets the pointer locally (see the style sheet).
+  function modusSetzen(m) {
+    MODUS = (m === "zeiger") ? "zeiger" : "stift";
+    document.documentElement.dataset.tsModus = MODUS;
+    // A half-drawn stroke and a held press must not survive the switch.
+    MALT = 0; ZEIGT = 0; LETZT = null; OFFEN = null; GESETZT = 0;
+    if (ELN.stiftKasten) ELN.stiftKasten.dataset.modus = MODUS;
+    if (!ELN.modus) return;
+    ELN.modus.textContent = MODUS === "zeiger"
+      ? wort("pointer", "pointer") : wort("pen", "pen");
+    ELN.modus.dataset.modus = MODUS;
+  }
+  function modusUm() { modusSetzen(MODUS === "stift" ? "zeiger" : "stift"); }
 
   function farbeSetzen(i) {
     FARBE = i % FARBEN.length;
@@ -1684,6 +1860,7 @@
       else if (k === "e") { EIS = EIS ? 0 : 1; sichtSenden(); }
       else if (k === "t") { if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); } }
       else if (k === "r") { UHR_START = 0; sprecherUhr(); }
+      else if (k === "m") { modusUm(); }
       else if (k === "c") { farbeSetzen(FARBE + 1); }
       else if (k === "z") { tinteSenden({ b: "weg", s: tinteFolie() }); }
       else if (k === "x") { tinteSenden({ b: "loesch", s: tinteFolie() }); }
@@ -1741,6 +1918,15 @@
     }
     B.addEventListener("pointerdown", function (e) {
       if (e.button !== 0) return;
+      if (MODUS === "zeiger") {
+        var p0 = anteil(e);
+        if (!p0 || !drin(p0)) return;
+        ZEIGT = 1;
+        try { B.setPointerCapture(e.pointerId); } catch (x) {}
+        zeigerSenden({ t: "down", x: p0.x, y: p0.y, k: 1 });
+        e.preventDefault();
+        return;
+      }
       MALT = 1; STRICH_NR++; LETZT = null; DRAUSSEN = 0; OFFEN = null; GESETZT = 0;
       // Without capture, the stroke would end as soon as the pointer leaves
       // the stage.
@@ -1749,6 +1935,17 @@
       e.preventDefault();
     });
     B.addEventListener("pointermove", function (e) {
+      if (MODUS === "zeiger") {
+        // Only while pressed. A hover would put a message on the wire for
+        // every mouse movement across the slide, and nothing in the hall
+        // would change because of it.
+        if (!ZEIGT) return;
+        var pm = anteil(e);
+        if (!pm) return;
+        zeigerSenden({ t: "move", x: pm.x, y: pm.y, k: 1 });
+        e.preventDefault();
+        return;
+      }
       if (!MALT) return;
       // The browser coalesces fast movements into one event and keeps the
       // in-between points aside. Whoever does not pick them up gets an
@@ -1759,6 +1956,14 @@
       e.preventDefault();
     });
     function schluss(e) {
+      if (MODUS === "zeiger") {
+        if (!ZEIGT) return;
+        ZEIGT = 0;
+        try { B.releasePointerCapture(e.pointerId); } catch (x) {}
+        var pe = anteil(e);
+        if (pe) zeigerSenden({ t: "up", x: pe.x, y: pe.y, k: 0 });
+        return;
+      }
       if (!MALT) return;
       // A held-back first point that was never followed by a second was a
       // click and not a stroke. It is dropped.
@@ -1767,6 +1972,17 @@
     }
     B.addEventListener("pointerup", schluss);
     B.addEventListener("pointercancel", schluss);
+    // A construction is zoomed with the wheel, and that is worth carrying
+    // across too. Not passive, because the page behind it must not scroll
+    // along.
+    B.addEventListener("wheel", function (e) {
+      if (MODUS !== "zeiger") return;
+      var p = anteil(e);
+      if (!p || !drin(p)) return;
+      if (!zeigerRahmen(e.clientX, e.clientY)) return;
+      zeigerSenden({ t: "wheel", x: p.x, y: p.y, k: 0, d: e.deltaY });
+      e.preventDefault();
+    }, { passive: false });
   }
 
   // ── The clock, four times a second ────────────────────────────────────────
@@ -2331,9 +2547,9 @@
     if (!z || !z.closest) return true;
     if (z.closest(".ts-embed")) return false;
     if (ROLLE === "speaker" && z.closest("#ts-stage")) return false;
-    // In der Sprecheransicht hat fast alles seine eigene Bedeutung, vom
-    // Farbtupfer bis zum Eingabefeld. Ein Tipp darf dort nichts blättern,
-    // ein Wisch schon; das trennt die Prüfung weiter unten.
+    // In the speaker view almost everything has a meaning of its own, from
+    // the colour swatch to the input field. A tap must not page there, a
+    // swipe may; the check further down separates the two.
     return true;
   }
 
@@ -2354,28 +2570,28 @@
     WISCH = null;
     if (!t) return;
     var dx = t.clientX - a.x, dy = t.clientY - a.y, dauer = Date.now() - a.zeit;
-    // Die Schranke wächst mit dem Gerät: 48 Pixel sind auf einem Telefon ein
-    // Wisch, auf einem großen Tablet ein Zucken.
+    // The threshold grows with the device: 48 pixels are a swipe on a
+    // phone and a twitch on a large tablet.
     var genug = Math.max(48, innerWidth * 0.07);
     var wisch = dauer <= 900 && Math.abs(dx) >= genug
                 && Math.abs(dx) >= Math.abs(dy) * 1.3;
-    // Ein Tipp muss hier mitbehandelt werden und darf nicht dem Klick
-    // überlassen bleiben.
+    // A tap has to be handled here as well and must not be left to the
+    // click.
     //
-    // Auf einem iPhone tat das Tippen gar nichts, während dieselbe Stelle in
-    // Chrome blätterte. Der Grund liegt nicht bei uns: iOS Safari baut aus
-    // einer Berührung nur dann einen Klick, wenn das getroffene Element ihm
-    // anklickbar vorkommt, also ein Verweis, ein Knopf, ein Formularfeld oder
-    // etwas mit eigenem Klickzuhörer ist. Die Bühne ist keins davon, und ein
-    // Zuhörer am Fenster hört diesen Klick deshalb nie. Ein nachgestelltes
-    // Telefon in Chrome zeigt das nicht, weil Chrome den Klick immer baut.
+    // On an iPhone tapping did nothing at all, while the same spot paged in
+    // Chrome. The reason is not ours: iOS Safari only builds a click out of
+    // a touch if the element it hit strikes it as clickable, that is a link,
+    // a button, a form field or something with a click listener of its own.
+    // The stage is none of those, and a listener on the window therefore
+    // never hears that click. An emulated phone in Chrome does not show
+    // this, because Chrome always builds the click.
     var tipp = !wisch && dauer <= 500
                && Math.abs(dx) < 12 && Math.abs(dy) < 12
                && ROLLE !== "speaker";
     if (!wisch && !tipp) return;
-    // `preventDefault` hält den Klick zurück, den ein Browser sonst hinterher
-    // aus derselben Berührung baut. Ohne das bliebe die Geste zwar richtig,
-    // der Klick blätterte aber gleich noch einmal.
+    // `preventDefault` holds back the click a browser would otherwise build
+    // afterwards out of the same touch. Without it the gesture would still
+    // be right, but the click would page a second time right after.
     e.preventDefault();
     if (wisch) { goto(current + (dx < 0 ? 1 : -1)); return; }
     goto(current + (t.clientX < innerWidth * 0.25 ? -1 : 1));

@@ -191,6 +191,13 @@ den letzten Strich zurück, `c` wechselt die Farbe. `b` schaltet den Saal
 schwarz, `e` friert das Bild auf der Leinwand ein, während man bei sich schon
 weiterblättert.
 
+`m` schaltet den Zeiger zwischen Stift und Einbettung um. Im Zeigermodus ruht
+der Stift, und ein Klick auf einen eingebetteten Rahmen landet stattdessen im
+Vortragsfenster: dieselbe Stelle, dieselbe Geste, in der Größe, die das andere
+Fenster gerade hat. Wo das eingebettete Dokument sich selbst spiegeln kann, wie
+ein GeoGebra-Applet über `typstage-geogebra`, bedient man das lebende vor sich
+und die Kopie auf der Leinwand zieht nach.
+
 Gesteuert wird aus beiden Fenstern, und jedes von beiden darf neu geladen
 werden: sie finden sich wieder, und die Striche kommen mit.
 

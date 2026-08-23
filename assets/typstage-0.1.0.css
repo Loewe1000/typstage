@@ -112,6 +112,14 @@ html[data-ts-rolle="speaker"][data-ts-fertig="1"] #ts-stage{opacity:1}
 html[data-ts-rolle="speaker"] .ts-embed,
 html[data-ts-rolle="speaker"] .ts-bridged,
 html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
+/* Except in pointer mode, and there only for an embed that says of itself
+   that it mirrors its state to the talk window. Then it is operated here,
+   locally and directly, and it passes on what came of it. Everything else
+   stays switched off in pointer mode as well: for those the runtime takes
+   the position and dispatches the event over there, and a frame that also
+   caught it here would take the gesture away from that route. */
+html[data-ts-rolle="speaker"][data-ts-modus="zeiger"]
+  .ts-bridged[data-spiegel="1"]{pointer-events:auto}
 /* The head: two groups at the two edges, not six equally loud columns
    crowded to the left. One large number per group, everything else small
    beside it; that is what carries the hierarchy, not the color. Color
@@ -200,6 +208,16 @@ html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
 .ts-sp-fuss{display:flex;gap:16px;align-items:center;flex-wrap:wrap;
   border-top:1px solid #ffffff1a;padding-top:8px;color:#ffffff8c;font-size:12px}
 .ts-sp-stift{display:flex;gap:7px;align-items:center}
+/* The mode is the switch, so it looks like one: pen is the quiet state,
+   pointer the loud one, because in pointer mode a click reaches into the
+   hall and one should be able to see that at a glance. */
+.ts-sp-modus{font:600 11px/1 inherit;letter-spacing:.09em;text-transform:uppercase;
+  padding:5px 9px;border-radius:99px;cursor:pointer;
+  border:1px solid #ffffff33;background:transparent;color:#ffffff8c}
+.ts-sp-modus[data-modus="zeiger"]{border-color:#4cc9f0;background:#4cc9f024;color:#9fe4fa}
+/* In pointer mode the pen does nothing. Leaving its colours standing at
+   full strength would promise otherwise. */
+.ts-sp-stift[data-modus="zeiger"] .ts-sp-tupf{opacity:.3}
 .ts-sp-tupf{width:19px;height:19px;border-radius:50%;padding:0;cursor:pointer;
   border:2px solid transparent;outline:1px solid #ffffff33}
 .ts-sp-tupf[data-an]{border-color:#fff}
