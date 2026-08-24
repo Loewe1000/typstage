@@ -73,6 +73,24 @@
   } else { "" }
 }
 
+/// A speaker note has to carry text, because nothing else reaches the speaker.
+///
+/// The presenter view transports the note as an HTML attribute, so it can only
+/// ever be a string, and the handout prints the note only where there is text
+/// in it. A note built purely out of layout therefore arrives nowhere -- and
+/// used to do so without a word. Measured: `speaker-note[#fit(table)]` left
+/// the handout with an empty ruled column and the presenter view saying "no
+/// note". The same held for a bare `rect` or a `layout()` long before `fit`
+/// existed; `fit` is only the first documented function that leads there.
+#let notiz-pruefen(body) = {
+  assert(plain-text(body).trim() != "", message:
+    "typstage: a speaker note has to contain text. The presenter view carries "
+    + "the note as plain text, and the handout prints it only where there is "
+    + "text, so a note made purely of layout -- fit(), a bare rect, an image "
+    + "-- would reach neither. Write the note as text. What is meant to be "
+    + "seen belongs on the slide, not in the note.")
+}
+
 /// Largest step number occurring in a selector.
 #let max-step(at) = {
   let numbers = at.matches(regex("\d+")).map(m => int(m.text))
@@ -401,6 +419,119 @@
   false
 }
 
+// ── Fitting content into the room it has ─────────────────────────────────────
+//
+// The geometry below is adapted from mosaic's `fit`, which adapted Touying
+// 0.7.4's `fit-to-width` and `fit-to-height`; Touying credits the fitting work
+// to Andreas Kröpelin (Polylux PR #91) and to ntjess. All three are under the
+// MIT license, as is this package.
+
+/// How many `fit` blocks the content being laid out sits inside.
+///
+/// A count, not a yes or no, so a fit inside a fit puts the outer one back
+/// when it is done. Updated as a function of the previous value and never read
+/// and written back, for the reason spelled out at `step-here`.
+#let im-fit = state("typstage-in-fit", 0)
+
+/// A length no fitter can work with.
+///
+/// Under `measure` a region is reported as unbounded, and a fit inside a
+/// container that has no height of its own gets nothing. Both would drive the
+/// factor to infinity or to zero, so both mean "leave the body alone".
+#let unloesbar(l) = (
+  float.is-infinite(l.pt()) or float.is-nan(l.pt()) or l <= 0pt
+)
+
+/// A `width` or `height` argument against the region that hosts it.
+///
+/// `auto` is the whole region. A ratio counts against it, a length is itself,
+/// and a length is measured rather than read, because `2em` only becomes
+/// points where the text size is known. Must be called inside a context.
+#let fit-mass(wert, ganz) = {
+  if wert == auto { ganz }
+  else if type(wert) == ratio { ganz * wert }
+  else if type(wert) == relative { ganz * wert.ratio + measure(v(wert.length)).height }
+  else if type(wert) == length { measure(v(wert)).height }
+  else {
+    panic("typstage: fit() takes auto, a length or a ratio for width and "
+          + "height, not " + str(type(wert)))
+  }
+}
+
+/// Content that exactly fills its place measures as 100%, so that is the line
+/// between growing and shrinking rather than a number to turn.
+///
+/// The tolerance around it is a guard against rounding, not a setting. A block
+/// that fits to within a fraction of a point reports a factor a hair off 100%,
+/// and rescaling on that would resize something that was already right.
+#let fit-toleranz = 0.05%
+
+/// The one factor that brings a measured size into the room it has.
+///
+/// The smaller of the two axes wins, so the proportions are kept. An axis
+/// whose measure is zero constrains nothing.
+#let fit-faktor(mass, breite, hoehe) = {
+  let werte = ()
+  if mass.width > 0pt { werte.push(breite / mass.width) }
+  if mass.height > 0pt { werte.push(hoehe / mass.height) }
+  if werte.len() == 0 { 100% } else { calc.min(..werte) * 100% }
+}
+
+/// Does a body carry a `pause`, however deep?
+///
+/// `apply-pauses` walks only the top level of a slide body, and it walks it
+/// *before* anything is laid out. A `fit` holds its body inside a closure, so
+/// that walk never reaches in. This one goes all the way down, because inside
+/// a fit a pause is lost wherever it stands, not only at the top.
+#let hat-pause(c) = {
+  if type(c) != content { return false }
+  if c.func() == metadata { return c.value == "typstage-pause" }
+  if c.has("children") { return c.children.any(hat-pause) }
+  if c.has("child") { return hat-pause(c.child) }
+  if c.has("body") { return hat-pause(c.body) }
+  false
+}
+
+/// What a fit says when something inside it may not be there.
+///
+/// Named, because the same sentence has to come out of nine functions and out
+/// of the pause check, and a reader who meets it twice should not have to
+/// wonder whether the two are the same rule.
+///
+/// Both halves of it were measured. A pause inside a fit is never found: the
+/// presentation looks for it by walking the slide body, and a fitted block is
+/// a closure it cannot walk into. On a slide carrying two pauses that took the
+/// step count from three down to one, and nothing said so. And a measured
+/// block has no height to reckon against: the width is the one a wrapping fit
+/// hands in, but the height comes back unbounded, and that is the axis on
+/// which a tracked element resolves `height: 100%` and `1fr` and reserves the
+/// room for its marker. Measured: an `anim` inside a fit was not scaled at
+/// all and ran off the bottom of the slide.
+///
+/// It is deliberately not said that every announced thing would vanish.
+/// `speaker-note` and `bridge-job` were measured *inside* a fit and both come
+/// through -- a `measure` commits no state, so they are recorded exactly once.
+/// They are therefore allowed. Only what settles geometry is refused.
+#let fit-meldung(was) = (
+  "typstage: " + was + " cannot stand inside fit(). A fitted block has to be "
+  + "measured, and two things do not survive that. A pause is found by "
+  + "walking the slide body, which cannot reach into a measured block, so its "
+  + "steps fall away without a word: measured, three steps became one. And a "
+  + "measured block has no height to reckon against, so a reveal there "
+  + "settles its own height and the room its marker reserves against nothing: "
+  + "measured, an anim inside a fit was not scaled at all and ran off the "
+  + "slide. Put the " + was + " outside the fit(), or fit what stands inside "
+  + "the reveal instead of fitting around it."
+)
+
+/// Refuse a thing that only works because the presentation can walk the slide.
+///
+/// Placed, not assigned: it is a context and has to reach the document to be
+/// evaluated at all.
+#let fit-verbot(was) = context {
+  assert(im-fit.get() == 0, message: fit-meldung(was))
+}
+
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
            width: auto) = {
   // The `box` has to sit around the *whole* construction, not inside it:
@@ -408,6 +539,9 @@
   // further in would still break the line it sits in.
   let shell-outer = if inline { box } else { it => it }
   shell-outer(context {
+  // Nothing tracked may sit inside a fit, and this is where all five kinds
+  // come through, so it is asked once here rather than five times outside.
+  assert(im-fit.get() == 0, message: fit-meldung(kind))
   // A pure `fr` spacer is passed through instead of tracked. Measured it
   // would come out as the full remaining height and push the siblings out
   // of the slide (verified: 86% instead of 76%). Passed through, the parent

@@ -14,7 +14,9 @@
 // and only learns there under which theme it is set.
 
 #import "elements.typ": anim
-#import "internal.typ": step-cursor, umgebungs-block, zeilen-hoehe
+#import "internal.typ": (fit-faktor, fit-mass, fit-meldung, fit-toleranz,
+                        hat-pause, im-fit, step-cursor, umgebungs-block,
+                        unloesbar, zeilen-hoehe)
 #import "config.typ": doc-word
 #import "themes.typ": theme-state
 
@@ -274,6 +276,9 @@
   enter: "fade-up",
   align: top + left,
 ) = context {
+  // Asked here rather than left to the `anim`s below, so the message names the
+  // function the deck actually wrote.
+  assert(im-fit.get() == 0, message: fit-meldung("tiles"))
   let kacheln = items.pos()
   assert(kacheln.len() > 0, message: "typstage: tiles() wants at least one tile")
   assert(at == auto or type(at) == int,
@@ -319,3 +324,123 @@
   align(center, if color == none { gesetzt } else { text(fill: color, gesetzt) })
   v(below)
 }) <ts-statement>]
+
+/// Scale one block down to the room it has.
+///
+/// For the thing whose size the deck does not control: a wide table, a
+/// generated diagram, a list that came out of a data file. Without it such a
+/// block runs over the edge of the slide. In the PDF it is still to be seen
+/// standing there; in the browser the slide sits in a frame of fixed size and
+/// whatever reaches past it is cut away.
+///
+/// ```typ
+/// #slide[
+///   == Regression results
+///   #fit(wrap: false, my-table)
+/// ]
+/// ```
+///
+/// `wrap: false` because the block is a table. Everything that lays itself out
+/// in columns has to be measured as it stands; see below.
+///
+/// The block is measured against the place it stands in and scaled
+/// geometrically, so it keeps its proportions and what stands around it counts
+/// with its new size. No factor is given by hand.
+///
+/// *Width first, then smaller.* The block is offered the full width before it
+/// is measured, so a paragraph or a list breaks into the space instead of
+/// shrinking, and only what is still too tall afterwards is scaled. A table, a
+/// chart or a drawing would rearrange its own columns instead, which changes
+/// the picture rather than its size; `wrap: false` measures such a block
+/// exactly as it stands.
+///
+/// *It only shrinks.* `grow: true` also blows a block up that is smaller than
+/// its place, for the one large number that is meant to fill the slide.
+/// `shrink: false` takes the shrinking away and leaves only the growing.
+///
+/// `width` and `height` take `auto`, a length or a ratio. `auto` is the whole
+/// place. On `height: auto` the block takes what is left over below whatever
+/// stands above it on the slide, so a fit under two bullet points reckons with
+/// the bullet points. That has a flip side wherever something encloses the
+/// fit: inside a `card` the box becomes slide-tall, is cut off at the bottom,
+/// and *whatever follows the card falls off the slide* -- measured in both
+/// outputs. It is the `1fr` doing that, not the scaling: a `card` around a
+/// bare `block(height: 1fr)` behaves the same. Give `height:` explicitly
+/// inside a card, and the fit reckons with that instead.
+///
+/// *No reveal inside.* Two things do not survive being measured. A `pause` is
+/// found by walking the slide body, and a fitted block is a closure that walk
+/// cannot enter: measured on a slide carrying two pauses, the step count fell
+/// from three to one and nothing said so. And a measured block has no height
+/// to reckon against, which is the axis on which a tracked element resolves
+/// its size and reserves the room for its marker: measured, an `anim` inside a
+/// fit was not scaled at all and ran off the bottom of the slide. `fit` stops
+/// with a message instead, for `pause`, `anim`, `stagger`, `alternatives`,
+/// `morph`, `tiles`, `video`, `embed` and `flipbook`, in both outputs. Fit
+/// what stands inside the reveal rather than fitting around it:
+/// `anim(fit(my-table))` works, `fit(anim(my-table))` is the error.
+///
+/// `speaker-note` and `bridge-job` are allowed inside a fit. They settle no
+/// geometry, and a `measure` commits no state, so both were measured to arrive
+/// exactly once. The other direction is the one that does not work: a note
+/// made only of a `fit` carries no text, and `speaker-note` refuses it.
+///
+/// The geometry is adapted from mosaic, which adapted Touying 0.7.4, which
+/// credits it to Andreas Kröpelin (Polylux PR #91) and to ntjess.
+#let fit(
+  body,
+  width: auto,
+  height: auto,
+  wrap: true,
+  grow: false,
+  shrink: true,
+) = {
+  // Asked before anything is laid out, and by walking the body, because a
+  // pause is a marker and not a call. Everything else announces itself while
+  // it is laid out and is caught by `im-fit`.
+  assert(not hat-pause(body), message: fit-meldung("pause"))
+  im-fit.update(d => d + 1)
+  let gebaut = layout(reg => context {
+    // No room means nothing to solve. That is not an exotic case: under a
+    // `measure` the region comes back unbounded, and `alternatives` and
+    // `side-by-side(equal: true)` both measure their content.
+    if unloesbar(reg.width) or unloesbar(reg.height) { return body }
+    let raum-b = fit-mass(width, reg.width)
+    let raum-h = fit-mass(height, reg.height)
+    if unloesbar(raum-b) or unloesbar(raum-h) { return body }
+    // The full width first, so text breaks instead of shrinking. Capped at the
+    // block's own width, or a single short line would be stretched across the
+    // slide and then measured as if it were that wide.
+    let inhalt = if wrap {
+      box(width: calc.min(raum-b, measure(body).width), body)
+    } else { body }
+    let mass = measure(inhalt)
+    // Something without an area has no factor. A line measures 0pt tall, and
+    // dividing by that would end the compilation.
+    if mass.width <= 0pt or mass.height <= 0pt { return body }
+    let f = fit-faktor(mass, raum-b, raum-h)
+    let anfassen = ((shrink and f < 100% - fit-toleranz)
+                    or (grow and f > 100% + fit-toleranz))
+    if anfassen {
+      scale(f, origin: top + left, reflow: true, box(width: mass.width, inhalt))
+    } else if width == auto {
+      // Untouched, not the measured box. `width: auto` is the region's own
+      // width, which the body gets from the region anyway, so a block that
+      // needs no scaling should stand exactly as it would without the fit.
+      // Measured on a paragraph that wraps into its place: the pixels of the
+      // slide with the fit and of the slide without it are the same.
+      body
+    } else {
+      // A width given by hand has to hold even when nothing is scaled, or the
+      // argument would do nothing at all in that case. Measured: without this,
+      // `fit(width: 50%, table)` set the table across the full slide.
+      inhalt
+    }
+  })
+  // `1fr` is what turns "the whole height" into "what is left over": in a flow
+  // the fixed-size siblings are laid out first and the fraction takes the
+  // rest, so a fit below two bullet points reckons with them. Only for
+  // `height: auto`; a height given by hand is meant literally.
+  if height == auto { block(height: 1fr, gebaut) } else { gebaut }
+  im-fit.update(d => d - 1)
+}

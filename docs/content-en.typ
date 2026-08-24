@@ -800,6 +800,12 @@ argument `note` on `slide`:
 The note appears in the speaker view, on `s` in the bar, and on the handout. It
 produces nothing in the deck PDF.
 
+A note has to carry text. The speaker view transports it as a string and the
+handout prints it where there is text, so a note built purely out of layout --
+a `fit`, a bare `rect`, an image -- would arrive nowhere. That is refused with
+a message rather than dropped in silence. What is meant to be *seen* belongs on
+the slide.
+
 = Making it your own
 
 The aim of this chapter: a deck that looks like yours and not like the package.
@@ -884,6 +890,105 @@ draws scales along.
   hand-counted `at:` on each.
 / `statement`: One large sentence, centred, for the slide that carries a single
   claim.
+/ `fit`: Scales one block down to the room it has, for content whose size the
+  deck does not set itself.
+
+=== fit: working content into the room it has
+
+For the one piece whose size is not written in the deck: the wide table out of
+the analysis, the generated chart, the list that came from a data file. With
+nothing in between, such a block runs over the edge of the slide. In the PDF it
+is still to be seen standing there; in the browser the slide sits in a frame of
+fixed size and whatever reaches past it is cut away.
+
+#show-code(```typ
+== Regression results
+#fit(wrap: false, my-table)
+```)
+
+`wrap: false` because the block is a table. Everything that lays itself out in
+columns wants to be measured as it stands; the reason follows two paragraphs
+down, and it is the one setting worth knowing before the first use.
+
+`fit` measures the block against the place it stands in and scales it
+geometrically, so the proportions are kept and no factor is given by hand.
+Measured on a table of 9 columns and 22 data rows: the body of a slide in the
+`plain` theme is 777.89 pt wide and 364.61 pt tall, the table measures
+572.09 pt #sym.times 571.60 pt and is therefore 207 pt too tall. `fit` works
+out 63.8 % and sets it 364.6 pt tall. The same in the HTML and in the PDF,
+because the arithmetic happens at compile time.
+
+*Width first, then smaller.* The block is offered the full width before it is
+measured. A paragraph or a list then wraps into the space instead of shrinking,
+and only what is still too tall afterwards is scaled. Measured on `lorem(60)`:
+set free, the paragraph is a single line of 3490 pt; offered the width of the
+body it becomes 777.89 pt #sym.times 111.06 pt and so already fits. The factor
+comes to 100 %, `fit` leaves the block alone, and the slide with the fit and
+the slide without it are pixel for pixel the same across the paragraph.
+Without the offer of the width, the same paragraph would come to 22.3 % and
+stand as a thread across the slide.
+
+A table, a chart or a drawing rearranges itself instead when it is offered a
+narrower width, and that changes the picture rather than its size.
+`wrap: false` measures such a block exactly as it stands:
+
+#show-code(```typ
+#fit(wrap: false, my-table)
+```)
+
+Measured on a table of 24 columns that is 1316 pt wide when set free: with the
+default `wrap: true`, Typst squeezes the columns into the 777.89 pt of the
+body, the digits overlap, and the factor comes out at 100 %, so nothing is
+scaled. With `wrap: false`, `fit` works out 59.1 % and the columns keep their
+proportions.
+
+*It only shrinks.* `grow: true` also blows up what is smaller than its place,
+for the one large number meant to fill the slide. `shrink: false` takes the
+shrinking away and leaves only the growing.
+
+#show-code(```typ
+#fit(grow: true)[42%]
+```)
+
+`width` and `height` take `auto`, a length or a ratio. On `height: auto` the
+block takes what is left over below the rest of the slide's content, so a fit
+under two bullet points reckons with the bullet points. That has a flip side
+wherever something encloses the fit: inside a `card` the box becomes
+slide-tall, is cut off at the bottom, and whatever follows the card falls off
+the slide -- measured in both outputs. The `1fr` is doing that, not the
+scaling: a `card` around a bare `block(height: 1fr)` behaves the same. Give
+`height:` explicitly inside a card, and the fit reckons with that instead.
+
+#warning[
+  *No reveal inside a `fit`.* Two things do not survive being measured. A
+  `pause` is found by walking the slide body, and a fitted block is a closure
+  that walk cannot enter: measured on a slide carrying two pauses, the step
+  count fell from three to one, and nothing said so. And a measured block has
+  no height to reckon against -- the width is the one a wrapping fit hands in,
+  but the height comes back unbounded, and that is the axis on which a tracked
+  element resolves its size and reserves the room for its marker. Measured: an
+  `anim` inside a fit was not scaled at all and ran off the bottom of the
+  slide.
+
+  `fit` therefore stops with a message that names the thing, for `pause`,
+  `anim`, `stagger`, `alternatives`, `morph`, `tiles`, `video`, `embed` and
+  `flipbook` -- in both outputs, and also when the fit sits inside another fit.
+  The way round it is to put the fit *inside* the reveal rather than around it:
+
+  ```typ
+  #anim(fit(wrap: false, my-table))   // yes
+  #fit(anim(my-table))                // no
+  ```
+]
+
+`speaker-note` and `bridge-job` are allowed inside a fit. They settle no
+geometry, and a `measure` commits no state, so both were measured to arrive
+exactly once. The other direction is the one that does not work: a note made
+only of a `fit` carries no text and therefore reaches neither the presenter
+view nor the handout. `speaker-note` refuses that with a message.
+
+The arithmetic is taken from mosaic, which took it from Touying 0.7.4; Touying
+credits the work on it to Andreas Kröpelin (Polylux PR #91) and to ntjess.
 
 == Labels: reaching every shape the package builds
 

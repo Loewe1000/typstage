@@ -22,7 +22,7 @@
   info,
 )
 #import "elements.typ": alternatives, anim, morph, pause, pin, stagger
-#import "layout.typ": card, callout, side-by-side, statement, tiles
+#import "layout.typ": card, callout, fit, side-by-side, statement, tiles
 #import "media.typ": video, embed, flipbook
 #import "bridge.typ": bridge-job, bridge-targets
 #import "present.typ": presentation, bundle

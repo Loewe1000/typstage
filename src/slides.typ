@@ -1,7 +1,7 @@
 // Slides, sections and what belongs to a single slide.
 
-#import "internal.typ": (deck-info, html-output, note-state, step-cursor,
-                        step-jetzt, transition-state)
+#import "internal.typ": (deck-info, html-output, note-state, notiz-pruefen,
+                        step-cursor, step-jetzt, transition-state)
 
 /// A regular slide.
 ///
@@ -20,6 +20,9 @@
     kopf = teile.at(0)
     rumpf = teile.at(1)
   }
+  // Same rule as for `speaker-note`, because this is the other way of writing
+  // the same thing. `none` stays legal: that is a slide without a note.
+  if note != none { notiz-pruefen(note) }
   (kind: "slide", title: kopf, note: note, transition: transition, body: rumpf)
 }
 
@@ -123,4 +126,11 @@
 }
 
 /// A note for the presenter view (key `s`).
-#let speaker-note(body) = note-state.update(body)
+///
+/// The note has to carry text: the presenter view transports it as a string,
+/// so a note made purely of layout would arrive nowhere. That is refused with
+/// a message rather than silently dropped.
+#let speaker-note(body) = {
+  notiz-pruefen(body)
+  note-state.update(body)
+}

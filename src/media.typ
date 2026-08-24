@@ -1,8 +1,8 @@
 // Video, embedded documents and Typst-drawn animation, plus what takes their
 // place on paper.
 
-#import "internal.typ": (track, bridge-jobs, html-output, im-deck, name-of,
-                         step-cursor, slide-counter)
+#import "internal.typ": (track, bridge-jobs, fit-verbot, html-output, im-deck,
+                         name-of, step-cursor, slide-counter)
 #import "config.typ": doc-word
 
 /// The box that stands in for a moving element in the PDF.
@@ -127,6 +127,9 @@
   // companion package resolving `target: auto` has to find an applet that is
   // written *below* its own commands as well.
   let bridge = if bridge == none { none } else { name-of(bridge) }
+  // On paper `embed` never reaches `track`, it only draws its stand-in and
+  // moves the cursor, so the fit check cannot be left to `track` here.
+  fit-verbot("embed")
   if bridge != none {
     context [#metadata((
       slide: slide-counter.get().first(), name: bridge,
@@ -166,7 +169,10 @@
   at: "1-",
   enter: "fade",
   still: auto,
-) = context if not html-output.get() {
+) = {
+  // As in `embed`: on paper this never reaches `track`.
+  fit-verbot("flipbook")
+  context if not html-output.get() {
   // On paper a single frame has to do. `still` picks which one.
   // The step counting of `track` does not run here, so the one case that
   // consumes a step is done by hand, as in `embed`.
@@ -199,4 +205,5 @@
              else { i / (frames - 1) }),
     )),
   )
+}
 }

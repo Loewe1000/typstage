@@ -1,7 +1,7 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (html-output, im-deck, name-of, pin-index, pin-marker,
-                        step-cursor, track)
+#import "internal.typ": (fit-meldung, html-output, im-deck, im-fit, name-of,
+                        pin-index, pin-marker, step-cursor, track)
 
 /// Reveal content on particular steps.
 ///
@@ -101,6 +101,12 @@
   // whole thing, not inside it.
   let shell-outer = if inline { box } else { it => it }
   shell-outer(layout(available => context {
+    // On paper `alternatives` never reaches `track`, it only moves the cursor,
+    // so the fit check cannot be left to `track` here. Asked as an assertion
+    // rather than by placing `fit-verbot`, because the paged branch below
+    // leaves through a `return` and a `return` drops whatever was joined
+    // before it.
+    assert(im-fit.get() == 0, message: fit-meldung("alternatives"))
     // Measure twice, the larger one wins: the same trap as in `track`.
     // `height: 100%` in one version would otherwise collapse to zero, and
     // measuring only against the available height would clip any overflow.
@@ -201,6 +207,10 @@
   stagger: 60,
   spacing: 0.65em,
 ) = context {
+  // Asked here rather than left to the `anim`s below, so the message names the
+  // function the deck actually wrote. An assertion, not a placed `fit-verbot`,
+  // because the list branch below leaves through a `return`.
+  assert(im-fit.get() == 0, message: fit-meldung("stagger"))
   let start = if start == auto { step-cursor.get().first() + 1 } else { start }
   let gegeben = items.pos()
   assert(gegeben.len() > 0, message: "typstage: stagger() wants something to stagger")

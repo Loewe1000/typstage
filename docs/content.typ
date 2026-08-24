@@ -1360,6 +1360,12 @@ Im Handout steht dieselbe Notiz bei ihrer Folie. Eine Notiz erfüllt damit zwei
 Zwecke auf einmal: Gedächtnisstütze beim Vortrag und Erläuterung auf dem Blatt,
 das die Klasse mitnimmt.
 
+Eine Notiz muss Text tragen. Die Sprecheransicht befördert sie als
+Zeichenkette, und das Handout druckt sie dort, wo Text darin steht -- eine
+Notiz, die nur aus Layout besteht (ein `fit`, ein blankes `rect`, ein Bild),
+käme also nirgends an. Das wird mit einer Meldung abgewiesen statt still
+verschluckt. Was *gesehen* werden soll, gehört auf die Folie.
+
 == Was auf dem Papier fehlt -- und was man dafür vorsieht
 
 #table(
@@ -1658,7 +1664,7 @@ Haken `style`: eine Funktion, die um jeden Folienrumpf gelegt wird.
 
 == Bausteine für den Folienrumpf
 
-Fünf Bausteine für den Rumpf. Es sind Inhaltsfunktionen, keine eigenen
+Sechs Bausteine für den Rumpf. Es sind Inhaltsfunktionen, keine eigenen
 Folienarten -- sie lassen sich schachteln, in eine Rasterzelle setzen und mit
 `anim` einblenden.
 
@@ -1801,6 +1807,109 @@ Schritten:
 `statement` fordert ausdrücklich die volle Breite an und zentriert darin --
 genau das, woran ein blankes `align(center, …)` in einem verfolgten Element
 scheitert.
+
+=== fit -- den Inhalt auf seinen Platz rechnen
+
+Für das eine Stück, dessen Größe nicht im Deck steht: die breite Tabelle aus
+der Auswertung, das erzeugte Diagramm, die Liste aus einer Datendatei. Ohne
+etwas dazwischen läuft so ein Block über den Rand. Im PDF sieht man ihn dort
+noch stehen; im Browser sitzt die Folie in einem Rahmen fester Größe, und was
+darüber hinausragt wird abgeschnitten.
+
+#show-code(```typ
+== Ergebnisse der Regression
+#fit(wrap: false, meine-tabelle)
+```)
+
+`wrap: false`, weil der Block eine Tabelle ist. Alles, was sich selbst in
+Spalten setzt, will so gemessen werden, wie es steht; der Grund steht zwei
+Absätze weiter, und es ist die eine Angabe, die man vor dem ersten Gebrauch
+kennen sollte.
+
+`fit` misst den Block gegen den Platz, an dem er steht, und skaliert ihn
+geometrisch: die Verhältnisse bleiben, ein Faktor von Hand entfällt. Gemessen
+an einer Tabelle mit 9 Spalten und 22 Datenzeilen: der Rumpf einer Folie im Theme
+`plain` ist 777,89 pt breit und 364,61 pt hoch, die Tabelle misst
+572,09 pt #sym.times 571,60 pt, ist also 207 pt zu hoch. `fit` rechnet mit
+63,8 % und setzt sie 364,6 pt hoch. In der HTML und im PDF gleichermaßen, denn
+gerechnet wird beim Übersetzen.
+
+*Erst die Breite anbieten, dann verkleinern.* Der Block bekommt die volle
+Breite angeboten, bevor gemessen wird. Ein Absatz oder eine Liste bricht dann
+um, statt zu schrumpfen, und nur was danach noch zu hoch ist, wird skaliert.
+Gemessen an `lorem(60)`: frei gesetzt ist der Absatz eine einzige Zeile von
+3490 pt, in der angebotenen Breite des Rumpfes
+777,89 pt #sym.times 111,06 pt und passt damit bereits. Der Faktor kommt auf
+100 %, `fit` rührt den Absatz nicht an, und die Folie mit `fit` und die ohne
+sind im Absatzbereich pixelgleich. Ohne das Angebot der Breite käme derselbe
+Absatz auf 22,3 % und stünde als Fadenzeile über der Folie.
+
+Eine Tabelle, ein Diagramm oder eine Zeichnung ordnet sich dagegen selbst um,
+wenn man ihr eine schmalere Breite anbietet, und das ändert das Bild statt
+seiner Größe. `wrap: false` misst so einen Block genau so, wie er steht:
+
+#show-code(```typ
+#fit(wrap: false, meine-tabelle)
+```)
+
+Gemessen an einer Tabelle mit 24 Spalten, die frei gesetzt 1316 pt breit ist:
+mit dem Vorgabewert `wrap: true` quetscht Typst die Spalten in die 777,89 pt
+des Rumpfes, die Ziffern überlagern sich, und der Faktor kommt bei 100 %
+heraus, es wird also nichts skaliert. Mit `wrap: false` rechnet `fit` mit
+59,1 %, und die Spalten behalten ihr Verhältnis.
+
+*Es verkleinert nur.* `grow: true` bläst auch auf, was kleiner ist als sein
+Platz -- für die eine große Zahl, die die Folie füllen soll. `shrink: false`
+nimmt das Verkleinern weg und lässt nur das Vergrößern übrig.
+
+#show-code(```typ
+#fit(grow: true)[42%]
+```)
+
+`width` und `height` nehmen `auto`, eine Länge oder einen Anteil. Bei
+`height: auto` nimmt sich der Block, was unter dem übrigen Inhalt der Folie
+übrig bleibt; ein `fit` unter zwei Stichpunkten rechnet also mit den
+Stichpunkten. Das hat eine Kehrseite, sobald etwas das `fit` umschließt: in
+einem `card` wird der Kasten folienhoch, unten abgeschnitten, und *was nach
+dem `card` steht, fällt von der Folie* -- in beiden Ausgaben gemessen. Das tut
+das `1fr`, nicht das Skalieren: ein `card` um ein blankes
+`block(height: 1fr)` verhält sich genauso. In einem `card` gibt man `height:`
+ausdrücklich an, dann rechnet das `fit` damit.
+
+#warning[
+  *Keine Einblendung im `fit`.* Zweierlei übersteht das Messen nicht. Ein
+  `pause` wird gefunden, indem der Folienrumpf abgelaufen wird, und ein
+  gemessener Block ist eine Closure, in die dieser Lauf nicht hineinkommt:
+  gemessen an einer Folie mit zwei Pausen fiel die Schrittzahl von drei auf
+  eins, und nichts hat es gesagt. Und ein gemessener Block hat keine Höhe, gegen
+  die er rechnen könnte -- die Breite ist die, die ein umbrechendes `fit`
+  hineinreicht, die Höhe aber kommt unbegrenzt zurück, und genau an dieser
+  Achse legt ein verfolgtes Element seine Größe und den Platz seiner Marke
+  fest. Gemessen: ein `anim` in einem `fit` wurde gar nicht verkleinert und
+  lief unten aus der Folie.
+
+  `fit` bricht deshalb ab, mit Namen und Rat, für `pause`, `anim`, `stagger`,
+  `alternatives`, `morph`, `tiles`, `video`, `embed` und `flipbook` -- in
+  beiden Ausgaben und auch dann, wenn das `fit` in einem anderen `fit` steckt.
+  Der Ausweg ist, das `fit` *innerhalb* der Einblendung zu setzen statt darum
+  herum:
+
+  ```typ
+  #anim(fit(wrap: false, meine-tabelle))   // so
+  #fit(anim(meine-tabelle))                // nicht so
+  ```
+]
+
+`speaker-note` und `bridge-job` dürfen im `fit` stehen. Sie legen keine
+Geometrie fest, und eine Messung schreibt keinen Zustand fest, beide kommen
+also nachgemessen genau einmal an. Die andere Richtung ist die, die nicht
+geht: eine Notiz, die nur aus einem `fit` besteht, trägt keinen Text und
+erreicht damit weder die Sprecheransicht noch das Handout. `speaker-note`
+weist das mit einer Meldung ab.
+
+Die Rechnung dahinter ist von mosaic übernommen, das sie aus Touying 0.7.4
+übernommen hat; Touying schreibt die Arbeit daran Andreas Kröpelin
+(Polylux PR #91) und ntjess zu.
 
 === Folien ohne Titel
 

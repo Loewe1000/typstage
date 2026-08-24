@@ -110,6 +110,7 @@ written.
 | `anim`, `stagger`, `pause`, `alternatives` | reveal one thing, a series of things, everything after this point, one thing after another in the same place |
 | `morph`, `pin` | magic move across slides; `pin` names a glyph so the pairing follows the name rather than the shape |
 | `card`, `callout`, `side-by-side`, `tiles`, `statement` | layouts inside a slide; `tiles` staggers itself, and `side-by-side(equal: true)` makes its columns the same height |
+| `fit` | scales one block down to the room it has, for a wide table or a generated chart; no reveal may sit inside it |
 | `transition`, `speaker-note` | how this slide comes in, and what only you see |
 | `themes`, `theme` | the five built-in looks, and the builder behind them |
 | `video`, `embed`, `flipbook` | media, arbitrary web content in a sandboxed frame, and animation drawn frame by frame by Typst |
