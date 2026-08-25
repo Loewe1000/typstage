@@ -96,6 +96,11 @@ First this.
 Then that.
 ```
 
+`slide-level:` moves the cut: with `slide-level: 3` a `=` and a `==` are both
+section slides and `===` is the slide, so a semester fits into one file with
+its transition slides falling out by themselves. `info().levels` and
+`info().outline` hand the structure back for an agenda of your own.
+
 Slides may also be handed over as arguments, `presentation(title-slide(…),
 section([…]), slide([Title])[…])`, for decks that are generated rather than
 written.
@@ -112,7 +117,7 @@ written.
 | `card`, `callout`, `side-by-side`, `tiles`, `statement` | layouts inside a slide; `tiles` staggers itself, and `side-by-side(equal: true)` makes its columns the same height |
 | `fit` | scales one block down to the room it has, for a wide table or a generated chart; no reveal may sit inside it |
 | `overflow:` | a checking pass, off by default: `"error"` builds the deck and then names every slide whose body runs over its room, with the step; `"record"` files the same as queryable metadata |
-| `info` | what the deck knows about itself: title, slide and step number, section — for a footer or a running head of your own |
+| `info` | what the deck knows about itself: title, slide and step number, section, and with `slide-level` the whole outline — for a footer, a running head or an agenda of your own |
 | `transition`, `speaker-note` | how this slide comes in, and what only you see |
 | `themes`, `theme` | the five built-in looks, and the builder behind them |
 | `palettes`, `palette:`, `invert` | colour separately from design: five bundled palettes that compose with every theme, a partial override on `presentation`, and one slide set in the palette turned around |

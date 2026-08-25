@@ -60,6 +60,11 @@
 #                                 Rest muss übersetzen. Für Gegenüberstellungen
 #                                 („so — nicht so"). Übersetzt sie plötzlich, ist
 #                                 das ein Fehler, kein Erfolg.
+#     bricht=belongs_to_no_slide  Der *ganze* Block muss fehlschlagen, und zwar
+#                                 an diesem Text. Für einen Fehler, der erst im
+#                                 Zusammenhang entsteht -- `fehlt=` übersetzt
+#                                 eine Zeile für sich und sähe ihn nicht.
+#                                 Unterstriche stehen für Leerzeichen.
 #     weil=cannot stand inside    Woran sie fehlschlagen muss. Ohne diese Angabe
 #                                 zählt jeder Fehlschlag, auch ein Tippfehler
 #                                 oder eine vergessene Einbindung -- und dann
@@ -183,7 +188,7 @@ def bloecke(pfad):
 def regie_lesen(text):
   """Eine Prüfzeile in ein Wörterbuch übersetzen."""
   r = {"art": None, "aus": None, "ziel": "html", "pre": [], "davor": False,
-       "dateien": [], "fehlt": [], "weil": None}
+       "dateien": [], "fehlt": [], "weil": None, "bricht": None}
   for wort in (text or "").split():
     if wort in ("ganz", "dokument", "folgen", "folie", "argument"):
       r["art"] = wort
@@ -201,6 +206,8 @@ def regie_lesen(text):
       r["fehlt"] += [int(n) for n in wort[6:].split(",")]
     elif wort.startswith("weil="):
       r["weil"] = wort[5:].replace("_", " ")
+    elif wort.startswith("bricht="):
+      r["bricht"] = wort[7:].replace("_", " ")
     else:
       raise SystemExit("unbekanntes Wort in einer Prüfzeile: " + wort)
   return r
@@ -292,6 +299,26 @@ def pruefen(auftrag):
     if not 1 <= n <= len(zeilen):
       return {"ort": ort, "stand": "fehler", "art": art,
               "meldung": "fehlt=%d, aber der Block hat nur %d Zeilen" % (n, len(zeilen))}
+
+  # Ein Block, der als Ganzes fehlschlagen soll -- für einen Fehler, der erst
+  # aus dem Zusammenhang entsteht. Ohne das bliebe ein Fehlerpfad, den das
+  # Handbuch wörtlich beschreibt, ungeprüft; genau so ist eine Meldung
+  # monatelang unerreichbar geblieben, weil niemand sie je ausgelöst hat.
+  if regie["bricht"]:
+    geklappt, meldung = uebersetzen(
+      huelle(art, dedent(zeilen), vorspann), regie["ziel"], regie["dateien"],
+      paketpfad)
+    if geklappt:
+      return {"ort": ort, "stand": "fehler", "art": art,
+              "meldung": "sollte an „%s\" abbrechen, übersetzt aber"
+                         % regie["bricht"]}
+    if regie["bricht"] not in meldung:
+      return {"ort": ort, "stand": "fehler", "art": art,
+              "meldung": ("bricht ab, aber nicht an „%s\": %s"
+                          % (regie["bricht"],
+                             meldung.strip().splitlines()[0] if meldung.strip()
+                             else "(ohne Meldung)"))}
+    return {"ort": ort, "stand": "gut", "art": art, "fehlt": 1}
 
   # Erst der Rest ohne die Zeilen, die fehlschlagen sollen: der muss übersetzen.
   rest = "\n".join(z for i, z in enumerate(zeilen, 1) if i not in regie["fehlt"])

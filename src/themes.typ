@@ -108,12 +108,44 @@
   }
 }
 
+/// How large the title of a section slide is at a given depth.
+///
+/// One rule for all five themes, so a deck keeps the same hierarchy when it
+/// changes theme. `basis` is the size the theme sets for its outermost level.
+///
+/// Depth 1 is handed back untouched rather than multiplied by 1.0. Not out of
+/// care about floating point but out of care about the output: a deck that
+/// never names `slide-level` has only depth 1, and its section slides have to
+/// come out of this byte for byte as they did before there were levels at
+/// all. Below the third level nothing shrinks further; a fourth structure
+/// level needs `slide-level: 5`, and by then size is no longer what is
+/// missing.
+#let ebenen-groesse(basis, d, k) = if d <= 1 { basis * k } else {
+  basis * k * (0.8, 0.68).at(calc.min(d, 3) - 2)
+}
+
+/// The line above a section title that says what the section hangs under.
+///
+/// Only from the second structure level on. At the default `slide-level: 2` a
+/// deck has exactly one level, `eltern` is always empty, and no theme ever
+/// draws this.
+///
+/// The color is measured, not named: the five section slides stand on five
+/// different grounds, three of them dark. `t.muted` is the deck's own subdued
+/// color and comes first; where it does not reach 4.5 to 1 against the ground,
+/// the candidates the theme's own title falls back to take over.
+#let ebenen-pfad(eltern, grund, t, k, ..hell) = text(
+  size: 13pt * k, tracking: 0.6pt * k, weight: "regular",
+  fill: lesbar(grund, t.muted, ..hell.pos()),
+  [#upper(eltern.map(x => [#x]).join([ · ])) <ts-section-slide-parent>])
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  Title and section slides
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // Each of these functions receives `(t, s, geo)`: the theme, the slide
-// (with `title`, `subtitle`, `author`, `date`) and the canvas.
+// (with `title`, `subtitle`, `author`, `date`, and on a section slide
+// `depth` and `parents`) and the canvas.
 // `geo.scale` is the factor by which all measures grow along: every
 // number below is meant in points of the default canvas and gets
 // multiplied by it.
@@ -163,16 +195,37 @@
 #let band-section(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
+  let d = s.at("depth", default: 1)
+  let eltern = s.at("parents", default: ())
   grund(t.strong, "section")
-  place(horizon + left, dx: m.left, {
-    stapel(
+  // Eine Breitengrenze, wie sie die vier anderen Themes schon haben -- ohne
+  // sie bekommt der Satz die volle Seitenbreite, um den linken Rand versetzt,
+  // und ragt über die rechte Kante; gemessen lief die Elternzeile mitten im
+  // Wort aus der Folie, und `overflow` sieht Abschnittsfolien nicht an.
+  //
+  // Aber nur, wo es Eltern gibt. Der Kasten unbedingt zu setzen legt auch bei
+  // Tiefe 1 zwei Gruppen mehr ins SVG, und `theme-default` war danach nicht
+  // mehr bytegleich -- dieselbe Falle, an der schon der Entwurf hing. Eine
+  // Abschnittsfolie ohne Eltern ist genau die von vorher und bleibt es.
+  let rahmen = if eltern.len() > 0 {
+    it => block(width: geo.width - m.left - m.right, it)
+  } else { it => it }
+  place(horizon + left, dx: m.left, rahmen({
+    // Built as a list rather than written out, so that at depth 1 exactly the
+    // three pieces of before go into `stapel` and the slide is unchanged.
+    let teile = (
       zierlinie(62pt * k, 2.5pt * k, t.accent, "section"),
       10pt * k,
-      text(..font-args(t.title-font), size: 30pt * k, weight: "bold",
-           fill: lesbar(t.strong, white, t.paper, t.ink),
+      text(..font-args(t.title-font), size: ebenen-groesse(30pt, d, k),
+           weight: "bold", fill: lesbar(t.strong, white, t.paper, t.ink),
            [#s.title <ts-section-slide-title>]),
     )
-  })
+    if eltern.len() > 0 {
+      teile = (ebenen-pfad(eltern, t.strong, t, k, white, t.paper, t.ink),
+               10pt * k) + teile
+    }
+    stapel(..teile)
+  }))
 }
 
 // ── lesson ─────────────────────────────────────────────────────────────────
@@ -216,13 +269,23 @@
     set rect(fill: t.accent, stroke: none)
     [#rect(width: balken, height: 100%) <ts-section-slide-bar>]
   })
+  let d = s.at("depth", default: 1)
+  let eltern = s.at("parents", default: ())
+  let boden = if t.inverted { t.accent.darken(72%) } else { t.accent.lighten(88%) }
   place(horizon + left, dx: m.left + balken,
-    block(width: geo.width - 2 * m.left - balken,
-      text(..font-args(t.title-font), size: 32pt * k, weight: "bold",
-           fill: lesbar(
-             if t.inverted { t.accent.darken(72%) } else { t.accent.lighten(88%) },
-             t.strong, t.ink),
-           [#s.title <ts-section-slide-title>])))
+    block(width: geo.width - 2 * m.left - balken, {
+      let titel = text(..font-args(t.title-font),
+           size: ebenen-groesse(32pt, d, k), weight: "bold",
+           fill: lesbar(boden, t.strong, t.ink),
+           [#s.title <ts-section-slide-title>])
+      // At depth 1 the title stands as bare as before. No `block` around it:
+      // in the PDF that changes nothing, but in the HTML it adds a group and
+      // fourteen bytes, and the deck of yesterday is then no longer the deck
+      // of today.
+      if eltern.len() == 0 { titel } else {
+        stapel(ebenen-pfad(eltern, boden, t, k, t.strong, t.ink), 8pt * k, titel)
+      }
+    }))
 }
 
 // ── night ──────────────────────────────────────────────────────────────────
@@ -250,17 +313,23 @@
 /// Two accent lines, with the title in the accent color between them.
 #let night-section(t, s, geo) = {
   let k = geo.scale
+  let d = s.at("depth", default: 1)
+  let eltern = s.at("parents", default: ())
   grund(t.paper, "section")
   place(center + horizon, block(width: geo.width * 0.56, {
     set align(center)
-    stapel(
+    let teile = (
       zierlinie(100%, 1pt * k, t.accent, "section"),
       18pt * k,
-      text(..font-args(t.title-font), size: 30pt * k, weight: "bold",
-           fill: t.accent, [#s.title <ts-section-slide-title>]),
+      text(..font-args(t.title-font), size: ebenen-groesse(30pt, d, k),
+           weight: "bold", fill: t.accent, [#s.title <ts-section-slide-title>]),
       18pt * k,
       zierlinie(100%, 1pt * k, t.accent, "section"),
     )
+    if eltern.len() > 0 {
+      teile = (ebenen-pfad(eltern, t.paper, t, k, t.accent, t.ink), 14pt * k) + teile
+    }
+    stapel(..teile)
   }))
 }
 
@@ -292,15 +361,21 @@
 #let plain-section(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
+  let d = s.at("depth", default: 1)
+  let eltern = s.at("parents", default: ())
   grund(t.paper, "section")
   place(horizon + left, dx: m.left, block(width: geo.width * 0.7, {
-    stapel(
-      text(..font-args(t.title-font), size: 26pt * k,
+    let teile = (
+      text(..font-args(t.title-font), size: ebenen-groesse(26pt, d, k),
            fill: lesbar(t.paper, t.strong, t.ink),
            tracking: 0.3pt * k, [#s.title <ts-section-slide-title>]),
       11pt * k,
       zierlinie(40pt * k, 0.8pt * k, t.muted, "section"),
     )
+    if eltern.len() > 0 {
+      teile = (ebenen-pfad(eltern, t.paper, t, k, t.strong, t.ink), 9pt * k) + teile
+    }
+    stapel(..teile)
   }))
 }
 
@@ -337,16 +412,23 @@
 /// Full-bleed surface in the primary color, title in paper color on top.
 #let editorial-section(t, s, geo) = {
   let k = geo.scale
+  let d = s.at("depth", default: 1)
+  let eltern = s.at("parents", default: ())
   grund(t.strong, "section")
   place(center + horizon, block(width: geo.width * 0.7, {
     set align(center)
-    stapel(
+    let teile = (
       zierlinie(44pt * k, 0.9pt * k, t.accent, "section"),
       20pt * k,
-      text(..font-args(t.title-font), size: 30pt * k,
+      text(..font-args(t.title-font), size: ebenen-groesse(30pt, d, k),
            fill: lesbar(t.strong, t.paper, t.ink, white),
            tracking: 0.5pt * k, [#s.title <ts-section-slide-title>]),
     )
+    if eltern.len() > 0 {
+      teile = (ebenen-pfad(eltern, t.strong, t, k, t.paper, t.ink, white),
+               16pt * k) + teile
+    }
+    stapel(..teile)
   }))
 }
 
@@ -389,12 +471,21 @@
 /// `ts-title-slide-title`, `ts-title-slide-subtitle`, `ts-title-slide-rule`
 /// and `ts-title-slide-byline`; on the section slide
 /// `ts-section-slide-ground`, `ts-section-slide-bar`,
-/// `ts-section-slide-title` and `ts-section-slide-rule`. A `show` rule on one
-/// of them changes type or fill without a key having to exist for it; the
-/// keys below stay what they are and keep the arrangement.
+/// `ts-section-slide-title`, `ts-section-slide-rule` and
+/// `ts-section-slide-parent`. A `show` rule on one of them changes type or
+/// fill without a key having to exist for it; the keys below stay what they
+/// are and keep the arrangement.
+///
+/// The last of those is the line naming the sections a deeper section hangs
+/// under. It exists only from the second structure level on, so a deck at the
+/// default `slide-level: 2` never draws it.
 ///
 /// A theme that brings its own `title-slide` or `section` function draws none
-/// of those labels, and nothing warns about it.
+/// of those labels, and nothing warns about it. Such a `section` function
+/// receives the section record, and there `s.depth` is the heading level and
+/// `s.parents` are the titles above it, outermost first. A function that reads
+/// neither draws every level alike; nothing breaks, the hierarchy is simply
+/// not shown.
 ///
 /// Comments must NOT go into the parameter list: tidy splits it at the
 /// commas and expects a colon in every piece; the API reference breaks

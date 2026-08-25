@@ -287,6 +287,13 @@
   // Asked here rather than left to the `anim`s below, so the message names the
   // function the deck actually wrote.
   assert(im-fit.get() == 0, message: fit-meldung("tiles"))
+  // `..items` would otherwise swallow any named argument without a word: a
+  // typo in `columns:` would lay the tiles out on the default and say nothing.
+  assert(items.named().len() == 0,
+         message: "typstage: tiles() does not know "
+                + items.named().keys().join(", ")
+                + ". It takes columns, gutter, row-gutter, at, stride, "
+                + "stagger, enter and align.")
   let kacheln = items.pos()
   assert(kacheln.len() > 0, message: "typstage: tiles() wants at least one tile")
   assert(at == auto or type(at) == int,
