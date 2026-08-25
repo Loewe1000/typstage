@@ -479,10 +479,17 @@
             // range is closed -- `anim` insists on that -- but a closed range
             // can still end with the slide, and then there is no step left to
             // be dim on.
+            // `hier.nr`, nicht `here`: die Marke am Folienende trägt `nr`,
+            // und das zählt jeden Eintrag mit, auch Titel- und
+            // Abschnittsfolien. `here` ist die Nummer unter den Inhaltsfolien
+            // allein. Sobald ein Deck eine Titelfolie hat, laufen die beiden
+            // auseinander, und der Test unten befragte die falsche Folie nach
+            // ihrer Schrittzahl -- gemessen wurde ein gültiges Deck
+            // abgewiesen, sobald man ihm einen Titel gab.
             let meine-dims = sprites.get()
               .filter(sp => sp.extra.at("after", default: none) == "dimmed"
                             and not sp.at("dim-freiwillig", default: false))
-              .map(sp => (slide: here, bis: max-step(sp.at)))
+              .map(sp => (slide: hier.nr, nummer: here, bis: max-step(sp.at)))
             dim-index.update(a => a + meine-dims)
             html.elem("script", attrs: (class: "ts-bridge", type: "application/json"),
                       json.encode(bridge-jobs.get()))
@@ -518,7 +525,7 @@
           calc.max(1, step-cursor.at(ende.location()).first())
         }
         assert(d.bis < gesamt, message:
-          "typstage: anim(after: \"dimmed\") on slide " + str(d.slide)
+          "typstage: anim(after: \"dimmed\") on slide " + str(d.nummer)
           + " has a range that ends with the slide: it runs to step "
           + str(d.bis) + " and the slide has " + str(gesamt)
           + ". There is no step left for the element to be dim on, so it "
