@@ -39,8 +39,8 @@ Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
   aussieht. Zeilen, die absichtlich einen Fehler auslösen, sind als solche
   geführt, müssen fehlschlagen und nennen, woran -- eine Zeile, die aus einem
   anderen Grund bricht, ist ein durchgefallener Test und kein bestandener. Eine
-  Zeile dagegen, die zwar übersetzt, aber nicht das Gewünschte tut („wirkt
-  nicht", „zu spät"), kann er von einer richtigen nicht unterscheiden. Er
+  Zeile dagegen, die zwar übersetzt, aber nicht das Gewünschte tut ("wirkt
+  nicht", "zu spät"), kann er von einer richtigen nicht unterscheiden. Er
   übersetzt für den Browser, nicht für Papier, und er sieht nie auf die Prosa
   neben einem Listing -- dort sitzt eine veraltete Zahl am liebsten. Blöcke in
   anderen Sprachen bleiben ungeprüft und werden gezählt, damit niemand einen
@@ -58,7 +58,7 @@ Minuten und ohne Umwege.
 Mehr als dies braucht es nicht -- den Import, eine Show-Regel und
 Überschriften. Die folgende Datei ist vollständig und lässt sich abtippen:
 
-// Aus der Datei gelesen, nicht abgeschrieben: „vollständig und lässt sich
+// Aus der Datei gelesen, nicht abgeschrieben: "vollständig und lässt sich
 // abtippen" ist eine Zusage, und die hält nur, wenn hier dieselben Zeichen
 // stehen, die `.github/scripts/pruefe-beispiele.py` auch übersetzt.
 #show-code(raw(read("../examples/handbuch/erste-praesentation.typ").trim(),
@@ -68,7 +68,7 @@ Daraus entstehen vier Folien: die Titelfolie aus `title`, eine Abschnittsfolie
 aus `=`, und je eine gewöhnliche Folie aus den beiden `==`. Der Text bis zur
 nächsten Überschrift ist der Rumpf einer Folie.
 
-So sieht der Rumpf der Folie „Die Behauptung" aus, wenn alle Schritte
+So sieht der Rumpf der Folie "Die Behauptung" aus, wenn alle Schritte
 abgelaufen sind:
 
 #show-example(
@@ -170,7 +170,7 @@ ist, ob man vor oder hinter dem Plan liegt.
 
 #tip[
   Die Vorschau zeigt den nächsten Schritt, nicht die nächste Folie. Ein Deck,
-  das in Schritten zählt, muss die Frage beantworten „was tut der nächste
+  das in Schritten zählt, muss die Frage beantworten "was tut der nächste
   Tastendruck", und das kann eine neue Folie sein oder eine weitere Enthüllung
   auf derselben. Die Marke darüber sagt, welches von beidem.
 ]
@@ -246,7 +246,7 @@ Stelle sofort zu erreichen.
   erscheint nirgends. Ebenso erreicht ein `#set heading`, das nach der
   Show-Regel steht, die Folientitel nicht mehr -- sie verlassen den Bereich,
   den die Regel umschließt. Für die Typografie der Folien gibt es `style` --
-  siehe das Kapitel „Das eigene Aussehen".
+  siehe das Kapitel "Das eigene Aussehen".
 ]
 
 == Wenn die Folien berechnet werden
@@ -314,13 +314,13 @@ werden soll.
 )
 
 Dazu kommt `tiles` für ein Kachelraster, das sich von selbst staffelt (Kapitel
-„Das eigene Aussehen"), und `morph` für Objekte, die zwischen zwei Folien
-fliegen (Kapitel „Eine Rechnung entwickeln").
+"Das eigene Aussehen"), und `morph` für Objekte, die zwischen zwei Folien
+fliegen (Kapitel "Eine Rechnung entwickeln").
 
 == Der Schrittzeiger
 
 Jede Folie führt einen Schrittzeiger mit. `at` ist vorgabemäßig `auto`, und
-`auto` heißt „der nächste freie Schritt". Aufeinanderfolgende Einblendungen
+`auto` heißt "der nächste freie Schritt". Aufeinanderfolgende Einblendungen
 nummerieren sich damit von selbst; in der Regel steht in einer Folie überhaupt
 keine Zahl.
 
@@ -499,7 +499,7 @@ gesprochen wird, steht da, die vorherigen bleiben lesbar, aber gedämpft.
 ```]
 
 Dafür hält jeder Punkt genau seinen eigenen Schritt statt den Rest der Folie
-und ruht danach in `after: "dimmed"` (siehe „Der gedimmte Ruhezustand"). Zwei
+und ruht danach in `after: "dimmed"` (siehe "Der gedimmte Ruhezustand"). Zwei
 Dinge folgen daraus, und beide sind gewollt: Der letzte Punkt wird ebenfalls
 gedimmt, sobald die Folie nach ihm noch einen Schritt hat -- dann ist der Gang
 auch über ihn hinweg. Und `stride: 0`, das alle Punkte auf einen Schritt legt,
@@ -625,7 +625,7 @@ Papier trotzdem. Der Ausdruck der HTML-Seite aus dem Browser hält es genauso.
 also entscheidet der Untergrund, was das Dimmen kostet -- und auf dunklem Grund
 kostet es deutlich weniger als auf hellem. Das ist eine Messung, keine Meinung:
 0.65 ist der kleinste Hundertstelwert, bei dem gedimmter Fließtext noch die 4,5
-zu 1 erreicht, die der Kontrastvertrag dieses Pakets (siehe „Der
+zu 1 erreicht, die der Kontrastvertrag dieses Pakets (siehe "Der
 Kontrastvertrag") für Fließtext verlangt -- auf allen fünf mitgelieferten
 Paletten, aufrecht wie umgedreht, auf dem Papier der Folie wie auf der Fläche
 einer Karte. Der engste dieser zwanzig Fälle ist `parchment` auf seinem eigenen
@@ -791,7 +791,7 @@ gestaffelten Liste 120 Millisekunden vor seinem eigenen Stichpunkt. Wer etwas
 Eigenes angibt, behält es -- und wer einen anderen Schritt wählt, erbt nichts,
 denn dann sollen die beiden ja gerade nicht zusammen erscheinen.
 
-*Ein `fr`-Abstand gehört nicht ins verfolgte Element.* `fr` heißt „Anteil an
+*Ein `fr`-Abstand gehört nicht ins verfolgte Element.* `fr` heißt "Anteil an
 dem, was übrig bleibt" -- und was übrig bleibt, verteilt der Elternteil unter
 den Geschwistern. Ein verfolgtes Element wird aber allein gemessen und sieht
 seine Geschwister nicht. Ein `#v(1fr)` unmittelbar in einem `anim` wird deshalb
@@ -1001,8 +1001,8 @@ tun.
 
 #warning[
   Beim Zurückblättern und beim Betreten einer Folie wird der ganze Lauf von
-  vorn wiederholt. Aufträge müssen deshalb wiederholbar sein: „setze $a$ auf
-  2,5" ist gut, „erhöhe $a$ um 1" nicht.
+  vorn wiederholt. Aufträge müssen deshalb wiederholbar sein: "setze $a$ auf
+  2,5" ist gut, "erhöhe $a$ um 1" nicht.
 ]
 
 == Video
@@ -1171,7 +1171,7 @@ Rechnung, Zeile für Zeile:
 )
 
 #tip[
-  Die Folientitel der Kette durchzunummerieren („Schritt 2 von 3") kostet
+  Die Folientitel der Kette durchzunummerieren ("Schritt 2 von 3") kostet
   nichts und hilft im Unterricht sofort: Der Fortschrittsbalken zählt Folien,
   nicht Zwischenschritte einer Rechnung.
 ]
@@ -1397,7 +1397,7 @@ hat, obwohl Typst die Introspektion über das ganze Bündel führt.
   experimentell und ohne die Schalter `--features bundle,html` nicht zu haben.
   Und eine Datei, die `bundle` benutzt, lässt sich *nur* mit `--format bundle`
   übersetzen; ein gewöhnliches `typst compile vortrag.typ vortrag.pdf` bricht
-  mit „constructing a document is only supported in the bundle target" ab. Wer
+  mit "constructing a document is only supported in the bundle target" ab. Wer
   beide Wege offenhalten will, legt den Rumpf in ein `#let` und ruft
   `presentation` von Hand.
 ]
@@ -1881,7 +1881,7 @@ Kopfzeile. Wer die Zahlen einhalten will, legt die passende Palette darüber:
 
 #warning[
   *Aus der Füllfarbe wird nicht auf die Schriftfarbe geschlossen.* Ein
-  mattes Salbeigrün wie `#aebdb3` sieht für eine Helligkeitsregel „hell" aus,
+  mattes Salbeigrün wie `#aebdb3` sieht für eine Helligkeitsregel "hell" aus,
   aber Weiß darauf misst 1,96 zu 1 -- weit unter den 4,5, die Fließtext will.
   Deshalb rechnet das Paket mit `contrast` und färbt nirgends automatisch um.
 
@@ -2008,7 +2008,7 @@ Fläche.
   width: 11cm,
 )
 
-`title:` ändert die Überschrift (Vorgabe „Merke"), `color:` die Farbe;
+`title:` ändert die Überschrift (Vorgabe "Merke"), `color:` die Farbe;
 `title: none` lässt sie weg.
 
 === side-by-side -- zwei Spalten
@@ -2251,7 +2251,7 @@ error: assertion failed: typstage: 2 slides run over the room the body has. …
 Shorten the slide, split it, or put the block that does not fit into fit(). …
 ```)
 
-*Warum beim Schritt „at the earliest" steht.* Eine Folie ist auf Schritt eins
+*Warum beim Schritt "at the earliest" steht.* Eine Folie ist auf Schritt eins
 genauso hoch wie auf Schritt fünf: jedes verfolgte Element hält seinen vollen
 Platz von Anfang an mit `hide()`, ob der Rumpf passt, ist also eine Frage an
 die Folie und nicht an den Schritt. Mit dem Schritt ändert sich nur, was
@@ -2701,7 +2701,7 @@ Einblendungen sitzen, denn der Browser setzt nichts neu:
 #alternatives(stand, stand, stand, stand)
 ```]
 
-Das druckt beim Blättern nacheinander „Schritt 1 von 4" bis „Schritt 4 von 4" -- gemessen an einem Prüfstück mit neun Schritten, an jedem einzelnen davon.
+Das druckt beim Blättern nacheinander "Schritt 1 von 4" bis "Schritt 4 von 4" -- gemessen an einem Prüfstück mit neun Schritten, an jedem einzelnen davon.
 
 Auf dem Papier gibt es keinen laufenden Schritt: die Seite zeigt die Folie im
 Endzustand, alles auf einmal. Dort ist `step.number` deshalb gleich
@@ -2785,7 +2785,7 @@ statt sie zu ersetzen.
   ließe sich schließen, indem das Deck seinen Stand am Ende abräumt -- gemessen
   kostet das aber Übersetzungs-Spielraum: eine Folie mit einer Einblendung
   neben einem `tiles` ging damit von null auf drei
-  „did not converge"-Meldungen. Eine Ecke, in der niemand steht, ist das nicht
+  "did not converge"-Meldungen. Eine Ecke, in der niemand steht, ist das nicht
   wert; in der Show-Regel-Form steht hinter dem Deck ohnehin nichts.
 ]
 
