@@ -1,0 +1,77 @@
+name: Decks im Browser durchfahren
+
+# Nicht in `pages.yml`. Der baut und deployt; ein Prüflauf, der einen Deploy
+# aufhält, wird beim ersten Fehlalarm umgangen, und danach prüft er nichts
+# mehr. Er gehört vor eine Freigabe, also an den Pull Request.
+#
+# Auch keine schnelle Fassung bei jedem Push. Gemessen auf einem Mac mini:
+# der volle Lauf braucht 254 s, derselbe Lauf mit zwanzigfachem
+# Animationstempo 78 s, und beide liefern einen byteidentischen Bericht. Die
+# Ersparnis sind knapp drei Minuten, der Rest ist Seitenladen und
+# Browserstart, nicht Warten auf Animationen. Dafür einen zweiten Lauf zu
+# pflegen, der dieselben Zahlen ausspricht, lohnt nicht; vier Minuten vor
+# einer Freigabe sind kein Latenzproblem.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decks:
+    name: Sechs Beispiele und das Prüfdeck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Typst-Schule danebenlegen
+        uses: actions/checkout@v4
+        with:
+          repository: Loewe1000/Typst-Schule
+          path: .aggregat
+          fetch-depth: 1
+
+      # node 22, wegen des globalen `WebSocket`, das der CDP-Treiber benutzt.
+      # Das Standard-node des Läufers ist älter, und der Lauf sagt dann zwar
+      # klar, was fehlt, prüft aber nichts.
+      - name: node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Typst installieren
+        uses: typst-community/setup-typst@v4
+        with:
+          # 0.15.1, nicht 0.15.0 wie in pages.yml. Der Sollstand enthält mit
+          # `satz` einen SHA der gesetzten Ausgabe, und der hängt am
+          # Übersetzer -- ein anderer Punktstand ergäbe eine Abweichung, die
+          # niemand verursacht hat. pages.yml darf auf 0.15.0 bleiben, es
+          # vergleicht nichts, sondern baut nur.
+          typst-version: "0.15.1"
+
+      # Der Lauf misst, was ausgeliefert wird, und nicht, was gerade in der
+      # Quelle steht: ein Deck trägt seine Laufzeit wörtlich in sich. Deshalb
+      # erst bauen. Weicht die eingebaute Laufzeit von `assets/` ab, sagt der
+      # Lauf das eigens.
+      - name: Seite bauen
+        env:
+          AGGREGAT: ${{ github.workspace }}/.aggregat
+        run: bash .github/scripts/build-site.sh
+
+      # Kein npm, kein Playwright. Chrome liegt auf dem Läufer, und node
+      # bringt `fetch` und `WebSocket` selbst mit; mehr braucht
+      # `.github/scripts/decklauf/cdp.js` nicht.
+      - name: Decks durchfahren
+        run: node .github/scripts/pruefe-decks.js --bericht bericht.json
+
+      - name: Bericht aufheben
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deckbericht
+          path: bericht.json
+          if-no-files-found: ignore
