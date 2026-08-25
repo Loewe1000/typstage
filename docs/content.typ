@@ -1911,6 +1911,104 @@ Die Rechnung dahinter ist von mosaic übernommen, das sie aus Touying 0.7.4
 übernommen hat; Touying schreibt die Arbeit daran Andreas Kröpelin
 (Polylux PR #91) und ntjess zu.
 
+=== overflow -- der Prüflauf vor dem Vortrag
+
+`fit` beantwortet den einen Block, dessen Größe man schon ahnt. `overflow`
+beantwortet die Frage, die man nicht Folie für Folie stellen kann: läuft
+irgendwo in diesem Deck etwas über seinen Platz? Es misst jeden Folienrumpf
+gegen den Platz, den das Theme ihm gibt, und nennt die, die nicht hineingehen.
+
+#show-code(```typ
+#show: presentation.with(overflow: "error")
+```)
+
+Standardmäßig aus, und dafür gedacht, für einen Lauf eingeschaltet zu werden --
+nicht dafür, beim Schreiben mitzulaufen.
+
+Ein Foliensatz braucht das dringender als ein Dokument. Auf einer Seite, die
+man durchblättert, sieht man den Überlauf: die Zeile steht schlicht über dem
+Rand und das Auge fängt sie. Eine typstage-Folie wird in einen SVG-Rahmen
+fester Größe gesetzt und im Browser skaliert -- was übersteht, wird
+abgeschnitten oder neben die Folie gezeichnet, und einen Vortrag, den man
+durchklickt, sieht man darauf erst am Beamer.
+
+/ `"none"`: es wird nichts gemessen. Der Vorgabewert.
+/ `"error"`: das ganze Deck wird gebaut, und dann bricht es mit *allen* Stellen
+  auf einmal ab statt mit der ersten. Ein Lauf, die ganze Liste.
+/ `"record"`: es baut durch und legt stattdessen je Fund einen abfragbaren
+  Datensatz ab, für ein Werkzeug oder ein Bauskript. Typst gibt einem Paket
+  keinen Warnkanal, `"record"` gibt von sich aus also nichts aus.
+
+Die Meldung nennt Folie, Schritt und das Maß (hier gekürzt, der Fließtext um
+die Liste herum ist weggelassen):
+
+#show-code(```
+error: assertion failed: typstage: 2 slides run over the room the body has. …
+  slide 2, from step 1 at the earliest: 311.14pt too tall, 675.76pt of content in 364.61pt of room
+  slide 3, from step 2 at the earliest: 296.49pt too tall, 661.1pt of content in 364.61pt of room
+Shorten the slide, split it, or put the block that does not fit into fit(). …
+```)
+
+*Warum beim Schritt „at the earliest" steht.* Eine Folie ist auf Schritt eins
+genauso hoch wie auf Schritt fünf: jedes verfolgte Element hält seinen vollen
+Platz von Anfang an mit `hide()`, ob der Rumpf passt, ist also eine Frage an
+die Folie und nicht an den Schritt. Mit dem Schritt ändert sich nur, was
+*gezeichnet* wird. Ein `anim`, das unten übersteht, ist bis zu seinem Schritt
+unsichtbar, und erst dann gibt es etwas zu sehen.
+
+Der Schritt wird aus den Einblendungen gerechnet: alles, was erst nach Schritt
+k dazukommt, ist dort unsichtbar, und ist der Überlauf größer als das alles
+zusammen, hängt schon auf Schritt k etwas über den Rand. Das ist eine untere
+Schranke und keine genaue Antwort, denn die Summe zählt die Einblendungen und
+sonst nichts -- die Zwischenräume, Blockabstand, ein `v()`, zählen in der Höhe
+des Rumpfes und in keiner Einblendung. Gemessen: ein 350 pt hoher Kasten, ein
+`v(100pt)` und ein `anim(at: 4)` darunter werden ab Schritt 1 gemeldet, während
+der Überstand erst auf Schritt 4 auf den Schirm kommt. Wo das Überstehende
+selbst eine Einblendung ist und nichts Leeres darüber steht, stimmt der Schritt
+genau: `anim(at: 3)` wird ab Schritt 3 gemeldet. *Die Folie steht in beiden
+Fällen richtig da*, und das ist der Teil, an dem man handelt. Auf Papier wird
+gar kein Schritt genannt, weil dort jeder Schritt zugleich auf der Seite steht;
+in den Datensätzen zeigt sich das als `step: 0`.
+
+Die Datensätze holt man mit `typst eval`, und dafür muss das Deck auf
+`overflow: "record"` stehen -- auf `"error"` bricht auch dieser Befehl mit dem
+Fehler ab:
+
+#show-code(```sh
+typst eval --target html --features html --in deck.typ \
+  'query(<typstage-overflow>).map(e => e.value)'
+```)
+
+und bekommt je Fund einen Eintrag:
+
+#show-code(```json
+[{"slide":2,"step":1,"height":675.76,"room":364.61,"over":311.14},
+ {"slide":3,"step":2,"height":661.1,"room":364.61,"over":296.49}]
+```)
+
+#info[
+  *Was die Prüfung nicht sieht.* Gemessen wird nur die Höhe. `measure` deckelt
+  auch die Breite, die es meldet, bei der Breite, die es bekommt -- ein zu
+  breiter Rumpf ist also nicht von einem zu unterscheiden, der seine Spalte
+  füllt. Für diesen Fall ist `fit` die Antwort, und beide gehören zusammen: die
+  Prüfung findet die Folie, `fit` richtet den Block.
+
+  Viererlei wird übersehen statt gemeldet. Ein `height: 100%` im Rumpf misst 0,
+  ein `1fr` fällt zusammen. Alles, was außerhalb seines eigenen Layoutkastens
+  zeichnet -- `scale`, `move`, `place` mit Versatz --, ist für eine Messung
+  unsichtbar. Und Titel- und Abschnittsfolien werden nie gemessen: das Theme
+  zeichnet sie mit `place`, sie haben keinen Rumpfblock, über den etwas laufen
+  könnte.
+
+  Einerlei wird gemeldet, wo nichts zu sehen ist: nachlaufender Abstand, ein
+  `v()` am Ende eines Rumpfes, nimmt in der Messung Platz und zeichnet nichts.
+]
+
+Gemessen über die sechs Beispieldecks: in der HTML kostet der Lauf merklich
+mehr Zeit, je nach Deck und Verrechnung des Prozessstarts zwischen dem 1,2- und
+dem 1,5-Fachen; auf Papier kostet er wenig, ein paar Millisekunden je Deck.
+Über alle sechs Decks gelaufen meldet er nichts -- keines von ihnen läuft über.
+
 === Folien ohne Titel
 
 Ein nacktes `==` lässt den Titelbalken weg; der Rumpf beginnt dann oben und

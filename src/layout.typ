@@ -404,6 +404,16 @@
     // No room means nothing to solve. That is not an exotic case: under a
     // `measure` the region comes back unbounded, and `alternatives` and
     // `side-by-side(equal: true)` both measure their content.
+    //
+    // A hand-given height is not asserted here either, and that was tried.
+    // Handing back `block(height: height, body)` looks right for the one case
+    // where the fit really does scale the body down to it, but it is a claim
+    // the fit does not keep: with a body smaller than the height nothing is
+    // grown, with `shrink: false` nothing is shrunk, and under a narrower
+    // region the width decides the factor and the block ends up shorter than
+    // the height. Measured, `fit(height: 300pt)` around a small body reserved
+    // 300pt where 7.24pt is set, and an `alternatives` beside such a fit
+    // pushed the rest of the slide to its bottom edge.
     if unloesbar(reg.width) or unloesbar(reg.height) { return body }
     let raum-b = fit-mass(width, reg.width)
     let raum-h = fit-mass(height, reg.height)

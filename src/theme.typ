@@ -25,8 +25,9 @@
 // says so: "content labelled multiple times", and the last one is used.
 
 #import "config.typ": *
-#import "internal.typ": (deck-info, note-state, plain-text, slide-counter,
-                        sprite-number, step-cursor, step-here, umgebungs-block)
+#import "internal.typ": (deck-info, html-output, note-state, plain-text,
+                        slide-counter, sprite-number, step-cursor, step-here,
+                        ueberlauf-pruefen, umgebungs-block)
 #import "slides.typ": info
 #import "themes.typ": font-args
 
@@ -137,7 +138,7 @@
   })
 }
 
-#let slide-body(s, style, geo, t, chrome: true) = block(
+#let slide-body(s, style, geo, t, chrome: true, overflow: "none") = block(
   width: geo.width, height: geo.height,
 {
   // A mark at the end of the slide, so that a footer inside it can ask the
@@ -243,10 +244,24 @@
     // the slide.
     if chrome { place(top + left, slide-chrome(geo, t)) }
 
+    // The room the deck's content gets, and the one measure the overflow
+    // check asks against. Everything else the slide shows, the band, the
+    // title, the footer, the progress, is drawn beside this block with
+    // `place` and takes nothing away from it.
+    let raum = geo.height - kopf - (t.head-gap + t.foot-gap) * k
     place(top + left, dx: m.left, dy: kopf + t.head-gap * k,
-      block(width: inner,
-            height: geo.height - kopf - (t.head-gap + t.foot-gap) * k,
-            style(s.body)))
+      block(width: inner, height: raum, style(s.body)))
+    // `place`, like the mark above: the block is already slide-high and full,
+    // and the check must not take a single point from the body it measures.
+    // Only for slides. A title or a section slide is drawn by the theme with
+    // `place` and has no body block to overrun.
+    if overflow != "none" {
+      place(top + left, context ueberlauf-pruefen(
+        deck-info.get().data.slide.number, style(s.body), inner, raum,
+        // The step is read off the slide's own reveals, and on paper there
+        // are none: every step stands on the page at once.
+        schritte: html-output.get()))
+    }
   }
   // Last, because only here has the cursor seen every reveal of the slide.
   schritt-summe
@@ -275,7 +290,7 @@
 /// Where a slide has a speaker note it stands in that room; where it has none,
 /// ruled lines take its place. Both are the same thing really: the space is
 /// for whatever is not on the slide itself.
-#let handout-body(all, facts, style, geo, t, per-page) = {
+#let handout-body(all, facts, style, geo, t, per-page, overflow: "none") = {
   set page(paper: "a4", margin: (x: 1.5cm, y: 1.4cm))
   set text(size: 10pt, fill: t.strong)
   let gap = 14pt
@@ -334,7 +349,7 @@
       [#block(width: w, height: h, clip: true, {
         set block(fill: aussen.fill, stroke: aussen.stroke, radius: aussen.radius)
         scale(w / geo.width * 100%, origin: top + left,
-              slide-body(item.slide, style, geo, t))
+              slide-body(item.slide, style, geo, t, overflow: overflow))
       }) <ts-handout-frame>]
     }
 

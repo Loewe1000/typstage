@@ -990,6 +990,100 @@ view nor the handout. `speaker-note` refuses that with a message.
 The arithmetic is taken from mosaic, which took it from Touying 0.7.4; Touying
 credits the work on it to Andreas Kröpelin (Polylux PR #91) and to ntjess.
 
+=== overflow: the checking pass before the talk
+
+`fit` answers the one block whose size you already suspect. `overflow` answers
+the question you cannot ask slide by slide: does anything in this deck run over
+the room it has? It measures every slide body against the room the theme gives
+it and names the ones that do not fit.
+
+#show-code(```typ
+#show: presentation.with(overflow: "error")
+```)
+
+It is off by default and meant to be switched on for a run, not left on while
+writing.
+
+A deck needs this more than a document does. A page one leafs through shows an
+overrun: the line simply stands past the margin and the eye catches it. A
+typstage slide goes into an SVG frame of fixed size and is scaled in the
+browser, so what sticks out is cut away or drawn beside the slide -- and a talk
+one clicks through shows that at the projector.
+
+/ `"none"`: nothing is measured. The default.
+/ `"error"`: the whole deck is built, and it then stops with *every* place at
+  once rather than with the first. One run, the whole list.
+/ `"record"`: it carries on and files a queryable record per finding instead,
+  for a tool or a build script. Typst gives a package no warning channel, so
+  `"record"` prints nothing by itself.
+
+The message names the slide, the step and the amount (shortened here, the
+prose around the list is left out):
+
+#show-code(```
+error: assertion failed: typstage: 2 slides run over the room the body has. …
+  slide 2, from step 1 at the earliest: 311.14pt too tall, 675.76pt of content in 364.61pt of room
+  slide 3, from step 2 at the earliest: 296.49pt too tall, 661.1pt of content in 364.61pt of room
+Shorten the slide, split it, or put the block that does not fit into fit(). …
+```)
+
+*Why the step says "at the earliest".* A slide is exactly as tall on step one
+as on step five: every tracked element holds its full room with `hide()` from
+the start, so whether the body fits is a question about the slide, not about
+the step. What changes with the step is only what is *drawn*. An `anim` hanging
+over the bottom edge is invisible until its step, and only then is there
+something to see.
+
+The step is worked out from the reveals: everything that only arrives after
+step k is invisible there, and if the overrun is larger than all of it put
+together, something is hanging over the edge on step k already. That is a lower
+bound and not an exact answer, because the sum counts the reveals and nothing
+else -- the gaps between them, block spacing, a `v()`, count in the body's
+height and in no reveal. Measured: a 350pt box, a `v(100pt)` and an
+`anim(at: 4)` below it are reported from step 1, while the overrun only reaches
+the screen on step 4. Where the thing that overruns is itself a reveal and
+nothing empty stands above it, the step is exact: `anim(at: 3)` is reported
+from step 3. *The slide is named correctly either way*, and that is the part to
+act on. On paper no step is named at all, because every step stands on the page
+at once; in the records that shows as `step: 0`.
+
+The records are read with `typst eval`, and for that the deck has to be on
+`overflow: "record"` -- on `"error"` this command stops with the error instead:
+
+#show-code(```sh
+typst eval --target html --features html --in deck.typ \
+  'query(<typstage-overflow>).map(e => e.value)'
+```)
+
+which gives one entry per finding:
+
+#show-code(```json
+[{"slide":2,"step":1,"height":675.76,"room":364.61,"over":311.14},
+ {"slide":3,"step":2,"height":661.1,"room":364.61,"over":296.49}]
+```)
+
+#info[
+  *What the check does not see.* Only the height is measured. `measure` caps
+  the width it reports at the width it is given, so a body that is too wide
+  cannot be told from one that fills its column; `fit` is the answer to that
+  case, and the two belong together -- the check finds the slide, `fit` fixes
+  the block.
+
+  Four things are missed rather than reported. A `height: 100%` inside the body
+  measures 0 and a `1fr` collapses. Anything drawing outside its own layout box
+  -- `scale`, `move`, `place` with an offset -- is invisible to a measurement
+  altogether. And title and section slides are never measured: the theme draws
+  them with `place` and they have no body block to overrun.
+
+  One thing is reported where nothing shows: trailing spacing, a `v()` at the
+  end of a body, takes room in the measurement and draws nothing.
+]
+
+Measured over the six example decks: in HTML the pass costs noticeably more
+time, between 1.2 and 1.5 times depending on the deck and on how the process
+start is accounted for; on paper it costs a little, a few milliseconds per
+deck. Run over all six decks it reports nothing -- none of them overruns.
+
 == Labels: reaching every shape the package builds
 
 Every shape typstage draws on a slide itself -- the ground, the header band,

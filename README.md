@@ -111,6 +111,7 @@ written.
 | `morph`, `pin` | magic move across slides; `pin` names a glyph so the pairing follows the name rather than the shape |
 | `card`, `callout`, `side-by-side`, `tiles`, `statement` | layouts inside a slide; `tiles` staggers itself, and `side-by-side(equal: true)` makes its columns the same height |
 | `fit` | scales one block down to the room it has, for a wide table or a generated chart; no reveal may sit inside it |
+| `overflow:` | a checking pass, off by default: `"error"` builds the deck and then names every slide whose body runs over its room, with the step; `"record"` files the same as queryable metadata |
 | `transition`, `speaker-note` | how this slide comes in, and what only you see |
 | `themes`, `theme` | the five built-in looks, and the builder behind them |
 | `video`, `embed`, `flipbook` | media, arbitrary web content in a sandboxed frame, and animation drawn frame by frame by Typst |

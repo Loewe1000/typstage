@@ -192,6 +192,35 @@
 /// The PDF is a handout: one page per slide, every tracked element in its
 /// final state. What belongs only to the motion, the notes, the slide transitions,
 /// the bridge jobs, are state updates without output and fall away by themselves.
+///
+/// `overflow` is a checking pass over the deck, off by default. It measures
+/// every slide body against the room the theme gives it and names the ones
+/// that do not fit, with the earliest step on which the overrun can be on the
+/// screen. Title and section slides are not measured: the theme draws them
+/// with `place` and they have no body block.
+///
+/// - `"none"`: nothing is measured. The default.
+/// - `"error"`: the whole deck is built, and it then stops with *every* place
+///   at once rather than the first.
+/// - `"record"`: it carries on and files a record per finding instead, for a
+///   tool to read. The deck has to be on `"record"` for this; on `"error"`
+///   the command below stops with the error too:
+///
+/// ```sh
+/// typst eval --target html --features html --in deck.typ \
+///   'query(<typstage-overflow>).map(e => e.value)'
+/// ```
+///
+/// It is not meant to stay on while writing. Measured over the six example
+/// decks: in HTML it costs noticeably more time, between 1.2 and 1.5 times
+/// depending on the deck and on how the process start is accounted for. On
+/// paper it costs a few milliseconds per deck, small but repeatable: there the
+/// check runs without the step arithmetic.
+///
+/// Why a deck of slides needs this more than a document does: a slide goes
+/// into an SVG frame of fixed size and is scaled in the browser, so what
+/// sticks out is cut away or drawn beside the slide. A page one leafs through
+/// shows an overrun; a talk one clicks through shows it at the projector.
 #let presentation(
   ..slides,
   title: none,
@@ -208,7 +237,11 @@
   height: auto,
   margin: auto,
   handout: false,
+  overflow: "none",
 ) = {
+  assert(overflow in ("none", "error", "record"), message:
+    "typstage: overflow is \"none\" (the default), \"error\" or \"record\", "
+    + "not " + repr(overflow))
   // 16:9 on an A4-width canvas unless told otherwise. 4:3 is
   // `width: 800pt, height: 600pt`; everything the theme draws scales along.
   let geo = canvas(width: width, height: height, margin: margin)
@@ -275,7 +308,8 @@
            message: "typstage: handout takes true or 1 to 6 slides per page")
     theme-state.update(theme)
     html-output.update(false)
-    handout-body(all, facts, style, geo, theme, per)
+    handout-body(all, facts, style, geo, theme, per, overflow: overflow)
+    ueberlauf-bericht(overflow)
   } else if target() != "html" {
     set page(width: geo.width, height: geo.height, margin: 0pt)
     theme-state.update(theme)
@@ -300,9 +334,10 @@
                  // its last value standing.
                  + step-here.update(())
                  + sprite-number.update(none)
-                 + slide-body(s, style, geo, theme))
+                 + slide-body(s, style, geo, theme, overflow: overflow))
     }
     pages.join(pagebreak(weak: true))
+    ueberlauf-bericht(overflow)
   } else {
     html-output.update(true)
     theme-state.update(theme)
@@ -352,7 +387,8 @@
         // while the frame is laid out would be entered any more.
         html.elem("section", attrs: (class: "ts-slide"), {
           html.elem("div", attrs: (class: "ts-bg"),
-                    html.frame(slide-body(s, style, geo, theme, chrome: false)))
+                    html.frame(slide-body(s, style, geo, theme, chrome: false,
+                                          overflow: overflow)))
           // Second chrome, only for the print view (key `p`). There each
           // slide stands on its own page, there is no transition. And the
           // layer above the stage cannot travel along there, because the
@@ -419,6 +455,10 @@
           + "word. Either drop the `at:` here, or rename one of the two.")
       }
     }
+
+    // Read back at the end of the deck, not at the first finding: whoever runs
+    // the check before a talk wants the whole list in one go.
+    ueberlauf-bericht(overflow)
 
     html.elem("div", attrs: (id: "ts-overview"), [])
     html.elem("div", attrs: (id: "ts-hint"), [])

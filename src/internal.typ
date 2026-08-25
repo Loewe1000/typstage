@@ -532,6 +532,174 @@
   assert(im-fit.get() == 0, message: fit-meldung(was))
 }
 
+// ── The check that a slide fits into its body ───────────────────────────
+//
+// mosaic measures every cell on every frame; here the unit is the slide body,
+// the one block `slide-body` places the deck's content into. Header band,
+// title line, footer and progress are drawn beside it with `place` and are not
+// part of it, so the check asks exactly the question a deck can act on: does
+// what I wrote fit into the room I was given?
+//
+// Why it is worth more here than in a package that only makes pages: a slide
+// of ours goes into an SVG frame of fixed size and is scaled in the browser.
+// What sticks out is cut away or drawn into the neighbourhood, depending on
+// the frame, and either way it is first seen at the projector. A page one
+// leafs through shows it.
+
+/// How far a body may stick out before it is reported.
+///
+/// Not a setting but a guard against rounding: a body that fills its room to
+/// the last point comes back a fraction over it, and that must not turn into a
+/// message. Measured across the 63 slides of the six example decks, the fullest
+/// body stops 20.83pt short of its room and the next one 35.13pt, so nothing
+/// real comes anywhere near this line.
+#let ueberlauf-toleranz = 0.5pt
+
+/// One record, and the only thing this check leaves behind.
+///
+/// Typst gives a package no warning channel, so a finding is filed as
+/// queryable metadata and nothing is printed on its own. `overflow: "error"`
+/// reads the records back at the end of the document and stops with all of
+/// them at once; a tool reads them with
+///
+/// ```sh
+/// typst eval --target html --features html --in deck.typ \
+///   'query(<typstage-overflow>).map(e => e.value)'
+/// ```
+///
+/// The numbers travel as plain numbers in points, not as lengths, so that the
+/// query can write them as JSON.
+#let ueberlauf-satz(nr, schritt, hoch, raum) = [#metadata((
+  slide: nr,
+  step: schritt,
+  height: calc.round(hoch.pt(), digits: 2),
+  room: calc.round(raum.pt(), digits: 2),
+  over: calc.round((hoch - raum).pt(), digits: 2),
+)) <typstage-overflow>]
+
+/// The step from which an overflow is provably on the screen.
+///
+/// The layout of a slide does not move as the deck is paged through: every
+/// tracked element holds its full room with `hide()` from the first step on,
+/// and `alternatives` sets its versions on top of each other in a box as large
+/// as the largest. So the body is exactly as tall on step one as on step five,
+/// and "does it fit" is a question about the slide. What changes with the step
+/// is only what is *drawn*: an `anim` that hangs over the bottom edge is
+/// invisible until its step, and only then is there something to see.
+///
+/// So the step is read off the room the overflow needs, not off a second
+/// layout. Everything that only comes in after step k is invisible there and
+/// together it is `later` tall. If the body sticks out further than that, then
+/// even with all of it taken away something would still be hanging over the
+/// edge, and that something is visible on step k. The smallest k for which
+/// that holds is the answer, and step one is the answer whenever the slide
+/// carries no reveal at all.
+///
+/// It is a lower bound, not an exact answer, and the message says so with "at
+/// the earliest". `later` adds up the heights of the reveals and nothing else,
+/// so every gap between them -- block spacing, a `v()`, the space between
+/// paragraphs -- counts in the body's height and in no reveal. Measured: a
+/// 350pt box, a `v(100pt)` and an `anim(at: 4)` below it are reported from
+/// step 1, while the overrun is only on the screen from step 4. Two effects
+/// push the other way and do not cancel it: a nested reveal is counted twice,
+/// once in its own right and once inside the element around it. Where the
+/// thing that overruns is itself a reveal and nothing empty stands above it,
+/// the step is exact -- measured, `anim(at: 3)` is reported from step 3.
+/// The slide is named correctly either way, and that is the part to act on.
+///
+/// It cannot be done by measuring the same body once per step, and that was
+/// tried first. Introspection inside a `measure` of content that also stands
+/// in the document is resolved at the *document's* copy, not where the
+/// measurement is written: with a state set to 4 in front of it, a measurement
+/// of such a block read 0 and returned the layout of the real one, in HTML and
+/// on paper alike. So a check cannot tell the elements of a body that they are
+/// being measured for step 3.
+#let ueberlauf-schritt(liste, ueber) = {
+  let spaeter(k) = liste.filter(sp => sp.step > k)
+    .fold(0pt, (summe, sp) => summe + sp.height)
+  let stufen = ((1,) + liste.map(sp => sp.step)).dedup().sorted()
+  let treffer = stufen.find(k => ueber > spaeter(k))
+  // `spaeter` is 0 at the last step, so there is always one. Named all the
+  // same, because a `find` that comes back empty must not become a panic in a
+  // check that is meant to help.
+  if treffer == none { calc.max(1, ..stufen) } else { treffer }
+}
+
+/// Measure one slide body against the room it was given.
+///
+/// Two measurements, and both are needed. The one that decides *whether* there
+/// is an overflow is taken inside the real room, because content that lays
+/// itself out against the room it gets only settles when it has one: two
+/// balanced `columns` measure 338.16pt inside their room and 366.94pt without
+/// it, and reporting the second would be inventing an overflow that is not on
+/// the slide. The one that says *by how much* is taken without a height,
+/// because a measurement with one is capped at it: the same body that
+/// saturates the room at 364.61pt is 395.71pt when asked freely, and the
+/// difference is exactly what the capped number hides.
+///
+/// So a body is reported only where the capped measurement fills the room to
+/// the last point, and the free one is then read for the amount.
+///
+/// Only the height. `measure` caps the width it reports at the width it is
+/// given as well, and there is no way around that one: a table of 516.14pt
+/// measured inside 200pt reports 200pt, so a body that is too wide cannot be
+/// told from one that fills its column. `fit` is the answer to that case.
+///
+/// What still reads low, and is therefore missed: a `height: 100%` inside the
+/// body measures 0, a `1fr` collapses, and anything that draws outside its own
+/// layout box -- `scale`, `move`, `place` with an offset -- is invisible to a
+/// measurement altogether. What still reads high, and is therefore over-
+/// reported: trailing spacing, a `v()` at the end of a body, which takes room
+/// in the measurement but draws nothing.
+#let ueberlauf-pruefen(nr, rumpf, breite, raum, schritte: true) = context {
+  // Does it fit at all? Anything that comes back short of the room has
+  // settled inside it and is done with.
+  if measure(rumpf, width: breite, height: raum).height < raum - ueberlauf-toleranz {
+    return
+  }
+  let hoch = measure(rumpf, width: breite).height
+  if hoch - raum <= ueberlauf-toleranz { return }
+  // On paper every step stands on the page at once, so there is no step to
+  // name and 0 says so.
+  let schritt = if schritte { ueberlauf-schritt(sprites.get(), hoch - raum) } else { 0 }
+  ueberlauf-satz(nr, schritt, hoch, raum)
+}
+
+/// Read the records back and stop with all of them at once.
+///
+/// At the end of the deck, not at the first finding: whoever runs the check
+/// before a talk wants the list, not one place at a time with a compile run
+/// between them.
+///
+/// Deduplicated, because a `bundle()` writes several outputs from one source
+/// and a slide would otherwise be named once per output.
+#let ueberlauf-bericht(modus) = if modus != "error" { [] } else { context {
+  let roh = query(<typstage-overflow>).map(e => e.value)
+  // One line per slide, not one per record. A `bundle()` writes several
+  // outputs from one source, so the same slide is measured once per output
+  // and `dedup` does not join those records: they differ in `step`, because
+  // paged output has none. Without this a bundle reported one overrunning
+  // slide as "2 slides run over", and with a step-dependent height as three.
+  // The richest record of each slide is kept, so a step survives where one
+  // was found.
+  let funde = roh.map(f => f.slide).dedup().sorted().map(nr =>
+    roh.filter(f => f.slide == nr).sorted(key: f => f.step).last())
+  let zeile(f) = ("  slide " + str(f.slide)
+    + (if f.step > 0 { ", from step " + str(f.step) + " at the earliest" } else { "" })
+    + ": " + str(f.over) + "pt too tall, "
+    + str(f.height) + "pt of content in " + str(f.room) + "pt of room")
+  assert(funde.len() == 0, message:
+    "typstage: " + str(funde.len())
+    + (if funde.len() == 1 { " slide runs" } else { " slides run" })
+    + " over the room the body has. A slide is a frame of fixed size: in the "
+    + "browser what sticks out is cut away or drawn beside the slide, on "
+    + "paper it stands over the edge. Neither is seen while writing.\n"
+    + funde.map(zeile).join("\n")
+    + "\nShorten the slide, split it, or put the block that does not fit into "
+    + "fit(). overflow: \"record\" files the same records for querying and "
+    + "carries on instead of stopping.")
+} }
+
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
            width: auto) = {
   // The `box` has to sit around the *whole* construction, not inside it:
