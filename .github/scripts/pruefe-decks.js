@@ -247,7 +247,15 @@ const DURCHLAUF = `(async function () {
   p.uhr(${UHR});
   var vor = [], zurueck = [], fristen = 0, flyDom = 0, flyDomRueck = 0;
   var FLY = document.getElementById("ts-fly");
-  async function ruhe() { if (await p.ruhig(${FRIST}) === "frist") fristen++; }
+  // Jeder Ausgang außer "ruhig" zählt. "frist" heißt, eine Animation lief noch;
+  // "keine-bilder" heißt, der Browser hat keine Bilder mehr ausgeteilt -- ein
+  // verborgenes Fenster. Nur auf "frist" zu sehen hieße, dass ein solcher Lauf
+  // still misst, was gerade dasteht, statt zu sagen, dass er nichts abwarten
+  // konnte.
+  async function ruhe() {
+    const wie = await p.ruhig(${FRIST});
+    if (wie !== "ruhig") fristen++;
+  }
 
   typstage.goto(0, true); await ruhe(); vor.push(p.stand());
   for (var i = 1; i < p.schritte; i++) {
@@ -511,7 +519,12 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   // verglichen; stillschweigend übergehen hieße, eine Prüfung zu verlieren,
   // ohne dass es jemand merkt.
   const PLATTFORM = process.platform;
-  const proPlattform = ["satz", "satzBytes"];
+  // Alles, was an den Schriften des Rechners hängt, steht je Plattform.
+  // `sprecher` zählt die Knoten der Sprechervorschau, und die ist gesetzter
+  // Text: theme-night hat auf ubuntu-latest einen Knoten weniger als hier,
+  // weil dort eine Glyphe fehlt. Dieselbe Ursache wie bei `satz`, also
+  // dieselbe Regel -- sonst wäre es eine Zahl, die je nach Rechner umfällt.
+  const proPlattform = ["satz", "satzBytes", "sprecher"];
   const jetzt = {};
   bericht.forEach(z => {
     const e = {};
