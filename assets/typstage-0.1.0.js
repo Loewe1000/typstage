@@ -1,5 +1,55 @@
 
 (function () {
+  // ── Check surface, part one: the error list ────────────────────────────────
+  //
+  // This stands before everything else on purpose. A collector that is hung on
+  // after `load` misses exactly the errors thrown while the deck is being put
+  // together, and those are the ones worth catching. `console.error` and
+  // `console.warn` are wrapped too, because the runtime reports several real
+  // faults that way and none of them throws.
+  //
+  // The list is bounded. A deck that throws inside an animation frame would
+  // otherwise fill the tab with strings nobody reads.
+  var FEHLER = [];
+  var VERWORFEN = 0;
+  function merke(art, was) {
+    // Bounded, but it says so. Silently dropping everything after the
+    // two-hundredth entry means a run reports the wrong errors: a flood of
+    // warnings would push out the one throw that mattered, and the list would
+    // look complete.
+    if (FEHLER.length < 200) { FEHLER.push(art + ": " + String(was)); return; }
+    VERWORFEN += 1;
+    FEHLER[199] = "…and " + VERWORFEN + " more, not recorded";
+  }
+  // The list is reachable from here on, and not only through `typstage.pruef`
+  // at the very end. A deck that dies while being built never gets that far,
+  // and then this is the only place that still says why.
+  window.typstageFehler = FEHLER;
+  addEventListener("error", function (e) {
+    merke("error", e.message
+      || (e.target && (e.target.src || e.target.href || e.target.currentSrc))
+      || e);
+  }, true);
+  addEventListener("unhandledrejection", function (e) {
+    merke("promise", e.reason && e.reason.message ? e.reason.message : e.reason);
+  });
+  ["error", "warn"].forEach(function (k) {
+    var echt = console[k];
+    console[k] = function () {
+      // The real call first, and the note second and guarded. Turning the
+      // arguments into text can throw -- a Symbol, an object whose `toString`
+      // throws, a Proxy that refuses the read -- and this wrapper sits in the
+      // runtime that ships. Measured before this: `console.error(Symbol("x"))`
+      // threw where it used to print, and the output never arrived. A checking
+      // aid must not be able to take down the talk it is watching.
+      echt.apply(console, arguments);
+      try { merke(k, [].join.call(arguments, " ")); } catch (x) {
+        try { merke(k, "(an argument could not be turned into text)"); }
+        catch (y) {}
+      }
+    };
+  });
+
   var NS = "http://www.w3.org/2000/svg";
   var B = document.getElementById("ts-stage");
   var FLY = document.getElementById("ts-fly");
@@ -686,6 +736,12 @@
   var CHROME = [].slice.call(document.querySelectorAll("#ts-chrome > .ts-chrome"));
 
   var flyTimers = [];
+  // How many ghosts a talk has produced since it was loaded. Counted where
+  // they are made, not read off `#ts-fly` afterwards: the layer is emptied
+  // again by a timer, so whoever counts it later counts whatever the machine
+  // happened to have cleaned up by then. A running total cannot be asked at
+  // the wrong moment.
+  var FLUG = 0;
 
   //
   function finishTransitionNow() {
@@ -743,7 +799,9 @@
       var window = { duration: d * ueber, delay: d * (0.5 - ueber / 2),
                       easing: "linear", fill: "both" };
 
-      var attach = function (node) { FLY.appendChild(node); ghosts.push(node); };
+      var attach = function (node) {
+        FLY.appendChild(node); ghosts.push(node); FLUG++;
+      };
 
       if (perGlyph) {
         var p = pairs(qg, zg);
@@ -879,12 +937,19 @@
     SLIDES[i].querySelectorAll("video").forEach(function (v) { v.pause(); });
     ticking = ticking.filter(function (t) { return !SLIDES[i].contains(t.el); });
   }
+  // `null` is the wall clock, a number is a pinned time in milliseconds. A
+  // flipbook otherwise shows whatever frame the machine happened to reach, and
+  // two runs of the same deck never agree on it.
+  var PRUEFUHR = null;
   function beat(current) {
+    if (PRUEFUHR !== null) current = PRUEFUHR;
     for (var k = 0; k < ticking.length; k++) {
       var t = ticking[k];
       var n = +t.el.dataset.frames, fps = +t.el.dataset.fps || 30;
       if (!n) continue;
-      var i = Math.floor((current - t.t0) / 1000 * fps);
+      // With the clock pinned the start time drops out as well. Otherwise the
+      // frame would still depend on when the slide was entered.
+      var i = Math.floor((current - (PRUEFUHR === null ? t.t0 : 0)) / 1000 * fps);
       if (t.el.dataset.pingpong === "1") {
         var p = n > 1 ? 2 * n - 2 : 1;
         var m = i % p;
@@ -2915,6 +2980,113 @@
       notizPx: function () { return NOTIZ_PX; },
       platz: function () { return PLATZ; },
       bild: schrittBild
+    },
+
+    // ── Check surface, part two: the agreed report ──────────────────────────
+    //
+    // A check run should not have to reach into the runtime. Everything one
+    // needs sits here, behind a version number, so a script notices when it
+    // meets a deck older than itself instead of quietly measuring nothing.
+    //
+    // There is no build switch on this. A switch would mean checking a
+    // runtime that is not the one shipped, which is the one thing a check may
+    // never do. Measured on the six example decks it costs under one percent
+    // of the compressed page.
+    pruef: {
+      fassung: 1,
+      bau: CFG.build,
+      deck: DECK,
+      rolle: ROLLE,
+      folien: SLIDES.length,
+      schritte: STEPS.length,
+      elemente: document.querySelectorAll(".ts-el").length,
+
+      // Where the talk stands. `schritt` counts from zero like `goto`, `hash`
+      // is the number in the address, which counts from one.
+      stand: function () {
+        var st = current >= 0 ? STEPS[current] : null;
+        return {
+          schritt: current, hash: current + 1,
+          folie: st ? st.slide : -1, aufFolie: st ? st.step : -1,
+          // Drawn and drawn-muted are counted apart. Whoever only asks "is it
+          // there" does not see it when `after: "dimmed"` stops dimming.
+          //
+          // Twice, over two different areas, because they answer two
+          // questions. Over the whole deck the numbers carry the history: a
+          // slide left behind keeps its sprites drawn, so the count grows as
+          // the talk walks on, and a sprite that changes on a slide nobody is
+          // looking at shows up in it. Over the running slide alone they are
+          // the state, and only that one can be held against a fresh jump
+          // into the same step, which has no history behind it.
+          sichtbar: document.querySelectorAll('.ts-el[data-on="1"]').length,
+          gedimmt: document.querySelectorAll('.ts-el[data-dim="1"]').length,
+          folieSichtbar: st
+            ? SLIDES[st.slide].querySelectorAll('.ts-el[data-on="1"]').length : 0,
+          folieGedimmt: st
+            ? SLIDES[st.slide].querySelectorAll('.ts-el[data-dim="1"]').length : 0,
+          flieger: FLUG,
+          fehler: FEHLER.length
+        };
+      },
+      fehler: function () { return FEHLER.slice(); },
+
+      // Pin the wall clock, or hand it back with no argument.
+      // A number or nothing. Without the check `uhr("abc")` pins the clock to
+      // NaN and every flipbook shows nonsense until someone calls `uhr()`.
+      uhr: function (ms) {
+        if (ms == null) { PRUEFUHR = null; return null; }
+        var n = +ms;
+        if (!isFinite(n)) { throw new TypeError("typstage: uhr() takes a number of milliseconds, or nothing"); }
+        PRUEFUHR = n;
+        return PRUEFUHR;
+      },
+
+      // Resolves once no animation is running anymore. This is what replaces
+      // a fixed wait, which is either too short on a loaded machine or wasted
+      // everywhere else, and either way makes a run depend on the day.
+      // Resolves with "ruhig", or with "frist" if the deadline ran out while
+      // something was still moving, so a run can tell the two apart instead
+      // of trusting a settled screen it never saw.
+      //
+      // It waits for animations and for nothing else. A change that a plain
+      // `setTimeout` makes later, such as the fly layer being emptied, is not
+      // covered; whoever needs that has to ask at a moment that does not
+      // depend on it.
+      ruhig: function (frist) {
+        var ende = Date.now() + (frist == null ? 4000 : frist);
+        return new Promise(function (fertig) {
+          (function runde() {
+            var alle = document.getAnimations ? document.getAnimations() : [];
+            var laeuft = alle.filter(function (a) { return a.playState === "running"; });
+            if (!laeuft.length || Date.now() > ende) {
+              // Two frames after the last animation, so the styles it left
+              // behind have been applied before anyone measures. With a
+              // timer beside them, because a hidden tab stops handing out
+              // frames altogether -- measured, the promise then never
+              // settled and the caller waited for ever. A deadline that only
+              // covers the loop and not the way out is no deadline.
+              var raus = false;
+              var fertigEinmal = function (wie) {
+                if (raus) return;
+                raus = true;
+                fertig(wie);
+              };
+              setTimeout(function () { fertigEinmal("keine-bilder"); }, 250);
+              requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                  fertigEinmal(Date.now() > ende && laeuft.length ? "frist" : "ruhig");
+                });
+              });
+              return;
+            }
+            Promise.race([
+              Promise.all(laeuft.map(function (a) { return a.finished; }))
+                .catch(function () {}),
+              new Promise(function (r) { setTimeout(r, 120); })
+            ]).then(runde);
+          })();
+        });
+      }
     }
   };
 })();

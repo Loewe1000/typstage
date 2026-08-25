@@ -407,6 +407,75 @@ What it does not reach: the prose beside a listing, listings in `bash` or
 compiles without doing what it claims -- a show rule on a label that no longer
 exists still compiles.
 
+### The decks are driven in a browser
+
+Compiling proves nothing about motion. A second run loads the six example decks
+and a seventh check deck into a real browser, pages through every step forward
+and backward, and holds the numbers against a written record:
+
+```bash
+bash .github/scripts/build-site.sh          # the decks it measures
+node .github/scripts/pruefe-decks.js
+```
+
+No npm and no Playwright. Chrome is reached over the DevTools protocol and
+Firefox over WebDriver BiDi, with what node 22 already brings; the two drivers
+together are under 150 lines. Whether this package can be checked should not
+depend on a several hundred megabyte download. Playwright may be put beside it
+for WebKit or for the two window case; it is not a prerequisite.
+
+The runtime carries the surface the run reads, `window.typstage.pruef`, and it
+is always there rather than behind a build switch: a switch would mean checking
+a runtime that is not the one shipped. Measured over the six decks it costs
+between 0.47 and 0.84 percent of the compressed page. Two parts of it are what
+make the run repeatable. `ruhig()` resolves when no animation is running
+anymore and replaces every fixed wait, and `uhr(ms)` pins the wall clock a
+flipbook reads. Five runs at three animation speeds in two browsers produced an
+identical record, down to the ghost counts; the report's header carries the
+duration, the browser and the speed and differs by design.
+
+The written record is `.github/scripts/decklauf/soll.json`, rewritten with
+`--neu-soll` and only on purpose. Three of its entries depend on the fonts
+of the machine rather than on the package: the fingerprint of the check deck's
+typeset output, its length, and the node count of the speaker preview. The same
+commit measures 546292 bytes on macOS and 500912 on an Ubuntu runner, and
+`theme-night` renders its preview with one glyph fewer there. Step counts,
+element counts, ghost counts and ground colours are identical to the character
+on both.
+
+Those three are split by platform only where a platform has actually been shown
+to differ — today that is `theme-night`'s preview and the check deck's
+fingerprint. Everywhere else a single number stands and is compared across
+platforms, because splitting a value the platforms agree on would check each
+side against itself and let a future divergence pass. Where a split value has no
+entry for the running platform, the run says so and fails, rather than quietly
+checking nothing. It holds per deck the slide and step counts,
+how many elements are marked as drawn and as dimmed on every step, the
+number of ghosts a magic move produces, re entry through the hash, the speaker
+view, the ground colour of every slide and the runtime's own error list.
+
+The seventh deck, `.github/scripts/decklauf/pruefdeck.typ`, exists because the
+six examples never use `after: "dimmed"`, `stagger(dim: true)`, `invert`,
+`info()` or `fit`. Counted in their sources: zero times each. The dim lookup was
+deliberately broken and nothing in the six moved. The check deck is not under
+`examples/`, so it stays off the website and the published decks keep their
+pages unchanged. Beside it, `ueberlauf.typ` is a deck that has to *fail* to
+compile, so that the overflow check is caught when it stops finding anything.
+
+What it does not reach: how a slide looks. No images are compared, no sizes and
+no positions are measured. And it reads *attributes*, not what the eye sees --
+measured, a runtime that sets every element to zero opacity while still marking
+it as drawn passes, and so does one where `after: "dimmed"` stops dimming but
+keeps its attribute. What `fit`, `info()`, `invert` and the palettes do is
+worked out in Typst and has no number in the browser; for those the run keeps a
+fingerprint of the check deck's typeset output and the ground colour of every
+slide, which catches a change but does not say the result is right. Outside it
+altogether: keyboard, mouse, pointer gestures, the ink layer, the flipbook's
+own picture, the overview, the blackout, an embedded document, video, and two
+real windows talking to each other. Ghosts are counted as they appear and never
+as they are cleared away, so a magic move that forgets to tidy up goes
+unnoticed.
+
 ## Companion packages
 
 [**typstage-geogebra**](https://github.com/Loewe1000/typstage-geogebra) adds
