@@ -117,6 +117,16 @@
   if werte.len() == 0 { 1 } else { calc.max(1, calc.min(..werte)) }
 }
 
+/// Does a selector run to the end of the slide?
+///
+/// `"2-"` does, and so does everything an `int` or `auto` turns into. `"3"`,
+/// `"2-3"` and `"2,4"` do not: they have a last step, and therefore an after.
+///
+/// Only what has an after can rest in a state after it. `anim(after:
+/// "dimmed")` on an open selector would be a promise nothing ever redeems, so
+/// it is refused rather than quietly ignored.
+#let offenes-ende(sel) = sel.split(",").any(t => t.trim().ends-with("-"))
+
 /// Does a selector cover the first step?
 ///
 /// Decides whether a morph is already present when the slide is entered.
@@ -138,6 +148,19 @@
 /// stands from step one. Checked at the end: a delayed morph must not share
 /// its name with one on the slide before it, or the flight there is lost.
 #let morph-index = state("typstage-morphs", ())
+
+/// Every element that asked to rest dimmed: its slide and the last step of
+/// its range. Checked at the end for the same reason the morphs are.
+///
+/// `anim(after: "dimmed")` refuses an open range on the spot, because a
+/// selector that runs to the end of the slide plainly has no after. But a
+/// *closed* range can still end with the slide -- `at: "1-2"` on a slide that
+/// only ever reaches step 2 -- and then the element never dims either, and
+/// nothing says so. That cannot be seen where the element is written: the
+/// number of steps a slide has is only settled once the slide has been laid
+/// out. So it is noted here and asked at the end, the same late question the
+/// morph names are put to.
+#let dim-index = state("typstage-dims", ())
 
 /// A stroke that no longer folds into the one it is set inside.
 ///
@@ -720,7 +743,7 @@
 } }
 
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
-           width: auto) = {
+           width: auto, dim-freiwillig: false) = {
   // The `box` has to sit around the *whole* construction, not inside it:
   // `layout()` is block-level, so an inline element that only chooses a `box`
   // further in would still break the line it sits in.
@@ -879,10 +902,14 @@
         width: if fuellt { w } else { room },
         height: if available.height == float("inf") { auto } else { available.height },
       )
+      // `dim-freiwillig` rides in the sprite record and not in `extra`, which
+      // becomes `data-` attributes one for one. It is only read by the check
+      // at the end of the document and has no business in the markup.
       sprites.update(a => a + ((kind: kind, at: selected, extra: extra, body: body,
                                 raw-frames: raw-frames, width: w,
                                 height: m.height, region: region, pad: luft,
-                                step: erster, style: style),))
+                                step: erster, style: style,
+                                dim-freiwillig: dim-freiwillig),))
       // A `box` is inline and puts its baseline on the bottom edge, and with a
       // two-line list item the bullet would drop a line. Block content gets a
       // `block`.

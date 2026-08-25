@@ -491,7 +491,27 @@ Argumente staffeln beliebige Blöcke nach denselben Regeln:
                 (Vorgabe 60)],
   [`enter`], [Bewegung der Punkte, wie bei `anim`],
   [`spacing`], [Abstand zwischen den Zeilen (Vorgabe 0.65 em)],
+  [`dim`], [`true` lässt jeden Punkt gedämpft stehenbleiben, sobald der
+            nächste kommt (Vorgabe `false`)],
 )
+
+`dim: true` macht aus der Staffelung einen Gang: Der Punkt, über den gerade
+gesprochen wird, steht da, die vorherigen bleiben lesbar, aber gedämpft.
+
+#show-code[```typ
+#stagger(dim: true)[
+  - Was der Raum schon weiß
+  - Was er gleich lernt
+  - Was er danach kann
+]
+```]
+
+Dafür hält jeder Punkt genau seinen eigenen Schritt statt den Rest der Folie
+und ruht danach in `after: "dimmed"` (siehe „Der gedimmte Ruhezustand"). Zwei
+Dinge folgen daraus, und beide sind gewollt: Der letzte Punkt wird ebenfalls
+gedimmt, sobald die Folie nach ihm noch einen Schritt hat -- dann ist der Gang
+auch über ihn hinweg. Und `stride: 0`, das alle Punkte auf einen Schritt legt,
+lässt sie gemeinsam auf dem nächsten dimmen.
 
 `stride: 0` und `stagger` gehören zusammen: Alle Punkte erscheinen dann auf
 einem einzigen Schritt, aber kurz nacheinander eingeschwenkt -- eine Welle
@@ -574,6 +594,82 @@ Selektor ein Ende hat.
 (`duration:` auf `presentation`, 520). `delay` ist 0. Beide sind Zahlen in
 Millisekunden und gelten für den Auftritt; beim Zurückblättern entfällt die
 Verzögerung, damit der Rückweg nicht zäh wird.
+
+=== Der gedimmte Ruhezustand
+
+Ein Element, dessen Bereich ein Ende hat, verschwindet danach: Es blendet mit
+`exit` aus und behält den Platz, den es hatte. Das ist der eine Ruhezustand
+nach dem Bereich. `after: "dimmed"` gibt den zweiten. Dann geht der Punkt nicht
+weg, sondern bleibt stehen und wird gedämpft gezeichnet -- lesbar, aber nicht
+mehr das, worüber gerade gesprochen wird.
+
+#show-code[```typ
+#anim(at: "2-3", after: "dimmed")[Eine Randbemerkung.]
+```]
+
+Nichts bewegt sich dabei, und umgefärbt wird auch nichts: Das Element sinkt auf
+65 Prozent Deckkraft und kommt beim Zurückblättern wieder herauf. `after` hat
+genau zwei Werte, `"hidden"` -- die Vorgabe und das bisherige Verhalten -- und
+`"dimmed"`.
+
+`after` braucht einen Bereich, der endet. `at: auto` und `at: 3` laufen bis zum
+Ende der Folie, und was nie geht, hat kein Danach; das Paket sagt das als
+Fehler, statt stillschweigend nichts zu tun. `at: "3"` ist genau dieser eine
+Schritt, `at: "2-3"` ein Bereich.
+
+*Auf dem Papier ändert `after` nichts.* Eine Seite zeigt alle Schritte auf
+einmal, und ein Punkt, der nur deshalb leise ist, weil der Vortrag an ihm vorbei
+ist, hat auf einem Handout kein Vorbei. Das ist dieselbe Regel, die für
+`"hidden"` längst gilt: Was im Browser aus seinem Bereich fällt, steht auf dem
+Papier trotzdem. Der Ausdruck der HTML-Seite aus dem Browser hält es genauso.
+
+*Woher die 65 Prozent kommen.* Deckkraft mischt die Schrift zum Untergrund hin,
+also entscheidet der Untergrund, was das Dimmen kostet -- und auf dunklem Grund
+kostet es deutlich weniger als auf hellem. Das ist eine Messung, keine Meinung:
+0.65 ist der kleinste Hundertstelwert, bei dem gedimmter Fließtext noch die 4,5
+zu 1 erreicht, die der Kontrastvertrag dieses Pakets (siehe „Der
+Kontrastvertrag") für Fließtext verlangt -- auf allen fünf mitgelieferten
+Paletten, aufrecht wie umgedreht, auf dem Papier der Folie wie auf der Fläche
+einer Karte. Der engste dieser zwanzig Fälle ist `parchment` auf seinem eigenen
+Papier: 4,57 zu 1 bei 0.65 und 4,44 bei 0.64. Der großzügigste ist `mono`
+umgedreht mit 8,60. Zwischen voll und gedimmt bleiben je nach Palette
+1,94 bis 3,23 zu 1 -- je nach Palette und danach, ob das Element auf dem
+Papier oder auf einer Karte steht; der Unterschied ist also überall deutlich
+zu sehen.
+
+#warning[
+  Die Zusage gilt für Text in der Schriftfarbe `ink`, und das ist, worin ein
+  Stichpunkt gesetzt ist. Was schon leise ist, wird durch Dimmen zu leise: eine
+  Zeile in `muted` misst gedimmt 2,39 bis 4,60 zu 1, ein Wort in der
+  Akzentfarbe 1,92 bis 3,03. Gedimmt gehört ein Stichpunkt, keine Beschriftung.
+
+  Und Deckkraft mischt zu dem, was dahinterliegt. Die Zusage ist gegen `paper`
+  und `surface` der Palette gemessen; über einer eigenen `card(fill: ...)` oder
+  über einem Bild ist sie es nicht und kann deutlich darunter fallen. Eine
+  Karte in kräftiger Füllung lag schon vor dem Dimmen bei 2,73 und geht mit
+  ihm auf 2,07.
+]
+
+Ein verfolgtes Element *innerhalb* eines gedimmten übernimmt das Dimmen nur,
+wenn es genau denselben Bereich hat. Das ist dieselbe Vererbung, nach der auch
+`enter`, `delay` und `duration` von außen nach innen gelten: Sie greift, wenn
+beide im Gleichschritt laufen, und sonst nicht. Ein `anim` mit eigenem Bereich
+in einem gedimmten `anim` bleibt also voll stehen -- gemessen an einem inneren
+`at: "1-"` in einem äußeren `at: "1"`.
+
+In der Praxis stehen `morph`, `video`, `embed` und `flipbook` damit ganz
+außerhalb dieser Vererbung: alle vier haben `at: "1-"` als Vorgabe, einen
+offenen Bereich, und ein offener kann zu einem geschlossenen nie passen. In
+einem gedimmten Element bleiben sie voll stehen -- gemessen blieb ein `embed`
+bei 1,00, während sein Wirt auf 0,65 ging --, und eine Formel in einer
+gedimmten Zeile steht schwarz in einem grauen Satz. Wer das nicht will, gibt
+dem inneren Element von Hand denselben geschlossenen Bereich oder dimmt die
+Zeile nicht.
+
+`at:` als Aufzählung behält hier seine gewohnte Bedeutung. `at: (2, 4)` mit
+`after: "dimmed"` zeigt das Element auf Schritt 2, nimmt es auf 3 wieder weg,
+bringt es auf 4 zurück und lässt es ab 5 gedimmt stehen. Die Lücke in der
+Mitte macht die Aufzählung, nicht das Dimmen.
 
 == Mehrere Fassungen an derselben Stelle
 

@@ -242,14 +242,32 @@ And that is enough to compute the third side from two of them.
 
 `stride: 2` puts two items on each step, `stride: 0` puts all of them on the
 same one. `start` sets the first step, `enter` the motion, `stagger` the delay
-in milliseconds between neighbours, and `spacing` the distance between the
-items.
+in milliseconds between neighbours, `spacing` the distance between the items,
+and `dim` lets each point step back once the next one arrives.
 
 #tip[
   `stagger` also takes several blocks instead of one list. Then each block is
   one step, which is the way to reveal three paragraphs or three pictures in
   turn without writing three `anim` calls.
 ]
+
+`dim: true` turns the sequence into a walk: the point being discussed stands
+there, the ones before it stay legible but muted.
+
+#show-code[```typ
+#stagger(dim: true)[
+  - What the room already knows
+  - What it is about to learn
+  - What it will be able to do afterwards
+]
+```]
+
+For that, each point holds exactly its own step instead of the rest of the
+slide and then rests in `after: "dimmed"` (see "The muted resting state"). Two
+things follow, and both are meant. The last point dims as well as soon as the
+slide has a further step after it, because then the walk has moved on from it
+too. And `stride: 0`, which puts every point on one step, makes them all dim
+together on the next.
 
 == One piece on a step of its own
 
@@ -290,6 +308,76 @@ one after the other.
   a typo in `enter: "fdae-up"` is only noticed by the motion being duller than
   it was meant to be.
 ]
+
+=== The muted resting state
+
+An element whose range has an end goes away afterwards: it plays `exit` and
+keeps the room it had. That is one resting state after the range. `after:
+"dimmed"` gives the second. The point then does not leave. It stays and is
+drawn muted, legible but no longer the thing being talked about.
+
+#show-code[```typ
+#anim(at: "2-3", after: "dimmed")[A passing remark.]
+```]
+
+Nothing moves and nothing is recoloured: the element settles to 65 percent
+opacity and comes back up when you page back. `after` has exactly two values,
+`"hidden"`, the default and what it has always done, and `"dimmed"`.
+
+`after` wants a range that ends. `at: auto` and `at: 3` run to the end of the
+slide, and what never leaves has no after; the package says so as an error
+rather than quietly doing nothing. `at: "3"` is that one step, `at: "2-3"` a
+range.
+
+*On paper `after` does nothing.* A page shows every step at once, and a point
+that is only quiet because the talk has moved past it has no past on a handout.
+This is the rule that already holds for `"hidden"`: what falls out of its range
+in the browser is printed all the same. Printing the HTML page from the browser
+keeps to it too.
+
+*Where the 65 percent comes from.* Opacity composites the ink towards the
+ground, so the ground decides what dimming costs, and on a dark ground it costs
+far less than on a light one. That is a measurement, not an opinion: 0.65 is
+the smallest hundredth at which dimmed body text still reaches the 4.5 to 1
+that this package's contrast contract (see "The contrast contract") asks of
+body text, on all five bundled palettes, upright and inverted, on the paper of
+the slide and on the surface of a card. The tightest of those twenty cases is
+`parchment` on its own paper: 4.57 to 1 at 0.65 and 4.44 at 0.64. The most
+forgiving is `mono` inverted at 8.60. Between full and dimmed there remain 1.94
+to 3.23 to 1 depending on the palette and on whether the element stands on the
+paper or on a card, so the step is plainly visible
+everywhere.
+
+#warning[
+  The guarantee is for text in the `ink` colour, which is what a point is set
+  in. What is already quiet becomes too quiet when dimmed: a line in `muted`
+  measures 2.39 to 4.60 to 1 once dimmed, a word in the accent colour 1.92 to
+  3.03. Dim a point, not a label.
+
+  And opacity mixes with whatever lies behind. The promise is measured against
+  the palette's `paper` and `surface`; over a `card(fill: ...)` of your own or
+  over an image it is not measured and can fall well below. A card in a strong
+  fill was already at 2.73 before dimming and goes to 2.07 with it.
+]
+
+A tracked element *inside* a dimmed one takes the dimming over only if it has
+exactly the same range. That is the same inheritance by which `enter`, `delay`
+and `duration` reach inwards: it applies where both run in lockstep, and not
+otherwise. So an `anim` with a range of its own inside a dimmed `anim` stays at
+full strength, measured on an inner `at: "1-"` inside an outer `at: "1"`.
+
+In practice that puts `morph`, `video`, `embed` and `flipbook` outside the
+inheritance altogether: all four default to `at: "1-"`, an open range, and an
+open range can never match a closed one. Inside a dimmed element they keep
+full strength -- measured, an `embed` stayed at 1.00 while its host went to
+0.65 -- and a formula sitting in a dimmed line stands black in a grey
+sentence. Give the inner element the same closed range by hand, or do not dim
+the line it sits in.
+
+`at:` as a list keeps its usual meaning here. `at: (2, 4)` with
+`after: "dimmed"` shows the element on step 2, takes it away again on step 3,
+brings it back on 4 and rests it dim from 5. The gap in the middle is the list,
+not the dimming.
 
 == Several versions in the same place
 

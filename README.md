@@ -107,7 +107,7 @@ written.
 | `presentation` | builds the deck: slides as arguments, or a show-rule body split at its headings |
 | `bundle` | writes talk, slide set and handout in a single compile |
 | `slide`, `section`, `title-slide` | the three kinds of slide |
-| `anim`, `stagger`, `pause`, `alternatives` | reveal one thing, a series of things, everything after this point, one thing after another in the same place |
+| `anim`, `stagger`, `pause`, `alternatives` | reveal one thing, a series of things, everything after this point, one thing after another in the same place; `anim(after: "dimmed")` lets a point stay muted once its range is over, and `stagger(dim: true)` walks a list that way, the current point lit and the earlier ones quiet |
 | `morph`, `pin` | magic move across slides; `pin` names a glyph so the pairing follows the name rather than the shape |
 | `card`, `callout`, `side-by-side`, `tiles`, `statement` | layouts inside a slide; `tiles` staggers itself, and `side-by-side(equal: true)` makes its columns the same height |
 | `fit` | scales one block down to the room it has, for a wide table or a generated chart; no reveal may sit inside it |

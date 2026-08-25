@@ -475,6 +475,15 @@
               .map(sp => (slide: here, name: sp.extra.name,
                           ab-eins: ab-schritt-eins(sp.at)))
             morph-index.update(a => a + meine-morphs)
+            // The same for every element that wants to rest dimmed. Its
+            // range is closed -- `anim` insists on that -- but a closed range
+            // can still end with the slide, and then there is no step left to
+            // be dim on.
+            let meine-dims = sprites.get()
+              .filter(sp => sp.extra.at("after", default: none) == "dimmed"
+                            and not sp.at("dim-freiwillig", default: false))
+              .map(sp => (slide: here, bis: max-step(sp.at)))
+            dim-index.update(a => a + meine-dims)
             html.elem("script", attrs: (class: "ts-bridge", type: "application/json"),
                       json.encode(bridge-jobs.get()))
           }
@@ -499,6 +508,25 @@
     // of the same name. Otherwise the flight between the two is lost, and
     // silently: there is no error message, the formula simply appears
     // instead of flying. Hence an announcement here at compile time.
+    // An element that asked to rest dimmed but whose range ends with the
+    // slide never dims, and without this it would say nothing at all -- the
+    // author would get exactly `at: "1-"` and no hint why.
+    context {
+      for d in dim-index.get() {
+        let ende = query(<typstage-slide-end>).find(e => e.value == d.slide)
+        let gesamt = if ende == none { 1 } else {
+          calc.max(1, step-cursor.at(ende.location()).first())
+        }
+        assert(d.bis < gesamt, message:
+          "typstage: anim(after: \"dimmed\") on slide " + str(d.slide)
+          + " has a range that ends with the slide: it runs to step "
+          + str(d.bis) + " and the slide has " + str(gesamt)
+          + ". There is no step left for the element to be dim on, so it "
+          + "would behave exactly like the default and nothing would say so. "
+          + "Give the slide a further step, or drop the after.")
+      }
+    }
+
     context {
       let alle-morphs = morph-index.get()
       for m in alle-morphs.filter(m => not m.ab-eins) {
