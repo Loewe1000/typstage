@@ -11,6 +11,22 @@
   var SPRECHERBOX = document.getElementById("ts-speaker");
   var INK = document.getElementById("ts-ink");
 
+  // ── Links that point outside ──────────────────────────────────────────────
+  //
+  // A link on a slide leads away from the deck. Opening it in the same tab
+  // would take the talk with it, and there is no way back that a speaker wants
+  // to look for in front of a room.
+  //
+  // The anchors come out of `html.frame` and sit inside the SVG, where they
+  // carry `href` as well as `xlink:href`. Both are read, because which of the
+  // two Typst writes is not ours to decide.
+  document.querySelectorAll("a").forEach(function (a) {
+    var href = a.getAttribute("href") || a.getAttribute("xlink:href") || "";
+    if (!/^https?:/i.test(href)) return;
+    a.setAttribute("target", "_blank");
+    a.setAttribute("rel", "noopener");
+  });
+
   // ── The role, once and for good ───────────────────────────────────────────
   //
   // The same file carries two views: the talk and, with `#speaker` in the
@@ -109,6 +125,22 @@
       if (s >= a && s <= b) return true;
     }
     return false;
+  }
+
+  // The last step a selector still covers, or Infinity if it runs to the end
+  // of the slide. Only a selector with a last step has an "after" for an
+  // element to rest in.
+  function endeBei(at) {
+    var parts = String(at || "1-").split(","), e = 0;
+    for (var i = 0; i < parts.length; i++) {
+      var t = parts[i].trim();
+      if (!t) continue;
+      var k = t.indexOf("-");
+      if (k < 0) { e = Math.max(e, +t); continue; }
+      if (t.slice(k + 1) === "") return Infinity;
+      e = Math.max(e, +t.slice(k + 1));
+    }
+    return e;
   }
 
   // ── Geometry ──────────────────────────────────────────────────────────────
@@ -274,12 +306,12 @@
             // the inner viewport keeps its size and no `resize` fires in
             // there. The message says "your box is new", and what to do about
             // it is the embedded document's business, not ours.
-            // Beide Maße, denn sie sagen Verschiedenes: `w` und `h` sind
-            // der Kasten in Punkten der Folie und damit in jedem Fenster
-            // dieselbe Zahl, `px` ist derselbe Kasten in Bildschirmpunkten
-            // und in jedem Fenster eine andere. Wer scharf zeichnen will,
-            // braucht die zweite; wer in allen Fenstern dasselbe zeigen
-            // will, die erste.
+            // Both measurements, because they say different things. `w` and
+            // `h` are the box in points of the slide and therefore the same
+            // number in every window; `px` is the same box in screen points
+            // and a different number in every window. Whoever wants to draw
+            // sharply needs the second, whoever wants every window to show
+            // the same thing needs the first.
             try {
               frame.contentWindow.postMessage({ typstage: 1, mass: 1,
                 w: w, h: h, px: skala }, "*");
@@ -334,13 +366,76 @@
     a.onfinish = function () { el.style.opacity = "1"; a.cancel(); };
   }
 
-  function fadeOut(el, name, dur) {
+  // How far down a dimmed element goes. Not a taste, a measurement. Dimming
+  // composites the ink towards the ground, so the ground decides what it
+  // costs, and the value is the smallest hundredth at which body text still
+  // meets the 4.5 to 1 the package's contrast contract asks of it, on
+  // all five bundled palettes, upright and inverted, on the paper and on a
+  // card surface. The tightest of the twenty is `parchment` on its own paper:
+  // 4.57 at 0.65 and 4.44 at 0.64. The most forgiving is `mono` inverted at
+  // 8.60, because opacity costs far less on a dark ground than on a light
+  // one. Between full and dimmed there remain 1.94 to 3.23 to 1, so the step
+  // is plainly visible everywhere. The arithmetic is `contrast()` in
+  // `src/palettes.typ`.
+  //
+  // It holds for text in the ink colour, which is what a point is set in.
+  // Dimming something already quiet, a `muted` footer or an accent-coloured
+  // word, drops under the contract; the manual says so.
+  var DIM = 0.65;
+
+  function fadeOut(el, name, dur, von) {
     clearAnims(el);
     if (name === "none") { el.style.opacity = "0"; return; }
     var f = EFFECT[name] || EFFECT["fade"];
-    var a = el.animate([f[1], f[0]],
+    var ab = f[1];
+    // Leaving out of the dimmed state starts where the element stands. Taken
+    // from the effect's full end value it would flash back to full strength
+    // for one frame before it goes.
+    if (von != null && von !== 1) {
+      ab = {};
+      for (var k in f[1]) ab[k] = f[1][k];
+      ab.opacity = von;
+    }
+    var a = el.animate([ab, f[0]],
       { duration: dur, easing: EASE, fill: "both" });
     a.onfinish = function () { el.style.opacity = "0"; try { a.cancel(); } catch (e) {} };
+  }
+
+  // Between two resting opacities, with no effect and no travel. Dimming is
+  // not an entrance and not a departure: the point does not move, it only
+  // steps back or comes forward again.
+  function fadeTo(el, von, bis, dur) {
+    clearAnims(el);
+    var a = el.animate([{ opacity: von }, { opacity: bis }],
+      { duration: dur, easing: EASE, fill: "both" });
+    a.onfinish = function () {
+      el.style.opacity = String(bis); try { a.cancel(); } catch (e) {}
+    };
+  }
+
+  // The three states a sprite rests in, on the element as well as in the
+  // markup: 0 not drawn, 1 drawn muted, 2 drawn. `data-on` keeps meaning
+  // "is on the slide", so whatever asks that question -- a morph looking for
+  // its source, the pointer looking for a frame -- finds a dimmed element
+  // too, because it is on the slide.
+  function ruhe(el, z) {
+    if (z === 0) {
+      delete el.dataset.on; delete el.dataset.dim; el.style.opacity = "0";
+    } else if (z === 1) {
+      el.dataset.on = "1"; el.dataset.dim = "1";
+      el.style.opacity = String(DIM);
+    } else {
+      el.dataset.on = "1"; delete el.dataset.dim; el.style.opacity = "1";
+    }
+  }
+
+  // Which of the three a sprite is in on a given step.
+  function zustand(el, schritt) {
+    if (activeAt(el.dataset.at, schritt)) return 2;
+    // The cheap question first. Almost every selector runs to the end of the
+    // slide, and then there is nothing to look up.
+    if (schritt > endeBei(el.dataset.at) && erbt(el, "after") === "dimmed") return 1;
+    return 0;
   }
 
   // ── Magic move ────────────────────────────────────────────────────────────
@@ -542,14 +637,14 @@
     el.querySelectorAll("path").forEach(function (n) {
       var sw = strichBreite(n);
       if (sw <= 0) return;              // glyph outline, not a drawn stroke
-      // Gemessen wie bei den Glyphen und nicht mit `getBoundingClientRect`.
-      // Firefox rechnet dort den Strich mit, und zwar großzügiger als um seine
-      // halbe Breite: an derselben Bruchlinie meldet es 18,9 mal 5,2, wo die
-      // Geometrie 13,7 mal 0 ist und Chrome auch 13,7 mal 0 meldet. Weil hier
-      // gleich darauf noch einmal um die halbe Strichbreite verbreitert wird,
-      // geriet der Geist doppelt so hoch, und `preserveAspectRatio="none"` zog
-      // die Linie darauf. Gemeldet aus dem Forum als Bruchstriche, die während
-      // des Fluges kurz dick werden, in Chrome aber nicht.
+      // Measured the way the glyphs are, not with `getBoundingClientRect`.
+      // Firefox counts the stroke into that box, and more generously than by
+      // half its width: on the same fraction bar it reports 18.9 by 5.2 where
+      // the geometry is 13.7 by 0, and Chrome reports 13.7 by 0 as well.
+      // Because half a stroke width is added on each side right afterwards,
+      // the ghost came out twice as tall, and `preserveAspectRatio="none"`
+      // stretched the line onto it. Reported from the forum as fraction bars
+      // that briefly thicken during a flight, though not in Chrome.
       var r = glyphKasten(n);
       if (!r || (r.width <= 0 && r.height <= 0)) return;
       // Widen on screen too by half the stroke width, otherwise the ghost
@@ -1592,14 +1687,25 @@
     m.innerHTML = f.querySelector(".ts-bg").innerHTML + (cp ? cp.innerHTML : "");
     var ov = f.querySelector(".ts-ov");
     if (ov) {
+      // Read off the originals, applied to the copies further down. A nested
+      // element inherits `data-after` from its host, and that lookup needs the
+      // slide around it, which the detached copy no longer has.
+      var stufen = [];
+      ov.querySelectorAll(".ts-el").forEach(function (el) {
+        stufen.push(zustand(el, schritt));
+      });
       var k = ov.cloneNode(true);
       // A cloned iframe would load the foreign document a second time, a
       // cloned video would play sound a second time. Neither belongs in a
       // still image.
       k.querySelectorAll("iframe,video,audio").forEach(function (x) { x.remove(); });
-      k.querySelectorAll(".ts-el").forEach(function (el) {
+      k.querySelectorAll(".ts-el").forEach(function (el, i) {
         el.removeAttribute("data-hold");
-        el.style.opacity = activeAt(el.dataset.at, schritt) ? "1" : "0";
+        // The preview answers "what stands there after the next keypress",
+        // so it has to show the muted state too: otherwise a point that only
+        // steps back would look to the speaker as if it had gone.
+        var z = stufen[i];
+        el.style.opacity = z === 2 ? "1" : (z === 1 ? String(DIM) : "0");
       });
       m.appendChild(k);
     }
@@ -2186,24 +2292,37 @@
     });
 
     SLIDES[dst.slide].querySelectorAll(".ts-el").forEach(function (el) {
-      var an = activeAt(el.dataset.at, dst.step);
       var d = +erbt(el, "duration") || CFG.duration;
       var delay = back ? 0 : (+erbt(el, "delay") || 0);
+      // Where the element stands now and where it belongs. `data-on` alone no
+      // longer answers the first question: drawn muted is a third state, and
+      // it has to be told apart from drawn, or paging back would find nothing
+      // to bring up again.
+      var war = el.dataset.on !== "1" ? 0 : (el.dataset.dim === "1" ? 1 : 2);
+      var wird = zustand(el, dst.step);
 
-      if (instant || changed) {
-        clearAnims(el);
-        if (an) { el.dataset.on = "1"; el.style.opacity = "1"; }
-        else { delete el.dataset.on; el.style.opacity = "0"; }
-        return;
-      }
+      // Entering a slide or jumping into it plays no effects, so the whole run
+      // is replayed as state. That is what puts a dimmed element back where it
+      // belongs after a reload, after paging in from the other side, and in
+      // the speaker view.
+      if (instant || changed) { clearAnims(el); ruhe(el, wird); return; }
+      if (wird === war) return;
+      ruhe(el, wird);
 
-      if (an && el.dataset.on !== "1") {
-        el.dataset.on = "1";
-        fadeIn(el, erbt(el, "enter") || "fade-up", d, delay);
-      } else if (!an && el.dataset.on === "1") {
-        delete el.dataset.on;
-        if (back) fadeOut(el, erbt(el, "enter") || "fade-up", d);
-        else fadeOut(el, erbt(el, "exit") || "fade", d * 0.75);
+      if (war === 0) {
+        // Straight to full is the entrance. Straight to muted only happens on
+        // a jump that skipped the whole range, and then the point has no
+        // arrival to play: it simply is there, quietly.
+        if (wird === 2) fadeIn(el, erbt(el, "enter") || "fade-up", d, delay);
+        else fadeTo(el, 0, DIM, d);
+      } else if (wird === 0) {
+        var von = war === 1 ? DIM : 1;
+        if (back) fadeOut(el, erbt(el, "enter") || "fade-up", d, von);
+        else fadeOut(el, erbt(el, "exit") || "fade", d * 0.75, von);
+      } else if (wird === 1) {
+        fadeTo(el, 1, DIM, d);
+      } else {
+        fadeTo(el, DIM, 1, d);
       }
     });
 
@@ -2656,6 +2775,9 @@
     if (ROLLE === "speaker") return;
     if (OVERVIEW.dataset.on) return;
     if (e.target.closest && e.target.closest(".ts-embed")) return;
+    // A click on a link follows the link. Paging as well would leave the
+    // talk on a different slide than the one the speaker pointed at.
+    if (e.target.closest && e.target.closest("a")) return;
     goto(current + (e.clientX < innerWidth * 0.25 ? -1 : 1));
   });
   // ── Swiping ───────────────────────────────────────────────────────────────

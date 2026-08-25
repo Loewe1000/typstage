@@ -4,7 +4,8 @@
 #import "internal.typ": *
 #import "slides.typ": *
 #import "theme.typ": handout-body, slide-body, slide-chrome
-#import "themes.typ": theme-state, themes
+#import "themes.typ": mit-palette, theme-state, themes
+#import "palettes.typ": palette-pruefen
 #import "render.typ": *
 #import "elements.typ": anim, pause
 
@@ -189,9 +190,59 @@
 /// `themes.night + (accent: blue)`. The `style` hook stays untouched by this
 /// and sits further *inside*: whatever is set there overrides the theme.
 ///
+/// `palette:` changes the colors and leaves the design alone. It is a
+/// dictionary over the eight color entries and it overwrites *partially*, so
+/// `palette: (accent: blue)` moves the accent and nothing else. Five are
+/// bundled, `palettes.light`, `palettes.mono`, `palettes.textbook`,
+/// `palettes.parchment` and `palettes.dark`, and each of them composes with
+/// each theme:
+///
+/// ```typ
+/// #show: presentation.with(theme: themes.lesson, palette: palettes.dark)
+/// ```
+///
+/// Two colors of a theme are not palette entries: `title-fill` and
+/// `rule-fill`. All five bundled themes let them follow, either as a function
+/// of the palette or as `none`, which means the accent and follows with it. A
+/// theme of your own that names a fixed color there keeps it under every
+/// palette, which is deliberate.
+///
+/// Both changed type with this: reading `themes.X.title-fill` used to give a
+/// color and now gives a function, and `rule-fill` gives `none` where it gave
+/// the accent. Writing them, `themes.X + (title-fill: red)`, is unchanged.
+///
 /// The PDF is a handout: one page per slide, every tracked element in its
 /// final state. What belongs only to the motion, the notes, the slide transitions,
 /// the bridge jobs, are state updates without output and fall away by themselves.
+///
+/// `overflow` is a checking pass over the deck, off by default. It measures
+/// every slide body against the room the theme gives it and names the ones
+/// that do not fit, with the earliest step on which the overrun can be on the
+/// screen. Title and section slides are not measured: the theme draws them
+/// with `place` and they have no body block.
+///
+/// - `"none"`: nothing is measured. The default.
+/// - `"error"`: the whole deck is built, and it then stops with *every* place
+///   at once rather than the first.
+/// - `"record"`: it carries on and files a record per finding instead, for a
+///   tool to read. The deck has to be on `"record"` for this; on `"error"`
+///   the command below stops with the error too:
+///
+/// ```sh
+/// typst eval --target html --features html --in deck.typ \
+///   'query(<typstage-overflow>).map(e => e.value)'
+/// ```
+///
+/// It is not meant to stay on while writing. Measured over the six example
+/// decks: in HTML it costs noticeably more time, between 1.2 and 1.5 times
+/// depending on the deck and on how the process start is accounted for. On
+/// paper it costs a few milliseconds per deck, small but repeatable: there the
+/// check runs without the step arithmetic.
+///
+/// Why a deck of slides needs this more than a document does: a slide goes
+/// into an SVG frame of fixed size and is scaled in the browser, so what
+/// sticks out is cut away or drawn beside the slide. A page one leafs through
+/// shows an overrun; a talk one clicks through shows it at the projector.
 #let presentation(
   ..slides,
   title: none,
@@ -200,6 +251,7 @@
   date: none,
   assets: "inline",
   theme: themes.default,
+  palette: (:),
   transition: "slide",
   transition-duration: 420,
   duration: 520,
@@ -208,7 +260,11 @@
   height: auto,
   margin: auto,
   handout: false,
+  overflow: "none",
 ) = {
+  assert(overflow in ("none", "error", "record"), message:
+    "typstage: overflow is \"none\" (the default), \"error\" or \"record\", "
+    + "not " + repr(overflow))
   // 16:9 on an A4-width canvas unless told otherwise. 4:3 is
   // `width: 800pt, height: 600pt`; everything the theme draws scales along.
   let geo = canvas(width: width, height: height, margin: margin)
@@ -228,9 +284,69 @@
     } else { rest }
   }
   let all = all.map(s => if s.body == none { s } else {
-    s + (body: apply-pauses(s.body))
+    // The marker is looked for in the body as it was written, before the
+    // pauses cut it into runs: after that, a marker standing behind a pause
+    // sits inside an `anim` wrapper and the walk would miss it. The title is
+    // searched too, because in heading notation `== A slide #invert` is the
+    // place the marker naturally lands, and it went unseen there.
+    s + (invert: s.at("invert", default: false)
+                 or hat-invert(s.body) or hat-invert(s.title),
+         body: apply-pauses(s.body))
   })
   let total = all.filter(s => s.kind == "slide").len()
+
+  // The theme with the palette laid over it, once for the deck and once
+  // turned around. Both are worked out here rather than per slide: they are
+  // the same two dictionaries on every slide, and the inverted one is only
+  // ever reached for by a slide that asked for it.
+  //
+  // Both are built from the theme as it came in, not the inverted one from
+  // the merged one. `mit-palette` resolves `title-fill` and `rule-fill` into
+  // colors, so a theme that has already been through it no longer carries the
+  // functions the inversion has to ask again.
+  let palette = palette-pruefen(palette)
+  let thema-hell = mit-palette(theme, palette)
+  let thema-dunkel = mit-palette(theme, palette, invert: true)
+  let thema(s) = if s.at("invert", default: false) { thema-dunkel } else { thema-hell }
+  // Whether any slide inverts at all. A deck without one writes the theme
+  // into its state exactly once, as before; only a deck that inverts pays for
+  // an update per slide, and there it is needed, since a `card` reads its
+  // tints out of that state and has to see the slide it stands on.
+  let wechselt = all.any(s => s.at("invert", default: false))
+
+  // Everything the deck knows about itself, one entry per slide, counted here
+  // and nowhere else. All three outputs read from this list, and so does a
+  // deck's own `info()`; that there is exactly one list is the whole reason a
+  // hand-built footer cannot disagree with the built-in one.
+  //
+  // `nr` counts every slide, title and section slides included, and stays out
+  // of the public dictionary: it is only the key under which a slide files its
+  // step count. `slide.number` deliberately counts differently.
+  let daten = {
+    let kopf = all.find(s => s.kind == "title")
+    if kopf != none {
+      (title: kopf.title, subtitle: kopf.subtitle,
+       author: kopf.author, date: kopf.date)
+    } else {
+      (title: title, subtitle: subtitle, author: author, date: date)
+    }
+  }
+  let sect-total = all.filter(s => s.kind == "section").len()
+  let facts = ()
+  let gezaehlt = 0
+  let kapitel = 0
+  let kapitel-titel = none
+  for (i, s) in all.enumerate() {
+    if s.kind == "slide" { gezaehlt += 1 }
+    if s.kind == "section" { kapitel += 1; kapitel-titel = s.title }
+    facts.push((
+      nr: i + 1,
+      data: daten + (
+        slide: (number: gezaehlt, total: total, numbered: s.kind == "slide"),
+        section: (number: kapitel, total: sect-total, title: kapitel-titel),
+      ),
+    ))
+  }
 
   // The branch has to enclose the *whole* build, not just the output: in
   // paged mode the module `html` does not even exist, so an `html.elem` in the
@@ -239,71 +355,106 @@
     let per = if handout == true { 2 } else { handout }
     assert(type(per) == int and per >= 1 and per <= 6,
            message: "typstage: handout takes true or 1 to 6 slides per page")
-    theme-state.update(theme)
-    handout-body(all, total, style, geo, theme, per)
+    theme-state.update(thema-hell)
+    html-output.update(false)
+    handout-body(all, facts, style, geo, thema-hell, per,
+                 thema: if wechselt { thema } else { none }, overflow: overflow)
+    ueberlauf-bericht(overflow)
   } else if target() != "html" {
     set page(width: geo.width, height: geo.height, margin: 0pt)
-    theme-state.update(theme)
-    let n = 0
+    theme-state.update(thema-hell)
+    // Said out loud, not left to the default. `bundle()` writes several
+    // documents from one compilation, and a state carries on from one into the
+    // next: without this the slide deck and the handout of a bundle were still
+    // being built as if they were the browser's, and every tracked element
+    // stayed in `hide()` and was missing from the PDF. Measured on a bundle
+    // with an `anim` and an `alternatives`, and the same for the handout above.
+    html-output.update(false)
     let pages = ()
-    // Which section is currently running. The header in book style shows it
-    // on the right, the way a schoolbook shows the chapter. It is counted here
-    // in the loop rather than via a state: the order is fixed either way, so
-    // this stays one line instead of one more state.
-    let sect = none
-    for s in all {
-      if s.kind == "slide" { n += 1 }
-      if s.kind == "section" { sect = s.title }
+    for (i, s) in all.enumerate() {
       pages.push(slide-counter.step()
-                 + slide-body(s, n, total, style, geo, theme, sect: sect))
+                 + deck-info.update(facts.at(i))
+                 // Nothing is revealed on paper, but the cursor counts here
+                 // too, so that `info().step.total` reports the same number in
+                 // both outputs. It has to start over on every slide.
+                 + step-cursor.update(0)
+                 // Nothing on a page sits inside a reveal, so the step being
+                 // laid out is the first one. Said out loud for the sake of
+                 // `bundle()`, where the browser document ran first and left
+                 // its last value standing.
+                 + step-here.update(())
+                 + sprite-number.update(none)
+                 + (if wechselt { theme-state.update(thema(s)) } else { none })
+                 + slide-body(s, style, geo, thema(s), overflow: overflow))
     }
     pages.join(pagebreak(weak: true))
+    ueberlauf-bericht(overflow)
   } else {
     html-output.update(true)
-    theme-state.update(theme)
+    theme-state.update(thema-hell)
     morph-index.update(())
-    let n = 0
     let parts = ()
     let chrome-teile = ()
-    let sect = none
-    for s in all {
-      if s.kind == "slide" { n += 1 }
-      if s.kind == "section" { sect = s.title }
-      let here = n
-      let hier-sect = sect
+    for (i, s) in all.enumerate() {
+      let hier = facts.at(i)
+      let here = hier.data.slide.number
       // Footer and progress come as their own layer above the stage, not
       // into the slide. Otherwise they would leave along with it on
       // transition, while the next one's comes in: two bars would be seen
       // crossing instead of one growing. Title and section slides carry
       // none; their entry stays empty so the count matches the slides.
+      //
+      // This layer is written out at the *end* of the document, long after
+      // the slides. What the chrome reads therefore has to be put back in
+      // front of each of its frames, or all of them would draw the numbers of
+      // the last slide.
       chrome-teile.push(html.elem("div", attrs: (class: "ts-chrome"),
         if s.kind == "slide" {
-          html.frame(slide-chrome(here, total, geo, theme, sect: hier-sect))
+          // The step is said out loud as well, even though the chrome prints
+          // no step: chrome stands inside no reveal, so its step is the first
+          // one. Without it the reading would hang off whatever the last
+          // sprite of the last slide left standing, and that lengthens the
+          // chain of things Typst has to settle for no gain. Measured on a
+          // `bundle()`, where the chain then ran past five attempts and Typst
+          // said "document did not converge".
+          deck-info.update(hier)
+          step-here.update(())
+          sprite-number.update(none)
+          html.frame(slide-chrome(geo, thema(s)))
         } else { [] }))
       parts.push({
         slide-counter.step()
+        deck-info.update(hier)
         element-counter.update(0)
         step-cursor.update(0)
+        step-here.update(())
+        sprite-number.update(none)
         sprites.update(())
         bridge-jobs.update(())
         note-state.update(s.note)
         transition-state.update(s.at("transition", default: none))
+        // Only a deck that inverts somewhere writes this per slide. A `card`
+        // and a `callout` read their tints out of this state and would
+        // otherwise light the slide they stand on as if it were not inverted.
+        if wechselt { theme-state.update(thema(s)) }
         // Order is everything here: the frame has to come BEFORE the `context`
         // that reads the sprite list. Otherwise nothing that only registers
         // while the frame is laid out would be entered any more.
         html.elem("section", attrs: (class: "ts-slide"), {
           html.elem("div", attrs: (class: "ts-bg"),
-                    html.frame(slide-body(s, here, total, style, geo, theme,
-                                         chrome: false, sect: hier-sect)))
+                    html.frame(slide-body(s, style, geo, thema(s), chrome: false,
+                                          overflow: overflow)))
           // Second chrome, only for the print view (key `p`). There each
           // slide stands on its own page, there is no transition. And the
           // layer above the stage cannot travel along there, because the
           // slides stand one below another. On screen this one stays
           // hidden.
           if s.kind == "slide" {
-            html.elem("div", attrs: (class: "ts-chromep"),
-                      html.frame(slide-chrome(here, total, geo, theme,
-                                              sect: hier-sect)))
+            html.elem("div", attrs: (class: "ts-chromep"), {
+              step-here.update(())
+              sprite-number.update(none)
+              html.frame(slide-chrome(geo, thema(s)))
+            })
           }
           context {
             let tr = transition-state.get()
@@ -324,6 +475,22 @@
               .map(sp => (slide: here, name: sp.extra.name,
                           ab-eins: ab-schritt-eins(sp.at)))
             morph-index.update(a => a + meine-morphs)
+            // The same for every element that wants to rest dimmed. Its
+            // range is closed -- `anim` insists on that -- but a closed range
+            // can still end with the slide, and then there is no step left to
+            // be dim on.
+            // `hier.nr`, nicht `here`: die Marke am Folienende trägt `nr`,
+            // und das zählt jeden Eintrag mit, auch Titel- und
+            // Abschnittsfolien. `here` ist die Nummer unter den Inhaltsfolien
+            // allein. Sobald ein Deck eine Titelfolie hat, laufen die beiden
+            // auseinander, und der Test unten befragte die falsche Folie nach
+            // ihrer Schrittzahl -- gemessen wurde ein gültiges Deck
+            // abgewiesen, sobald man ihm einen Titel gab.
+            let meine-dims = sprites.get()
+              .filter(sp => sp.extra.at("after", default: none) == "dimmed"
+                            and not sp.at("dim-freiwillig", default: false))
+              .map(sp => (slide: hier.nr, nummer: here, bis: max-step(sp.at)))
+            dim-index.update(a => a + meine-dims)
             html.elem("script", attrs: (class: "ts-bridge", type: "application/json"),
                       json.encode(bridge-jobs.get()))
           }
@@ -348,6 +515,25 @@
     // of the same name. Otherwise the flight between the two is lost, and
     // silently: there is no error message, the formula simply appears
     // instead of flying. Hence an announcement here at compile time.
+    // An element that asked to rest dimmed but whose range ends with the
+    // slide never dims, and without this it would say nothing at all -- the
+    // author would get exactly `at: "1-"` and no hint why.
+    context {
+      for d in dim-index.get() {
+        let ende = query(<typstage-slide-end>).find(e => e.value == d.slide)
+        let gesamt = if ende == none { 1 } else {
+          calc.max(1, step-cursor.at(ende.location()).first())
+        }
+        assert(d.bis < gesamt, message:
+          "typstage: anim(after: \"dimmed\") on slide " + str(d.nummer)
+          + " has a range that ends with the slide: it runs to step "
+          + str(d.bis) + " and the slide has " + str(gesamt)
+          + ". There is no step left for the element to be dim on, so it "
+          + "would behave exactly like the default and nothing would say so. "
+          + "Give the slide a further step, or drop the after.")
+      }
+    }
+
     context {
       let alle-morphs = morph-index.get()
       for m in alle-morphs.filter(m => not m.ab-eins) {
@@ -359,6 +545,10 @@
           + "word. Either drop the `at:` here, or rename one of the two.")
       }
     }
+
+    // Read back at the end of the deck, not at the first finding: whoever runs
+    // the check before a talk wants the whole list in one go.
+    ueberlauf-bericht(overflow)
 
     html.elem("div", attrs: (id: "ts-overview"), [])
     html.elem("div", attrs: (id: "ts-hint"), [])

@@ -1,12 +1,24 @@
 // Slides, sections and what belongs to a single slide.
 
-#import "internal.typ": note-state, transition-state
+#import "internal.typ": (deck-info, html-output, note-state, notiz-pruefen,
+                        step-cursor, step-jetzt, transition-state)
 
 /// A regular slide.
 ///
 /// `title: none`, or a bare `==` in heading form, leaves out the title bar;
 /// the body then gets the whole area.
-#let slide(title: none, note: none, transition: none, ..rest) = {
+///
+/// `invert: true` sets this one slide in the palette turned around, for the
+/// slide that carries a single number. The ground becomes the palette's text
+/// color and the text becomes its ground; `muted`, `border` and `surface` are
+/// mixed from those two; `strong` and `accent` carry over unchanged. The
+/// chrome follows, so the running header, the footer and the progress bar are
+/// set in the same colors as the slide under them.
+///
+/// Only a regular slide inverts. A title slide and a section slide are whole
+/// pictures the theme draws itself, and three of the five bundled themes build
+/// them from colors an inversion would not reach; neither takes the argument.
+#let slide(title: none, note: none, transition: none, invert: false, ..rest) = {
   // So that all three notations work: `slide[body]` (without a title),
   // `slide([title])[body]` and `slide(none)[body]`. A single piece is the
   // body, two are title and body.
@@ -19,8 +31,33 @@
     kopf = teile.at(0)
     rumpf = teile.at(1)
   }
-  (kind: "slide", title: kopf, note: note, transition: transition, body: rumpf)
+  // Same rule as for `speaker-note`, because this is the other way of writing
+  // the same thing. `none` stays legal: that is a slide without a note.
+  if note != none { notiz-pruefen(note) }
+  (kind: "slide", title: kopf, note: note, transition: transition,
+   invert: invert, body: rumpf)
 }
+
+/// The same thing in the heading notation, written into the slide body.
+///
+/// ```typ
+/// == Reached in 2026
+/// #invert
+/// #statement[74 %]
+/// ```
+///
+/// A marker, like `#pause`, because a heading carries no arguments. Unlike
+/// `#pause` it is only looked for, never split on, so the walk goes all the
+/// way down: it is found in a `block`, an `align`, a table cell, a grid,
+/// however deeply nested, in the heading itself, and behind `#set` and
+/// `#show`. It is not found where the content is handed to a closure -- in
+/// `context`, `fit`, `anim`, `card` or `alternatives` -- and there nothing
+/// happens and nothing is said. Measured, those five are the whole of it;
+/// `slide(invert: true)` is the form that never depends on the walk.
+///
+/// It prints nothing, so it may stand anywhere in the body; it inverts the
+/// whole slide either way, not the part after it.
+#let invert = metadata("typstage-invert")
 
 /// A section slide.
 #let section(title, transition: none) = (
@@ -54,5 +91,79 @@
 /// cross-fades regardless: the movement is then carried by the morph.
 #let transition(kind, ..spec) = transition-state.update((kind: kind) + spec.named())
 
+/// What the deck knows about itself, read from inside a slide.
+///
+/// ```typ
+/// #context {
+///   let deck = info()
+///   [#deck.section.title #h(1fr) #deck.slide.number/#deck.slide.total]
+/// }
+/// ```
+///
+/// It is the same reading the built-in chrome does. Every number the package
+/// prints on a slide, the footer, the fraction, the length of the progress bar
+/// and the running header, comes out of this function and out of no second
+/// count, so a hand-built footer and the built-in one cannot disagree.
+///
+/// What comes back, as a dictionary:
+///
+/// - `title`, `subtitle`, `author`, `date`: the deck's own particulars, as
+///   `presentation` or a `title-slide` received them.
+/// - `slide.number`, `slide.total`: this slide and how many there are.
+///   Counted the way the footer counts, so title and section slides are not
+///   in it.
+/// - `slide.numbered`: whether this slide is one of the counted ones. It is
+///   `false` on a title slide and on a section slide, and `number` then holds
+///   the last slide counted before it, 0 on a cover that opens the deck. A
+///   footer can therefore leave its counter slot clear instead of printing a
+///   zero into it.
+/// - `step.number`, `step.total`: this deck counts in steps as well as in
+///   slides, which no footer can guess at. `number` is the step the calling
+///   content itself stands on: 1 in the body of a slide, and inside an
+///   `anim`, a `stagger` or an `alternatives` the step of that reveal, its
+///   first one where it covers several. On paper a slide is one page in its
+///   final state, so `number` is `total` there.
+/// - `section.number`, `section.total`, `section.title`: which section the
+///   slide belongs to, how many the deck has, and its title. Before the first
+///   `=` heading, `number` is `0` and `title` is `none`.
+///
+/// Only in a context. *Before* any presentation has run there is nothing to
+/// read and this stops with a message rather than handing out zeros. *After*
+/// one it does not: whoever passes the slides as arguments and writes an
+/// `info()` below the call still gets the last slide's numbers. Clearing the
+/// deck's own record at the end would close that, and it was measured: a slide
+/// carrying one reveal beside a `tiles` went from no layout warning to three
+/// "did not converge" ones. A corner nobody stands in is not worth that, and in
+/// the show-rule notation nothing comes after the deck anyway.
+#let info() = {
+  let stand = deck-info.get()
+  assert(stand != none, message:
+    "typstage: info() reads what the deck knows about itself and therefore "
+    + "works only inside a presentation.")
+  // A footer stands inside the slide whose step count it wants, and that count
+  // is only settled once the slide has been laid out. So the count is fetched
+  // from the far end: `slide-body` leaves a mark there carrying the slide's
+  // number, and the cursor is read at that mark. The same forward reference as
+  // "page 3 of 12", and read straight off the counter rather than passed
+  // through a state, which would cost one layout run too many.
+  let ende = query(<typstage-slide-end>).find(e => e.value == stand.nr)
+  let gesamt = if ende == none { 1 } else {
+    calc.max(1, step-cursor.at(ende.location()).first())
+  }
+  stand.data + (step: (
+    // Paged output has no current step. Every page shows the slide in its
+    // final state, everything at once, so the step shown is the last one.
+    number: if html-output.get() { step-jetzt() } else { gesamt },
+    total: gesamt,
+  ))
+}
+
 /// A note for the presenter view (key `s`).
-#let speaker-note(body) = note-state.update(body)
+///
+/// The note has to carry text: the presenter view transports it as a string,
+/// so a note made purely of layout would arrive nowhere. That is refused with
+/// a message rather than silently dropped.
+#let speaker-note(body) = {
+  notiz-pruefen(body)
+  note-state.update(body)
+}

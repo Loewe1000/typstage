@@ -1,6 +1,7 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (html-output, name-of, pin-index, pin-marker,
+#import "internal.typ": (fit-meldung, html-output, im-deck, im-fit, name-of,
+                        offenes-ende, pin-index, pin-marker, selector,
                         step-cursor, track)
 
 /// Reveal content on particular steps.
@@ -14,17 +15,68 @@
 /// `enter` applies in both directions: paging back plays the same effect in
 /// reverse, taking the entrance back. `exit` only concerns a real departure,
 /// when an element falls out of its range while moving forward.
+///
+/// `after` says what the element does once its range is behind it, and it has
+/// two values.
+///
+/// - `"hidden"`, the default and what an `anim` has always done: it goes,
+///   playing `exit`, and keeps the room it had.
+/// - `"dimmed"`: it stays and is drawn muted, so a point remains legible
+///   after the talk has moved on. Nothing moves and nothing is recoloured;
+///   the element settles to 65 percent opacity, and paging back brings it up
+///   again. That number is measured, and the manual says against what.
+///
+/// On paper `after` does nothing at all. A page shows every step at once, and
+/// a point that is only quiet because the talk has moved past it has no
+/// "past" on a handout. This is the same rule that already holds for
+/// `"hidden"`: what leaves its range in the browser is still printed.
+///
+/// `after` needs a range that ends. `at: auto` and `at: 3` run to the end of
+/// the slide, and an element that never leaves has no after; the package says
+/// so instead of doing nothing. `at: "3"` is that one step, `at: "2-3"` a
+/// range.
+/// What `anim` does once its arguments have been checked.
+///
+/// Split out for `stagger`, and for one reason: `dim-freiwillig`. An element
+/// written by hand with `after: "dimmed"` whose range ends with the slide is a
+/// mistake -- it would rest dim on a step that never comes -- and the check at
+/// the end of the document says so. A `stagger(dim: true)` produces exactly
+/// that shape for its *last* point on purpose: the point being talked about
+/// stays bright, and dims only if the deck goes on. So its points say they may
+/// end with the slide, and the late check leaves them alone. The flag rides in
+/// the sprite record rather than in `extra`, which becomes markup attributes.
+#let anim-kern(body, at: auto, enter: "fade-up", exit: "fade",
+               after: "hidden", duration: auto, delay: 0,
+               dim-freiwillig: false) = track(
+  "anim", body, at: at, dim-freiwillig: dim-freiwillig, extra: (
+    enter: enter, exit: exit, delay: delay,
+    duration: if duration == auto { none } else { duration },
+    // Only the departure from the default travels into the markup. `hidden`
+    // is what every sprite has always done after its range, and writing it
+    // out would put a new attribute on every element of every deck.
+    after: if after == "dimmed" { after } else { none },
+  ))
+
 #let anim(
   body,
   at: auto,
   enter: "fade-up",
   exit: "fade",
+  after: "hidden",
   duration: auto,
   delay: 0,
-) = track("anim", body, at: at, extra: (
-  enter: enter, exit: exit, delay: delay,
-  duration: if duration == auto { none } else { duration },
-))
+) = {
+  assert(after in ("hidden", "dimmed"), message:
+    "typstage: anim(after: ...) is \"hidden\" or \"dimmed\", not \""
+    + str(after) + "\".")
+  assert(after == "hidden" or (at != auto and not offenes-ende(selector(at))),
+         message: "typstage: anim(after: \"dimmed\") wants a range that ends. "
+    + "`at: auto` and `at: 3` run to the end of the slide, so there is no "
+    + "after for the element to rest in. Write `at: \"3\"` for that one step "
+    + "or `at: \"2-3\"` for a range.")
+  anim-kern(body, at: at, enter: enter, exit: exit, after: after,
+            duration: duration, delay: delay)
+}
 
 /// Magic move: the same `name` on two slides, and the thing flies across.
 ///
@@ -101,6 +153,12 @@
   // whole thing, not inside it.
   let shell-outer = if inline { box } else { it => it }
   shell-outer(layout(available => context {
+    // On paper `alternatives` never reaches `track`, it only moves the cursor,
+    // so the fit check cannot be left to `track` here. Asked as an assertion
+    // rather than by placing `fit-verbot`, because the paged branch below
+    // leaves through a `return` and a `return` drops whatever was joined
+    // before it.
+    assert(im-fit.get() == 0, message: fit-meldung("alternatives"))
     // Measure twice, the larger one wins: the same trap as in `track`.
     // `height: 100%` in one version would otherwise collapse to zero, and
     // measuring only against the available height would clip any overflow.
@@ -109,10 +167,18 @@
                                          height: available.height))
     let w = calc.max(..natural.map(s => s.width), ..bounded.map(s => s.width))
     let h = calc.max(..natural.map(s => s.height), ..bounded.map(s => s.height))
-    if not html-output.get() {
-      return block(width: w, height: h, place(align, items.last()))
-    }
     let first = if start == auto { step-cursor.get().first() + 1 } else { start }
+    if not html-output.get() {
+      // Only the last version is set on paper, but the cursor moves as if all
+      // of them stood there. Every version is one step, and
+      // `info().step.total` has to report the same count in both outputs.
+      return {
+        if im-deck() {
+          step-cursor.update(c => calc.max(c, first + items.len() - 1))
+        }
+        block(width: w, height: h, place(align, items.last()))
+      }
+    }
     let last = items.len() - 1
     block(width: w, height: h, {
       for (i, v) in items.enumerate() {
@@ -184,6 +250,17 @@
 /// `start` is `auto`: the sequence continues where the slide left off.
 /// `stride: 0` makes everything appear on the same step and staggers only
 /// through `stagger`, in milliseconds.
+///
+/// `dim: true` turns the sequence into a walk: the point being discussed
+/// stands there, the ones before it stay legible but muted. Every point then
+/// holds exactly its own step instead of the rest of the slide, and rests at
+/// `anim`'s `after: "dimmed"` from the next step on. Paging back brings each
+/// one up again.
+///
+/// Two things follow from that and are worth knowing before reaching for it.
+/// The last point dims too as soon as the slide has a further step after it,
+/// because then the walk has moved on from it as well. And `stride: 0`, which
+/// puts every point on one step, makes them all dim together on the next.
 #let stagger(
   ..items,
   start: auto,
@@ -192,7 +269,12 @@
   duration: auto,
   stagger: 60,
   spacing: 0.65em,
+  dim: false,
 ) = context {
+  // Asked here rather than left to the `anim`s below, so the message names the
+  // function the deck actually wrote. An assertion, not a placed `fit-verbot`,
+  // because the list branch below leaves through a `return`.
+  assert(im-fit.get() == 0, message: fit-meldung("stagger"))
   let start = if start == auto { step-cursor.get().first() + 1 } else { start }
   let gegeben = items.pos()
   assert(gegeben.len() > 0, message: "typstage: stagger() wants something to stagger")
@@ -205,11 +287,19 @@
     parts.filter(c => c.func() in (list.item, enum.item))
   } else { () }
 
+  // Where a point rests. Without `dim` it stays for the rest of the slide, so
+  // its range stays open; with `dim` it holds its own step and dims after it.
+  // Both selectors carry the same highest number, so the slide keeps its step
+  // count either way.
+  let bereich(n) = if dim { str(n) } else { str(n) + "-" }
+  let ruhe = if dim { "dimmed" } else { "hidden" }
+
   if punkte.len() == 0 {
     // No list: the pieces in order, each as its own block.
     for (i, b) in gegeben.enumerate() {
-      block(anim(b, at: str(start + i * stride) + "-",
-                 enter: enter, duration: duration, delay: i * stagger))
+      block(anim-kern(b, at: bereich(start + i * stride), after: ruhe,
+                      dim-freiwillig: dim, enter: enter, duration: duration,
+                      delay: i * stagger))
     }
     return
   }
@@ -223,7 +313,7 @@
 
   for (i, p) in punkte.enumerate() {
     if i > 0 { v(spacing, weak: true) }
-    anim(
+    anim-kern(
       grid(
         columns: (column, 1fr),
         column-gutter: 0.5em,
@@ -234,7 +324,7 @@
         align: (right + top, left + top),
         marks.at(i), p.body,
       ),
-      at: str(start + i * stride) + "-",
+      at: bereich(start + i * stride), after: ruhe, dim-freiwillig: dim,
       enter: enter, duration: duration, delay: i * stagger,
     )
   }

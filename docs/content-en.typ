@@ -74,6 +74,22 @@ This manual is ordered by intent rather than by function:
   The typeset examples in this manual are paper and therefore show the final
   state, everything at once. What happens one after another in the browser is
   said in the text beside them or as a comment in the source.
+
+  Every `typ` listing here is compiled against the real package before the site
+  is built, by `python3 .github/scripts/pruefe-beispiele.py`, so that no example
+  survives a rename in the package that makes it invalid. What the run does
+  *not* do belongs in the same breath: most listings are fragments rather than
+  whole files, so it wraps each one in a slide and checks that it compiles
+  there, not that the slide then looks right. Lines that deliberately raise an
+  error are marked as such and have to keep failing, and they name what they
+  have to fail at -- a line that breaks for some other reason is a failed
+  check, not a passed one. A line that does compile but does not do what was
+  wanted ("has no effect", "too late") it cannot tell from a correct one. It
+  compiles for the browser, not for paper, and it never looks at the prose
+  beside a listing -- which is where a stale number likes to sit. Listings in
+  other languages are left alone and counted, so nobody loses one by writing
+  the wrong fence. And an example whose companion package is missing is
+  skipped, and the run says which.
 ]
 
 = Your first presentation
@@ -86,30 +102,11 @@ without detours.
 No more than this is needed. An import, a show rule, and headings. The
 following file is complete and can be typed out:
 
-#show-code[```typ
-#import "@schule/typstage:0.1.0": *
-
-#show: presentation.with(
-  title: [The Pythagorean Theorem],
-  subtitle: [A derivation in four steps],
-  author: [Mathematics · Year 9],
-  date: datetime.today(),
-  transition: "slide",
-)
-
-= What this is about
-
-== The claim
-
-#speaker-note[Show the dissection first, then the formula, not the other way round.]
-
-In a right-angled triangle the two shorter sides together carry as much area
-as the longest one.
-
-#pause
-
-And that is the formula: $a^2 + b^2 = c^2$
-```]
+// Read from the file rather than copied out: "complete and can be typed out"
+// is a promise, and it only holds if these are the very bytes that
+// `.github/scripts/pruefe-beispiele.py` compiles.
+#show-code(raw(read("../examples/handbuch/first-deck.typ").trim(),
+               block: true, lang: "typ"))
 
 A first-level heading is a section slide, a second-level heading is a slide,
 and the text below it is its body. That is the whole structure.
@@ -242,14 +239,32 @@ And that is enough to compute the third side from two of them.
 
 `stride: 2` puts two items on each step, `stride: 0` puts all of them on the
 same one. `start` sets the first step, `enter` the motion, `stagger` the delay
-in milliseconds between neighbours, and `spacing` the distance between the
-items.
+in milliseconds between neighbours, `spacing` the distance between the items,
+and `dim` lets each point step back once the next one arrives.
 
 #tip[
   `stagger` also takes several blocks instead of one list. Then each block is
   one step, which is the way to reveal three paragraphs or three pictures in
   turn without writing three `anim` calls.
 ]
+
+`dim: true` turns the sequence into a walk: the point being discussed stands
+there, the ones before it stay legible but muted.
+
+#show-code[```typ
+#stagger(dim: true)[
+  - What the room already knows
+  - What it is about to learn
+  - What it will be able to do afterwards
+]
+```]
+
+For that, each point holds exactly its own step instead of the rest of the
+slide and then rests in `after: "dimmed"` (see "The muted resting state"). Two
+things follow, and both are meant. The last point dims as well as soon as the
+slide has a further step after it, because then the walk has moved on from it
+too. And `stride: 0`, which puts every point on one step, makes them all dim
+together on the next.
 
 == One piece on a step of its own
 
@@ -290,6 +305,82 @@ one after the other.
   a typo in `enter: "fdae-up"` is only noticed by the motion being duller than
   it was meant to be.
 ]
+
+=== The muted resting state
+
+An element whose range has an end goes away afterwards: it plays `exit` and
+keeps the room it had. That is one resting state after the range. `after:
+"dimmed"` gives the second. The point then does not leave. It stays and is
+drawn muted, legible but no longer the thing being talked about.
+
+#show-code[```typ
+#anim(at: "2-3", after: "dimmed")[A passing remark.]
+#anim(at: 4)[And on with the talk.]
+```]
+
+Nothing moves and nothing is recoloured: the element settles to 65 percent
+opacity and comes back up when you page back. `after` has exactly two values,
+`"hidden"`, the default and what it has always done, and `"dimmed"`.
+
+`after` wants a range that ends. `at: auto` and `at: 3` run to the end of the
+slide, and what never leaves has no after; the package says so as an error
+rather than quietly doing nothing. `at: "3"` is that one step, `at: "2-3"` a
+range.
+
+The slide also needs a step after the range, which is what the second line
+above is for. If the range ends with the slide there is no step left on which
+the element could be seen muted; it would behave exactly like the default, and
+nothing would say so. That, too, is an error at compile time.
+
+*On paper `after` does nothing.* A page shows every step at once, and a point
+that is only quiet because the talk has moved past it has no past on a handout.
+This is the rule that already holds for `"hidden"`: what falls out of its range
+in the browser is printed all the same. Printing the HTML page from the browser
+keeps to it too.
+
+*Where the 65 percent comes from.* Opacity composites the ink towards the
+ground, so the ground decides what dimming costs, and on a dark ground it costs
+far less than on a light one. That is a measurement, not an opinion: 0.65 is
+the smallest hundredth at which dimmed body text still reaches the 4.5 to 1
+that this package's contrast contract (see "The contrast contract") asks of
+body text, on all five bundled palettes, upright and inverted, on the paper of
+the slide and on the surface of a card. The tightest of those twenty cases is
+`parchment` on its own paper: 4.57 to 1 at 0.65 and 4.44 at 0.64. The most
+forgiving is `mono` inverted at 8.60. Between full and dimmed there remain 1.94
+to 3.23 to 1 depending on the palette and on whether the element stands on the
+paper or on a card, so the step is plainly visible
+everywhere.
+
+#warning[
+  The guarantee is for text in the `ink` colour, which is what a point is set
+  in. What is already quiet becomes too quiet when dimmed: a line in `muted`
+  measures 2.39 to 4.60 to 1 once dimmed, a word in the accent colour 1.92 to
+  3.03. Dim a point, not a label.
+
+  And opacity mixes with whatever lies behind. The promise is measured against
+  the palette's `paper` and `surface`; over a `card(fill: ...)` of your own or
+  over an image it is not measured and can fall well below. A card in a strong
+  fill was already at 2.73 before dimming and goes to 2.07 with it.
+]
+
+A tracked element *inside* a dimmed one takes the dimming over only if it has
+exactly the same range. That is the same inheritance by which `enter`, `delay`
+and `duration` reach inwards: it applies where both run in lockstep, and not
+otherwise. So an `anim` with a range of its own inside a dimmed `anim` stays at
+full strength, measured on an inner `at: "1-"` inside an outer `at: "1"`.
+
+In practice that puts `morph`, `video`, `embed` and `flipbook` outside the
+inheritance altogether: all four default to `at: "1-"`, an open range, and an
+open range can never match a closed one. Inside a dimmed element they keep
+full strength -- measured, an `embed` stayed at 1.00 while its host went to
+0.65 -- and a formula sitting in a dimmed line stands black in a grey
+sentence. Give the inner element the same closed range by hand, or do not dim
+the line it sits in.
+
+`at:` as a list keeps its usual meaning here. `at: (2, 4)` with
+`after: "dimmed"` shows the element on step 2, takes it away again on step 3,
+brings it back on 4 and rests it dim from 5. The gap in the middle is the list,
+not the dimming.
 
 == Several versions in the same place
 
@@ -381,7 +472,7 @@ A frame with a `bridge:` has a name, and `bridge-job` sends it a dictionary
 when a step arrives:
 
 #show-code[```typ
-#embed(html: lamp, bridge: "lamp", width: 100%, height: 190pt)
+#embed(html: "…", bridge: "lamp", width: 100%, height: 190pt)
 
 #bridge-job("lamp", (color: "#16a34a"), at: 2)
 #bridge-job("lamp", (color: "#eb5e28"), at: 3)
@@ -409,6 +500,7 @@ applets.
 
 == Video
 
+// check: folie dateien=still.png
 #show-code[```typ
 #video("clip.mp4", width: 100%, height: 260pt, poster: image("still.png"))
 ```]
@@ -428,22 +520,27 @@ before it runs and what the PDF shows in its place.
 `flipbook` lets Typst render the motion itself, frame by frame:
 
 #show-code[```typ
-#flipbook(t => cetz.canvas({ … }), frames: 30, fps: 30,
-          width: 220pt, height: 160pt)
+#flipbook(
+  t => box(width: 100%, height: 100%,
+    place(left + horizon, dx: t * 88%, circle(radius: 9pt, fill: accent))),
+  frames: 24, fps: 20, width: 100%, height: 46pt,
+)
 ```]
 
-The function receives `t` running from 0 to 1 and is called once per frame.
-Every frame sits in the file as SVG and stays sharp at any size. That makes it
-the tool for motion that Typst can draw and CSS cannot: a curve being traced, a
-mechanism turning, a diagram assembling itself.
+The function receives `t` running from 0 to 1 and is called once per frame, and
+it may draw with anything Typst has, CeTZ and Fletcher included. Every frame
+sits in the file as SVG and stays sharp at any size. That makes it the tool for
+motion that Typst can draw and CSS cannot: a curve being traced, a mechanism
+turning, a diagram assembling itself.
 
 `loop`, `pingpong` and `still` decide how it plays and which frame stands on
 paper.
 
 #warning[
-  Thirty frames are thirty typeset drawings. That is the most expensive element
-  in this package, in compile time and in file size alike, and it is worth
-  reaching for only where the motion carries the argument.
+  Every frame is really typeset. Twenty-four frames are twenty-four layouts and
+  twenty-four SVG trees in the file. That is the most expensive element in this
+  package, in compile time and in file size alike, and it is worth reaching for
+  only where the motion carries the argument.
 ]
 
 = Developing a calculation
@@ -754,6 +851,7 @@ Since Typst 0.15 one compilation can write several files. That suits this
 package, because talk, deck and handout differ only in their target and in one
 argument. `bundle` writes all three at once:
 
+// check: dokument ziel=bundle
 #show-code[```typ
 #bundle(
   theme: themes.lesson,
@@ -800,6 +898,12 @@ argument `note` on `slide`:
 The note appears in the speaker view, on `s` in the bar, and on the handout. It
 produces nothing in the deck PDF.
 
+A note has to carry text. The speaker view transports it as a string and the
+handout prints it where there is text, so a note built purely out of layout --
+a `fit`, a bare `rect`, an image -- would arrive nowhere. That is refused with
+a message rather than dropped in silence. What is meant to be *seen* belongs on
+the slide.
+
 = Making it your own
 
 The aim of this chapter: a deck that looks like yours and not like the package.
@@ -844,6 +948,194 @@ whole pictures rather than variations on one another.
   checks them and says which values it accepts.
 ]
 
+== Colour, separately: palettes
+
+A theme says how a slide is *built*; a *palette* says what colour it is. The
+two vary separately, which is why they are separate arguments: the classroom
+design is still the classroom design in a darkened room. A palette overwrites
+*partially*, only the entries written down:
+
+#show-code[```typ
+#show: presentation.with(theme: themes.lesson, palette: (accent: blue))
+#show: presentation.with(theme: themes.lesson, palette: palettes.dark)
+```]
+
+A palette carries eight entries, and they are exactly a theme's colour
+entries: `paper` the ground of the slide, `ink` the body text, `strong` the
+carrying dark colour, `accent` the signal colour, `muted` the secondary
+matter, `surface` the ground of a card, `border` its edge, and `inverted`,
+whether light text stands on a dark ground. An entry that does not exist is
+refused: `palette: (acent: blue)` stops with a message rather than quietly
+doing nothing.
+
+Five ship with the package, and each composes with each of the five themes:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Palette*], [*Where it comes from*]),
+  [`palettes.light`], [Exactly the colours of `themes.default`, so this one
+    changes nothing about the default.],
+  [`palettes.mono`], [The greys of `themes.plain`, two of them moved so it
+    passes the contract below.],
+  [`palettes.textbook`], [The textbook colours measured for `themes.lesson`,
+    one grey moved.],
+  [`palettes.parchment`], [The laid paper of `themes.editorial`, two tones
+    moved.],
+  [`palettes.dark`], [The dark ground of `themes.night`, with a deeper
+    accent.],
+)
+
+Which is the whole reason no further theme is needed for the dark room:
+*darkness is a palette rather than a design.* `themes.lesson` under
+`palettes.dark` is still the lesson design, only dark.
+
+`themes.night` stays a theme all the same, and the reason is measured. Its
+cyan `#5ec8f2` carries the title on night's own ground at 9.77 to 1, and on
+the ground an inverted slide lays behind it at 1.59. A colour that holds on
+both would have to sit between roughly 0.13 and 0.23 relative luminance; the
+cyan sits at 0.52. So `palettes.dark` takes a deeper blue that holds on both,
+and `themes.night` keeps the cyan it was designed around.
+
+#warning[
+  Two colours of a theme are not palette entries: `title-fill` and
+  `rule-fill`. Whether they follow is up to the theme. All five bundled ones
+  let them follow -- either as a function of the palette,
+  `title-fill: p => p.strong`, or as `none`, which means the accent and
+  follows with it. Both changed type for that: reading `themes.X.title-fill`
+  used to give a colour and now gives a function, and `rule-fill` gives `none`
+  where it gave the accent. Writing them, `themes.X + (title-fill: red)`, is
+  unchanged. A theme of your own that names a fixed colour there keeps it
+  under every palette. That is deliberate: a colour someone named out loud is
+  not swapped behind their back.
+]
+
+And `themes.night` stays a theme all the same. Its cyan `#5ec8f2` measures
+9.77 to 1 on the dark ground, which is why it glows there, but only 1.59 to 1
+on its own text colour, and that is exactly what an inverted slide puts behind
+it. `palettes.dark` therefore takes a deeper tone. The theme keeps its own; it
+is a design decision, and a measured one rather than an oversight.
+
+== Inverting one slide
+
+For the slide that carries a single number there is `invert`. The ground
+becomes the palette's text colour and the text becomes its ground; `muted`,
+`border` and `surface` are mixed from those two, and `strong` and `accent`
+carry over unchanged. The chrome follows: running head, footer, slide number
+and progress bar are set in the same colours as the slide beneath them, and so
+are `card` and `callout`.
+
+In the heading notation it is a marker in the slide body, like `#pause`:
+
+#show-code[```typ
+== Reached by 2026
+#invert
+#statement[74 %]
+```]
+
+In the argument notation it is an argument of `slide`:
+
+// check: argument
+#show-code[```typ
+#slide([Reached by 2026], invert: true)[#statement[74 %]]
+```]
+
+#warning[
+  Only a regular slide inverts. A title slide and a section slide are whole
+  pictures the theme draws itself, and three of the five bundled themes build
+  them from colours an inversion does not reach; neither takes the argument.
+
+  The `#invert` marker is found wherever the body can be walked: at the top
+  level, inside a `block` or an `align`, in a table cell, in a grid, however
+  deeply nested, in the slide's own heading, and behind `#set` and `#show`
+  rules. It is *not* found where the content is handed to a closure the walk
+  cannot enter -- inside `context`, `fit`, `anim`, `card` or `alternatives` --
+  and there the slide is simply left as it is, without a word. Measured, those
+  five are the whole of it. Where you need one of them, write the slide as
+  `slide(invert: true)`, which never depends on the walk.
+]
+
+== The contrast contract
+
+The bundled palettes are measured before they ship. The arithmetic is real
+WCAG 2 contrast: each channel linearised, from those the relative luminance
+$0.2126 R + 0.7152 G + 0.0722 B$, and from two luminances the ratio
+$(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Six pairs are checked:
+
+#table(
+  columns: (auto, auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Pair*], [*At least*], [*What for*]),
+  [`ink` on `paper`], [4.5], [body text on the slide],
+  [`ink` on `surface`], [4.5], [body text in a card],
+  [`muted` on `paper`], [4.5], [footer, subtitle, running head],
+  [`accent` on `paper`], [3.0], [rules, progress bar, marker],
+  [`accent` on `ink`], [3.0], [the same on an inverted slide],
+  [`border` on `paper`], [1.2], [hairlines],
+)
+
+Every one of the five palettes is checked, and its inverted form with it, by an
+assertion in `src/palettes.typ` that runs when the package is loaded. A colour
+moved there that breaks the contract stops the build and names the number it
+missed.
+
+#warning[
+  *The contract holds only the bundled palettes.* A palette of your own faces
+  no such gate: it is neither warned about nor recoloured. `palette-report(…)`
+  hands back the same measurement as a list for anyone who wants to see it:
+
+  #show-code[```typ
+  #for f in palette-report((paper: white, ink: black, surface: white,
+                            muted: luma(55%), accent: blue, border: luma(86%))) [
+    #f.pair: #calc.round(f.ratio, digits: 2) (wants #f.min) #f.ok \
+  ]
+  ```]
+
+  `contrast(a, b)` is the arithmetic itself and takes any two colours.
+]
+
+*And the five themes do not all pass it.* The contract was run over them before
+the palettes existed, and the result stands here rather than being quietly
+coloured away:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Theme*], [*What falls short*]),
+  [`themes.default`], [nothing, all six pairs hold],
+  [`themes.lesson`], [`muted` on `paper` measures 4.25 against 4.5],
+  [`themes.night`], [`accent` on `ink` measures 1.59 against 3.0],
+  [`themes.plain`], [`muted` on `paper` measures 3.35 against 4.5;
+    `accent` on `ink` measures 1.27 against 3.0],
+  [`themes.editorial`], [`muted` on `paper` measures 3.51 against 4.5;
+    `accent` on `paper` measures 2.84 against 3.0],
+)
+
+None of those colours was changed. They sit in designs that were measured in
+their own right, those of `themes.lesson` off a sample page of a German maths
+textbook, and moving them would have changed every deck already written. What
+`muted` carries is the secondary matter: slide number, subtitle, running head.
+Anyone who wants the numbers met lays the matching palette over the theme:
+
+#show-code[```typ
+#show: presentation.with(theme: themes.editorial, palette: palettes.parchment)
+```]
+
+#warning[
+  *The text colour is never inferred from the fill.* A muted sage such as
+  `#aebdb3` reads as "light" to a luminance rule, yet white on it measures
+  1.96 to 1, far under the 4.5 that body text wants. That is why the package
+  measures with `contrast` and recolours nothing on its own.
+
+  The one exception lives in the theme rather than in the palette, and it is a
+  measurement too. Where a theme sets `strong` as *text*, the heading in
+  `themes.lesson`, the section title in `themes.plain`, it picks between
+  `strong` and `ink` by measured contrast against the ground, because one
+  colour cannot be a dark band and text on a dark ground at the same time.
+  Where the colour named first suffices, and it does for all five themes in
+  their own colours, that is the one that stays.
+]
+
 == The canvas
 
 `width`, `height` and `margin` on `presentation` set the canvas. The default is
@@ -866,6 +1158,11 @@ draws scales along.
   document, so shared typography has to go here. A `#set text` after the show
   rule reaches the slides but not the flying pieces, and the difference only
   shows up mid-flight.
+
+  For the shapes typstage draws itself there is a second route: label rules
+  before `#show: presentation`. They reach more than `style` does, because
+  they also reach the header, the footer and the title slide. See /Labels:
+  reaching every shape the package builds/ below.
 ]
 
 == Building blocks for the body
@@ -879,6 +1176,654 @@ draws scales along.
   hand-counted `at:` on each.
 / `statement`: One large sentence, centred, for the slide that carries a single
   claim.
+/ `fit`: Scales one block down to the room it has, for content whose size the
+  deck does not set itself.
+
+=== fit: working content into the room it has
+
+For the one piece whose size is not written in the deck: the wide table out of
+the analysis, the generated chart, the list that came from a data file. With
+nothing in between, such a block runs over the edge of the slide. In the PDF it
+is still to be seen standing there; in the browser the slide sits in a frame of
+fixed size and whatever reaches past it is cut away.
+
+// check: folgen pre=tabelle
+#show-code(```typ
+== Regression results
+#fit(wrap: false, my-table)
+```)
+
+`wrap: false` because the block is a table. Everything that lays itself out in
+columns wants to be measured as it stands; the reason follows two paragraphs
+down, and it is the one setting worth knowing before the first use.
+
+`fit` measures the block against the place it stands in and scales it
+geometrically, so the proportions are kept and no factor is given by hand.
+Measured on a table of 9 columns and 22 data rows: the body of a slide in the
+`plain` theme is 777.89 pt wide and 364.61 pt tall, the table measures
+572.09 pt #sym.times 571.60 pt and is therefore 207 pt too tall. `fit` works
+out 63.8 % and sets it 364.6 pt tall. The same in the HTML and in the PDF,
+because the arithmetic happens at compile time.
+
+*Width first, then smaller.* The block is offered the full width before it is
+measured. A paragraph or a list then wraps into the space instead of shrinking,
+and only what is still too tall afterwards is scaled. Measured on `lorem(60)`:
+set free, the paragraph is a single line of 3490 pt; offered the width of the
+body it becomes 777.89 pt #sym.times 111.06 pt and so already fits. The factor
+comes to 100 %, `fit` leaves the block alone, and the slide with the fit and
+the slide without it are pixel for pixel the same across the paragraph.
+Without the offer of the width, the same paragraph would come to 22.3 % and
+stand as a thread across the slide.
+
+A table, a chart or a drawing rearranges itself instead when it is offered a
+narrower width, and that changes the picture rather than its size.
+`wrap: false` measures such a block exactly as it stands:
+
+// check: folie pre=tabelle
+#show-code(```typ
+#fit(wrap: false, my-table)
+```)
+
+Measured on a table of 24 columns that is 1316 pt wide when set free: with the
+default `wrap: true`, Typst squeezes the columns into the 777.89 pt of the
+body, the digits overlap, and the factor comes out at 100 %, so nothing is
+scaled. With `wrap: false`, `fit` works out 59.1 % and the columns keep their
+proportions.
+
+*It only shrinks.* `grow: true` also blows up what is smaller than its place,
+for the one large number meant to fill the slide. `shrink: false` takes the
+shrinking away and leaves only the growing.
+
+#show-code(```typ
+#fit(grow: true)[42%]
+```)
+
+`width` and `height` take `auto`, a length or a ratio. On `height: auto` the
+block takes what is left over below the rest of the slide's content, so a fit
+under two bullet points reckons with the bullet points. That has a flip side
+wherever something encloses the fit: inside a `card` the box becomes
+slide-tall, is cut off at the bottom, and whatever follows the card falls off
+the slide -- measured in both outputs. The `1fr` is doing that, not the
+scaling: a `card` around a bare `block(height: 1fr)` behaves the same. Give
+`height:` explicitly inside a card, and the fit reckons with that instead.
+
+#warning[
+  *No reveal inside a `fit`.* Two things do not survive being measured. A
+  `pause` is found by walking the slide body, and a fitted block is a closure
+  that walk cannot enter: measured on a slide carrying two pauses, the step
+  count fell from three to one, and nothing said so. And a measured block has
+  no height to reckon against -- the width is the one a wrapping fit hands in,
+  but the height comes back unbounded, and that is the axis on which a tracked
+  element resolves its size and reserves the room for its marker. Measured: an
+  `anim` inside a fit was not scaled at all and ran off the bottom of the
+  slide.
+
+  `fit` therefore stops with a message that names the thing, for `pause`,
+  `anim`, `stagger`, `alternatives`, `morph`, `tiles`, `video`, `embed` and
+  `flipbook` -- in both outputs, and also when the fit sits inside another fit.
+  The way round it is to put the fit *inside* the reveal rather than around it:
+
+  // check: folie pre=tabelle fehlt=2 weil=cannot_stand_inside_fit
+  ```typ
+  #anim(fit(wrap: false, my-table))   // yes
+  #fit(anim(my-table))                // no
+  ```
+]
+
+`speaker-note` and `bridge-job` are allowed inside a fit. They settle no
+geometry, and a `measure` commits no state, so both were measured to arrive
+exactly once. The other direction is the one that does not work: a note made
+only of a `fit` carries no text and therefore reaches neither the presenter
+view nor the handout. `speaker-note` refuses that with a message.
+
+The arithmetic is taken from mosaic, which took it from Touying 0.7.4; Touying
+credits the work on it to Andreas Kröpelin (Polylux PR #91) and to ntjess.
+
+=== overflow: the checking pass before the talk
+
+`fit` answers the one block whose size you already suspect. `overflow` answers
+the question you cannot ask slide by slide: does anything in this deck run over
+the room it has? It measures every slide body against the room the theme gives
+it and names the ones that do not fit.
+
+#show-code(```typ
+#show: presentation.with(overflow: "error")
+```)
+
+It is off by default and meant to be switched on for a run, not left on while
+writing.
+
+A deck needs this more than a document does. A page one leafs through shows an
+overrun: the line simply stands past the margin and the eye catches it. A
+typstage slide goes into an SVG frame of fixed size and is scaled in the
+browser, so what sticks out is cut away or drawn beside the slide -- and a talk
+one clicks through shows that at the projector.
+
+/ `"none"`: nothing is measured. The default.
+/ `"error"`: the whole deck is built, and it then stops with *every* place at
+  once rather than with the first. One run, the whole list.
+/ `"record"`: it carries on and files a queryable record per finding instead,
+  for a tool or a build script. Typst gives a package no warning channel, so
+  `"record"` prints nothing by itself.
+
+The message names the slide, the step and the amount (shortened here, the
+prose around the list is left out):
+
+#show-code(```
+error: assertion failed: typstage: 2 slides run over the room the body has. …
+  slide 2, from step 1 at the earliest: 311.14pt too tall, 675.76pt of content in 364.61pt of room
+  slide 3, from step 2 at the earliest: 296.49pt too tall, 661.1pt of content in 364.61pt of room
+Shorten the slide, split it, or put the block that does not fit into fit(). …
+```)
+
+*Why the step says "at the earliest".* A slide is exactly as tall on step one
+as on step five: every tracked element holds its full room with `hide()` from
+the start, so whether the body fits is a question about the slide, not about
+the step. What changes with the step is only what is *drawn*. An `anim` hanging
+over the bottom edge is invisible until its step, and only then is there
+something to see.
+
+The step is worked out from the reveals: everything that only arrives after
+step k is invisible there, and if the overrun is larger than all of it put
+together, something is hanging over the edge on step k already. That is a lower
+bound and not an exact answer, because the sum counts the reveals and nothing
+else -- the gaps between them, block spacing, a `v()`, count in the body's
+height and in no reveal. Measured: a 350pt box, a `v(100pt)` and an
+`anim(at: 4)` below it are reported from step 1, while the overrun only reaches
+the screen on step 4. Where the thing that overruns is itself a reveal and
+nothing empty stands above it, the step is exact: `anim(at: 3)` is reported
+from step 3. *The slide is named correctly either way*, and that is the part to
+act on. On paper no step is named at all, because every step stands on the page
+at once; in the records that shows as `step: 0`.
+
+The records are read with `typst eval`, and for that the deck has to be on
+`overflow: "record"` -- on `"error"` this command stops with the error instead:
+
+#show-code(```sh
+typst eval --target html --features html --in deck.typ \
+  'query(<typstage-overflow>).map(e => e.value)'
+```)
+
+which gives one entry per finding:
+
+#show-code(```json
+[{"slide":2,"step":1,"height":675.76,"room":364.61,"over":311.14},
+ {"slide":3,"step":2,"height":661.1,"room":364.61,"over":296.49}]
+```)
+
+#info[
+  *What the check does not see.* Only the height is measured. `measure` caps
+  the width it reports at the width it is given, so a body that is too wide
+  cannot be told from one that fills its column; `fit` is the answer to that
+  case, and the two belong together -- the check finds the slide, `fit` fixes
+  the block.
+
+  Four things are missed rather than reported. A `height: 100%` inside the body
+  measures 0 and a `1fr` collapses. Anything drawing outside its own layout box
+  -- `scale`, `move`, `place` with an offset -- is invisible to a measurement
+  altogether. And title and section slides are never measured: the theme draws
+  them with `place` and they have no body block to overrun.
+
+  One thing is reported where nothing shows: trailing spacing, a `v()` at the
+  end of a body, takes room in the measurement and draws nothing.
+]
+
+Measured over the six example decks: in HTML the pass costs noticeably more
+time, between 1.2 and 1.5 times depending on the deck and on how the process
+start is accounted for; on paper it costs a little, a few milliseconds per
+deck. Run over all six decks it reports nothing -- none of them overruns.
+
+== Labels: reaching every shape the package builds
+
+Every shape typstage draws on a slide itself -- the ground, the header band,
+the slide title, the footer, the progress indicator, the card, the callout,
+the statement, the title and section slides, the box that stands in for a
+video -- carries a fixed Typst label. That makes it addressable from outside:
+an ordinary `show` rule is enough, no theme key, no fork.
+
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+
+#show label("ts-slide-header-band"): set rect(fill: rgb("#4c1d95"))
+#show label("ts-slide-title"): set text(fill: rgb("#fde047"), style: "italic")
+#show label("ts-card"): set block(fill: rgb("#eef2ff"))
+#show label("ts-statement"): set text(fill: rgb("#be123c"), weight: "bold")
+
+#show: presentation.with(theme: themes.default)
+```]
+
+Two kinds of rule cover all of it, split by what they touch: the *surfaces* --
+grounds, bands, hairlines, bars, boxes -- take `set rect(..)`,
+`set block(..)`, `set circle(..)` or `set line(..)`; the *type* takes
+`set text(..)` with size, weight, colour, font and tracking. Both act at
+compile time, so the result is the same in the HTML and in the PDF -- with one
+exception: what is only drawn in the PDF, because the browser puts the real
+`<video>` or `<iframe>` in its place, is only seen there. That concerns the
+six labels under /Media and handout/.
+
+#warning[
+  *For the surfaces* the short form works and the long one does not:
+
+  ```typ
+  #show label("ts-slide-progress"): set rect(fill: green)          // yes
+  #show label("ts-slide-progress"): it => { set rect(fill: green); it }   // no
+  ```
+
+  The short form puts the style rule *around* the element it matched, the long
+  one puts it *inside* -- and inside the rectangle there is no second rectangle
+  left for it to reach. Anyone who knows the two spellings as equivalent from
+  other packages runs aground here.
+
+  For the 15 type labels the two spellings are equivalent: what sits inside
+  the matched element there is the text, and a rule reaches that from within
+  as well.
+]
+
+=== Where the rule has to stand
+
+*Before* `#show: presentation`. That one place reaches everything: the slide
+background, the chrome layer with header, footer and progress, the title slide
+and every moving piece.
+
+The `style` hook does *not* reach the same. It is wrapped around the slide
+*body*, and header, footer, progress and the title and section slides are
+built beside it, not inside it. Measured, all 37 rules one at a time: from inside
+`style` exactly the 13 that stand in the slide body take effect -- the
+building blocks `ts-card…`, `ts-callout…`, `ts-statement`, and the three
+stand-in surfaces `ts-media-…`. The other 24 stay silent there, without a
+warning. `style` remains the right place for typography that concerns the
+whole body; for labels, the place before `#show: presentation` is the one.
+
+#warning[
+  A `show` rule written *after* `#show: presentation` does not reach a tracked
+  element (`anim`, `morph`). The reason is the one given under Typography: in
+  the browser every moving piece is typeset a second time in a frame of its
+  own, and that frame never sees a `#show` rule from the document body.
+
+  ```typ
+  #show: presentation.with(theme: themes.default)
+  #show label("ts-statement"): set text(fill: green)   // too late
+  == A slide
+  #statement[still]
+  #anim(statement[moving])
+  ```
+
+  In this file `still` comes out green and `moving` black: four coloured areas
+  in the background, none in the overlay. With the same rule one line further
+  up it is four and six, and both look alike. The PDF does not show the
+  difference, because nothing is typeset twice there.
+
+  This holds for every `#show` rule, not only for label rules; it is not a
+  quirk of the labels.
+]
+
+=== What a label rule changes and what it does not
+
+Reachable is whatever the package does *not* write as an explicit argument.
+For type that is everything; for the surfaces it is `fill` and `stroke`
+everywhere and `radius` wherever the shape has a rounding, because those are
+exactly what typstage gives its shapes through a `set` rule.
+
+`width` stands there as an argument everywhere and is therefore nowhere
+reachable. `height` has three exceptions worth naming: `ts-card`,
+`ts-card-bar` and `ts-callout` get their height as `auto`, and `auto` is not a
+value that could beat a rule. Not in a row of equal height either: measured on
+the painted surface itself, `height:` reaches them there as well.
+
+#show-code[```typ
+#show label("ts-card"): set block(height: 150pt)   // works
+#show label("ts-card"): set block(width: 30%)      // does not
+```]
+
+The first line blows the card up to 150 pt and pushes the callout under it off
+the slide. On the chrome surfaces, the grounds and the handout frame neither
+one does anything; what a `width` rule seems to change there are the blocks
+*inside* the content, see the next box.
+
+The slide's *arrangement* is not reachable either. How tall the header builds,
+how far the rule sits under the title, where the bar goes -- that is produced
+in `place` and `layout` while the layout composes itself, and no `show` rule
+reaches inside it. The theme keys are there for that (`head-gap`,
+`band-height`, `rule-size` and the rest); they stay exactly as they were.
+
+#warning[
+  A rule on `block` or `rect` reaches *inwards*: it holds for the labelled
+  surface and for every block inside it. For `fill`, `stroke` and `radius`
+  that is caught -- the card puts back inside whatever the document had set,
+  or its own colour would run out over the rounded corners. For the spacings
+  it is not caught, and then a label rule moves the slide:
+
+  ```typ
+  #show label("ts-card"): set block(below: 60pt)
+  == A slide
+  #card(title: [Card])[Body]
+  #callout(title: [Note])[Remember this]
+  ```
+
+  Measured with `pdftotext -bbox` on exactly this slide: the callout moves
+  down by 31.2 pt, and everything below it with it. The number is `60pt` minus
+  the block spacing of 1.2 em, at 24 pt text 28.8 pt, *per edge*. Setting
+  `above` and `below` at once, with something above the card, gives both edges
+  and so twice the shift.
+
+  That is not a promise but a side effect of Typst's style rules. Labels are
+  meant for type and surface; for spacings, use the building blocks' own
+  arguments or the theme keys.
+]
+
+=== The complete inventory
+
+What stands here exists; what exists stands here. The names follow one scheme:
+`ts-`, then the *place*, then the *part* -- the part always comes after the
+place, never before. Places are `slide` (the ordinary slide), `title-slide`,
+`section-slide`, `card`, `callout`, `statement`, `media` and `handout`.
+
+Two pairs differ only in word order, and reaching for the wrong one is silent
+-- it simply does nothing. So here they are side by side:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: none,
+  table.header([*Name*], [*Place and part*]),
+  [`ts-slide-title`], [Place `slide`, part `title`: the title of an ordinary
+    slide],
+  [`ts-title-slide-title`], [Place `title-slide`, part `title`: the title of
+    the title slide],
+  [`ts-slide-title-rule`], [Place `slide`: the rule under the slide title],
+  [`ts-title-slide-rule`], [Place `title-slide`: the accent stroke on the
+    title slide],
+)
+
+The mnemonic: `slide` in *front* means the ordinary slide; `slide` behind
+`title` or `section` means that kind of slide.
+
+A label the current theme does not draw -- a header band under
+`header: "run"`, say -- is not on that slide, and a rule on it then does
+nothing.
+
+*The ordinary slide*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-slide-ground`], [The slide's ground], [`rect`],
+  [`ts-slide-header-band`], [The header band, only under `header: "band"`],
+    [`rect`],
+  [`ts-slide-header-text`], [The running header of number and section, only
+    under `header: "run"`], [`text`],
+  [`ts-slide-header-rule`], [The hairline under it, only under
+    `header: "run"`], [`rect`],
+  [`ts-slide-title`], [The slide title, under all three header styles],
+    [`text`],
+  [`ts-slide-title-rule`], [The rule under the title, only when
+    `rule-size > 0pt`], [`rect`],
+  [`ts-slide-footer`], [The footer line], [`text`],
+  [`ts-slide-number`], [The slide number in it], [`text`],
+  [`ts-slide-footer-rule`], [The hairline above it, only when
+    `footer-rule > 0pt`], [`rect`],
+  [`ts-slide-progress`], [The progress bar, or under `progress: "tick"` the
+    marker that travels], [`rect`],
+  [`ts-slide-progress-track`], [The track it travels along, only under
+    `progress: "tick"`], [`rect`],
+)
+
+*The title slide*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-title-slide-ground`], [Its ground], [`rect`],
+  [`ts-title-slide-band`], [The band along the top edge, only in
+    `themes.lesson`], [`rect`],
+  [`ts-title-slide-title`], [Its title], [`text`],
+  [`ts-title-slide-subtitle`], [Its subtitle], [`text`],
+  [`ts-title-slide-rule`], [The accent stroke; `themes.editorial` has two,
+    `themes.plain` none], [`rect`],
+  [`ts-title-slide-byline`], [The line of author and date], [`text`],
+)
+
+*The section slide*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-section-slide-ground`], [Its ground], [`rect`],
+  [`ts-section-slide-bar`], [The bar along the left edge, only in
+    `themes.lesson`], [`rect`],
+  [`ts-section-slide-title`], [Its title], [`text`],
+  [`ts-section-slide-rule`], [The accent stroke; `themes.night` has two,
+    `themes.lesson` none], [`rect`],
+)
+
+A section slide has no subtitle in typstage, so the list names none.
+
+*The building blocks in the body*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-card`], [The card: surface, border, rounding and all of its contents],
+    [`block`],
+  [`ts-card-bar`], [The coloured tab above it, only under `box: "bar"`],
+    [`block`],
+  [`ts-card-title`], [Its caption], [`text`],
+  [`ts-card-disc`], [The disc of the number, only with `number:`], [`circle`],
+  [`ts-card-number`], [The numeral in it], [`text`],
+  [`ts-card-body`], [Its body], [`text`],
+  [`ts-callout`], [The callout: surface, bar, rounding. The bar on the left is
+    not a label of its own, it is this one's left `stroke` --
+    `set block(stroke: (left: 4pt + red))` recolours it], [`block`],
+  [`ts-callout-title`], [Its caption], [`text`],
+  [`ts-callout-body`], [Its body], [`text`],
+  [`ts-statement`], [The large statement. `size` acts as a factor on it,
+    because `statement` measures in `em`], [`text`],
+)
+
+*Media and handout*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*What it is*], [*Rule*]),
+  [`ts-media-fallback`], [The box that stands in for a moving element in the
+    PDF. A container only, with no colour and no border of its own, so a
+    `radius` rule on it is not visible while a `fill` rule is], [`block`],
+  [`ts-media-fallback-empty`], [The grey box inside it when no `fallback:` was
+    given. That one does have a surface], [`block`],
+  [`ts-media-poster`], [The grey area of a `video` without a `poster:`],
+    [`rect`],
+  [`ts-handout-frame`], [The framed box of one slide on the handout page],
+    [`block`],
+  [`ts-handout-lines`], [The writing lines beside or below it], [`line`],
+  [`ts-handout-note`], [The speaker note, where there is one], [`text`],
+)
+
+#info[
+  Three things that belong with this.
+
+  *A theme with its own title slide draws none of these labels.*
+  `title-slide` and `section` in a theme are functions and paint their picture
+  themselves; whoever brings their own loses the six respectively four labels
+  of that slide kind, and nothing warns about it. The five bundled ones draw
+  what their picture needs and no more: band and bar exist only in
+  `themes.lesson`, `themes.plain` has no accent stroke on its title slide,
+  `themes.lesson` none on its section slide. Which theme draws what stands in
+  the /What it is/ column.
+
+  *The invisible markers carry none.* Every moving element paints a
+  transparent rectangle around itself so the browser can find it again, and
+  `pin` does the same for a single glyph. That is machinery, not a shape;
+  both stay nameless.
+
+  *Typst labels and the runtime's CSS classes are two separate namespaces.*
+  `.ts-slide` in the stylesheet is a slide's `<section>` in the browser,
+  `ts-slide-title` is a Typst label -- one hyphen apart and unrelated. Typst's
+  HTML export does put a `data-typst-label` attribute on some shapes, on the
+  building blocks of the body for instance, and on the type shapes it does
+  not. That is Typst's own by-product, not a promise of this package: do not
+  build CSS on it.
+]
+
+
+== `info()`: what the deck knows about itself
+
+Labels say how a shape the package builds looks. They do not say what stands
+in it. The slide number, the fraction, the chapter in the running header --
+those numbers were the package's own, and anyone who wanted a footer of their
+own had to count along. `info()` hands them out:
+
+#show-code[```typ
+#context {
+  let deck = info()
+  [#deck.section.title #h(1fr) #deck.slide.number / #deck.slide.total]
+}
+```]
+
+It is the same reading the built-in footer does. Every number the package
+prints on a slide -- the slide number, the fraction, the length of the progress
+bar, the running header -- comes out of this dictionary and out of no second
+count. A hand-built footer and the built-in one cannot print different numbers.
+
+What comes back:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Field*], [*What is in it*]),
+  [`title`, `subtitle`], [The deck's title and subtitle, as `presentation` or a
+    `title-slide` received them],
+  [`author`, `date`], [From the same place. `date` is whatever was passed, a
+    `datetime` or content],
+  [`slide.number`], [This slide. Counted the way the footer counts, so title
+    and section slides are not in it],
+  [`slide.total`], [How many slides are counted],
+  [`slide.numbered`], [Whether this slide is one of them. `false` on a title
+    and on a section slide],
+  [`step.number`], [The step the calling content itself stands on],
+  [`step.total`], [How many steps this slide has],
+  [`section.number`], [Which section is running, `0` before the first],
+  [`section.total`], [How many sections the deck has],
+  [`section.title`], [Its title, or `none` before the first],
+)
+
+One number stands deliberately apart: the speaker view and the overview count
+*every* slide, title and section slides included, while `info().slide.total`
+counts the way the footer counts and leaves them out. On a sample with one
+title slide, two section slides and three ordinary ones, that is 6 against 3.
+
+=== Two counts, not one
+
+A deck that counts pages would get by with one number. This one counts slides
+*and* steps, and the two are different things: a slide is one picture, a step
+is one press of the arrow key. So they stand apart, and they are called what
+they are called throughout this manual.
+
+`step.number` is the step the calling content itself stands on: `1` in the body
+of a slide, and inside an `anim`, a `stagger` or an `alternatives` the step of
+that reveal -- and where a reveal covers several steps, the first of them. That is the difference that matters -- a display naming the
+current step has to sit inside the reveals, because the browser typesets
+nothing anew:
+
+#show-code[```typ
+#let where = context {
+  let d = info()
+  [Step #d.step.number of #d.step.total]
+}
+
+== Four versions
+#alternatives(where, where, where, where)
+```]
+
+Paging through, that prints "Step 1 of 4" up to "Step 4 of 4" -- measured on a
+sample with nine steps, at every one of them.
+
+On paper there is no current step: the page shows the slide in its final state,
+everything at once. There `step.number` equals `step.total`.
+
+#info[
+  `step.total` counts what the runtime in the browser counts. Cross-checked on
+  a deck holding one of every building block that consumes a step -- `pause`,
+  `stagger`, `anim` with and without a number, `alternatives`, `tiles`,
+  `morph`, `video`, `flipbook`: on all nine slides with a body `info()` names
+  the same number the runtime in the browser counts, and the PDF names it too.
+]
+
+=== Where a hand-built footer goes
+
+typstage draws no footer on a title or a section slide. Anyone building their
+own faces the question of what belongs in the counter slot there -- and the
+answer is nothing. `slide.numbered` says when that is the case:
+
+#show-code[```typ
+#let footline = context {
+  let d = info()
+  let number = if d.slide.numbered [#d.slide.number / #d.slide.total] else []
+  place(bottom + right, text(size: 12pt, fill: muted, number))
+}
+```]
+
+On an ordinary slide it goes into the body, that is, into the slide itself:
+
+// check: folgen davor
+#show-code[```typ
+== A slide
+#footline
+The text of the slide.
+```]
+
+On the title and the section slides it has to go into the theme: those two
+pictures are functions, and a function wrapped around another adds to it rather
+than replacing it.
+
+#show-code[```typ
+#let base = themes.default
+#let with-foot(f) = (t, s, geo) => { f(t, s, geo); footline }
+
+#show: presentation.with(
+  theme: base + (title-slide: with-foot(base.title-slide),
+                 section: with-foot(base.section)),
+)
+```]
+
+#warning[
+  *Not through `style:`.* The hook looks like the convenient shortcut:
+  `style: it => { footline; it }` would put the footer on every slide without
+  writing it out once per slide. But it is also the template each moving
+  element is typeset with a second time -- and whatever *draws* in there is
+  drawn again inside every sprite.
+
+  Measured on a deck with three reveals per slide: in the browser the footer
+  stood on the slide four times instead of once, and inside a flip book of six
+  frames another six times. Counted in the body, same deck, same sprites: once.
+  On paper it does not show, there are no sprites there.
+
+  `style:` is for typography -- typeface, size, colour, leading -- and for that
+  it is exactly right: background and sprite need the same.
+]
+
+#info[
+  A footer placed in the body sits at the bottom of the *body*, not at the
+  bottom of the slide; the theme's `foot-gap` lies in between. A `dy:` on the
+  `place` moves it where it belongs.
+]
+
+#warning[
+  `info()` reads the state of the slide being typeset and therefore needs a
+  `context` around it. *Before* the presentation there is nothing to read;
+  there it stops with a message rather than handing out zeros.
+
+  *After* it, no: whoever passes the slides as arguments and writes an `info()`
+  below the call still gets the last slide's numbers. Clearing the deck's own
+  record at the end would close that, but measured it costs layout headroom: a
+  slide with one reveal beside a `tiles` went from no warning to three
+  "did not converge" ones. A corner nobody stands in is not worth that, and in
+  the show-rule notation nothing comes after the deck anyway.
+]
+
 
 = Handing it on
 
@@ -1042,6 +1987,13 @@ then media and the bridge, and last the measurements and colours.
 // section pictures are building blocks of those and do not stand alone.
 #show-module(read("../src/themes.typ"), name: "typstage",
              only: ("theme", "themes"))
+
+== Palettes
+
+// Only what `lib.typ` hands out. `kanal`, `leuchtdichte`, `lesbar` and the
+// check itself are internals.
+#show-module(read("../src/palettes.typ"), name: "typstage",
+             only: ("palettes", "contrast", "palette-report"))
 
 == Media and embeds
 

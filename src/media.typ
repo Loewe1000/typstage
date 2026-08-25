@@ -1,8 +1,8 @@
 // Video, embedded documents and Typst-drawn animation, plus what takes their
 // place on paper.
 
-#import "internal.typ": (track, bridge-jobs, html-output, name-of,
-                         slide-counter)
+#import "internal.typ": (track, bridge-jobs, fit-verbot, html-output, im-deck,
+                         name-of, step-cursor, slide-counter)
 #import "config.typ": doc-word
 
 /// The box that stands in for a moving element in the PDF.
@@ -10,24 +10,32 @@
 /// `fallback` is arbitrary content: a CeTZ drawing, an image, a table. Left
 /// out, a labelled placeholder remains. `link` goes underneath and is
 /// clickable in the PDF: whoever holds the handout gets to the live thing.
-#let fallback-box(fallback, link-target, width, height, label) = block(
+///
+/// Labelled `<ts-media-fallback>`. The outer block is only a container and
+/// carries no surface of its own; the grey box that appears when no
+/// `fallback` was given is `<ts-media-fallback-empty>` and has one.
+#let fallback-box(fallback, link-target, width, height, label) = [#block(
   width: width, height: height, {
     let main = if link-target == none { 100% } else { 88% }
     if fallback != none {
       block(width: 100%, height: main, align(center + horizon, fallback))
     } else {
-      block(width: 100%, height: main, fill: luma(95%),
-            stroke: 0.5pt + luma(80%), radius: 4pt,
-            align(center + horizon, text(size: 0.75em, fill: luma(45%), label)))
+      set block(fill: luma(95%), stroke: 0.5pt + luma(80%), radius: 4pt)
+      [#block(width: 100%, height: main,
+              align(center + horizon, text(size: 0.75em, fill: luma(45%), label)))
+       <ts-media-fallback-empty>]
     }
     if link-target != none {
       align(center, text(size: 0.62em, fill: luma(45%),
                          link(link-target, link-target)))
     }
   },
-)
+) <ts-media-fallback>]
 
 /// A real HTML5 video over the slide.
+///
+/// Without a `poster:` the placeholder on paper is labelled
+/// `<ts-media-poster>`.
 #let video(
   src,
   width: 100%,
@@ -43,7 +51,10 @@
 ) = track(
   "video",
   box(width: width, height: height, clip: true, radius: radius,
-      if poster == none { rect(width: 100%, height: 100%, fill: luma(92%)) } else {
+      if poster == none {
+        set rect(fill: luma(92%))
+        [#rect(width: 100%, height: 100%) <ts-media-poster>]
+      } else {
         { set image(width: 100%, height: 100%, fit: "cover"); poster }
       }),
   at: at,
@@ -116,12 +127,19 @@
   // companion package resolving `target: auto` has to find an applet that is
   // written *below* its own commands as well.
   let bridge = if bridge == none { none } else { name-of(bridge) }
+  // On paper `embed` never reaches `track`, it only draws its stand-in and
+  // moves the cursor, so the fit check cannot be left to `track` here.
+  fit-verbot("embed")
   if bridge != none {
     context [#metadata((
       slide: slide-counter.get().first(), name: bridge,
     ))<typstage-bridge-target>]
   }
   context if not html-output.get() {
+  // The step counting of `track` does not run on paper, so the one case that
+  // consumes a step is done here: `info().step.total` has to report the same
+  // number in both outputs.
+  if at == auto and im-deck() { step-cursor.step() }
   fallback-box(fallback, if link != none { link } else { url }, width, height,
                if label == auto { doc-word("embedded") } else { label })
 } else {
@@ -151,8 +169,14 @@
   at: "1-",
   enter: "fade",
   still: auto,
-) = context if not html-output.get() {
+) = {
+  // As in `embed`: on paper this never reaches `track`.
+  fit-verbot("flipbook")
+  context if not html-output.get() {
   // On paper a single frame has to do. `still` picks which one.
+  // The step counting of `track` does not run here, so the one case that
+  // consumes a step is done by hand, as in `embed`.
+  if at == auto and im-deck() { step-cursor.step() }
   block(width: width, height: height,
         if still == auto { render(0.0) } else { still })
 } else {
@@ -181,4 +205,5 @@
              else { i / (frames - 1) }),
     )),
   )
+}
 }

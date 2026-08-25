@@ -29,6 +29,23 @@ Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
   Die gesetzten Beispiele dieses Handbuchs sind Papier und zeigen deshalb den
   Endzustand -- alles auf einmal. Was im Browser nacheinander geschieht, steht
   im Text daneben oder als Kommentar in der Quelle.
+
+  Jeder `typ`-Block hier wird vor dem Bau der Website gegen das echte Paket
+  übersetzt -- `python3 .github/scripts/pruefe-beispiele.py` --, damit kein
+  Beispiel eine Umbenennung im Paket überlebt, die es ungültig macht. Was der
+  Lauf dabei *nicht* leistet, gehört dazugesagt: Die meisten Blöcke sind
+  Bruchstücke und keine ganzen Dateien, er setzt sie also in eine Folie und
+  prüft, dass sie darin übersetzen -- nicht, dass die Folie danach richtig
+  aussieht. Zeilen, die absichtlich einen Fehler auslösen, sind als solche
+  geführt, müssen fehlschlagen und nennen, woran -- eine Zeile, die aus einem
+  anderen Grund bricht, ist ein durchgefallener Test und kein bestandener. Eine
+  Zeile dagegen, die zwar übersetzt, aber nicht das Gewünschte tut ("wirkt
+  nicht", "zu spät"), kann er von einer richtigen nicht unterscheiden. Er
+  übersetzt für den Browser, nicht für Papier, und er sieht nie auf die Prosa
+  neben einem Listing -- dort sitzt eine veraltete Zahl am liebsten. Blöcke in
+  anderen Sprachen bleiben ungeprüft und werden gezählt, damit niemand einen
+  davon durch einen verschriebenen Zaun verliert. Und ein Beispiel, für das ein
+  Begleitpaket fehlt, wird übersprungen; der Lauf sagt, welches.
 ]
 
 = Die erste Präsentation
@@ -41,43 +58,17 @@ Minuten und ohne Umwege.
 Mehr als dies braucht es nicht -- den Import, eine Show-Regel und
 Überschriften. Die folgende Datei ist vollständig und lässt sich abtippen:
 
-#show-code[```typ
-#import "@schule/typstage:0.1.0": *
-
-#show: presentation.with(
-  title: [Der Satz des Pythagoras],
-  subtitle: [Eine Herleitung in vier Schritten],
-  author: [Mathematik · Klasse 9],
-  date: datetime.today(),
-  transition: "slide",
-)
-
-= Worum es geht
-
-== Die Behauptung
-
-#speaker-note[Erst die Zerlegung zeigen, dann die Formel -- nicht umgekehrt.]
-
-#stagger[
-  - Ein rechtwinkliges Dreieck hat zwei Katheten und eine Hypotenuse.
-  - Über jeder Seite steht ein Quadrat.
-  - Die beiden kleinen sind zusammen so groß wie das große.
-]
-
-#v(1em)
-
-#anim(callout[Genau das behauptet der Satz.], enter: "scale")
-
-== Und das ist die Formel
-
-#statement[$ a^2 + b^2 = c^2 $]
-```]
+// Aus der Datei gelesen, nicht abgeschrieben: "vollständig und lässt sich
+// abtippen" ist eine Zusage, und die hält nur, wenn hier dieselben Zeichen
+// stehen, die `.github/scripts/pruefe-beispiele.py` auch übersetzt.
+#show-code(raw(read("../examples/handbuch/erste-praesentation.typ").trim(),
+               block: true, lang: "typ"))
 
 Daraus entstehen vier Folien: die Titelfolie aus `title`, eine Abschnittsfolie
 aus `=`, und je eine gewöhnliche Folie aus den beiden `==`. Der Text bis zur
 nächsten Überschrift ist der Rumpf einer Folie.
 
-So sieht der Rumpf der Folie „Die Behauptung" aus, wenn alle Schritte
+So sieht der Rumpf der Folie "Die Behauptung" aus, wenn alle Schritte
 abgelaufen sind:
 
 #show-example(
@@ -179,7 +170,7 @@ ist, ob man vor oder hinter dem Plan liegt.
 
 #tip[
   Die Vorschau zeigt den nächsten Schritt, nicht die nächste Folie. Ein Deck,
-  das in Schritten zählt, muss die Frage beantworten „was tut der nächste
+  das in Schritten zählt, muss die Frage beantworten "was tut der nächste
   Tastendruck", und das kann eine neue Folie sein oder eine weitere Enthüllung
   auf derselben. Die Marke darüber sagt, welches von beidem.
 ]
@@ -255,7 +246,7 @@ Stelle sofort zu erreichen.
   erscheint nirgends. Ebenso erreicht ein `#set heading`, das nach der
   Show-Regel steht, die Folientitel nicht mehr -- sie verlassen den Bereich,
   den die Regel umschließt. Für die Typografie der Folien gibt es `style` --
-  siehe das Kapitel „Das eigene Aussehen".
+  siehe das Kapitel "Das eigene Aussehen".
 ]
 
 == Wenn die Folien berechnet werden
@@ -274,6 +265,7 @@ Wo die Folien vollständig aus Daten entstehen, lassen sie sich auch einzeln
 übergeben. Dann ist jede Folie ein Funktionsaufruf, und eine Liste von Folien
 lässt sich mit `..` weiterreichen wie jedes andere Array:
 
+// check: dokument
 #show-code[```typ
 #presentation(
   title-slide(title: [Der Satz des Pythagoras], author: [A. Schulz]),
@@ -322,13 +314,13 @@ werden soll.
 )
 
 Dazu kommt `tiles` für ein Kachelraster, das sich von selbst staffelt (Kapitel
-„Das eigene Aussehen"), und `morph` für Objekte, die zwischen zwei Folien
-fliegen (Kapitel „Eine Rechnung entwickeln").
+"Das eigene Aussehen"), und `morph` für Objekte, die zwischen zwei Folien
+fliegen (Kapitel "Eine Rechnung entwickeln").
 
 == Der Schrittzeiger
 
 Jede Folie führt einen Schrittzeiger mit. `at` ist vorgabemäßig `auto`, und
-`auto` heißt „der nächste freie Schritt". Aufeinanderfolgende Einblendungen
+`auto` heißt "der nächste freie Schritt". Aufeinanderfolgende Einblendungen
 nummerieren sich damit von selbst; in der Regel steht in einer Folie überhaupt
 keine Zahl.
 
@@ -491,7 +483,27 @@ Argumente staffeln beliebige Blöcke nach denselben Regeln:
                 (Vorgabe 60)],
   [`enter`], [Bewegung der Punkte, wie bei `anim`],
   [`spacing`], [Abstand zwischen den Zeilen (Vorgabe 0.65 em)],
+  [`dim`], [`true` lässt jeden Punkt gedämpft stehenbleiben, sobald der
+            nächste kommt (Vorgabe `false`)],
 )
+
+`dim: true` macht aus der Staffelung einen Gang: Der Punkt, über den gerade
+gesprochen wird, steht da, die vorherigen bleiben lesbar, aber gedämpft.
+
+#show-code[```typ
+#stagger(dim: true)[
+  - Was der Raum schon weiß
+  - Was er gleich lernt
+  - Was er danach kann
+]
+```]
+
+Dafür hält jeder Punkt genau seinen eigenen Schritt statt den Rest der Folie
+und ruht danach in `after: "dimmed"` (siehe "Der gedimmte Ruhezustand"). Zwei
+Dinge folgen daraus, und beide sind gewollt: Der letzte Punkt wird ebenfalls
+gedimmt, sobald die Folie nach ihm noch einen Schritt hat -- dann ist der Gang
+auch über ihn hinweg. Und `stride: 0`, das alle Punkte auf einen Schritt legt,
+lässt sie gemeinsam auf dem nächsten dimmen.
 
 `stride: 0` und `stagger` gehören zusammen: Alle Punkte erscheinen dann auf
 einem einzigen Schritt, aber kurz nacheinander eingeschwenkt -- eine Welle
@@ -574,6 +586,88 @@ Selektor ein Ende hat.
 (`duration:` auf `presentation`, 520). `delay` ist 0. Beide sind Zahlen in
 Millisekunden und gelten für den Auftritt; beim Zurückblättern entfällt die
 Verzögerung, damit der Rückweg nicht zäh wird.
+
+=== Der gedimmte Ruhezustand
+
+Ein Element, dessen Bereich ein Ende hat, verschwindet danach: Es blendet mit
+`exit` aus und behält den Platz, den es hatte. Das ist der eine Ruhezustand
+nach dem Bereich. `after: "dimmed"` gibt den zweiten. Dann geht der Punkt nicht
+weg, sondern bleibt stehen und wird gedämpft gezeichnet -- lesbar, aber nicht
+mehr das, worüber gerade gesprochen wird.
+
+#show-code[```typ
+#anim(at: "2-3", after: "dimmed")[Eine Randbemerkung.]
+#anim(at: 4)[Und weiter im Text.]
+```]
+
+Nichts bewegt sich dabei, und umgefärbt wird auch nichts: Das Element sinkt auf
+65 Prozent Deckkraft und kommt beim Zurückblättern wieder herauf. `after` hat
+genau zwei Werte, `"hidden"` -- die Vorgabe und das bisherige Verhalten -- und
+`"dimmed"`.
+
+`after` braucht einen Bereich, der endet. `at: auto` und `at: 3` laufen bis zum
+Ende der Folie, und was nie geht, hat kein Danach; das Paket sagt das als
+Fehler, statt stillschweigend nichts zu tun. `at: "3"` ist genau dieser eine
+Schritt, `at: "2-3"` ein Bereich.
+
+Und die Folie braucht nach dem Bereich noch einen Schritt -- deshalb steht oben
+die zweite Zeile. Endet der Bereich mit der Folie, gibt es keinen Schritt, auf
+dem das Element gedämpft zu sehen wäre; es verhielte sich genau wie die Vorgabe,
+ohne dass irgendetwas das sagt. Auch das ist ein Fehler beim Übersetzen.
+
+*Auf dem Papier ändert `after` nichts.* Eine Seite zeigt alle Schritte auf
+einmal, und ein Punkt, der nur deshalb leise ist, weil der Vortrag an ihm vorbei
+ist, hat auf einem Handout kein Vorbei. Das ist dieselbe Regel, die für
+`"hidden"` längst gilt: Was im Browser aus seinem Bereich fällt, steht auf dem
+Papier trotzdem. Der Ausdruck der HTML-Seite aus dem Browser hält es genauso.
+
+*Woher die 65 Prozent kommen.* Deckkraft mischt die Schrift zum Untergrund hin,
+also entscheidet der Untergrund, was das Dimmen kostet -- und auf dunklem Grund
+kostet es deutlich weniger als auf hellem. Das ist eine Messung, keine Meinung:
+0.65 ist der kleinste Hundertstelwert, bei dem gedimmter Fließtext noch die 4,5
+zu 1 erreicht, die der Kontrastvertrag dieses Pakets (siehe "Der
+Kontrastvertrag") für Fließtext verlangt -- auf allen fünf mitgelieferten
+Paletten, aufrecht wie umgedreht, auf dem Papier der Folie wie auf der Fläche
+einer Karte. Der engste dieser zwanzig Fälle ist `parchment` auf seinem eigenen
+Papier: 4,57 zu 1 bei 0.65 und 4,44 bei 0.64. Der großzügigste ist `mono`
+umgedreht mit 8,60. Zwischen voll und gedimmt bleiben je nach Palette
+1,94 bis 3,23 zu 1 -- je nach Palette und danach, ob das Element auf dem
+Papier oder auf einer Karte steht; der Unterschied ist also überall deutlich
+zu sehen.
+
+#warning[
+  Die Zusage gilt für Text in der Schriftfarbe `ink`, und das ist, worin ein
+  Stichpunkt gesetzt ist. Was schon leise ist, wird durch Dimmen zu leise: eine
+  Zeile in `muted` misst gedimmt 2,39 bis 4,60 zu 1, ein Wort in der
+  Akzentfarbe 1,92 bis 3,03. Gedimmt gehört ein Stichpunkt, keine Beschriftung.
+
+  Und Deckkraft mischt zu dem, was dahinterliegt. Die Zusage ist gegen `paper`
+  und `surface` der Palette gemessen; über einer eigenen `card(fill: ...)` oder
+  über einem Bild ist sie es nicht und kann deutlich darunter fallen. Eine
+  Karte in kräftiger Füllung lag schon vor dem Dimmen bei 2,73 und geht mit
+  ihm auf 2,07.
+]
+
+Ein verfolgtes Element *innerhalb* eines gedimmten übernimmt das Dimmen nur,
+wenn es genau denselben Bereich hat. Das ist dieselbe Vererbung, nach der auch
+`enter`, `delay` und `duration` von außen nach innen gelten: Sie greift, wenn
+beide im Gleichschritt laufen, und sonst nicht. Ein `anim` mit eigenem Bereich
+in einem gedimmten `anim` bleibt also voll stehen -- gemessen an einem inneren
+`at: "1-"` in einem äußeren `at: "1"`.
+
+In der Praxis stehen `morph`, `video`, `embed` und `flipbook` damit ganz
+außerhalb dieser Vererbung: alle vier haben `at: "1-"` als Vorgabe, einen
+offenen Bereich, und ein offener kann zu einem geschlossenen nie passen. In
+einem gedimmten Element bleiben sie voll stehen -- gemessen blieb ein `embed`
+bei 1,00, während sein Wirt auf 0,65 ging --, und eine Formel in einer
+gedimmten Zeile steht schwarz in einem grauen Satz. Wer das nicht will, gibt
+dem inneren Element von Hand denselben geschlossenen Bereich oder dimmt die
+Zeile nicht.
+
+`at:` als Aufzählung behält hier seine gewohnte Bedeutung. `at: (2, 4)` mit
+`after: "dimmed"` zeigt das Element auf Schritt 2, nimmt es auf 3 wieder weg,
+bringt es auf 4 zurück und lässt es ab 5 gedimmt stehen. Die Lücke in der
+Mitte macht die Aufzählung, nicht das Dimmen.
 
 == Mehrere Fassungen an derselben Stelle
 
@@ -697,7 +791,7 @@ gestaffelten Liste 120 Millisekunden vor seinem eigenen Stichpunkt. Wer etwas
 Eigenes angibt, behält es -- und wer einen anderen Schritt wählt, erbt nichts,
 denn dann sollen die beiden ja gerade nicht zusammen erscheinen.
 
-*Ein `fr`-Abstand gehört nicht ins verfolgte Element.* `fr` heißt „Anteil an
+*Ein `fr`-Abstand gehört nicht ins verfolgte Element.* `fr` heißt "Anteil an
 dem, was übrig bleibt" -- und was übrig bleibt, verteilt der Elternteil unter
 den Geschwistern. Ein verfolgtes Element wird aber allein gemessen und sieht
 seine Geschwister nicht. Ein `#v(1fr)` unmittelbar in einem `anim` wird deshalb
@@ -705,6 +799,7 @@ durchgereicht statt verfolgt (an Leerraum ist ohnehin nichts zu animieren);
 steht es zwischen anderem Inhalt, meldet das Paket einen Fehler, statt die
 Folie stillschweigend verrutschen zu lassen:
 
+// check: folie fehlt=1 weil=fr_spacer_inside_a_tracked_element
 #show-code(```typ
 #anim[Links #v(1fr) Rechts]        // Fehler -- das fr gehört nach draußen
 #anim[Links] #v(1fr) #anim[Rechts] // so ist es gemeint
@@ -756,6 +851,8 @@ Applet aufbauen und Schritt für Schritt weiterbewegen.
 #show-code[```typ
 #import "@schule/typstage:0.1.0": *
 #import "@schule/typstage-geogebra:0.1.0": *
+
+#show: presentation.with(theme: themes.lesson)
 
 == Parametervariation
 
@@ -904,8 +1001,8 @@ tun.
 
 #warning[
   Beim Zurückblättern und beim Betreten einer Folie wird der ganze Lauf von
-  vorn wiederholt. Aufträge müssen deshalb wiederholbar sein: „setze $a$ auf
-  2,5" ist gut, „erhöhe $a$ um 1" nicht.
+  vorn wiederholt. Aufträge müssen deshalb wiederholbar sein: "setze $a$ auf
+  2,5" ist gut, "erhöhe $a$ um 1" nicht.
 ]
 
 == Video
@@ -913,6 +1010,7 @@ tun.
 `video` legt ein echtes HTML5-Video über die Folie. Beim Betreten der Folie
 läuft es an, beim Verlassen hält es an.
 
+// check: folie dateien=welle.png
 #show-code[```typ
 #video("wellen.mp4", width: 100%, height: 240pt, poster: image("welle.png"))
 ```]
@@ -1018,6 +1116,7 @@ Aufbau auf:
 
 Damit besteht jede Folie der Kette aus zwei Zeilen:
 
+// check: folgen davor
 #show-code[```typ
 == Die Regel am Term -- Schritt 1 von 3
 #umformung(
@@ -1072,7 +1171,7 @@ Rechnung, Zeile für Zeile:
 )
 
 #tip[
-  Die Folientitel der Kette durchzunummerieren („Schritt 2 von 3") kostet
+  Die Folientitel der Kette durchzunummerieren ("Schritt 2 von 3") kostet
   nichts und hilft im Unterricht sofort: Der Fortschrittsbalken zählt Folien,
   nicht Zwischenschritte einer Rechnung.
 ]
@@ -1268,6 +1367,7 @@ Seit Typst 0.15 kann eine Übersetzung mehrere Dateien schreiben. Das passt zu
 diesem Paket, denn Vortrag, Foliensatz und Handout unterscheiden sich ohnehin
 nur im Ziel und in einer Angabe. `bundle` schreibt alle drei auf einmal:
 
+// check: dokument ziel=bundle
 #show-code[```typ
 #bundle(
   theme: themes.lesson,
@@ -1297,7 +1397,7 @@ hat, obwohl Typst die Introspektion über das ganze Bündel führt.
   experimentell und ohne die Schalter `--features bundle,html` nicht zu haben.
   Und eine Datei, die `bundle` benutzt, lässt sich *nur* mit `--format bundle`
   übersetzen; ein gewöhnliches `typst compile vortrag.typ vortrag.pdf` bricht
-  mit „constructing a document is only supported in the bundle target" ab. Wer
+  mit "constructing a document is only supported in the bundle target" ab. Wer
   beide Wege offenhalten will, legt den Rumpf in ein `#let` und ruft
   `presentation` von Hand.
 ]
@@ -1359,6 +1459,12 @@ geht nur der reine Text ein; Auszeichnungen fallen weg.
 Im Handout steht dieselbe Notiz bei ihrer Folie. Eine Notiz erfüllt damit zwei
 Zwecke auf einmal: Gedächtnisstütze beim Vortrag und Erläuterung auf dem Blatt,
 das die Klasse mitnimmt.
+
+Eine Notiz muss Text tragen. Die Sprecheransicht befördert sie als
+Zeichenkette, und das Handout druckt sie dort, wo Text darin steht -- eine
+Notiz, die nur aus Layout besteht (ein `fit`, ein blankes `rect`, ein Bild),
+käme also nirgends an. Das wird mit einer Meldung abgewiesen statt still
+verschluckt. Was *gesehen* werden soll, gehört auf die Folie.
 
 == Was auf dem Papier fehlt -- und was man dafür vorsieht
 
@@ -1423,6 +1529,7 @@ Typst legt keine Dateien an, also müssen die beiden bei `"split"` und beim CDN
 einmal geschrieben werden. Ihr Inhalt steht in `runtime-files`; der
 Bündel-Export gibt sie in demselben Lauf aus, in dem auch der Vortrag entsteht:
 
+// check: ganz ziel=bundle
 #show-code[```typ
 #import "@schule/typstage:0.1.0": *
 
@@ -1541,11 +1648,85 @@ dunkel, `head-gap`, `foot-gap` und `band-height` für die Luft um den Rumpf --
 und `title-slide` und `section`, die ganze Bilder sind: Funktionen
 `(t, s, geo) => content`. Die vollständige Liste steht in der API-Referenz.
 
+== Eine Palette wählen
+
+Ein Theme sagt, wie eine Folie *gebaut* ist; eine *Palette* sagt, welche Farbe
+sie hat. Beides ändert sich unabhängig voneinander: der Unterrichtsentwurf ist
+auch im abgedunkelten Raum noch der Unterrichtsentwurf. Deshalb nimmt
+`presentation` die Palette getrennt entgegen, und sie überschreibt
+*teilweise* -- nur die Einträge, die dastehen:
+
+#show-code[```typ
+#show: presentation.with(theme: themes.lesson, palette: (accent: blue))
+#show: presentation.with(theme: themes.lesson, palette: palettes.dark)
+```]
+
+Eine Palette trägt acht Einträge, und es sind genau die Farbeinträge eines
+Themes: `paper` der Grund der Folie, `ink` der Fließtext, `strong` die
+tragende dunkle Farbe, `accent` die Signalfarbe, `muted` das Nebensächliche,
+`surface` der Grund einer Karte, `border` deren Kante und `inverted`, ob heller
+Satz auf dunklem Grund steht. Ein Eintrag, den es nicht gibt, wird abgewiesen:
+`palette: (acent: blue)` bricht mit einer Meldung ab, statt still nichts zu
+tun.
+
+Fünf Paletten sind mitgeliefert. Jede läuft mit jedem der fünf Themes:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Palette*], [*Woher*]),
+  [`palettes.light`], [Genau die Farben von `themes.default`. Diese Palette
+    ändert an der Vorgabe nichts.],
+  [`palettes.mono`], [Das Grau von `themes.plain`, zwei Töne verschoben,
+    damit es den Vertrag unten besteht.],
+  [`palettes.textbook`], [Die am Schulbuch gemessenen Farben von
+    `themes.lesson`, ein Grau verschoben.],
+  [`palettes.parchment`], [Das Werkdruckpapier von `themes.editorial`, zwei
+    Töne verschoben.],
+  [`palettes.dark`], [Der dunkle Grund von `themes.night`, mit einem
+    tieferen Akzent.],
+)
+
+Daraus folgt der Satz, der sonst ein eigenes Theme kostet: *ein weiteres
+dunkles Theme braucht es nicht, weil Dunkelheit eine Palette ist und keine
+Gestaltung.* `themes.lesson` mit `palettes.dark` ist weiterhin der
+Unterrichtsentwurf, nur dunkel.
+
+`themes.night` bleibt trotzdem ein Theme, und der Grund ist gemessen. Sein
+Zyan `#5ec8f2` trägt die Überschrift auf dem eigenen Grund mit 9,77 zu 1 und
+auf dem Grund, den eine umgedrehte Folie dahinterlegt, mit 1,59. Eine Farbe,
+die auf beiden hält, müsste bei etwa 0,13 bis 0,23 relativer Leuchtdichte
+liegen; das Zyan liegt bei 0,52. Also nimmt `palettes.dark` ein tieferes Blau,
+das auf beiden hält, und `themes.night` behält das Zyan, um das herum es
+entworfen wurde.
+
+#warning[
+  Zwei Farben eines Themes sind keine Paletteneinträge: `title-fill` und
+  `rule-fill`. Ob sie mitfolgen, entscheidet das Theme. Alle fünf
+  mitgelieferten lassen sie mitfolgen -- entweder als Funktion der Palette,
+  `title-fill: p => p.strong`, oder als `none`, was den Akzent meint und mit
+  ihm wandert. Beide haben dafür den Typ gewechselt: `themes.X.title-fill`
+  *auszulesen* ergab früher eine Farbe und ergibt jetzt eine Funktion, und
+  `rule-fill` ergibt `none`, wo es den Akzent ergab. Sie zu *schreiben*,
+  `themes.X + (title-fill: red)`, ist unverändert. Ein eigenes Theme,
+  das dort eine feste Farbe hinschreibt, behält sie unter jeder Palette. Das
+  ist Absicht: eine Farbe, die jemand ausdrücklich genannt hat, wird nicht
+  hinter seinem Rücken getauscht.
+]
+
+Und `themes.night` bleibt trotzdem ein Theme. Sein Zyan `#5ec8f2`
+misst 9,77 zu 1 auf dem dunklen Grund und deshalb leuchtet es dort, aber nur
+1,59 zu 1 auf seiner eigenen Schriftfarbe -- und genau die liegt hinter dem
+Akzent, sobald eine Folie umgedreht wird. `palettes.dark` nimmt darum einen
+tieferen Ton. Das Theme behält seinen; es ist eine Gestaltungsentscheidung,
+und sie ist gemessen, nicht übersehen.
+
 == Die Farben eines Themes
 
 Sechs Rollen tragen ein Theme: `paper` der Grund der Folie, `ink` der
 Fließtext, `strong` die tragende dunkle Farbe, `accent` die Signalfarbe,
-`muted` das Nebensächliche, `surface` der Grund einer Karte. Die
+`muted` das Nebensächliche, `surface` der Grund einer Karte. Mit `border` und
+`inverted` sind es dieselben acht Einträge, die auch eine Palette trägt. Die
 mitgelieferten Themes belegen sie verschieden:
 
 #show-example(
@@ -1588,6 +1769,130 @@ Unabhängig vom Theme gibt das Paket vier Farbkonstanten heraus -- `dark`,
 `accent`, `paper` und `muted` --, die Palette des Vorgabe-Aussehens. Sie sind
 handlich, wo eine Folie einen Farbton braucht und das Theme nicht gewechselt
 wird; wer das Theme tauscht, greift besser auf dessen Einträge zu.
+
+== Eine Folie umdrehen
+
+Für die eine Folie, die nur eine große Zahl trägt, gibt es `invert`. Der Grund
+wird zur Schriftfarbe der Palette, der Satz zu ihrem Grund; `muted`, `border`
+und `surface` werden aus diesen beiden gemischt, `strong` und `accent` gehen
+unverändert mit. Das Chrom zieht mit: Kopfzeile, Fußzeile, Foliennummer und
+Fortschrittsbalken stehen in denselben Farben wie die Folie unter ihnen. Karte
+und Merkkasten ebenso.
+
+In der Überschriftenschreibweise steht `#invert` im Rumpf der Folie, so wie
+`#pause`:
+
+#show-code[```typ
+== Erreicht bis 2026
+#invert
+#statement[74 %]
+```]
+
+In der Argumentschreibweise ist es ein Argument von `slide`:
+
+// check: argument
+#show-code[```typ
+#slide([Erreicht bis 2026], invert: true)[#statement[74 %]]
+```]
+
+#warning[
+  Nur eine gewöhnliche Folie dreht sich um. Titel- und Abschnittsfolie sind
+  ganze Bilder, die das Theme selbst malt, und drei der fünf mitgelieferten
+  bauen sie aus Farben, an die eine Umkehrung nicht heranreicht; beide nehmen
+  das Argument deshalb nicht an.
+
+  Die Marke `#invert` wird überall dort gefunden, wo der Rumpf begehbar ist:
+  auf der obersten Ebene, in einem `block` oder `align`, in einer
+  Tabellenzelle, in einem Raster, beliebig tief geschachtelt, in der
+  Folienüberschrift selbst und hinter `#set`- und `#show`-Regeln. *Nicht*
+  gefunden wird sie dort, wo der Inhalt an eine Closure abgegeben wird, in die
+  der Lauf nicht hineinkommt -- in `context`, `fit`, `anim`, `card` und
+  `alternatives` --, und die Folie bleibt dann einfach stehen, wie sie ist,
+  ohne ein Wort. Gemessen sind das genau diese fünf. Wer eine davon braucht,
+  schreibt die Folie als `slide(invert: true)`, was nie am Lauf hängt.
+]
+
+== Der Kontrastvertrag
+
+Die mitgelieferten Paletten werden gemessen, bevor sie ausgeliefert werden.
+Gerechnet wird der echte WCAG-2-Kontrast: jeder Kanal linearisiert, daraus die
+relative Leuchtdichte $0.2126 R + 0.7152 G + 0.0722 B$, und aus zwei Dichten
+das Verhältnis $(L_"hell" + 0.05) \/ (L_"dunkel" + 0.05)$. Sechs Paarungen
+werden geprüft:
+
+#table(
+  columns: (auto, auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Paarung*], [*Mindestens*], [*Wofür*]),
+  [`ink` auf `paper`], [4,5], [Fließtext auf der Folie],
+  [`ink` auf `surface`], [4,5], [Fließtext in einer Karte],
+  [`muted` auf `paper`], [4,5], [Fußzeile, Untertitel, Kopfzeile],
+  [`accent` auf `paper`], [3,0], [Striche, Fortschritt, Marke],
+  [`accent` auf `ink`], [3,0], [dasselbe auf einer umgedrehten Folie],
+  [`border` auf `paper`], [1,2], [Haarlinien],
+)
+
+Geprüft wird jede der fünf Paletten *und* ihre umgedrehte Form, als `assert`
+in `src/palettes.typ`, das beim Laden des Pakets läuft. Eine Farbe, die dort
+verschoben wird und den Vertrag verletzt, bricht den Bau mit der Zahl, die sie
+verfehlt hat.
+
+#warning[
+  *Der Vertrag gilt nur für die mitgelieferten Paletten.* Eine eigene Palette
+  wird nicht geprüft -- weder gewarnt noch umgefärbt. `palette-report(…)` gibt
+  dieselbe Messung als Liste zurück, wer sie für die eigene Palette sehen will:
+
+  #show-code[```typ
+  #for f in palette-report((paper: white, ink: black, surface: white,
+                            muted: luma(55%), accent: blue, border: luma(86%))) [
+    #f.pair: #calc.round(f.ratio, digits: 2) (will #f.min) #f.ok \
+  ]
+  ```]
+
+  `contrast(a, b)` ist die Rechnung selbst und nimmt zwei beliebige Farben.
+]
+
+*Und die fünf Themes bestehen ihn nicht.* Der Vertrag wurde über sie laufen
+gelassen, bevor die Paletten entstanden; das Ergebnis steht hier, statt
+stillschweigend weggefärbt zu werden:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Theme*], [*Was durchfällt*]),
+  [`themes.default`], [nichts, alle sechs Paarungen halten],
+  [`themes.lesson`], [`muted` auf `paper` misst 4,25 statt 4,5],
+  [`themes.night`], [`accent` auf `ink` misst 1,59 statt 3,0],
+  [`themes.plain`], [`muted` auf `paper` misst 3,35 statt 4,5;
+    `accent` auf `ink` misst 1,27 statt 3,0],
+  [`themes.editorial`], [`muted` auf `paper` misst 3,51 statt 4,5;
+    `accent` auf `paper` misst 2,84 statt 3,0],
+)
+
+Keine dieser Farben wurde geändert. Sie stehen in gemessenen Gestaltungen --
+die von `themes.lesson` stammen von einer Musterseite aus _Fundamente der
+Mathematik_ --, und ein Wechsel hätte jedes bestehende Deck anders aussehen
+lassen. Was `muted` trägt, ist Nebensächliches: Foliennummer, Untertitel,
+Kopfzeile. Wer die Zahlen einhalten will, legt die passende Palette darüber:
+
+#show-code[```typ
+#show: presentation.with(theme: themes.editorial, palette: palettes.parchment)
+```]
+
+#warning[
+  *Aus der Füllfarbe wird nicht auf die Schriftfarbe geschlossen.* Ein
+  mattes Salbeigrün wie `#aebdb3` sieht für eine Helligkeitsregel "hell" aus,
+  aber Weiß darauf misst 1,96 zu 1 -- weit unter den 4,5, die Fließtext will.
+  Deshalb rechnet das Paket mit `contrast` und färbt nirgends automatisch um.
+
+  Die eine Ausnahme steht im Theme, nicht in der Palette, und sie ist ebenfalls
+  eine Messung: wo ein Theme `strong` als *Schrift* setzt -- die Überschrift in
+  `themes.lesson`, der Abschnittstitel in `themes.plain` --, wählt es zwischen
+  `strong` und `ink` nach dem gemessenen Kontrast gegen den Grund, weil dieselbe
+  Farbe nicht zugleich dunkler Balken und Schrift auf dunklem Grund sein kann.
+  Wo die zuerst genannte Farbe reicht, und das tut sie bei allen fünf Themes
+  in ihren eigenen Farben, bleibt genau sie stehen.
+]
 
 == Die Leinwand
 
@@ -1634,6 +1939,11 @@ Haken `style`: eine Funktion, die um jeden Folienrumpf gelegt wird.
   kleinen Rahmen; dieser Rahmen kennt die `#show`-Regeln der Folie nicht.
   `style` wird auf beides gelegt -- auf den Folienrumpf und auf jedes bewegte
   Element --, und nur so sehen Hintergrund und Bewegtes gleich aus.
+
+  Für die Formen, die typstage selbst zeichnet, gibt es einen zweiten Weg:
+  Label-Regeln vor `#show: presentation`. Sie erreichen mehr als `style`, denn
+  sie erreichen auch Kopf, Fuß und Titelfolie. Siehe /Labels: jede gebaute Form
+  ansprechen/ weiter unten.
 ]
 
 #tip[
@@ -1653,7 +1963,7 @@ Haken `style`: eine Funktion, die um jeden Folienrumpf gelegt wird.
 
 == Bausteine für den Folienrumpf
 
-Fünf Bausteine für den Rumpf. Es sind Inhaltsfunktionen, keine eigenen
+Sechs Bausteine für den Rumpf. Es sind Inhaltsfunktionen, keine eigenen
 Folienarten -- sie lassen sich schachteln, in eine Rasterzelle setzen und mit
 `anim` einblenden.
 
@@ -1698,7 +2008,7 @@ Fläche.
   width: 11cm,
 )
 
-`title:` ändert die Überschrift (Vorgabe „Merke"), `color:` die Farbe;
+`title:` ändert die Überschrift (Vorgabe "Merke"), `color:` die Farbe;
 `title: none` lässt sie weg.
 
 === side-by-side -- zwei Spalten
@@ -1797,6 +2107,210 @@ Schritten:
 genau das, woran ein blankes `align(center, …)` in einem verfolgten Element
 scheitert.
 
+=== fit -- den Inhalt auf seinen Platz rechnen
+
+Für das eine Stück, dessen Größe nicht im Deck steht: die breite Tabelle aus
+der Auswertung, das erzeugte Diagramm, die Liste aus einer Datendatei. Ohne
+etwas dazwischen läuft so ein Block über den Rand. Im PDF sieht man ihn dort
+noch stehen; im Browser sitzt die Folie in einem Rahmen fester Größe, und was
+darüber hinausragt wird abgeschnitten.
+
+// check: folgen pre=tabelle
+#show-code(```typ
+== Ergebnisse der Regression
+#fit(wrap: false, meine-tabelle)
+```)
+
+`wrap: false`, weil der Block eine Tabelle ist. Alles, was sich selbst in
+Spalten setzt, will so gemessen werden, wie es steht; der Grund steht zwei
+Absätze weiter, und es ist die eine Angabe, die man vor dem ersten Gebrauch
+kennen sollte.
+
+`fit` misst den Block gegen den Platz, an dem er steht, und skaliert ihn
+geometrisch: die Verhältnisse bleiben, ein Faktor von Hand entfällt. Gemessen
+an einer Tabelle mit 9 Spalten und 22 Datenzeilen: der Rumpf einer Folie im Theme
+`plain` ist 777,89 pt breit und 364,61 pt hoch, die Tabelle misst
+572,09 pt #sym.times 571,60 pt, ist also 207 pt zu hoch. `fit` rechnet mit
+63,8 % und setzt sie 364,6 pt hoch. In der HTML und im PDF gleichermaßen, denn
+gerechnet wird beim Übersetzen.
+
+*Erst die Breite anbieten, dann verkleinern.* Der Block bekommt die volle
+Breite angeboten, bevor gemessen wird. Ein Absatz oder eine Liste bricht dann
+um, statt zu schrumpfen, und nur was danach noch zu hoch ist, wird skaliert.
+Gemessen an `lorem(60)`: frei gesetzt ist der Absatz eine einzige Zeile von
+3490 pt, in der angebotenen Breite des Rumpfes
+777,89 pt #sym.times 111,06 pt und passt damit bereits. Der Faktor kommt auf
+100 %, `fit` rührt den Absatz nicht an, und die Folie mit `fit` und die ohne
+sind im Absatzbereich pixelgleich. Ohne das Angebot der Breite käme derselbe
+Absatz auf 22,3 % und stünde als Fadenzeile über der Folie.
+
+Eine Tabelle, ein Diagramm oder eine Zeichnung ordnet sich dagegen selbst um,
+wenn man ihr eine schmalere Breite anbietet, und das ändert das Bild statt
+seiner Größe. `wrap: false` misst so einen Block genau so, wie er steht:
+
+// check: folie pre=tabelle
+#show-code(```typ
+#fit(wrap: false, meine-tabelle)
+```)
+
+Gemessen an einer Tabelle mit 24 Spalten, die frei gesetzt 1316 pt breit ist:
+mit dem Vorgabewert `wrap: true` quetscht Typst die Spalten in die 777,89 pt
+des Rumpfes, die Ziffern überlagern sich, und der Faktor kommt bei 100 %
+heraus, es wird also nichts skaliert. Mit `wrap: false` rechnet `fit` mit
+59,1 %, und die Spalten behalten ihr Verhältnis.
+
+*Es verkleinert nur.* `grow: true` bläst auch auf, was kleiner ist als sein
+Platz -- für die eine große Zahl, die die Folie füllen soll. `shrink: false`
+nimmt das Verkleinern weg und lässt nur das Vergrößern übrig.
+
+#show-code(```typ
+#fit(grow: true)[42%]
+```)
+
+`width` und `height` nehmen `auto`, eine Länge oder einen Anteil. Bei
+`height: auto` nimmt sich der Block, was unter dem übrigen Inhalt der Folie
+übrig bleibt; ein `fit` unter zwei Stichpunkten rechnet also mit den
+Stichpunkten. Das hat eine Kehrseite, sobald etwas das `fit` umschließt: in
+einem `card` wird der Kasten folienhoch, unten abgeschnitten, und *was nach
+dem `card` steht, fällt von der Folie* -- in beiden Ausgaben gemessen. Das tut
+das `1fr`, nicht das Skalieren: ein `card` um ein blankes
+`block(height: 1fr)` verhält sich genauso. In einem `card` gibt man `height:`
+ausdrücklich an, dann rechnet das `fit` damit.
+
+#warning[
+  *Keine Einblendung im `fit`.* Zweierlei übersteht das Messen nicht. Ein
+  `pause` wird gefunden, indem der Folienrumpf abgelaufen wird, und ein
+  gemessener Block ist eine Closure, in die dieser Lauf nicht hineinkommt:
+  gemessen an einer Folie mit zwei Pausen fiel die Schrittzahl von drei auf
+  eins, und nichts hat es gesagt. Und ein gemessener Block hat keine Höhe, gegen
+  die er rechnen könnte -- die Breite ist die, die ein umbrechendes `fit`
+  hineinreicht, die Höhe aber kommt unbegrenzt zurück, und genau an dieser
+  Achse legt ein verfolgtes Element seine Größe und den Platz seiner Marke
+  fest. Gemessen: ein `anim` in einem `fit` wurde gar nicht verkleinert und
+  lief unten aus der Folie.
+
+  `fit` bricht deshalb ab, mit Namen und Rat, für `pause`, `anim`, `stagger`,
+  `alternatives`, `morph`, `tiles`, `video`, `embed` und `flipbook` -- in
+  beiden Ausgaben und auch dann, wenn das `fit` in einem anderen `fit` steckt.
+  Der Ausweg ist, das `fit` *innerhalb* der Einblendung zu setzen statt darum
+  herum:
+
+  // check: folie pre=tabelle fehlt=2 weil=cannot_stand_inside_fit
+  ```typ
+  #anim(fit(wrap: false, meine-tabelle))   // so
+  #fit(anim(meine-tabelle))                // nicht so
+  ```
+]
+
+`speaker-note` und `bridge-job` dürfen im `fit` stehen. Sie legen keine
+Geometrie fest, und eine Messung schreibt keinen Zustand fest, beide kommen
+also nachgemessen genau einmal an. Die andere Richtung ist die, die nicht
+geht: eine Notiz, die nur aus einem `fit` besteht, trägt keinen Text und
+erreicht damit weder die Sprecheransicht noch das Handout. `speaker-note`
+weist das mit einer Meldung ab.
+
+Die Rechnung dahinter ist von mosaic übernommen, das sie aus Touying 0.7.4
+übernommen hat; Touying schreibt die Arbeit daran Andreas Kröpelin
+(Polylux PR #91) und ntjess zu.
+
+=== overflow -- der Prüflauf vor dem Vortrag
+
+`fit` beantwortet den einen Block, dessen Größe man schon ahnt. `overflow`
+beantwortet die Frage, die man nicht Folie für Folie stellen kann: läuft
+irgendwo in diesem Deck etwas über seinen Platz? Es misst jeden Folienrumpf
+gegen den Platz, den das Theme ihm gibt, und nennt die, die nicht hineingehen.
+
+#show-code(```typ
+#show: presentation.with(overflow: "error")
+```)
+
+Standardmäßig aus, und dafür gedacht, für einen Lauf eingeschaltet zu werden --
+nicht dafür, beim Schreiben mitzulaufen.
+
+Ein Foliensatz braucht das dringender als ein Dokument. Auf einer Seite, die
+man durchblättert, sieht man den Überlauf: die Zeile steht schlicht über dem
+Rand und das Auge fängt sie. Eine typstage-Folie wird in einen SVG-Rahmen
+fester Größe gesetzt und im Browser skaliert -- was übersteht, wird
+abgeschnitten oder neben die Folie gezeichnet, und einen Vortrag, den man
+durchklickt, sieht man darauf erst am Beamer.
+
+/ `"none"`: es wird nichts gemessen. Der Vorgabewert.
+/ `"error"`: das ganze Deck wird gebaut, und dann bricht es mit *allen* Stellen
+  auf einmal ab statt mit der ersten. Ein Lauf, die ganze Liste.
+/ `"record"`: es baut durch und legt stattdessen je Fund einen abfragbaren
+  Datensatz ab, für ein Werkzeug oder ein Bauskript. Typst gibt einem Paket
+  keinen Warnkanal, `"record"` gibt von sich aus also nichts aus.
+
+Die Meldung nennt Folie, Schritt und das Maß (hier gekürzt, der Fließtext um
+die Liste herum ist weggelassen):
+
+#show-code(```
+error: assertion failed: typstage: 2 slides run over the room the body has. …
+  slide 2, from step 1 at the earliest: 311.14pt too tall, 675.76pt of content in 364.61pt of room
+  slide 3, from step 2 at the earliest: 296.49pt too tall, 661.1pt of content in 364.61pt of room
+Shorten the slide, split it, or put the block that does not fit into fit(). …
+```)
+
+*Warum beim Schritt "at the earliest" steht.* Eine Folie ist auf Schritt eins
+genauso hoch wie auf Schritt fünf: jedes verfolgte Element hält seinen vollen
+Platz von Anfang an mit `hide()`, ob der Rumpf passt, ist also eine Frage an
+die Folie und nicht an den Schritt. Mit dem Schritt ändert sich nur, was
+*gezeichnet* wird. Ein `anim`, das unten übersteht, ist bis zu seinem Schritt
+unsichtbar, und erst dann gibt es etwas zu sehen.
+
+Der Schritt wird aus den Einblendungen gerechnet: alles, was erst nach Schritt
+k dazukommt, ist dort unsichtbar, und ist der Überlauf größer als das alles
+zusammen, hängt schon auf Schritt k etwas über den Rand. Das ist eine untere
+Schranke und keine genaue Antwort, denn die Summe zählt die Einblendungen und
+sonst nichts -- die Zwischenräume, Blockabstand, ein `v()`, zählen in der Höhe
+des Rumpfes und in keiner Einblendung. Gemessen: ein 350 pt hoher Kasten, ein
+`v(100pt)` und ein `anim(at: 4)` darunter werden ab Schritt 1 gemeldet, während
+der Überstand erst auf Schritt 4 auf den Schirm kommt. Wo das Überstehende
+selbst eine Einblendung ist und nichts Leeres darüber steht, stimmt der Schritt
+genau: `anim(at: 3)` wird ab Schritt 3 gemeldet. *Die Folie steht in beiden
+Fällen richtig da*, und das ist der Teil, an dem man handelt. Auf Papier wird
+gar kein Schritt genannt, weil dort jeder Schritt zugleich auf der Seite steht;
+in den Datensätzen zeigt sich das als `step: 0`.
+
+Die Datensätze holt man mit `typst eval`, und dafür muss das Deck auf
+`overflow: "record"` stehen -- auf `"error"` bricht auch dieser Befehl mit dem
+Fehler ab:
+
+#show-code(```sh
+typst eval --target html --features html --in deck.typ \
+  'query(<typstage-overflow>).map(e => e.value)'
+```)
+
+und bekommt je Fund einen Eintrag:
+
+#show-code(```json
+[{"slide":2,"step":1,"height":675.76,"room":364.61,"over":311.14},
+ {"slide":3,"step":2,"height":661.1,"room":364.61,"over":296.49}]
+```)
+
+#info[
+  *Was die Prüfung nicht sieht.* Gemessen wird nur die Höhe. `measure` deckelt
+  auch die Breite, die es meldet, bei der Breite, die es bekommt -- ein zu
+  breiter Rumpf ist also nicht von einem zu unterscheiden, der seine Spalte
+  füllt. Für diesen Fall ist `fit` die Antwort, und beide gehören zusammen: die
+  Prüfung findet die Folie, `fit` richtet den Block.
+
+  Viererlei wird übersehen statt gemeldet. Ein `height: 100%` im Rumpf misst 0,
+  ein `1fr` fällt zusammen. Alles, was außerhalb seines eigenen Layoutkastens
+  zeichnet -- `scale`, `move`, `place` mit Versatz --, ist für eine Messung
+  unsichtbar. Und Titel- und Abschnittsfolien werden nie gemessen: das Theme
+  zeichnet sie mit `place`, sie haben keinen Rumpfblock, über den etwas laufen
+  könnte.
+
+  Einerlei wird gemeldet, wo nichts zu sehen ist: nachlaufender Abstand, ein
+  `v()` am Ende eines Rumpfes, nimmt in der Messung Platz und zeichnet nichts.
+]
+
+Gemessen über die sechs Beispieldecks: in der HTML kostet der Lauf merklich
+mehr Zeit, je nach Deck und Verrechnung des Prozessstarts zwischen dem 1,2- und
+dem 1,5-Fachen; auf Papier kostet er wenig, ein paar Millisekunden je Deck.
+Über alle sechs Decks gelaufen meldet er nichts -- keines von ihnen läuft über.
+
 === Folien ohne Titel
 
 Ein nacktes `==` lässt den Titelbalken weg; der Rumpf beginnt dann oben und
@@ -1813,6 +2327,468 @@ soll:
 
 In der Argumentform sind alle drei Schreibweisen erlaubt: `slide[Rumpf]` ohne
 Titel, `slide(none)[Rumpf]` ausdrücklich ohne, `slide([Titel])[Rumpf]` mit.
+
+== Labels: jede gebaute Form ansprechen
+
+Jede Form, die typstage auf einer Folie selbst zeichnet -- die Grundfläche, das
+Kopfband, der Folientitel, die Fußzeile, der Fortschritt, der Kasten, der
+Merksatz, die große Aussage, Titel- und Abschnittsfolie, die Ersatzfläche eines
+Videos --, trägt ein festes Typst-Label. Damit ist sie von außen ansprechbar:
+eine gewöhnliche `show`-Regel genügt, kein Theme-Schlüssel, kein Fork.
+
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+
+#show label("ts-slide-header-band"): set rect(fill: rgb("#4c1d95"))
+#show label("ts-slide-title"): set text(fill: rgb("#fde047"), style: "italic")
+#show label("ts-card"): set block(fill: rgb("#eef2ff"))
+#show label("ts-statement"): set text(fill: rgb("#be123c"), weight: "bold")
+
+#show: presentation.with(theme: themes.default)
+```]
+
+Zwei Sorten Regeln decken alles ab, getrennt danach, was sie anfassen: die
+*Flächen* -- Grundflächen, Bänder, Haarlinien, Balken, Kästen -- nehmen
+`set rect(..)`, `set block(..)`, `set circle(..)` oder `set line(..)`, die
+*Schriften* nehmen `set text(..)` mit Größe, Schnitt, Farbe, Schriftart,
+Laufweite. Beides wirkt zur Übersetzungszeit, und deshalb steht das Ergebnis
+gleich in der HTML und im PDF -- mit einer Ausnahme: Was nur im PDF gezeichnet
+wird, weil im Browser das echte `<video>` oder `<iframe>` an seiner Stelle
+steht, sieht man auch nur dort. Das betrifft die sechs Labels unter
+/Medien und Handout/.
+
+#warning[
+  *Bei den Flächen* wirkt die Kurzform, die Langform nicht:
+
+  ```typ
+  #show label("ts-slide-progress"): set rect(fill: green)          // ja
+  #show label("ts-slide-progress"): it => { set rect(fill: green); it }   // nein
+  ```
+
+  Die Kurzform legt die Stilregel *um* das gefundene Element, die Langform
+  *hinein* -- und im Rechteck steckt kein zweites Rechteck, auf das sie noch
+  wirken könnte. Wer die beiden Schreibweisen aus anderen Paketen als
+  gleichwertig kennt, läuft hier auf.
+
+  Bei den 15 Schrift-Labels sind beide Schreibweisen gleichwertig: dort steckt
+  im gefundenen Element der Text, und den erreicht eine Regel auch von innen.
+]
+
+=== Wo die Regel stehen muss
+
+*Vor* `#show: presentation`. Diese eine Stelle erreicht alles: den
+Folienhintergrund, die Chrome-Schicht mit Kopf, Fuß und Fortschritt, die
+Titelfolie und jedes bewegte Element.
+
+Der Haken `style` erreicht *nicht* dasselbe. Er wird um den *Folienrumpf*
+gelegt, und Kopf, Fuß, Fortschritt sowie Titel- und Abschnittsfolie entstehen
+daneben, nicht darin. Gemessen, jede der 37 Regeln einzeln: aus `style`
+heraus wirken genau die 13, die im Folienrumpf stehen -- die Bausteine
+`ts-card…`, `ts-callout…`, `ts-statement` und die drei Ersatzflächen
+`ts-media-…`. Die übrigen 24 bleiben dort stumm, ohne Warnung. `style` bleibt richtig für
+Typografie, die den ganzen Rumpf betrifft; für Labels ist die Stelle vor
+`#show: presentation` die richtige.
+
+#warning[
+  Eine `show`-Regel, die *hinter* `#show: presentation` steht, erreicht ein
+  getracktes Element (`anim`, `morph`) nicht. Der Grund steht schon im
+  Abschnitt über Typografie: Im Browser wird jedes bewegte Element ein zweites
+  Mal gesetzt, in einem eigenen Rahmen, und dieser Rahmen kennt die
+  `#show`-Regeln aus dem Dokumentrumpf nicht.
+
+  ```typ
+  #show: presentation.with(theme: themes.default)
+  #show label("ts-statement"): set text(fill: green)   // zu spät
+  == Eine Folie
+  #statement[fest]
+  #anim(statement[bewegt])
+  ```
+
+  In dieser Datei ist `fest` grün und `bewegt` schwarz: vier eingefärbte
+  Flächen im Hintergrund, null in der Überlagerung. Steht dieselbe Regel eine
+  Zeile weiter oben, sind es vier und sechs, und beide sehen gleich aus. Im
+  PDF fällt der Unterschied nicht auf, weil dort nichts zweimal gesetzt wird.
+
+  Das gilt für jede `#show`-Regel, nicht nur für Label-Regeln; es ist keine
+  Eigenheit der Labels.
+]
+
+=== Was eine Label-Regel ändert und was nicht
+
+Erreichbar ist, was das Paket *nicht* als ausdrückliches Argument schreibt.
+Für die Schrift ist das alles; für die Flächen sind es `fill` und `stroke`
+überall und `radius` überall dort, wo die Form eine Rundung hat -- genau die
+gibt typstage seinen Formen über eine `set`-Regel.
+
+`width` steht überall als Argument und ist deshalb nirgends erreichbar. Bei
+`height` gibt es drei Ausnahmen, und sie sind es wert, genannt zu werden:
+`ts-card`, `ts-card-bar` und `ts-callout` bekommen ihre Höhe als `auto`, und
+`auto` ist kein Wert, der eine Regel schlagen könnte. Auch in einer Reihe
+gleicher Höhe nicht: nachgemessen an der bemalten Fläche selbst wirkt
+`height:` dort ebenso.
+
+#show-code[```typ
+#show label("ts-card"): set block(height: 150pt)   // wirkt
+#show label("ts-card"): set block(width: 30%)      // wirkt nicht
+```]
+
+Die erste Zeile bläht den Kasten auf 150 pt auf und schiebt den Merksatz
+darunter aus der Folie. Bei den Chrome-Flächen, den Grundflächen und dem
+Handout-Rahmen wirkt weder das eine noch das andere; was dort eine
+`width`-Regel scheinbar ändert, sind die Blöcke *im* Inhalt, siehe den
+nächsten Kasten.
+
+Nicht erreichbar ist auch die *Anordnung* der Folie. Wie hoch der Kopf baut,
+wie weit die Linie unter dem Titel steht, wo der Balken sitzt -- das entsteht
+in `place` und `layout`, während sich das Layout zusammensetzt, und keine
+`show`-Regel reicht dort hinein. Dafür sind die Theme-Schlüssel da
+(`head-gap`, `band-height`, `rule-size` und die übrigen); sie bleiben
+unverändert bestehen.
+
+#warning[
+  Eine Regel auf `block` oder `rect` reicht nach *innen*: Sie gilt für die
+  gelabelte Fläche und für jeden Block darin. Bei `fill`, `stroke` und
+  `radius` ist das abgefangen -- der Kasten setzt innen wieder her, was das
+  Dokument gesetzt hatte, sonst liefe seine Farbe über die runden Ecken
+  hinaus. Bei den Abständen ist es nicht abgefangen, und dann verschiebt eine
+  Label-Regel die Folie:
+
+  ```typ
+  #show label("ts-card"): set block(below: 60pt)
+  == Eine Folie
+  #card(title: [Kasten])[Rumpf]
+  #callout(title: [Merke])[Merksatz]
+  ```
+
+  Gemessen mit `pdftotext -bbox` an genau dieser Folie: Der Merksatz rückt um
+  31,2 pt nach unten, und alles unter ihm mit. Die Zahl ist `60pt` minus dem
+  Blockabstand von 1,2 em, bei 24 pt Text also 28,8 pt, *je Kante*. Wer
+  `above` und `below` zugleich setzt und einen Kasten hat, über dem noch etwas
+  steht, bekommt beide Kanten und damit das Doppelte.
+
+  Das ist keine Zusage, sondern eine Nebenwirkung von Typsts Stilregeln.
+  Labels sind für Schrift und Fläche gedacht; wer Abstände will, nimmt die
+  Argumente der Bausteine oder die Theme-Schlüssel.
+]
+
+=== Das vollständige Verzeichnis
+
+Was hier steht, gibt es; was es gibt, steht hier. Die Namen folgen einem
+Schema: `ts-`, dann der *Ort*, dann der *Teil* -- der Teil steht immer hinter
+dem Ort, nie davor. Orte sind `slide` (die gewöhnliche Folie), `title-slide`,
+`section-slide`, `card`, `callout`, `statement`, `media` und `handout`.
+
+Zwei Paare unterscheiden sich nur in der Wortstellung, und ein Fehlgriff
+bleibt stumm -- er tut einfach nichts. Deshalb hier nebeneinander:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: none,
+  table.header([*Name*], [*Ort und Teil*]),
+  [`ts-slide-title`], [Ort `slide`, Teil `title`: der Titel einer
+    gewöhnlichen Folie],
+  [`ts-title-slide-title`], [Ort `title-slide`, Teil `title`: der Titel der
+    Titelfolie],
+  [`ts-slide-title-rule`], [Ort `slide`: die Linie unter dem Folientitel],
+  [`ts-title-slide-rule`], [Ort `title-slide`: die Zierlinie auf der
+    Titelfolie],
+)
+
+Die Merkhilfe: Steht `slide` *vorn*, geht es um die gewöhnliche Folie; steht
+es hinter `title` oder `section`, um jene Folienart.
+
+Ein Label, das dieses Theme gerade nicht zeichnet -- ein Kopfband bei
+`header: "run"` etwa --, gibt es auf dieser Folie nicht, und eine Regel darauf
+tut dann nichts.
+
+*Die gewöhnliche Folie*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-slide-ground`], [Die Grundfläche der Folie], [`rect`],
+  [`ts-slide-header-band`], [Das Kopfband, nur bei `header: "band"`], [`rect`],
+  [`ts-slide-header-text`], [Die laufende Kopfzeile aus Nummer und Abschnitt,
+    nur bei `header: "run"`], [`text`],
+  [`ts-slide-header-rule`], [Die Haarlinie darunter, nur bei `header: "run"`],
+    [`rect`],
+  [`ts-slide-title`], [Der Folientitel, bei allen drei Kopfarten], [`text`],
+  [`ts-slide-title-rule`], [Die Linie unter dem Titel, nur wenn
+    `rule-size > 0pt`], [`rect`],
+  [`ts-slide-footer`], [Die Fußzeile], [`text`],
+  [`ts-slide-number`], [Die Foliennummer darin], [`text`],
+  [`ts-slide-footer-rule`], [Die Haarlinie darüber, nur wenn
+    `footer-rule > 0pt`], [`rect`],
+  [`ts-slide-progress`], [Der Fortschrittsbalken, bei `progress: "tick"` der
+    wandernde Reiter], [`rect`],
+  [`ts-slide-progress-track`], [Die Bahn, auf der er wandert, nur bei
+    `progress: "tick"`], [`rect`],
+)
+
+*Die Titelfolie*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-title-slide-ground`], [Ihre Grundfläche], [`rect`],
+  [`ts-title-slide-band`], [Das Band am oberen Rand, nur in `themes.lesson`],
+    [`rect`],
+  [`ts-title-slide-title`], [Ihr Titel], [`text`],
+  [`ts-title-slide-subtitle`], [Ihr Untertitel], [`text`],
+  [`ts-title-slide-rule`], [Die Zierlinie; `themes.editorial` hat zwei,
+    `themes.plain` keine], [`rect`],
+  [`ts-title-slide-byline`], [Die Zeile aus Verfasser und Datum], [`text`],
+)
+
+*Die Abschnittsfolie*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-section-slide-ground`], [Ihre Grundfläche], [`rect`],
+  [`ts-section-slide-bar`], [Der Balken am linken Rand, nur in
+    `themes.lesson`], [`rect`],
+  [`ts-section-slide-title`], [Ihr Titel], [`text`],
+  [`ts-section-slide-rule`], [Die Zierlinie; `themes.night` hat zwei,
+    `themes.lesson` keine], [`rect`],
+)
+
+Eine Abschnittsfolie hat in typstage keinen Untertitel, deshalb steht in der
+Liste auch keiner.
+
+*Die Bausteine im Folienrumpf*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-card`], [Der Kasten: Fläche, Rand, Rundung und alles darin], [`block`],
+  [`ts-card-bar`], [Der farbige Reiter über ihm, nur bei `box: "bar"`],
+    [`block`],
+  [`ts-card-title`], [Seine Überschrift], [`text`],
+  [`ts-card-disc`], [Die Scheibe der Nummer, nur bei `number:`], [`circle`],
+  [`ts-card-number`], [Die Ziffer darin], [`text`],
+  [`ts-card-body`], [Sein Rumpf], [`text`],
+  [`ts-callout`], [Der Merksatz: Fläche, Balken, Rundung. Der Balken links
+    ist kein eigenes Label, er ist der linke `stroke` dieses hier --
+    `set block(stroke: (left: 4pt + red))` färbt ihn um], [`block`],
+  [`ts-callout-title`], [Seine Überschrift], [`text`],
+  [`ts-callout-body`], [Sein Rumpf], [`text`],
+  [`ts-statement`], [Die große Aussage. `size` wirkt als Faktor darauf, weil
+    `statement` in `em` misst], [`text`],
+)
+
+*Medien und Handout*
+
+#table(
+  columns: (auto, 1fr, auto),
+  stroke: none,
+  table.header([*Label*], [*Was es ist*], [*Regel*]),
+  [`ts-media-fallback`], [Die Ersatzfläche, die im PDF für ein bewegtes
+    Element steht. Nur eine Hülle, ohne eigene Farbe und ohne Rand: eine
+    `radius`-Regel darauf sieht man deshalb nicht, eine `fill`-Regel schon],
+    [`block`],
+  [`ts-media-fallback-empty`], [Der graue Kasten darin, wenn kein `fallback:`
+    angegeben ist. Er hat eine Fläche], [`block`],
+  [`ts-media-poster`], [Die graue Fläche eines `video` ohne `poster:`],
+    [`rect`],
+  [`ts-handout-frame`], [Der gerahmte Kasten einer Folie auf der
+    Handout-Seite], [`block`],
+  [`ts-handout-lines`], [Die Schreiblinien daneben oder darunter], [`line`],
+  [`ts-handout-note`], [Die Sprechernotiz, wo es eine gibt], [`text`],
+)
+
+#info[
+  Drei Dinge, die dazugehören.
+
+  *Ein Theme mit eigener Titelfolie zeichnet keins dieser Labels.*
+  `title-slide` und `section` im Theme sind Funktionen und malen ihr Bild
+  selbst; wer eine eigene mitbringt, verliert die sechs beziehungsweise vier
+  Labels dieser Folienart, und nichts warnt davor. Die mitgelieferten fünf
+  zeichnen, was ihr Bild braucht, und nicht mehr: Band und Balken gibt es nur
+  in `themes.lesson`, `themes.plain` hat keine Zierlinie auf der Titelfolie,
+  `themes.lesson` keine auf der Abschnittsfolie. Was welches Theme zeichnet,
+  steht in der Spalte /Was es ist/.
+
+  *Die unsichtbaren Markierungen tragen keins.* Jedes bewegte Element malt ein
+  durchsichtiges Rechteck um sich, an dem der Browser es wiederfindet, und
+  `pin` macht dasselbe für ein einzelnes Zeichen. Das ist Maschinerie und
+  keine Form; beides bleibt namenlos.
+
+  *Typst-Labels und die CSS-Klassen der Laufzeit sind zwei getrennte
+  Namensräume.* `.ts-slide` im Stylesheet ist der `<section>` einer Folie im
+  Browser, `ts-slide-title` ein Typst-Label -- sie liegen einen Bindestrich
+  auseinander und haben nichts miteinander zu tun. Typsts HTML-Ausgabe legt
+  allerdings an manche Formen ein `data-typst-label`-Attribut, an die
+  Bausteine des Rumpfes zum Beispiel, an die Schriftformen nicht. Es ist
+  Beiwerk von Typst, kein Versprechen dieses Pakets: Verlass dich für CSS
+  nicht darauf.
+]
+
+
+== `info()`: was das Deck über sich selbst weiß
+
+Labels sagen, wie eine gebaute Form aussieht. Sie sagen nicht, was in ihr
+steht. Die Foliennummer, der Bruch, der Kapitelname in der Kopfzeile -- diese
+Zahlen kannte bisher nur das Paket, und wer eine eigene Fußzeile bauen wollte,
+musste selbst mitzählen. `info()` gibt sie heraus:
+
+#show-code[```typ
+#context {
+  let deck = info()
+  [#deck.section.title #h(1fr) #deck.slide.number / #deck.slide.total]
+}
+```]
+
+Es ist dieselbe Lesung, die die eingebaute Fußzeile macht. Jede Zahl, die das
+Paket auf eine Folie druckt -- die Foliennummer, der Bruch, die Länge des
+Fortschrittsbalkens, die laufende Kopfzeile --, kommt aus diesem Wörterbuch und
+aus keiner zweiten Zählung. Eine selbstgebaute Fußzeile und die eingebaute
+können deshalb nicht verschiedene Zahlen drucken.
+
+Was zurückkommt:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Feld*], [*Was darin steht*]),
+  [`title`, `subtitle`], [Titel und Untertitel des Decks, so wie
+    `presentation` oder eine `title-slide` sie bekommen haben],
+  [`author`, `date`], [Ebendaher. `date` ist, was übergeben wurde: ein
+    `datetime` oder Inhalt],
+  [`slide.number`], [Diese Folie. Gezählt wie die Fußzeile zählt, Titel- und
+    Abschnittsfolien also nicht mit],
+  [`slide.total`], [So viele Folien werden gezählt],
+  [`slide.numbered`], [Ob diese Folie mitgezählt wird. Auf einer Titel- oder
+    Abschnittsfolie `false`],
+  [`step.number`], [Der Schritt, auf dem der aufrufende Inhalt selbst steht],
+  [`step.total`], [So viele Schritte hat diese Folie],
+  [`section.number`], [Der wievielte Abschnitt gerade läuft, `0` vor dem
+    ersten],
+  [`section.total`], [So viele Abschnitte hat das Deck],
+  [`section.title`], [Sein Titel, oder `none` vor dem ersten],
+)
+
+Eine Zahl steht bewusst daneben: Sprecheransicht und Übersicht zählen *alle*
+Folien, Titel- und Abschnittsfolien eingeschlossen, `info().slide.total` zählt
+wie die Fußzeile und lässt sie aus. Auf einem Prüfstück mit einer Titelfolie,
+zwei Abschnittsfolien und drei gewöhnlichen sind das 6 gegen 3.
+
+=== Zwei Zählungen, nicht eine
+
+Ein Deck, das Seiten zählt, käme mit einer Zahl aus. Dieses zählt in Folien
+*und* in Schritten, und die beiden sind verschiedene Dinge: eine Folie ist ein
+Bild, ein Schritt ist ein Tastendruck. Deshalb stehen sie getrennt und heißen
+so, wie sie im ganzen Handbuch heißen.
+
+`step.number` ist der Schritt, auf dem der aufrufende Inhalt selbst steht: im
+Rumpf einer Folie `1`, innerhalb eines `anim`, eines `stagger` oder einer
+`alternatives` der Schritt jener Einblendung -- und wo eine Einblendung über
+mehrere Schritte steht, ihr erster. Das ist der Unterschied, auf den
+es ankommt -- eine Anzeige, die den laufenden Schritt nennt, muss in den
+Einblendungen sitzen, denn der Browser setzt nichts neu:
+
+#show-code[```typ
+#let stand = context {
+  let d = info()
+  [Schritt #d.step.number von #d.step.total]
+}
+
+== Vier Fassungen
+#alternatives(stand, stand, stand, stand)
+```]
+
+Das druckt beim Blättern nacheinander "Schritt 1 von 4" bis "Schritt 4 von 4" -- gemessen an einem Prüfstück mit neun Schritten, an jedem einzelnen davon.
+
+Auf dem Papier gibt es keinen laufenden Schritt: die Seite zeigt die Folie im
+Endzustand, alles auf einmal. Dort ist `step.number` deshalb gleich
+`step.total`.
+
+#info[
+  `step.total` zählt dasselbe wie die Laufzeit im Browser. Gegengeprüft an
+  einem Deck, das jeden Baustein einmal enthält, der einen Schritt verbraucht
+  -- `pause`, `stagger`, `anim` mit und ohne Nummer, `alternatives`, `tiles`,
+  `morph`, `video`, `flipbook`: auf allen neun Folien mit Rumpf nennt `info()`
+  dieselbe Zahl, die die Laufzeit im Browser zählt, und die PDF nennt sie
+  ebenfalls.
+]
+
+=== Wohin die eigene Fußzeile gehört
+
+Auf einer Titel- oder Abschnittsfolie zeichnet typstage keine Fußzeile. Wer
+eine eigene baut, steht dort vor der Frage, was in den Zahlenplatz gehört --
+und die Antwort ist: nichts. `slide.numbered` sagt, wann das der Fall ist:
+
+#show-code[```typ
+#let fusszeile = context {
+  let d = info()
+  let zahl = if d.slide.numbered [#d.slide.number / #d.slide.total] else []
+  place(bottom + right, text(size: 12pt, fill: muted, zahl))
+}
+```]
+
+Auf einer gewöhnlichen Folie steht sie im Rumpf, also in der Folie selbst:
+
+// check: folgen davor
+#show-code[```typ
+== Eine Folie
+#fusszeile
+Der Text der Folie.
+```]
+
+Auf der Titel- und den Abschnittsfolien muss sie ins Theme: die beiden Bilder
+sind Funktionen, und eine Funktion, die eine andere umschließt, ergänzt sie,
+statt sie zu ersetzen.
+
+#show-code[```typ
+#let basis = themes.default
+#let mit(f) = (t, s, geo) => { f(t, s, geo); fusszeile }
+
+#show: presentation.with(
+  theme: basis + (title-slide: mit(basis.title-slide), section: mit(basis.section)),
+)
+```]
+
+#warning[
+  *Nicht über `style:`.* Der Haken sieht nach der bequemen Abkürzung aus:
+  `style: it => { fusszeile; it }` schriebe die Fußzeile auf jede Folie, ohne
+  sie einzeln hinzuschreiben. Er ist aber zugleich die Vorlage, mit der jedes
+  bewegte Element ein zweites Mal gesetzt wird -- und alles, was dort
+  *zeichnet*, wird in jedem Sprite mitgezeichnet.
+
+  Gemessen an einem Deck mit drei Einblendungen je Folie: die Fußzeile stand
+  im Browser viermal auf der Folie statt einmal, und in einem Daumenkino aus
+  sechs Einzelbildern noch sechsmal zusätzlich. Im Rumpf gezählt, dasselbe
+  Deck, dieselben Sprites: einmal. Auf dem Papier fällt es nicht auf, dort gibt
+  es keine Sprites.
+
+  `style:` ist für Typografie da -- Schrift, Größe, Farbe, Zeilenabstand --,
+  und dafür ist es genau richtig: Hintergrund und Sprite brauchen dieselbe.
+]
+
+#info[
+  Eine im Rumpf platzierte Fußzeile sitzt am unteren Rand des *Rumpfes*, nicht
+  am unteren Rand der Folie; dazwischen liegt der `foot-gap` des Themes. Ein
+  `dy:` am `place` schiebt sie dorthin, wo sie hin soll.
+]
+
+#warning[
+  `info()` liest den Stand der Folie, die gerade gesetzt wird, und braucht
+  deshalb ein `context` um sich. *Vor* der Präsentation gibt es nichts zu
+  lesen; dort bricht es mit einer Meldung ab, statt Nullen zu liefern.
+
+  *Danach* nicht: wer die Folien als Argumente übergibt und unter den Aufruf
+  noch ein `info()` schreibt, bekommt weiter die Zahlen der letzten Folie. Das
+  ließe sich schließen, indem das Deck seinen Stand am Ende abräumt -- gemessen
+  kostet das aber Übersetzungs-Spielraum: eine Folie mit einer Einblendung
+  neben einem `tiles` ging damit von null auf drei
+  "did not converge"-Meldungen. Eine Ecke, in der niemand steht, ist das nicht
+  wert; in der Show-Regel-Form steht hinter dem Deck ohnehin nichts.
+]
+
 
 = API-Referenz
 
@@ -1845,6 +2821,13 @@ Medien und Brücke, zuletzt die Maße und Farben.
 // Abschnittsbilder sind Bausteine daraus und stehen nicht für sich.
 #show-module(read("../src/themes.typ"), name: "typstage",
              only: ("theme", "themes"))
+
+== Paletten
+
+// Nur, was `lib.typ` hinausreicht. `kanal`, `leuchtdichte`, `lesbar` und die
+// Prüfung selbst sind Innenleben.
+#show-module(read("../src/palettes.typ"), name: "typstage",
+             only: ("palettes", "contrast", "palette-report"))
 
 == Medien und Einbettungen
 

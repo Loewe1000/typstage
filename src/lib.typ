@@ -15,9 +15,21 @@
 )
 
 #import "themes.typ": theme, themes
-#import "slides.typ": slide, section, title-slide, transition, speaker-note
+#import "palettes.typ": (
+  // Color as a thing of its own, and the instrument the bundled palettes are
+  // measured with.
+  palettes, contrast, palette-report,
+)
+#import "slides.typ": (
+  slide, section, title-slide, transition, speaker-note,
+  // One slide in the palette turned around, for the heading notation.
+  invert,
+  // What the deck knows about itself, so a deck can build its own chrome
+  // instead of forking the theme.
+  info,
+)
 #import "elements.typ": alternatives, anim, morph, pause, pin, stagger
-#import "layout.typ": card, callout, side-by-side, statement, tiles
+#import "layout.typ": card, callout, fit, side-by-side, statement, tiles
 #import "media.typ": video, embed, flipbook
 #import "bridge.typ": bridge-job, bridge-targets
 #import "present.typ": presentation, bundle

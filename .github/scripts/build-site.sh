@@ -8,6 +8,8 @@
 #
 # Ergebnis in _site/:
 #     index.html, docs.css, typstage.pdf     das Handbuch
+#     en.html, typstage-en.pdf               das englische Handbuch
+#     llms.txt                               eine Zeile je Kapitel, für Maschinen
 #     beispiele/*.html, beispiele/index.html die Decks zum Anklicken
 #
 # Warum ein fremdes Repo gebraucht wird: docs/docs.typ setzt auf
@@ -32,10 +34,32 @@ mkdir -p "$PAKETPFAD/schule/typstage"
 cp -R "$AGGREGAT/schuldocs" "$PAKETPFAD/schule/schuldocs"
 ln -s "$WURZEL" "$PAKETPFAD/schule/typstage/$VERSION"
 
-rm -rf "$ZIEL"
-mkdir -p "$ZIEL"
+# Begleitpakete dazu, falls sie danebenliegen. Das Handbuch zeigt ein Beispiel
+# mit @schule/typstage-geogebra, und der Beispielprüfer kann es nur übersetzen,
+# wenn das Paket im Paketpfad steht. Fehlt es, überspringt er es und sagt es.
+# Auf die `typst.toml` gesehen, nicht auf das Verzeichnis: im Aggregat ist ein
+# Begleitpaket ein Submodul, und ein Checkout ohne `submodules: true` legt sein
+# Verzeichnis leer an. Ein leerer Baum kopiert sich anstandslos und bringt den
+# Prüflauf dann an der fehlenden `typst.toml` zu Fall, statt übersprungen zu
+# werden.
+for begleiter in typstage-geogebra; do
+  if compgen -G "$AGGREGAT/$begleiter/*/typst.toml" > /dev/null; then
+    cp -R "$AGGREGAT/$begleiter" "$PAKETPFAD/schule/$begleiter"
+  fi
+done
+
 typst --version
 echo "=== typstage $VERSION ==="
+
+# --- Beispiele in den Handbüchern -------------------------------------------
+# Vor dem Satz, nicht danach: ein Beispiel, das nicht mehr übersetzt, soll den
+# Bau anhalten und nicht als hübsch gesetzter Fehler auf der Website landen.
+# Und vor dem Aufräumen von `_site`, damit ein Fehlschlag nicht auch noch die
+# vorhandene Fassung mitnimmt.
+python3 "$WURZEL/.github/scripts/pruefe-beispiele.py" --paketpfad "$PAKETPFAD"
+
+rm -rf "$ZIEL"
+mkdir -p "$ZIEL"
 
 # --- Handbuch (Website, Stilvorlage und PDF in einem Bündel-Lauf) ------------
 (
@@ -74,6 +98,11 @@ if [[ -f "$WURZEL/docs/manual-en.typ" ]]; then
   [[ -f "$ZIEL/en.html" ]] || { echo "FEHLER: englisches Handbuch ohne en.html" >&2; exit 1; }
   echo "  → Manual (en): en.html, typstage-en.pdf"
 fi
+
+# --- llms.txt ---------------------------------------------------------------
+# Aus den gebauten Seiten, nicht aus `docs/content.typ`: die Sprungmarken
+# vergibt schuldocs beim Setzen, und zweimal ausgerechnet driften sie auseinander.
+python3 "$WURZEL/.github/scripts/llms-txt.py" "$ZIEL"
 
 # --- Beispielpräsentationen -------------------------------------------------
 namen=()

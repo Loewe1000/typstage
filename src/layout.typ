@@ -14,9 +14,11 @@
 // and only learns there under which theme it is set.
 
 #import "elements.typ": anim
-#import "internal.typ": step-cursor, zeilen-hoehe
+#import "internal.typ": (fit-faktor, fit-mass, fit-meldung, fit-toleranz,
+                        hat-pause, im-fit, step-cursor, umgebungs-block,
+                        unloesbar, zeilen-hoehe)
 #import "config.typ": doc-word
-#import "themes.typ": theme-state
+#import "themes.typ": lesbar, theme-state
 
 /// A named box: Beamer's `block`.
 ///
@@ -29,6 +31,13 @@
 /// No `clip: true`: Typst derives a clip path's identifier from the
 /// content, and the same box twice on a slide would produce the same
 /// identifier. The corners are therefore rounded by the bar itself.
+///
+/// Six labels for the six parts, so a deck can restyle them without touching
+/// the theme. `<ts-card>` is the box itself, and because its surface travels
+/// through a `set` rule rather than an argument, `set block(fill: ..)` on
+/// that label reaches it. `<ts-card-bar>` is the coloured tab, `<ts-card-title>`
+/// the caption, `<ts-card-disc>` the numbered disc, `<ts-card-number>` the
+/// numeral in it, `<ts-card-body>` the body.
 #let card(
   body,
   title: none,
@@ -55,7 +64,15 @@
   // far below the slide.
   let zeile = zeilen-hoehe.get()
   let eigene-farbe = color != auto
-  let color = if color == auto { t.strong } else { color }
+  // In the bar style the color is a *ground* and carries white on it, so it
+  // has to stay the theme's strong tone. In the label style the same entry is
+  // *text* on the surface, and there the strong tone of a dark palette sits
+  // too close to that surface to be read. So that one is measured rather than
+  // named. Where the theme's own colors already work, and they do in all five,
+  // the measurement returns exactly what stood here before.
+  let color = if color != auto { color } else if stil == "label" {
+    lesbar(t.surface, t.strong, t.ink)
+  } else { t.strong }
   // In the label style, the tint carries the same meaning as the text on
   // it: a box labeled in blue sits on blue, a red one on red. Only someone
   // giving no color gets `surface`: in the textbook theme that is the
@@ -68,23 +85,42 @@
   let radius = if radius != auto { radius } else if stil == "label" { 0pt } else { 7pt }
   let stroke = if stroke != auto { stroke }
                 else if stil == "label" { none } else { 0.7pt + t.border }
-  block(
+  // Surface, border and rounding travel through a `set` rule instead of
+  // standing as arguments on the block. Only that way does
+  // `show label("ts-card"): set block(fill: ..)` reach the box: an explicit
+  // argument beats any rule. What the surrounding document had set is read
+  // first and put back inside, or the box's own surface would run on into
+  // every block of its body and out over the rounded corners.
+  let aussen = umgebungs-block()
+  {
+  set block(fill: fill, stroke: stroke, radius: radius)
+  [#block(
     width: width, height: if zeile == none { auto } else { zeile },
-    radius: radius, fill: fill, stroke: stroke,
   {
     // Between the bar and the body, Typst would otherwise add its block
     // spacing: measured at 20pt for 17pt text, which left the text hanging
     // 30pt below the head but only 9pt above the bottom edge. Both blocks
     // give it up; the spacing comes solely from `inset`.
-    set block(spacing: 0pt)
+    set block(spacing: 0pt, fill: aussen.fill, stroke: aussen.stroke,
+              radius: aussen.radius)
     if title != none and stil == "bar" {
-      block(
-        width: 100%, fill: color,
-        radius: (top-left: radius, top-right: radius),
+      // No `stroke` here. The bar never had one of its own, so it picks up
+      // whatever the document set, and the line above has already put that
+      // back. Writing `stroke: none` would be an explicit value and would
+      // beat a deck's `#set block(stroke: ..)`, which is a change in a deck
+      // that uses no label at all.
+      set block(fill: color,
+                radius: (top-left: radius, top-right: radius))
+      [#block(
+        width: 100%,
         inset: (x: 11pt, y: 6pt),
-        text(size: 0.62em, weight: "bold", fill: white, tracking: 0.6pt,
-             upper(title)),
-      )
+        {
+          set block(fill: aussen.fill, stroke: aussen.stroke,
+                    radius: aussen.radius)
+          text(size: 0.62em, weight: "bold", fill: white, tracking: 0.6pt,
+               [#upper(title) <ts-card-title>])
+        },
+      ) <ts-card-bar>]
     }
     block(width: 100%, inset: inset, {
     // In the label style, the caption sits inside the box and shares the
@@ -92,28 +128,38 @@
     // white: here the label is a heading, not a tab.
     if title != none and stil == "label" {
       block(above: 0pt, below: 0.45em,
-        text(size: 0.78em, weight: "bold", fill: color, title))
+        text(size: 0.78em, weight: "bold", fill: color, [#title <ts-card-title>]))
     }
-    if number == none { body } else {
+    let rumpf = [#body <ts-card-body>]
+    if number == none { rumpf } else {
       grid(
         columns: (auto, 1fr), column-gutter: 8pt, align: (left + top, left + top),
-        box(baseline: 0.24em, circle(
-          radius: 0.62em, fill: color, stroke: none,
-          align(center + horizon,
-                text(size: 0.62em, weight: "bold", fill: white, str(number))),
-        )),
-        body,
+        box(baseline: 0.24em, {
+          set circle(fill: color, stroke: none)
+          [#circle(
+            radius: 0.62em,
+            align(center + horizon,
+                  text(size: 0.62em, weight: "bold", fill: white,
+                       [#str(number) <ts-card-number>])),
+          ) <ts-card-disc>]
+        }),
+        rumpf,
       )
     }
     })
   },
-  )
+  ) <ts-card>]
+  }
 }
 
 /// A highlighted key sentence: Beamer's `alertblock`.
 ///
 /// The bar on the left marks it on every slide at a glance as "the thing to
 /// remember", without it looking like a second box.
+///
+/// Labelled `<ts-callout>`, `<ts-callout-title>` and `<ts-callout-body>`. As
+/// in `card`, the surface goes through a `set` rule, so a label rule reaches
+/// `fill`, `stroke` and `radius`.
 #let callout(
   body,
   title: auto,
@@ -132,11 +178,16 @@
   let grund = if t.inverted { color.darken(68%) } else { color.lighten(90%) }
   let beschriftung = if t.inverted { color.lighten(15%) } else { color.darken(12%) }
   let zeile = zeilen-hoehe.get()
-  block(
+  // As in `card`: the surface goes through a rule so a label can reach it,
+  // and the document's own block style is put back inside.
+  let aussen = umgebungs-block()
+  {
+  set block(fill: grund, stroke: (left: 3.5pt + color), radius: radius)
+  [#block(
     width: width, height: if zeile == none { auto } else { zeile },
-    radius: radius, fill: grund,
-    stroke: (left: 3.5pt + color), inset: inset,
+    inset: inset,
     {
+      set block(fill: aussen.fill, stroke: aussen.stroke, radius: aussen.radius)
       // Not text, `v()` and body one after another: between two paragraphs
       // Typst additionally inserts `par.spacing`, 29pt for 24pt text, which
       // adds to the explicit spacing. Measured at 34pt instead of the
@@ -145,15 +196,17 @@
       if title != none {
         block(above: 0pt, below: 0pt,
           text(size: 0.62em, weight: "bold", fill: beschriftung,
-               tracking: 0.6pt, upper(title)))
+               tracking: 0.6pt, [#upper(title) <ts-callout-title>]))
       }
       // Relative to the text size, so the spacing is right at every theme
       // size: fixed points would look too airy at 15pt and cramped at 31pt.
       // More air than in the box: there the colored bar separates label and
       // text, here both sit on the same background and need the spacing.
-      block(above: if title == none { 0pt } else { 0.6em }, below: 0pt, body)
+      block(above: if title == none { 0pt } else { 0.6em }, below: 0pt,
+        [#body <ts-callout-body>])
     },
-  )
+  ) <ts-callout>]
+  }
 }
 
 /// Two or more columns side by side.
@@ -231,6 +284,9 @@
   enter: "fade-up",
   align: top + left,
 ) = context {
+  // Asked here rather than left to the `anim`s below, so the message names the
+  // function the deck actually wrote.
+  assert(im-fit.get() == 0, message: fit-meldung("tiles"))
   let kacheln = items.pos()
   assert(kacheln.len() > 0, message: "typstage: tiles() wants at least one tile")
   assert(at == auto or type(at) == int,
@@ -259,17 +315,150 @@
 /// Explicitly demands the full width: a tracked element becomes as wide
 /// as its content, and a bare `align(center, …)` inside it would have no
 /// room to center in and would sit unchanged on the left.
+///
+/// Labelled `<ts-statement>`. `size` is measured in `em`, so a
+/// `set text(size: …)` from a label rule multiplies rather than replaces it.
 #let statement(
   body,
   size: 1.6em,
   color: none,
   above: 0.6em,
   below: 0.6em,
-) = block(width: 100%, {
+) = [#block(width: 100%, {
   v(above)
   // `fill: auto` does not exist for `text`: without a color, none is set
   // at all, so that the surrounding one applies.
   let gesetzt = text(size: size, body)
   align(center, if color == none { gesetzt } else { text(fill: color, gesetzt) })
   v(below)
-})
+}) <ts-statement>]
+
+/// Scale one block down to the room it has.
+///
+/// For the thing whose size the deck does not control: a wide table, a
+/// generated diagram, a list that came out of a data file. Without it such a
+/// block runs over the edge of the slide. In the PDF it is still to be seen
+/// standing there; in the browser the slide sits in a frame of fixed size and
+/// whatever reaches past it is cut away.
+///
+/// ```typ
+/// #slide[
+///   == Regression results
+///   #fit(wrap: false, my-table)
+/// ]
+/// ```
+///
+/// `wrap: false` because the block is a table. Everything that lays itself out
+/// in columns has to be measured as it stands; see below.
+///
+/// The block is measured against the place it stands in and scaled
+/// geometrically, so it keeps its proportions and what stands around it counts
+/// with its new size. No factor is given by hand.
+///
+/// *Width first, then smaller.* The block is offered the full width before it
+/// is measured, so a paragraph or a list breaks into the space instead of
+/// shrinking, and only what is still too tall afterwards is scaled. A table, a
+/// chart or a drawing would rearrange its own columns instead, which changes
+/// the picture rather than its size; `wrap: false` measures such a block
+/// exactly as it stands.
+///
+/// *It only shrinks.* `grow: true` also blows a block up that is smaller than
+/// its place, for the one large number that is meant to fill the slide.
+/// `shrink: false` takes the shrinking away and leaves only the growing.
+///
+/// `width` and `height` take `auto`, a length or a ratio. `auto` is the whole
+/// place. On `height: auto` the block takes what is left over below whatever
+/// stands above it on the slide, so a fit under two bullet points reckons with
+/// the bullet points. That has a flip side wherever something encloses the
+/// fit: inside a `card` the box becomes slide-tall, is cut off at the bottom,
+/// and *whatever follows the card falls off the slide* -- measured in both
+/// outputs. It is the `1fr` doing that, not the scaling: a `card` around a
+/// bare `block(height: 1fr)` behaves the same. Give `height:` explicitly
+/// inside a card, and the fit reckons with that instead.
+///
+/// *No reveal inside.* Two things do not survive being measured. A `pause` is
+/// found by walking the slide body, and a fitted block is a closure that walk
+/// cannot enter: measured on a slide carrying two pauses, the step count fell
+/// from three to one and nothing said so. And a measured block has no height
+/// to reckon against, which is the axis on which a tracked element resolves
+/// its size and reserves the room for its marker: measured, an `anim` inside a
+/// fit was not scaled at all and ran off the bottom of the slide. `fit` stops
+/// with a message instead, for `pause`, `anim`, `stagger`, `alternatives`,
+/// `morph`, `tiles`, `video`, `embed` and `flipbook`, in both outputs. Fit
+/// what stands inside the reveal rather than fitting around it:
+/// `anim(fit(my-table))` works, `fit(anim(my-table))` is the error.
+///
+/// `speaker-note` and `bridge-job` are allowed inside a fit. They settle no
+/// geometry, and a `measure` commits no state, so both were measured to arrive
+/// exactly once. The other direction is the one that does not work: a note
+/// made only of a `fit` carries no text, and `speaker-note` refuses it.
+///
+/// The geometry is adapted from mosaic, which adapted Touying 0.7.4, which
+/// credits it to Andreas Kröpelin (Polylux PR #91) and to ntjess.
+#let fit(
+  body,
+  width: auto,
+  height: auto,
+  wrap: true,
+  grow: false,
+  shrink: true,
+) = {
+  // Asked before anything is laid out, and by walking the body, because a
+  // pause is a marker and not a call. Everything else announces itself while
+  // it is laid out and is caught by `im-fit`.
+  assert(not hat-pause(body), message: fit-meldung("pause"))
+  im-fit.update(d => d + 1)
+  let gebaut = layout(reg => context {
+    // No room means nothing to solve. That is not an exotic case: under a
+    // `measure` the region comes back unbounded, and `alternatives` and
+    // `side-by-side(equal: true)` both measure their content.
+    //
+    // A hand-given height is not asserted here either, and that was tried.
+    // Handing back `block(height: height, body)` looks right for the one case
+    // where the fit really does scale the body down to it, but it is a claim
+    // the fit does not keep: with a body smaller than the height nothing is
+    // grown, with `shrink: false` nothing is shrunk, and under a narrower
+    // region the width decides the factor and the block ends up shorter than
+    // the height. Measured, `fit(height: 300pt)` around a small body reserved
+    // 300pt where 7.24pt is set, and an `alternatives` beside such a fit
+    // pushed the rest of the slide to its bottom edge.
+    if unloesbar(reg.width) or unloesbar(reg.height) { return body }
+    let raum-b = fit-mass(width, reg.width)
+    let raum-h = fit-mass(height, reg.height)
+    if unloesbar(raum-b) or unloesbar(raum-h) { return body }
+    // The full width first, so text breaks instead of shrinking. Capped at the
+    // block's own width, or a single short line would be stretched across the
+    // slide and then measured as if it were that wide.
+    let inhalt = if wrap {
+      box(width: calc.min(raum-b, measure(body).width), body)
+    } else { body }
+    let mass = measure(inhalt)
+    // Something without an area has no factor. A line measures 0pt tall, and
+    // dividing by that would end the compilation.
+    if mass.width <= 0pt or mass.height <= 0pt { return body }
+    let f = fit-faktor(mass, raum-b, raum-h)
+    let anfassen = ((shrink and f < 100% - fit-toleranz)
+                    or (grow and f > 100% + fit-toleranz))
+    if anfassen {
+      scale(f, origin: top + left, reflow: true, box(width: mass.width, inhalt))
+    } else if width == auto {
+      // Untouched, not the measured box. `width: auto` is the region's own
+      // width, which the body gets from the region anyway, so a block that
+      // needs no scaling should stand exactly as it would without the fit.
+      // Measured on a paragraph that wraps into its place: the pixels of the
+      // slide with the fit and of the slide without it are the same.
+      body
+    } else {
+      // A width given by hand has to hold even when nothing is scaled, or the
+      // argument would do nothing at all in that case. Measured: without this,
+      // `fit(width: 50%, table)` set the table across the full slide.
+      inhalt
+    }
+  })
+  // `1fr` is what turns "the whole height" into "what is left over": in a flow
+  // the fixed-size siblings are laid out first and the fraction takes the
+  // rest, so a fit below two bullet points reckons with them. Only for
+  // `height: auto`; a height given by hand is meant literally.
+  if height == auto { block(height: 1fr, gebaut) } else { gebaut }
+  im-fit.update(d => d - 1)
+}

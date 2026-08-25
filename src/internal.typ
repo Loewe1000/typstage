@@ -73,11 +73,59 @@
   } else { "" }
 }
 
+/// A speaker note has to carry text, because nothing else reaches the speaker.
+///
+/// The presenter view transports the note as an HTML attribute, so it can only
+/// ever be a string, and the handout prints the note only where there is text
+/// in it. A note built purely out of layout therefore arrives nowhere -- and
+/// used to do so without a word. Measured: `speaker-note[#fit(table)]` left
+/// the handout with an empty ruled column and the presenter view saying "no
+/// note". The same held for a bare `rect` or a `layout()` long before `fit`
+/// existed; `fit` is only the first documented function that leads there.
+#let notiz-pruefen(body) = {
+  assert(plain-text(body).trim() != "", message:
+    "typstage: a speaker note has to contain text. The presenter view carries "
+    + "the note as plain text, and the handout prints it only where there is "
+    + "text, so a note made purely of layout -- fit(), a bare rect, an image "
+    + "-- would reach neither. Write the note as text. What is meant to be "
+    + "seen belongs on the slide, not in the note.")
+}
+
 /// Largest step number occurring in a selector.
 #let max-step(at) = {
   let numbers = at.matches(regex("\d+")).map(m => int(m.text))
   if numbers.len() == 0 { 1 } else { calc.max(..numbers) }
 }
+
+/// Smallest step number a selector covers.
+///
+/// This is the step an element *first* stands on, and that is what
+/// `info().step.number` reports inside it. Not `max-step`, which answers a
+/// different question: how far the cursor has to be pushed so that whatever
+/// follows carries on after this element. For `"1-2"` the two differ, 1
+/// against 2, and only the 1 is the step on which the thing appears.
+///
+/// An open lower end (`"-3"`) and a selector without a number both mean the
+/// first step.
+#let min-step(at) = {
+  let werte = at.split(",").map(t => t.trim()).filter(t => t != "").map(t => {
+    if t.starts-with("-") { 1 } else {
+      let z = t.matches(regex("\d+"))
+      if z.len() == 0 { 1 } else { int(z.first().text) }
+    }
+  })
+  if werte.len() == 0 { 1 } else { calc.max(1, calc.min(..werte)) }
+}
+
+/// Does a selector run to the end of the slide?
+///
+/// `"2-"` does, and so does everything an `int` or `auto` turns into. `"3"`,
+/// `"2-3"` and `"2,4"` do not: they have a last step, and therefore an after.
+///
+/// Only what has an after can rest in a state after it. `anim(after:
+/// "dimmed")` on an open selector would be a promise nothing ever redeems, so
+/// it is refused rather than quietly ignored.
+#let offenes-ende(sel) = sel.split(",").any(t => t.trim().ends-with("-"))
 
 /// Does a selector cover the first step?
 ///
@@ -100,6 +148,95 @@
 /// stands from step one. Checked at the end: a delayed morph must not share
 /// its name with one on the slide before it, or the flight there is lost.
 #let morph-index = state("typstage-morphs", ())
+
+/// Every element that asked to rest dimmed: its slide and the last step of
+/// its range. Checked at the end for the same reason the morphs are.
+///
+/// `anim(after: "dimmed")` refuses an open range on the spot, because a
+/// selector that runs to the end of the slide plainly has no after. But a
+/// *closed* range can still end with the slide -- `at: "1-2"` on a slide that
+/// only ever reaches step 2 -- and then the element never dims either, and
+/// nothing says so. That cannot be seen where the element is written: the
+/// number of steps a slide has is only settled once the slide has been laid
+/// out. So it is noted here and asked at the end, the same late question the
+/// morph names are put to.
+#let dim-index = state("typstage-dims", ())
+
+/// A stroke that no longer folds into the one it is set inside.
+///
+/// A `stroke` keeps `auto` for whatever it does not name, and `auto` is
+/// filled in from the enclosing stroke rather than from the default. That
+/// matters here because the box hands its own border to a `set` rule and
+/// puts the document's back inside: a deck's `#set block(stroke: red)` names
+/// only the paint, so inside the box's `0.7pt + border` it came out 0.7pt red
+/// instead of 1pt red. Measured on the card's colored tab, in all five
+/// themes.
+///
+/// Every field has to be pinned, not just the thickness. Pinning only that
+/// one left the same fold a row further along: `#set block(stroke: 3pt)`
+/// names the thickness and leaves the paint on `auto`, and the inner edges
+/// then came out in the box's border grey instead of black. Measured on a
+/// deck without a single label, seven spellings affected, among them
+/// `stroke: 3pt` and `stroke: (dash: "dashed")`.
+#let fester-strich(v) = {
+  let einer(x) = if type(x) == stroke {
+    stroke(
+      paint: if x.paint == auto { black } else { x.paint },
+      thickness: if x.thickness == auto { 1pt } else { x.thickness },
+      cap: if x.cap == auto { "butt" } else { x.cap },
+      join: if x.join == auto { "miter" } else { x.join },
+      dash: if x.dash == auto { none } else { x.dash },
+      miter-limit: if x.miter-limit == auto { 4.0 } else { x.miter-limit },
+    )
+  } else { x }
+  if type(v) == dictionary {
+    v.pairs().map(((k, x)) => (k, einer(x))).to-dict()
+  } else { einer(v) }
+}
+
+/// The block style the surrounding document has set.
+///
+/// `card`, `callout` and the handout frame hand their own surface to a `set`
+/// rule instead of writing it as an argument, because only then can a
+/// `show label(..): set block(fill: ..)` in a deck reach it. That rule would
+/// otherwise run on into every block of their contents and out over the
+/// rounded corners, so it is put back inside, and this is what gets put back.
+///
+/// Not simply `none` and `0pt`. Everything Typst reports here is *partial*,
+/// and a partial value folds into the one it is set inside instead of
+/// replacing it. Three shapes of that, all measured on a deck that carries no
+/// label at all.
+///
+/// An unset `stroke` or `radius` comes back as an *empty dictionary*, and
+/// setting that again changes nothing: that is how the callout's left bar
+/// first ended up beside every line of its own text. It becomes `none` and
+/// `0pt` by hand.
+///
+/// A dictionary names only the sides it was given, so `stroke: (left: green)`
+/// would leave the box's own border on the other three. The missing sides and
+/// corners are filled in.
+///
+/// And a stroke keeps `auto` for what it does not name: `stroke: red` inside
+/// the card's `0.7pt + border` drew 0.7pt red instead of 1pt red. That is what
+/// `fester-strich` is for.
+///
+/// Must be called inside a context.
+#let umgebungs-block() = {
+  let leer(v) = type(v) == dictionary and v.len() == 0
+  let voll(v, seiten, fehlt) = if type(v) != dictionary { v } else {
+    seiten.map(k => (k, v.at(k, default: fehlt))).to-dict()
+  }
+  (
+    fill: block.fill,
+    stroke: if leer(block.stroke) { none } else {
+      fester-strich(voll(block.stroke, ("top", "right", "bottom", "left"), none))
+    },
+    radius: if leer(block.radius) { 0pt } else {
+      voll(block.radius,
+           ("top-left", "top-right", "bottom-left", "bottom-right"), 0pt)
+    },
+  )
+}
 
 /// The height of the row a box is currently standing in, or `none`.
 ///
@@ -124,6 +261,93 @@
 /// looks up across the whole document. A query sees every slide at once and
 /// has to be able to tell them apart.
 #let slide-counter = counter("typstage-slide")
+
+/// What the deck knows about itself, written once per slide.
+///
+/// The value is `(nr: int, data: dictionary)`. `data` is exactly what `info()`
+/// hands out, minus the step reading; the presentation writes it here before
+/// the slide is laid out, and *everything* that prints one of those numbers
+/// reads it from here: the footer, the fraction, the progress bar, the running
+/// header, and a deck's own `info()`. That is the point of the detour. As long
+/// as there is one dictionary per slide, a hand-built footer and the built-in
+/// one cannot print different numbers, because there is nothing else to count.
+///
+/// `nr` counts every slide, title and section slides included, and is kept out
+/// of `data` on purpose: `slide.number` deliberately does *not* count those,
+/// and two numbers next to each other that differ by a title slide would be a
+/// trap. It is needed here only as the key under which a slide files its step
+/// count.
+#let deck-info = state("typstage-info", none)
+
+/// Is a presentation being laid out right now?
+///
+/// Steps mean something only inside one, and only there does the cursor get
+/// set back to nothing at the start of every slide. Outside, counting would
+/// not merely be pointless, it would not settle: `stagger` reads the cursor
+/// and hands `track` a selector built from what it read, so read and write
+/// chase each other with nothing to anchor them. Measured on the manual, which
+/// sets `stagger`, `alternatives` and `tiles` examples on their own on a page:
+/// 0, 10, 15, 18, 21 over five runs, and Typst gives up with "did not
+/// converge".
+///
+/// In HTML output `html-output` already draws the same line; this draws it for
+/// paged output, where the counting is new.
+///
+/// Must be called inside a context.
+#let im-deck() = deck-info.get() != none
+
+/// The steps the content being laid out right now stands inside, innermost
+/// last. Empty outside any tracked element.
+///
+/// A stack, and pushed and popped with `update(fn)` rather than saved with a
+/// `get()` and put back. That is the whole reason it is a stack, and it was
+/// paid for: with a `get()`, the value *written* depended on a value *read*,
+/// and Typst settles such a chain at one link per layout run. On a slide with
+/// four tracked elements the chain ran past the five runs Typst allows, and it
+/// said so: "did not converge", with the reading coming out 1, 1, 1, 1, 3 and
+/// only the run after that saying 4. An update that is a function of the
+/// previous value needs no read, so the whole stack settles in one run.
+///
+/// It says nothing about a sprite: there `sprite-number` answers, because the
+/// step of a sprite would take a layout run too long to travel through a state
+/// of its own.
+#let step-here = state("typstage-step-here", ())
+
+/// The step the content being laid out right now first stands on.
+///
+/// 1 outside any tracked element, and inside one the first step of its
+/// selector. Must be called inside a context.
+/// Which sprite is being laid out, by its element number, or `none`.
+///
+/// Set outright by `sprite-markup`, and the *number* is the point: it is the
+/// running index of the element, which settles as soon as the background frame
+/// has run. Its step does not, because the step comes off the cursor, and a
+/// cursor-reading group such as `tiles` or `stagger` between two reveals makes
+/// that a chain several layout runs long. Handing the step itself through a
+/// state put one more run on top of that chain, and Typst allows five:
+/// measured on `anim`, `tiles`, `anim` with an `info()` inside, the reading
+/// came out 1, 1, 1, 1, 3 and settled on 4 only afterwards, with "did not
+/// converge" to go with it. Reading the step out of `sprites` here instead of
+/// carrying it in costs nothing and lands in one run.
+#let sprite-number = state("typstage-sprite-nr", none)
+
+/// The step the content being laid out right now first stands on.
+///
+/// Three cases, in this order. Inside a tracked element the stack says it.
+/// Inside a sprite, whose body is the same content laid out a second time, the
+/// element's own entry in `sprites` says it, and that still holds after a
+/// nested element has come and gone. Anywhere else, content stands from the
+/// first step.
+///
+/// Must be called inside a context.
+#let step-jetzt() = {
+  let stapel = step-here.get()
+  if stapel.len() > 0 { return calc.max(1, stapel.last()) }
+  let nr = sprite-number.get()
+  if nr == none { return 1 }
+  let liste = sprites.get()
+  if nr >= 1 and nr <= liste.len() { calc.max(1, liste.at(nr - 1).step) } else { 1 }
+}
 
 /// A name, however it was written.
 ///
@@ -218,13 +442,316 @@
   false
 }
 
+// ── Fitting content into the room it has ─────────────────────────────────────
+//
+// The geometry below is adapted from mosaic's `fit`, which adapted Touying
+// 0.7.4's `fit-to-width` and `fit-to-height`; Touying credits the fitting work
+// to Andreas Kröpelin (Polylux PR #91) and to ntjess. All three are under the
+// MIT license, as is this package.
+
+/// How many `fit` blocks the content being laid out sits inside.
+///
+/// A count, not a yes or no, so a fit inside a fit puts the outer one back
+/// when it is done. Updated as a function of the previous value and never read
+/// and written back, for the reason spelled out at `step-here`.
+#let im-fit = state("typstage-in-fit", 0)
+
+/// A length no fitter can work with.
+///
+/// Under `measure` a region is reported as unbounded, and a fit inside a
+/// container that has no height of its own gets nothing. Both would drive the
+/// factor to infinity or to zero, so both mean "leave the body alone".
+#let unloesbar(l) = (
+  float.is-infinite(l.pt()) or float.is-nan(l.pt()) or l <= 0pt
+)
+
+/// A `width` or `height` argument against the region that hosts it.
+///
+/// `auto` is the whole region. A ratio counts against it, a length is itself,
+/// and a length is measured rather than read, because `2em` only becomes
+/// points where the text size is known. Must be called inside a context.
+#let fit-mass(wert, ganz) = {
+  if wert == auto { ganz }
+  else if type(wert) == ratio { ganz * wert }
+  else if type(wert) == relative { ganz * wert.ratio + measure(v(wert.length)).height }
+  else if type(wert) == length { measure(v(wert)).height }
+  else {
+    panic("typstage: fit() takes auto, a length or a ratio for width and "
+          + "height, not " + str(type(wert)))
+  }
+}
+
+/// Content that exactly fills its place measures as 100%, so that is the line
+/// between growing and shrinking rather than a number to turn.
+///
+/// The tolerance around it is a guard against rounding, not a setting. A block
+/// that fits to within a fraction of a point reports a factor a hair off 100%,
+/// and rescaling on that would resize something that was already right.
+#let fit-toleranz = 0.05%
+
+/// The one factor that brings a measured size into the room it has.
+///
+/// The smaller of the two axes wins, so the proportions are kept. An axis
+/// whose measure is zero constrains nothing.
+#let fit-faktor(mass, breite, hoehe) = {
+  let werte = ()
+  if mass.width > 0pt { werte.push(breite / mass.width) }
+  if mass.height > 0pt { werte.push(hoehe / mass.height) }
+  if werte.len() == 0 { 100% } else { calc.min(..werte) * 100% }
+}
+
+/// Does a body carry a `pause`, however deep?
+///
+/// `apply-pauses` walks only the top level of a slide body, and it walks it
+/// *before* anything is laid out. A `fit` holds its body inside a closure, so
+/// that walk never reaches in. This one goes all the way down, because inside
+/// a fit a pause is lost wherever it stands, not only at the top.
+#let hat-pause(c) = {
+  if type(c) != content { return false }
+  if c.func() == metadata { return c.value == "typstage-pause" }
+  if c.has("children") { return c.children.any(hat-pause) }
+  if c.has("child") { return hat-pause(c.child) }
+  if c.has("body") { return hat-pause(c.body) }
+  false
+}
+
+/// Does the top level of a slide body carry the `invert` marker?
+///
+/// Deliberately the *shallow* walk, the same one `apply-pauses` does, and not
+/// the one above. It runs on every slide of every deck, before anything is
+/// laid out, and a full descent into every block of every slide would be paid
+/// for by decks that never invert a slide. A `#set` or `#show` written above
+/// the marker wraps it in a `styled`, and a marker produced by a `#for` sits
+/// in a nested `sequence`; both are unpacked, so the two cases that actually
+/// happen are covered. Deeper than that, the marker is not found, and the
+/// slide is simply not inverted.
+#let hat-invert(body) = {
+  if type(body) != content { return false }
+  if body.func() == metadata { return body.value == "typstage-invert" }
+  if body.has("children") { return body.children.any(hat-invert) }
+  if body.has("child") { return hat-invert(body.child) }
+  if body.has("body") { return hat-invert(body.body) }
+  false
+}
+
+/// What a fit says when something inside it may not be there.
+///
+/// Named, because the same sentence has to come out of nine functions and out
+/// of the pause check, and a reader who meets it twice should not have to
+/// wonder whether the two are the same rule.
+///
+/// Both halves of it were measured. A pause inside a fit is never found: the
+/// presentation looks for it by walking the slide body, and a fitted block is
+/// a closure it cannot walk into. On a slide carrying two pauses that took the
+/// step count from three down to one, and nothing said so. And a measured
+/// block has no height to reckon against: the width is the one a wrapping fit
+/// hands in, but the height comes back unbounded, and that is the axis on
+/// which a tracked element resolves `height: 100%` and `1fr` and reserves the
+/// room for its marker. Measured: an `anim` inside a fit was not scaled at
+/// all and ran off the bottom of the slide.
+///
+/// It is deliberately not said that every announced thing would vanish.
+/// `speaker-note` and `bridge-job` were measured *inside* a fit and both come
+/// through -- a `measure` commits no state, so they are recorded exactly once.
+/// They are therefore allowed. Only what settles geometry is refused.
+#let fit-meldung(was) = (
+  "typstage: " + was + " cannot stand inside fit(). A fitted block has to be "
+  + "measured, and two things do not survive that. A pause is found by "
+  + "walking the slide body, which cannot reach into a measured block, so its "
+  + "steps fall away without a word: measured, three steps became one. And a "
+  + "measured block has no height to reckon against, so a reveal there "
+  + "settles its own height and the room its marker reserves against nothing: "
+  + "measured, an anim inside a fit was not scaled at all and ran off the "
+  + "slide. Put the " + was + " outside the fit(), or fit what stands inside "
+  + "the reveal instead of fitting around it."
+)
+
+/// Refuse a thing that only works because the presentation can walk the slide.
+///
+/// Placed, not assigned: it is a context and has to reach the document to be
+/// evaluated at all.
+#let fit-verbot(was) = context {
+  assert(im-fit.get() == 0, message: fit-meldung(was))
+}
+
+// ── The check that a slide fits into its body ───────────────────────────
+//
+// mosaic measures every cell on every frame; here the unit is the slide body,
+// the one block `slide-body` places the deck's content into. Header band,
+// title line, footer and progress are drawn beside it with `place` and are not
+// part of it, so the check asks exactly the question a deck can act on: does
+// what I wrote fit into the room I was given?
+//
+// Why it is worth more here than in a package that only makes pages: a slide
+// of ours goes into an SVG frame of fixed size and is scaled in the browser.
+// What sticks out is cut away or drawn into the neighbourhood, depending on
+// the frame, and either way it is first seen at the projector. A page one
+// leafs through shows it.
+
+/// How far a body may stick out before it is reported.
+///
+/// Not a setting but a guard against rounding: a body that fills its room to
+/// the last point comes back a fraction over it, and that must not turn into a
+/// message. Measured across the 63 slides of the six example decks, the fullest
+/// body stops 20.83pt short of its room and the next one 35.13pt, so nothing
+/// real comes anywhere near this line.
+#let ueberlauf-toleranz = 0.5pt
+
+/// One record, and the only thing this check leaves behind.
+///
+/// Typst gives a package no warning channel, so a finding is filed as
+/// queryable metadata and nothing is printed on its own. `overflow: "error"`
+/// reads the records back at the end of the document and stops with all of
+/// them at once; a tool reads them with
+///
+/// ```sh
+/// typst eval --target html --features html --in deck.typ \
+///   'query(<typstage-overflow>).map(e => e.value)'
+/// ```
+///
+/// The numbers travel as plain numbers in points, not as lengths, so that the
+/// query can write them as JSON.
+#let ueberlauf-satz(nr, schritt, hoch, raum) = [#metadata((
+  slide: nr,
+  step: schritt,
+  height: calc.round(hoch.pt(), digits: 2),
+  room: calc.round(raum.pt(), digits: 2),
+  over: calc.round((hoch - raum).pt(), digits: 2),
+)) <typstage-overflow>]
+
+/// The step from which an overflow is provably on the screen.
+///
+/// The layout of a slide does not move as the deck is paged through: every
+/// tracked element holds its full room with `hide()` from the first step on,
+/// and `alternatives` sets its versions on top of each other in a box as large
+/// as the largest. So the body is exactly as tall on step one as on step five,
+/// and "does it fit" is a question about the slide. What changes with the step
+/// is only what is *drawn*: an `anim` that hangs over the bottom edge is
+/// invisible until its step, and only then is there something to see.
+///
+/// So the step is read off the room the overflow needs, not off a second
+/// layout. Everything that only comes in after step k is invisible there and
+/// together it is `later` tall. If the body sticks out further than that, then
+/// even with all of it taken away something would still be hanging over the
+/// edge, and that something is visible on step k. The smallest k for which
+/// that holds is the answer, and step one is the answer whenever the slide
+/// carries no reveal at all.
+///
+/// It is a lower bound, not an exact answer, and the message says so with "at
+/// the earliest". `later` adds up the heights of the reveals and nothing else,
+/// so every gap between them -- block spacing, a `v()`, the space between
+/// paragraphs -- counts in the body's height and in no reveal. Measured: a
+/// 350pt box, a `v(100pt)` and an `anim(at: 4)` below it are reported from
+/// step 1, while the overrun is only on the screen from step 4. Two effects
+/// push the other way and do not cancel it: a nested reveal is counted twice,
+/// once in its own right and once inside the element around it. Where the
+/// thing that overruns is itself a reveal and nothing empty stands above it,
+/// the step is exact -- measured, `anim(at: 3)` is reported from step 3.
+/// The slide is named correctly either way, and that is the part to act on.
+///
+/// It cannot be done by measuring the same body once per step, and that was
+/// tried first. Introspection inside a `measure` of content that also stands
+/// in the document is resolved at the *document's* copy, not where the
+/// measurement is written: with a state set to 4 in front of it, a measurement
+/// of such a block read 0 and returned the layout of the real one, in HTML and
+/// on paper alike. So a check cannot tell the elements of a body that they are
+/// being measured for step 3.
+#let ueberlauf-schritt(liste, ueber) = {
+  let spaeter(k) = liste.filter(sp => sp.step > k)
+    .fold(0pt, (summe, sp) => summe + sp.height)
+  let stufen = ((1,) + liste.map(sp => sp.step)).dedup().sorted()
+  let treffer = stufen.find(k => ueber > spaeter(k))
+  // `spaeter` is 0 at the last step, so there is always one. Named all the
+  // same, because a `find` that comes back empty must not become a panic in a
+  // check that is meant to help.
+  if treffer == none { calc.max(1, ..stufen) } else { treffer }
+}
+
+/// Measure one slide body against the room it was given.
+///
+/// Two measurements, and both are needed. The one that decides *whether* there
+/// is an overflow is taken inside the real room, because content that lays
+/// itself out against the room it gets only settles when it has one: two
+/// balanced `columns` measure 338.16pt inside their room and 366.94pt without
+/// it, and reporting the second would be inventing an overflow that is not on
+/// the slide. The one that says *by how much* is taken without a height,
+/// because a measurement with one is capped at it: the same body that
+/// saturates the room at 364.61pt is 395.71pt when asked freely, and the
+/// difference is exactly what the capped number hides.
+///
+/// So a body is reported only where the capped measurement fills the room to
+/// the last point, and the free one is then read for the amount.
+///
+/// Only the height. `measure` caps the width it reports at the width it is
+/// given as well, and there is no way around that one: a table of 516.14pt
+/// measured inside 200pt reports 200pt, so a body that is too wide cannot be
+/// told from one that fills its column. `fit` is the answer to that case.
+///
+/// What still reads low, and is therefore missed: a `height: 100%` inside the
+/// body measures 0, a `1fr` collapses, and anything that draws outside its own
+/// layout box -- `scale`, `move`, `place` with an offset -- is invisible to a
+/// measurement altogether. What still reads high, and is therefore over-
+/// reported: trailing spacing, a `v()` at the end of a body, which takes room
+/// in the measurement but draws nothing.
+#let ueberlauf-pruefen(nr, rumpf, breite, raum, schritte: true) = context {
+  // Does it fit at all? Anything that comes back short of the room has
+  // settled inside it and is done with.
+  if measure(rumpf, width: breite, height: raum).height < raum - ueberlauf-toleranz {
+    return
+  }
+  let hoch = measure(rumpf, width: breite).height
+  if hoch - raum <= ueberlauf-toleranz { return }
+  // On paper every step stands on the page at once, so there is no step to
+  // name and 0 says so.
+  let schritt = if schritte { ueberlauf-schritt(sprites.get(), hoch - raum) } else { 0 }
+  ueberlauf-satz(nr, schritt, hoch, raum)
+}
+
+/// Read the records back and stop with all of them at once.
+///
+/// At the end of the deck, not at the first finding: whoever runs the check
+/// before a talk wants the list, not one place at a time with a compile run
+/// between them.
+///
+/// Deduplicated, because a `bundle()` writes several outputs from one source
+/// and a slide would otherwise be named once per output.
+#let ueberlauf-bericht(modus) = if modus != "error" { [] } else { context {
+  let roh = query(<typstage-overflow>).map(e => e.value)
+  // One line per slide, not one per record. A `bundle()` writes several
+  // outputs from one source, so the same slide is measured once per output
+  // and `dedup` does not join those records: they differ in `step`, because
+  // paged output has none. Without this a bundle reported one overrunning
+  // slide as "2 slides run over", and with a step-dependent height as three.
+  // The richest record of each slide is kept, so a step survives where one
+  // was found.
+  let funde = roh.map(f => f.slide).dedup().sorted().map(nr =>
+    roh.filter(f => f.slide == nr).sorted(key: f => f.step).last())
+  let zeile(f) = ("  slide " + str(f.slide)
+    + (if f.step > 0 { ", from step " + str(f.step) + " at the earliest" } else { "" })
+    + ": " + str(f.over) + "pt too tall, "
+    + str(f.height) + "pt of content in " + str(f.room) + "pt of room")
+  assert(funde.len() == 0, message:
+    "typstage: " + str(funde.len())
+    + (if funde.len() == 1 { " slide runs" } else { " slides run" })
+    + " over the room the body has. A slide is a frame of fixed size: in the "
+    + "browser what sticks out is cut away or drawn beside the slide, on "
+    + "paper it stands over the edge. Neither is seen while writing.\n"
+    + funde.map(zeile).join("\n")
+    + "\nShorten the slide, split it, or put the block that does not fit into "
+    + "fit(). overflow: \"record\" files the same records for querying and "
+    + "carries on instead of stopping.")
+} }
+
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
-           width: auto) = {
+           width: auto, dim-freiwillig: false) = {
   // The `box` has to sit around the *whole* construction, not inside it:
   // `layout()` is block-level, so an inline element that only chooses a `box`
   // further in would still break the line it sits in.
   let shell-outer = if inline { box } else { it => it }
   shell-outer(context {
+  // Nothing tracked may sit inside a fit, and this is where all five kinds
+  // come through, so it is asked once here rather than five times outside.
+  assert(im-fit.get() == 0, message: fit-meldung(kind))
   // A pure `fr` spacer is passed through instead of tracked. Measured it
   // would come out as the full remaining height and push the siblings out
   // of the slide (verified: 86% instead of 76%). Passed through, the parent
@@ -240,8 +767,6 @@
     + "fr is shared out by the parent among its siblings, and a tracked "
     + "element is measured on its own. Put the fr outside the anim/stagger, "
     + "or give the element a container with a known size.")
-  if not html-output.get() { return body }
-  element-counter.step()
   // `auto` takes the next step. An explicit selector pulls the cursor up to its
   // own highest step, so whatever follows carries on after it instead of
   // starting over.
@@ -250,18 +775,47 @@
   // (they are there from the start), and above all they must not push the
   // bullets beside them along: in a two-column slide the text next to an
   // applet belongs at step one, not behind the applet's tweens.
-  if at == auto { step-cursor.step() }
+  //
+  // The cursor runs in *both* outputs, and that is why the accounting stands
+  // above the branch below. Nothing is revealed on paper, but `info().step`
+  // has to report the same count there as in the browser, and the count is
+  // what the cursor holds at the end of the slide. A counter update draws
+  // nothing, so the page is unchanged by it. Verified on the six example
+  // decks: every PDF page pixel for pixel as before.
+  //
+  // Assigned to a name here, but placed further down all the same: a counter
+  // only moves where its update stands in the document. Left in the `let` it
+  // would join into the value instead of reaching the page.
+  let zaehlen = if im-deck() {
+    if at == auto { step-cursor.step() }
+    else if kind == "anim" {
+      step-cursor.update(c => calc.max(c, max-step(selector(at))))
+    }
+  } else { [] }
+  // On paper there is no overlay, no marker and no reveal, so the body simply
+  // stands where Typst puts it. The counting above still has to reach the
+  // document, hence the joined return rather than a bare one.
+  if not html-output.get() { return zaehlen + body }
+  zaehlen
+  element-counter.step()
   context {
     let n = element-counter.get().first()
     let selected = if at == auto {
       str(step-cursor.get().first()) + "-"
     } else { selector(at) }
-    // Placed, not assigned: a counter only moves when its update stands in the
-    // document. Tucked into a `let` it would join into the value instead and
-    // turn the selector into content.
-    if at != auto and kind == "anim" {
-      step-cursor.update(c => calc.max(c, max-step(selected)))
-    }
+    // The step this element first stands on, and what `info().step.number`
+    // reads inside its body. It travels into the sprite as well, because the
+    // body is laid out a second time there, long after the cursor has run on
+    // to the end of the slide.
+    let erster = min-step(selected)
+    // Pushed *before* the layout, not inside the hidden block further down,
+    // and that is not cosmetic: the body is measured before it is laid out,
+    // and a measurement reads the state as it stands at that point in the
+    // document. Verified: content whose length depends on a state measures
+    // 20.23pt before the update and 112.26pt after it. Pushed any later, and
+    // the marker would reserve the room for a step number the body no longer
+    // prints.
+    step-here.update(a => a + (erster,))
     layout(available => context {
       // Measured under the same width the element has in the background. That
       // measurement travels outward so the sprite gets exactly the same
@@ -348,10 +902,14 @@
         width: if fuellt { w } else { room },
         height: if available.height == float("inf") { auto } else { available.height },
       )
+      // `dim-freiwillig` rides in the sprite record and not in `extra`, which
+      // becomes `data-` attributes one for one. It is only read by the check
+      // at the end of the document and has no business in the markup.
       sprites.update(a => a + ((kind: kind, at: selected, extra: extra, body: body,
                                 raw-frames: raw-frames, width: w,
                                 height: m.height, region: region, pad: luft,
-                                style: style),))
+                                step: erster, style: style,
+                                dim-freiwillig: dim-freiwillig),))
       // A `box` is inline and puts its baseline on the bottom edge, and with a
       // two-line list item the bullet would drop a line. Block content gets a
       // `block`.
@@ -372,6 +930,9 @@
           body)))
       })
     })
+    // The element is done, so whatever stood around it stands again. Popped,
+    // never assigned back from a remembered value: see `step-here`.
+    step-here.update(a => if a.len() > 0 { a.slice(0, -1) } else { a })
   }
   })
 }

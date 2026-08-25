@@ -107,14 +107,19 @@ written.
 | `presentation` | builds the deck: slides as arguments, or a show-rule body split at its headings |
 | `bundle` | writes talk, slide set and handout in a single compile |
 | `slide`, `section`, `title-slide` | the three kinds of slide |
-| `anim`, `stagger`, `pause`, `alternatives` | reveal one thing, a series of things, everything after this point, one thing after another in the same place |
+| `anim`, `stagger`, `pause`, `alternatives` | reveal one thing, a series of things, everything after this point, one thing after another in the same place; `anim(after: "dimmed")` lets a point stay muted once its range is over, and `stagger(dim: true)` walks a list that way, the current point lit and the earlier ones quiet |
 | `morph`, `pin` | magic move across slides; `pin` names a glyph so the pairing follows the name rather than the shape |
 | `card`, `callout`, `side-by-side`, `tiles`, `statement` | layouts inside a slide; `tiles` staggers itself, and `side-by-side(equal: true)` makes its columns the same height |
+| `fit` | scales one block down to the room it has, for a wide table or a generated chart; no reveal may sit inside it |
+| `overflow:` | a checking pass, off by default: `"error"` builds the deck and then names every slide whose body runs over its room, with the step; `"record"` files the same as queryable metadata |
+| `info` | what the deck knows about itself: title, slide and step number, section — for a footer or a running head of your own |
 | `transition`, `speaker-note` | how this slide comes in, and what only you see |
 | `themes`, `theme` | the five built-in looks, and the builder behind them |
+| `palettes`, `palette:`, `invert` | colour separately from design: five bundled palettes that compose with every theme, a partial override on `presentation`, and one slide set in the palette turned around |
+| `contrast`, `palette-report` | the WCAG contrast of two colours, and the six pairs the bundled palettes are held to |
 | `video`, `embed`, `flipbook` | media, arbitrary web content in a sandboxed frame, and animation drawn frame by frame by Typst |
 | `bridge-job`, `bridge-targets` | send step jobs into an embedded document, which is how companion packages drive an applet |
-| `slide-width`, `slide-height`, `slide-margin`, `dark`, `accent`, `paper`, `muted` | the defaults behind `width:` and the palette |
+| `slide-width`, `slide-height`, `slide-margin`, `dark`, `accent`, `paper`, `muted` | the defaults behind `width:`, and the four colour constants of the default look |
 | `runtime-version`, `runtime-files` | the CSS and the JS, for `assets: "split"` and for CDNs |
 
 Every one of them is documented in full, with examples, in the manual
@@ -130,6 +135,7 @@ single slide, each of them a true reversal when you page backwards. Entrances
 ```typ
 #show: presentation.with(theme: themes.night)
 #show: presentation.with(theme: themes.lesson + (accent: blue))
+#show: presentation.with(theme: themes.lesson, palette: palettes.dark)
 ```
 
 ![The same slide in the five built-in themes: default, lesson, night, plain, editorial](assets/themes.png)
@@ -143,6 +149,37 @@ textbook does, a tinted panel with its label inside rather than a coloured bar
 above. Only the title slide
 and the section slide are functions in it: they are whole pictures, not
 variations of one another.
+
+## Palettes and the contrast contract
+
+Colour is a thing of its own. `palette:` takes a flat dictionary over the eight
+colour entries and overwrites *partially*, so `palette: (accent: blue)` moves
+the accent alone. Five ship with the package, `light`, `mono`, `textbook`,
+`parchment` and `dark`, and each composes with each theme: darkness is a
+palette rather than a design, and `themes.lesson` under `palettes.dark` is
+still the lesson design, only dark. `themes.night` stays a theme all the same,
+because its cyan is tuned to its own ground -- it measures 9.77 to 1 there and
+1.59 to 1 on the ground an inverted slide puts behind it.
+
+Reading `themes.X.title-fill` or `.rule-fill` no longer gives a colour: they
+are now functions of the palette, or `none` for "the accent". Writing them
+(`themes.X + (title-fill: red)`) works as before.
+
+`invert` sets one slide in the palette turned around, for the slide that
+carries a single number: the ground becomes the palette's text colour and the
+text becomes its ground, `muted`, `border` and `surface` are mixed from those
+two, and `strong` and `accent` carry over unchanged. The running head, the
+footer and the progress bar follow.
+
+The five bundled palettes, and their inverted forms with them, are held to a
+measured contrast contract: real WCAG 2 arithmetic over six pairs, enforced by
+an assertion that runs when the package is loaded. **Your own palettes face no
+such gate**, and neither do the bundled *themes*: run over those, the contract
+finds `muted` at 4.25 in `lesson`, at 3.35 in `plain` and at 3.51 in
+`editorial` against the 4.5 body text wants, `accent` at 2.84 in `editorial`
+against 3.0, and `accent` on `ink` at 1.59 in `night` and 1.27 in `plain`. Only
+`themes.default` passes all six. Those colours were left alone; the manual says
+why, and `palette-report(…)` hands the same measurement back for any palette.
 
 ## In the browser
 
@@ -315,6 +352,10 @@ else, no Node, no bundler.
 - **Five themes, not a theme ecosystem.** They differ in colour, type and the
   shape of header, footer and progress bar, not in slide layouts. Anything
   further is a dictionary entry, a `style:` wrapper, or plain Typst.
+- **The contrast contract binds the bundled palettes only.** A palette written
+  in a deck is never checked and never recoloured, and no colour is inferred
+  from the lightness of another: a muted sage such as `#aebdb3` reads as
+  "light" to a luminance rule, yet white on it measures 1.96 to 1.
 
 ## Documentation
 
@@ -334,9 +375,37 @@ One run gives the printed manual, the website and its stylesheet:
 typst compile docs/docs.typ build --format bundle --features bundle,html --root .
 ```
 
+The site build also writes [llms.txt](https://loewe1000.github.io/typstage/llms.txt),
+one line per chapter with its title and first sentence, in both languages. It is
+generated from the built pages, so its anchors cannot go stale.
+
 `example.typ` in the repository is a deck that exercises everything: reveals,
 magic move, an embedded live canvas, a CeTZ flipbook. It is not shipped with
 the package, so build it from a clone.
+
+### The examples in the manual are compiled
+
+Every `typ` listing in both manuals is compiled against the real package before
+the site is built, so a renamed function or a changed signature cannot leave a
+listing behind:
+
+```bash
+python3 .github/scripts/pruefe-beispiele.py
+```
+
+Most listings are fragments rather than whole files, so the run wraps each one
+in a deck and a slide before compiling it. That is what it checks: that the
+code compiles in such a wrapper, not that the slide looks right. Where a
+fragment needs more than the wrapper gives it, a `// check:` line above the
+listing says so; the header of the script lists the words it takes. Listings
+that show what does *not* work are marked, have to keep failing, and say what
+they have to fail at -- a listing that breaks for some other reason is a failed
+check, not a passed one. The build runs this first and stops on it.
+
+What it does not reach: the prose beside a listing, listings in `bash` or
+`json` (it names how many it left alone), the paged output, and anything that
+compiles without doing what it claims -- a show rule on a label that no longer
+exists still compiles.
 
 ## Companion packages
 
