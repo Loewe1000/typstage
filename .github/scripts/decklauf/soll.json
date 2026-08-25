@@ -36,7 +36,15 @@
   "auf 16 Stellen gekürzt, satzBytes ihre Länge. Nur für das Prüfdeck: was",
   "fit, info(), invert und die Paletten tun, entsteht in Typst und hat im",
   "Browser keine Zahl. Nach einem Typst-Wechsel darf er neu gesetzt werden,",
-  "aber nur nachdem jemand nachgesehen hat, was sich geändert hat."
+  "aber nur nachdem jemand nachgesehen hat, was sich geändert hat.",
+  "",
+  "satz, satzBytes und sprecher haengen an den Schriften des Rechners und nicht",
+  "am Paket. Wo die Plattformen sich einig sind, steht eine schlichte Zahl, und",
+  "dann wird auch plattformuebergreifend verglichen. Geteilt wird erst, wo eine",
+  "Plattform nachweislich abweicht -- heute nur theme-night.sprecher und der",
+  "Satz-Fingerabdruck des Pruefdecks. Die linux-Werte stammen aus den ersten",
+  "beiden CI-Laeufen dieses Prueflaufs, in denen alle sieben Decks sonst ok",
+  "meldeten; ein Ubuntu-Laeufer setzt theme-night mit einer Glyphe weniger."
  ],
  "decks": {
   "tour": {
@@ -47,10 +55,7 @@
    "fliegerRueck": 24,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": {
-    "darwin": 79,
-    "linux": 79
-   },
+   "sprecher": 79,
    "grund": [
     "#ffffff",
     "#ffffff",
@@ -202,10 +207,7 @@
    "fliegerRueck": 82,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": {
-    "darwin": 102,
-    "linux": 102
-   },
+   "sprecher": 102,
    "grund": [
     "#fafafa",
     "#23303f",
@@ -281,10 +283,7 @@
    "fliegerRueck": 81,
    "hash": 8,
    "hashStand": "1/0",
-   "sprecher": {
-    "darwin": 531,
-    "linux": 531
-   },
+   "sprecher": 531,
    "grund": [
     "#f7f2e6",
     "#f7f2e6",
@@ -372,10 +371,7 @@
    "fliegerRueck": 99,
    "hash": 8,
    "hashStand": "3/0",
-   "sprecher": {
-    "darwin": 103,
-    "linux": 103
-   },
+   "sprecher": 103,
    "grund": [
     "#ffffff",
     "#e6f0f6",
@@ -560,10 +556,7 @@
    "fliegerRueck": 20,
    "hash": 8,
    "hashStand": "3/0",
-   "sprecher": {
-    "darwin": 88,
-    "linux": 88
-   },
+   "sprecher": 88,
    "grund": [
     "#ffffff",
     "#ffffff",
@@ -648,10 +641,7 @@
    "fliegerRueck": 2,
    "hash": 8,
    "hashStand": "1/0",
-   "sprecher": {
-    "darwin": 67,
-    "linux": 67
-   },
+   "sprecher": 67,
    "grund": [
     "#0f1319",
     "#0c2733",

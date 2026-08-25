@@ -435,13 +435,21 @@ identical record, down to the ghost counts; the report's header carries the
 duration, the browser and the speed and differs by design.
 
 The written record is `.github/scripts/decklauf/soll.json`, rewritten with
-`--neu-soll` and only on purpose. Two of its entries, the fingerprint of the
-check deck's typeset output and its length, are kept per platform: they depend
-on the fonts of the machine, not on the package — the same commit measures
-546292 bytes on macOS and 500912 on an Ubuntu runner, while step counts, element
-counts, ghost counts and ground colours are identical to the character on both.
-Where the running platform has no recorded value, the run says so and fails,
-rather than quietly checking nothing. It holds per deck the slide and step counts,
+`--neu-soll` and only on purpose. Three of its entries depend on the fonts
+of the machine rather than on the package: the fingerprint of the check deck's
+typeset output, its length, and the node count of the speaker preview. The same
+commit measures 546292 bytes on macOS and 500912 on an Ubuntu runner, and
+`theme-night` renders its preview with one glyph fewer there. Step counts,
+element counts, ghost counts and ground colours are identical to the character
+on both.
+
+Those three are split by platform only where a platform has actually been shown
+to differ — today that is `theme-night`'s preview and the check deck's
+fingerprint. Everywhere else a single number stands and is compared across
+platforms, because splitting a value the platforms agree on would check each
+side against itself and let a future divergence pass. Where a split value has no
+entry for the running platform, the run says so and fails, rather than quietly
+checking nothing. It holds per deck the slide and step counts,
 how many elements are marked as drawn and as dimmed on every step, the
 number of ghosts a magic move produces, re entry through the hash, the speaker
 view, the ground colour of every slide and the runtime's own error list.

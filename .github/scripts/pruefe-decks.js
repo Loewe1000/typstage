@@ -333,7 +333,20 @@ function vergleiche(soll, ist, name, maengel, plattform, proPlattform) {
   const schluessel = [...new Set(Object.keys(soll).concat(Object.keys(ist)))];
   schluessel.forEach(k => {
     if (proPlattform.indexOf(k) >= 0) {
-      const s = soll[k] || {}, i = ist[k] || {};
+      // Eine schlichte Zahl heißt: die Plattformen sind sich einig, und dann
+      // wird auch plattformübergreifend verglichen. Erst wenn eine wirklich
+      // abweicht, wird daraus ein Wörterbuch je Plattform. Alles vorsorglich
+      // zu teilen wäre bequem und falsch: die Decks, die heute übereinstimmen,
+      // würden dann getrennt gegen sich selbst geprüft, und ein künftiges
+      // Auseinanderlaufen fiele niemandem mehr auf.
+      const s = soll[k], i = ist[k];
+      const istGeteilt = s !== null && typeof s === "object";
+      if (!istGeteilt) {
+        const a = JSON.stringify(s);
+        const b = JSON.stringify(i !== null && typeof i === "object" ? i[plattform] : i);
+        if (a !== b) maengel.push(name + "." + k + ": soll " + kurz(a) + ", ist " + kurz(b));
+        return;
+      }
       if (!(plattform in s)) {
         maengel.push(name + "." + k + ": für " + plattform
           + " ist kein Sollwert aufgenommen, gemessen " + kurz(JSON.stringify(i[plattform]))
@@ -553,9 +566,18 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
     catch (e) {}
     Object.keys(jetzt).forEach(n => {
       proPlattform.forEach(k => {
+        if (jetzt[n][k] === undefined) return;
         const vorher = alt[n] && alt[n][k];
-        if (vorher && typeof vorher === "object" && jetzt[n][k]) {
+        const meiner = jetzt[n][k][PLATTFORM];
+        if (vorher !== null && typeof vorher === "object") {
+          // Schon geteilt: die Werte der anderen Plattformen bleiben stehen,
+          // sonst nähme ein Lauf hier der CI ihren Sollwert weg.
           jetzt[n][k] = Object.assign({}, vorher, jetzt[n][k]);
+        } else {
+          // Noch nicht geteilt: schlicht schreiben. Geteilt wird erst, wenn
+          // eine Plattform nachweislich abweicht -- von Hand, mit der Zahl
+          // aus dem Lauf, der die Abweichung gezeigt hat.
+          jetzt[n][k] = meiner;
         }
       });
     });
