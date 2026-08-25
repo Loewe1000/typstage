@@ -319,11 +319,26 @@ async function laden(b, url) {
 
 // Der Vergleich mit dem Sollstand. Feld für Feld, damit im Bericht steht,
 // *was* abweicht, und nicht nur, dass etwas abweicht.
-function vergleiche(soll, ist, name, maengel) {
+function vergleiche(soll, ist, name, maengel, plattform, proPlattform) {
   // Über beide Schlüsselmengen, nicht nur über die des Sollstands: ein Feld,
   // das neu dazukommt, soll auffallen und nicht stillschweigend durchgehen.
   const schluessel = [...new Set(Object.keys(soll).concat(Object.keys(ist)))];
   schluessel.forEach(k => {
+    if (proPlattform.indexOf(k) >= 0) {
+      const s = soll[k] || {}, i = ist[k] || {};
+      if (!(plattform in s)) {
+        maengel.push(name + "." + k + ": für " + plattform
+          + " ist kein Sollwert aufgenommen, gemessen " + kurz(JSON.stringify(i[plattform]))
+          + " (nicht verglichen)");
+        return;
+      }
+      const a = JSON.stringify(s[plattform]), b = JSON.stringify(i[plattform]);
+      if (a !== b) {
+        maengel.push(name + "." + k + " (" + plattform + "): soll " + kurz(a)
+                     + ", ist " + kurz(b));
+      }
+      return;
+    }
     const a = JSON.stringify(soll[k]), b = JSON.stringify(ist[k]);
     if (a !== b) maengel.push(name + "." + k + ": soll " + kurz(a) + ", ist " + kurz(b));
   });
@@ -488,10 +503,23 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   const felder = ["folien", "schritte", "elemente", "flieger", "fliegerRueck",
                   "hash", "hashStand", "sprecher", "grund", "sichtbar",
                   "sichtbarRueck", "fehler", "satz", "satzBytes"];
+  // `satz` und `satzBytes` hängen an den Schriften des Rechners, nicht am
+  // Paket: derselbe Stand ergibt auf macOS 546292 Bytes und auf einem
+  // Ubuntu-Läufer 500912, während alle übrigen Felder -- Schritte, Elemente,
+  // Flieger, Gründe -- auf beiden aufs Zeichen gleich sind. Sie werden deshalb
+  // je Plattform abgelegt. Fehlt die eigene, wird das gesagt und nicht
+  // verglichen; stillschweigend übergehen hieße, eine Prüfung zu verlieren,
+  // ohne dass es jemand merkt.
+  const PLATTFORM = process.platform;
+  const proPlattform = ["satz", "satzBytes"];
   const jetzt = {};
   bericht.forEach(z => {
     const e = {};
-    felder.forEach(k => { if (z[k] !== undefined) e[k] = z[k]; });
+    felder.forEach(k => {
+      if (z[k] === undefined) return;
+      if (proPlattform.indexOf(k) >= 0) { e[k] = { [PLATTFORM]: z[k] }; }
+      else { e[k] = z[k]; }
+    });
     jetzt[z.deck] = e;
   });
 
@@ -504,8 +532,22 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
     process.exit(2);
   }
   if (neuSoll) {
+    // Die Werte anderer Plattformen bleiben stehen. Wer auf macOS neu
+    // aufnimmt, darf den Linux-Wert nicht mitnehmen -- sonst prüft die CI
+    // beim nächsten Lauf gegen nichts.
+    let alt = {};
+    try { alt = JSON.parse(fs.readFileSync(sollDatei, "utf8")).decks || {}; }
+    catch (e) {}
+    Object.keys(jetzt).forEach(n => {
+      proPlattform.forEach(k => {
+        const vorher = alt[n] && alt[n][k];
+        if (vorher && typeof vorher === "object" && jetzt[n][k]) {
+          jetzt[n][k] = Object.assign({}, vorher, jetzt[n][k]);
+        }
+      });
+    });
     fs.writeFileSync(sollDatei, JSON.stringify({
-      fassung: 1,
+      fassung: 2,
       hinweis: SOLL_HINWEIS,
       decks: jetzt
     }, null, 1) + "\n");
@@ -515,7 +557,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
     Object.keys(soll.decks).forEach(n => {
       const z = bericht.find(x => x.deck === n);
       if (!z) { process.stderr.write("ABWEICHUNG " + n + " fehlt im Lauf\n"); schlecht++; return; }
-      vergleiche(soll.decks[n], jetzt[n], n, z.maengel);
+      vergleiche(soll.decks[n], jetzt[n], n, z.maengel, PLATTFORM, proPlattform);
     });
     Object.keys(jetzt).forEach(n => {
       if (!soll.decks[n]) process.stderr.write("neu, kein Sollstand: " + n + "\n");

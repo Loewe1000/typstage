@@ -1,5 +1,5 @@
 {
- "fassung": 1,
+ "fassung": 2,
  "hinweis": [
   "Festgeschriebene Werte des Prüflaufs. Geschrieben von",
   ".github/scripts/pruefe-decks.js --neu-soll, und nur mit Absicht.",
@@ -36,7 +36,15 @@
   "auf 16 Stellen gekürzt, satzBytes ihre Länge. Nur für das Prüfdeck: was",
   "fit, info(), invert und die Paletten tun, entsteht in Typst und hat im",
   "Browser keine Zahl. Nach einem Typst-Wechsel darf er neu gesetzt werden,",
-  "aber nur nachdem jemand nachgesehen hat, was sich geändert hat."
+  "aber nur nachdem jemand nachgesehen hat, was sich geändert hat.",
+  "",
+  "satz und satzBytes stehen je Plattform, weil sie an den Schriften",
+  "des Rechners haengen und nicht am Paket: derselbe Stand ergibt auf",
+  "macOS 546292 Bytes und auf ubuntu-latest 500912, waehrend Schritte,",
+  "Elemente, Flieger und Gruende auf beiden aufs Zeichen gleich sind.",
+  "Der linux-Wert stammt aus dem ersten CI-Lauf dieses Prueflaufs, in",
+  "dem alle sieben Decks sonst ok meldeten. Fehlt die eigene Plattform,",
+  "sagt der Lauf das und faellt um, statt still nichts zu pruefen."
  ],
  "decks": {
   "tour": {
@@ -692,8 +700,14 @@
     "3/0·0/0"
    ],
    "fehler": [],
-   "satz": "8e355be08071f7c8",
-   "satzBytes": 546292
+   "satz": {
+    "darwin": "8e355be08071f7c8",
+    "linux": "070d0e2da7d3159b"
+   },
+   "satzBytes": {
+    "darwin": 546292,
+    "linux": 500912
+   }
   }
  }
 }
