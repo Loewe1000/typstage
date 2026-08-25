@@ -87,6 +87,25 @@
   out
 }
 
+/// Whether a run of content between two headings holds nothing a reader would
+/// miss.
+///
+/// Not the same question as "is the run empty". Between two headings the
+/// markup always leaves a `space` and a `parbreak` behind, so every deck has
+/// such runs and counting elements would call them all content. Counting
+/// characters would not do either: an image loses as much as a sentence while
+/// carrying no text at all.
+///
+/// Asked on the pieces as they were written, before `wrap` puts a `styled`
+/// back around them. After that every run is one `styled` element, and a
+/// `#set` anywhere in the deck would make even the empty ones look like
+/// content.
+#let stiller-lauf(teile) = teile.all(c => {
+  let f = repr(c.func())
+  (f in ("space", "parbreak", "linebreak")
+   or (c.func() == text and c.text.trim() == ""))
+})
+
 /// Split a document body at its headings into slides.
 ///
 /// Two things make this harder than walking `body.children`.
@@ -117,7 +136,7 @@
     // piece. Typst closures cannot write to variables outside themselves, so
     // this is spelled out rather than put in a `flush()`.
     if boundary and run.len() > 0 {
-      out.push((kind: "content", body: wrap(run.join())))
+      out.push((kind: "content", body: wrap(run.join()), still: stiller-lauf(run)))
       run = ()
     }
     if c.func() == heading {
@@ -132,28 +151,85 @@
       run.push(c)
     }
   }
-  if run.len() > 0 { out.push((kind: "content", body: wrap(run.join()))) }
+  if run.len() > 0 {
+    out.push((kind: "content", body: wrap(run.join()), still: stiller-lauf(run)))
+  }
   out
 }
 
-#let slides-from-body(body, title, subtitle, author, date) = {
+/// Turn the tokens of a body into the deck's list of slides.
+///
+/// `slide-level` is the one rule: a heading *above* it opens a section slide,
+/// a heading at it or below it opens a slide. At the default of 2 that is
+/// character for character the old rule, `=` becomes a section and everything
+/// else a slide.
+///
+/// Deliberately not Touying's rule, where only `depth == slide-level` makes a
+/// slide and anything deeper stays content inside it. That reading would pull
+/// every `===` of an existing deck into the body of the `==` above it, and
+/// the deck would lose slides without saying so.
+#let slides-from-body(body, title, subtitle, author, date, slide-level) = {
   let out = ()
   if title != none {
     out.push(title-slide(title: title, subtitle: subtitle,
                          author: author, date: date))
   }
   let open = none
-  for tok in split-body(body, x => x) {
+  let davor = none
+  let marken = split-body(body, x => x)
+  // Whether this body is a deck in the heading notation at all. A body
+  // without a single heading is not one, and the content in it has not been
+  // lost behind a heading, it never had a slide to go to. That happens for
+  // real: a deck whose own show rule sits above this one hands its whole
+  // output down here, and refusing it would refuse a construction that loses
+  // nothing.
+  let mit-ueberschrift = marken.any(t => t.kind == "heading")
+  for tok in marken {
     if tok.kind == "heading" {
       if open != none { out.push(open); open = none }
-      if tok.depth == 1 { out.push(section(tok.body)) } else {
+      if tok.depth < slide-level {
+        out.push(section(tok.body, depth: tok.depth))
+        davor = tok.body
+      } else {
         open = (kind: "slide", title: tok.body, note: none,
                 transition: none, body: [])
       }
     } else if open != none {
       open.body = open.body + tok.body
+      // Zwei Bedingungen, und die zweite fängt den häufigsten Fall überhaupt:
+      // ein Rumpf ganz ohne Überschrift, in dem jemand einfach losgeschrieben
+      // hat. `mit-ueberschrift` allein ließ den durch -- gemessen verschwand
+      // dort ein ganzer Absatz spurlos, während die Titelfolie stehenblieb,
+      // also genau der Verlust, gegen den diese Prüfung gebaut ist.
+      //
+      // Warum die Einschränkung trotzdem nötig ist: das Handbuch stapelt an
+      // vier Stellen mehrere `#show: presentation.with(…)`, um Alternativen zu
+      // zeigen. Der äußere bekommt dann die Ausgabe des inneren als Rumpf, und
+      // die ist ein `context()` ohne einen einzigen Buchstaben. Text ist also
+      // das Merkmal, das den Schreibfehler von der gestapelten Vorführung
+      // trennt -- gemessen an beiden.
+    } else if not tok.still and (mit-ueberschrift
+                                 or plain-text(tok.body).trim() != "") {
+      // Content that belongs to no slide, and said out loud rather than
+      // dropped. It used to fall out of the deck without a word: the deck
+      // compiled, the slide count was right, and the paragraph was simply
+      // gone. With more than one structure level there are more headings it
+      // can fall behind, so the silence would get cheaper to run into.
+      // `let` statt eines `if` mitten im Ausdruck: in einem Codeblock ist eine
+      // Zeile, die mit `+` beginnt, ein unäres Plus und keine Verkettung.
+      // Genau daran ist diese Meldung nie erschienen -- das Übersetzen brach
+      // ab, aber mit "cannot apply unary '+' to string" und einem Zeigefinger
+      // in den Paketcode.
+      let wo = if davor == none {
+        "content before the first heading of the deck belongs to no slide. In the heading notation a slide begins with its heading, and here none has begun yet."
+      } else {
+        "content between the heading \"" + plain-text(davor) + "\" and the next one belongs to no slide. A section slide is a whole picture the theme draws and has no body to hold it."
+      }
+      panic("typstage: " + wo
+        + " Put the content under a slide heading, which at this deck's "
+        + "slide-level means a heading of depth " + str(slide-level)
+        + " or deeper, or take it out.")
     }
-    // Anything before the first heading belongs to no slide.
   }
   if open != none { out.push(open) }
   out
@@ -182,6 +258,34 @@
 /// typst compile deck.typ deck.html --format html --features html
 /// typst compile deck.typ deck.pdf
 /// ```
+///
+/// `slide-level:` is where the deck is cut. A heading *above* it becomes a
+/// section slide, a heading at it or below it becomes a slide. The default is
+/// 2, and that is the rule this package always had: `=` opens a section,
+/// `==` a slide.
+///
+/// ```typ
+/// #show: presentation.with(title: [Analysis], slide-level: 3)
+/// = Part I
+/// == Sequences
+/// === What a sequence is
+/// A map from the naturals.
+/// ```
+///
+/// `= Part I` and `== Sequences` each become a section slide, `===` becomes
+/// the slide. Both transition slides come for free: a section heading *is* the
+/// transition slide here, so there is nothing to switch on and no hook to
+/// write. `slide-level: 1` makes every heading a slide and leaves the deck
+/// without any structure level.
+///
+/// A deeper level is drawn more quietly by all five bundled themes, smaller
+/// and with the titles it hangs under set above it. A theme of its own reads
+/// `s.depth` and `s.parents` off the section record and may ignore both, and
+/// then every level looks alike.
+///
+/// What the deck knows about its structure is in `info()`: `section` is
+/// unchanged and always means the level directly above the slide, `levels`
+/// has one entry per structure level, and `outline` is the whole thing.
 ///
 /// `theme:` determines the whole look: colors, typeface, title bar,
 /// footer, progress, title and section slide. Bundled are `themes.default`
@@ -261,7 +365,21 @@
   margin: auto,
   handout: false,
   overflow: "none",
+  slide-level: 2,
 ) = {
+  // `..slides` would otherwise swallow any named argument without a word:
+  // `presentation(pallete: palettes.dark)` did nothing and said nothing. The
+  // same check `palette-pruefen` makes on a palette's keys.
+  assert(slides.named().len() == 0, message:
+    "typstage: presentation() does not know "
+    + slides.named().keys().join(", ")
+    + ". It takes title, subtitle, author, date, assets, theme, palette, "
+    + "transition, transition-duration, duration, style, width, height, "
+    + "margin, handout, overflow and slide-level.")
+  assert(type(slide-level) == int and slide-level >= 1, message:
+    "typstage: slide-level is the heading depth at which a heading becomes a "
+    + "slide, an integer from 1 upwards; 2 is the default. Not "
+    + repr(slide-level))
   assert(overflow in ("none", "error", "record"), message:
     "typstage: overflow is \"none\" (the default), \"error\" or \"record\", "
     + "not " + repr(overflow))
@@ -272,7 +390,7 @@
   // A single piece of content means: this is the body of a show rule, and that
   // gets split at its headings.
   let all = if given.len() == 1 and type(given.at(0)) == content {
-    slides-from-body(given.at(0), title, subtitle, author, date)
+    slides-from-body(given.at(0), title, subtitle, author, date, slide-level)
   } else {
     // The title belongs to the deck, not to one of the two notations. Whoever
     // hands slides as arguments used to lose it without a word.
@@ -294,6 +412,98 @@
          body: apply-pauses(s.body))
   })
   let total = all.filter(s => s.kind == "slide").len()
+
+  // ── The structure above the slides ──────────────────────────────────────
+  //
+  // One level per heading depth above `slide-level`. At the default of 2
+  // that is exactly the depth 1, one level, and every count below comes out
+  // the way it always did.
+  //
+  // The bound is the deeper of the two: what `slide-level` allows, and what
+  // the deck actually hands over. The second half is for the argument
+  // notation, where `section(.., depth: 2)` is legal whatever `slide-level`
+  // says, and where a level that exists but is not counted would leave the
+  // running header empty on a slide that plainly has a section.
+  let tiefe-max = calc.max(slide-level - 1, 0,
+    ..all.filter(s => s.kind == "section").map(s => s.at("depth", default: 1)))
+  let tiefen = range(1, tiefe-max + 1)
+
+  // First pass over the section slides: each one learns which titles it hangs
+  // under, and which group of siblings it stands in. A group is a run of
+  // sections of the same depth under the same parent, and it is what turns
+  // "the fourth section of the deck" into Beamer's "the second of this part".
+  //
+  // A heading closes everything that stood open below it. Without that, a
+  // slide under a fresh `= Part II` would still report the last `==` of part
+  // one as its section, and it would report it in the same breath as the new
+  // part. Typst closures cannot write to variables outside themselves, so the
+  // walk is spelled out rather than put in a `map`.
+  let abschnitte = ()
+  let offen-titel = tiefen.map(_ => none)
+  let offen-nr = tiefen.map(_ => -1)
+  for (i, s) in all.enumerate() {
+    if s.kind != "section" { continue }
+    let d = s.at("depth", default: 1)
+    abschnitte.push((
+      nr: i,
+      depth: d,
+      title: s.title,
+      parents: offen-titel.slice(0, d - 1).filter(x => x != none),
+      // The chain of open ancestors names the group; the depth has to come
+      // along, or a `==` and a `===` under the same part would share one.
+      gruppe: repr(offen-nr.slice(0, d - 1)) + "|" + str(d),
+    ))
+    offen-titel = offen-titel.enumerate().map(((j, x)) =>
+      if j == d - 1 { s.title } else if j > d - 1 { none } else { x })
+    offen-nr = offen-nr.enumerate().map(((j, x)) =>
+      if j == d - 1 { i } else if j > d - 1 { -1 } else { x })
+  }
+  // How large each group is, and how many sections each level has in the
+  // whole deck. Both are wanted *before* the walk below, since `count` and
+  // `total` are the sizes of something the slide is standing in the middle
+  // of.
+  let gruppen-groesse = (:)
+  for a in abschnitte {
+    gruppen-groesse.insert(a.gruppe, gruppen-groesse.at(a.gruppe, default: 0) + 1)
+  }
+  let tiefen-total = tiefen.map(d => abschnitte.filter(a => a.depth == d).len())
+  // Second pass: the finished level entry for each section slide.
+  let ebenen-satz = ()
+  let nummern = tiefen.map(_ => 0)
+  let laufend = (:)
+  for a in abschnitte {
+    nummern.at(a.depth - 1) += 1
+    laufend.insert(a.gruppe, laufend.at(a.gruppe, default: 0) + 1)
+    ebenen-satz.push((
+      depth: a.depth,
+      number: nummern.at(a.depth - 1),
+      total: tiefen-total.at(a.depth - 1),
+      index: laufend.at(a.gruppe),
+      count: gruppen-groesse.at(a.gruppe),
+      title: a.title,
+    ))
+  }
+  // The whole structure, in the order it comes. The same list the counting
+  // above ran on, only reduced to what a deck may read. No `query`, no second
+  // walk over the document.
+  let gliederung = abschnitte.enumerate().map(((j, a)) => (
+    depth: a.depth, number: ebenen-satz.at(j).number, title: a.title,
+  ))
+  // What a section slide hands its theme: its depth, and the titles above it.
+  // Both go on the record itself rather than into a new theme key, so a theme
+  // that ignores them draws every level alike instead of failing.
+  let all = {
+    let k = 0
+    let raus = ()
+    for s in all {
+      if s.kind != "section" { raus.push(s) } else {
+        raus.push(s + (depth: abschnitte.at(k).depth,
+                       parents: abschnitte.at(k).parents))
+        k += 1
+      }
+    }
+    raus
+  }
 
   // The theme with the palette laid over it, once for the deck and once
   // turned around. Both are worked out here rather than per slide: they are
@@ -331,19 +541,49 @@
       (title: title, subtitle: subtitle, author: author, date: date)
     }
   }
-  let sect-total = all.filter(s => s.kind == "section").len()
   let facts = ()
   let gezaehlt = 0
-  let kapitel = 0
-  let kapitel-titel = none
+  let gesehen = 0
+  // The outline as every slide sees it that is not itself a section slide.
+  // Built once, not once per slide.
+  let gliederung-still = gliederung.map(e => e + (here: false))
+  // The reading of every level before the first section slide: nothing is
+  // running, nothing has been counted, and the deck already knows how many
+  // there will be.
+  let ebenen = tiefen.map(d => (depth: d, number: 0, total: tiefen-total.at(d - 1),
+                                index: 0, count: 0, title: none))
   for (i, s) in all.enumerate() {
     if s.kind == "slide" { gezaehlt += 1 }
-    if s.kind == "section" { kapitel += 1; kapitel-titel = s.title }
+    if s.kind == "section" {
+      let e = ebenen-satz.at(gesehen)
+      gesehen += 1
+      // The level itself takes its new entry; everything below it is
+      // cleared, because no section of that depth is running under the new
+      // parent yet. `number` is the one thing that stays: it counts across
+      // the deck and never goes back, so it also reads as progress.
+      ebenen = ebenen.enumerate().map(((j, x)) =>
+        if j == e.depth - 1 { e }
+        else if j > e.depth - 1 { x + (index: 0, count: 0, title: none) }
+        else { x })
+    }
     facts.push((
       nr: i + 1,
       data: daten + (
         slide: (number: gezaehlt, total: total, numbered: s.kind == "slide"),
-        section: (number: kapitel, total: sect-total, title: kapitel-titel),
+        // The section stays what it always was: the level directly above the
+        // slide. At `slide-level: 2` that is the only level there is.
+        // A deck without any structure level reads as one before its first
+        // section, which is the answer this already gave there.
+        section: if ebenen.len() > 0 {
+          let innen = ebenen.last()
+          (number: innen.number, total: innen.total, title: innen.title)
+        } else { (number: 0, total: 0, title: none) },
+        levels: ebenen,
+        // `here` marks the one entry that *is* this slide, and only a section
+        // slide can be one. Every other slide gets the list built once above.
+        outline: if s.kind == "section" {
+          gliederung.enumerate().map(((m, e)) => e + (here: m == gesehen - 1))
+        } else { gliederung-still },
       ),
     ))
   }

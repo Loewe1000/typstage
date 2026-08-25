@@ -111,6 +111,82 @@ following file is complete and can be typed out:
 A first-level heading is a section slide, a second-level heading is a slide,
 and the text below it is its body. That is the whole structure.
 
+== More than two levels
+
+The default cuts the deck at the second level: `=` becomes a section slide,
+`==` becomes a slide. `slide-level` moves that cut. A heading *above* it
+becomes a section slide, a heading at it or below it becomes a slide.
+
+// check: dokument
+#show-code[```typ
+#show: presentation.with(title: [Analysis I], slide-level: 3)
+= Part I -- Limits
+== Sequences
+=== What a sequence is
+A map from the naturals into the reals.
+=== Convergence
+For every epsilon there is an N.
+== Series
+=== Partial sums
+The sum of the first n terms.
+```]
+
+`= Part I` and `== Sequences` each become a section slide, every `===` becomes
+a slide. The transition slides for *both* levels come along by themselves: a
+section heading here already is the transition slide, so there is nothing to
+switch on and no hook to write.
+
+`slide-level: 1` makes every heading a slide; the deck then has no structure
+level at all.
+
+The five bundled themes draw a deeper level more quietly: the title gets
+smaller, and above it stands what the section hangs under. A theme with a
+`section` function of its own reads `s.depth` and `s.parents` off the record
+and may ignore both. Then every level looks alike, and nothing breaks.
+
+What the deck knows about its structure is in `info()`: `section` still means
+the level directly above the slide, `levels` has one entry per structure
+level, and `outline` is the whole thing. The section "`info()`: what the deck
+knows about itself" says what is in them.
+
+=== Text that belongs to no slide
+
+Between a section heading and the next heading there is no room for text. A
+section slide is a whole picture the theme draws; it has no body. Such text
+used to fall out of the deck without a word: it compiled, the slide count was
+right, and the paragraph was simply gone. Now that there is more than one kind
+of structure heading there are more chances to run into that, so compiling
+stops there with a message instead.
+
+A sentence between `= The proof` and `== The dissection` therefore aborts with
+`content between the heading "The proof" and the next one belongs to no
+slide`:
+
+// check: dokument bricht=belongs_to_no_slide
+#show-code[```typ
+#show: presentation.with()
+= The proof
+This sentence belongs to no slide and stops the compile.
+== The dissection
+```]
+
+It belongs under the slide heading:
+
+// check: dokument
+#show-code[```typ
+#show: presentation.with()
+= The proof
+== The dissection
+This sentence belongs to the slide and gets typeset.
+```]
+
+Two reservations, so that nothing here promises more than the code holds.
+First, text *before* the first heading is refused as well, but only if the deck
+has any heading at all: a body without a single heading is not a presentation
+in the heading notation, and there it is not one slide that is missing, there
+are none. Second, all of this applies to the heading notation only; whoever
+passes slides as arguments writes every body out anyway.
+
 == Two compilations
 
 The same file yields two outputs, and which one you get depends on the flags:
@@ -1708,7 +1784,59 @@ What comes back:
   [`section.number`], [Which section is running, `0` before the first],
   [`section.total`], [How many sections the deck has],
   [`section.title`], [Its title, or `none` before the first],
+  [`levels`], [One entry per structure level, outermost first. Empty at
+    `slide-level: 1`],
+  [`outline`], [The whole structure, one entry per section slide in the order
+    they come],
 )
+
+`section` always means the level directly above the slide. At the default
+`slide-level: 2` that is the only level there is, and then `section` is
+`levels.last()` without its `depth`.
+
+A deck with more than one level -- see "More than two levels" -- finds them in
+`levels` and in `outline`:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Field of an entry*], [*What is in it*]),
+  [`levels.at(i).depth`], [The heading level, `1` for `=`, `2` for `==`],
+  [`levels.at(i).title`], [The title, or `none` while no section of that level
+    is running],
+  [`levels.at(i).number`], [Which section of that level it is in the *whole*
+    deck. It never goes back, so it also reads as progress],
+  [`levels.at(i).total`], [How many sections that level has in the whole deck],
+  [`levels.at(i).index`], [Which one it is *under the same parent*, what Beamer
+    prints as `1.2`],
+  [`levels.at(i).count`], [How many siblings it has there. `index` and `count`
+    are `0` while no section of that level is running],
+  [`outline.at(j).depth`], [The same for an entry of the outline],
+  [`outline.at(j).title`], [Its title],
+  [`outline.at(j).number`], [The same count as `levels.at(..).number`.
+    Comparing the two says whether the entry is past, running or still to
+    come],
+  [`outline.at(j).here`], [Whether the slide being shown is that very entry.
+    Only a section slide can be, and only a theme's own `section` function can
+    read it there: a section slide has no body for a deck to write into],
+)
+
+A progressive agenda therefore needs no second count:
+
+// check: folie
+#show-code[```typ
+#context {
+  let d = info()
+  stack(spacing: 0.6em, ..d.outline.map(e => {
+    let running = d.levels.at(e.depth - 1).number
+    text(
+      weight: if e.number == running { "bold" } else { "regular" },
+      fill: if e.number <= running { black } else { luma(60%) },
+      [#h((e.depth - 1) * 1.4em)#e.title],
+    )
+  }))
+}
+```]
 
 One number stands deliberately apart: the speaker view and the overview count
 *every* slide, title and section slides included, while `info().slide.total`
@@ -1932,7 +2060,9 @@ The traps, in roughly the order they are usually hit.
   inside the body of a show rule produces no slide and no error either.
   Measured on a probe: one slide instead of three, and nothing said.
 / The first paragraph is missing: content before the first heading belongs to
-  no slide and appears nowhere.
+  no slide. Where it carries text, compiling stops there and says so — see
+  "Text that belongs to no slide". Where it carries none (an image, say), it
+  still goes without a word.
 / The slide titles ignore a `#set heading`: it stands after the show rule and
   they have left the region it encloses. `style:` reaches them.
 / `#pause` does nothing: it is inside a grid cell or a table. `#pause` splits
@@ -1967,7 +2097,8 @@ then media and the bridge, and last the measurements and colours.
 // `split-body`, `pause-tokens` and `apply-pauses` take the body apart and are
 // not part of the public surface.
 #show-module(read("../src/present.typ"), name: "typstage",
-             exclude: ("split-body", "pause-tokens", "apply-pauses"))
+             exclude: ("split-body", "pause-tokens", "apply-pauses",
+                       "slides-from-body", "stiller-lauf"))
 
 == Slides
 

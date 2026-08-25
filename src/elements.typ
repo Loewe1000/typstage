@@ -139,6 +139,13 @@
   duration: auto,
   inline: false,
 ) = {
+  // `..variants` would otherwise swallow any named argument without a word: a
+  // typo in `start:` would leave the versions on the steps they happened to
+  // land on, and nothing would say why.
+  assert(variants.named().len() == 0,
+         message: "typstage: alternatives() does not know "
+                + variants.named().keys().join(", ")
+                + ". It takes start, align, enter, duration and inline.")
   let items = variants.pos()
   assert(items.len() > 0,
          message: "typstage: alternatives() wants at least one version")
@@ -276,6 +283,13 @@
   // because the list branch below leaves through a `return`.
   assert(im-fit.get() == 0, message: fit-meldung("stagger"))
   let start = if start == auto { step-cursor.get().first() + 1 } else { start }
+  // `..items` would otherwise swallow any named argument without a word: a
+  // typo in `stride:` would stagger on the default and say nothing.
+  assert(items.named().len() == 0,
+         message: "typstage: stagger() does not know "
+                + items.named().keys().join(", ")
+                + ". It takes start, stride, enter, duration, stagger, "
+                + "spacing and dim.")
   let gegeben = items.pos()
   assert(gegeben.len() > 0, message: "typstage: stagger() wants something to stagger")
 

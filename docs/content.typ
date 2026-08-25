@@ -242,12 +242,93 @@ geänderte Nummer springt dorthin -- praktisch, um im Vortrag eine bestimmte
 Stelle sofort zu erreichen.
 
 #warning[
-  Inhalt, der vor der ersten Überschrift steht, gehört zu keiner Folie und
-  erscheint nirgends. Ebenso erreicht ein `#set heading`, das nach der
+  Inhalt, der vor der ersten Überschrift steht, gehört zu keiner Folie. Trägt
+  er Text, bricht das Übersetzen dort ab und sagt es -- siehe „Text, der zu
+  keiner Folie gehört". Trägt er keinen (ein Bild etwa), verschwindet er
+  weiterhin wortlos. Ebenso erreicht ein `#set heading`, das nach der
   Show-Regel steht, die Folientitel nicht mehr -- sie verlassen den Bereich,
   den die Regel umschließt. Für die Typografie der Folien gibt es `style` --
   siehe das Kapitel "Das eigene Aussehen".
 ]
+
+== Mehr als zwei Ebenen
+
+Die Vorgabe schneidet das Deck an der zweiten Ebene: `=` wird eine
+Abschnittsfolie, `==` eine Folie. `slide-level` verschiebt diesen Schnitt.
+Eine Überschrift *über* der Ebene wird zur Abschnittsfolie, eine Überschrift
+auf ihr oder darunter wird zur Folie.
+
+// check: dokument
+#show-code[```typ
+#show: presentation.with(title: [Analysis I], slide-level: 3)
+= Teil I -- Grenzwerte
+== Folgen
+=== Was eine Folge ist
+Eine Abbildung von den natürlichen in die reellen Zahlen.
+=== Konvergenz
+Für jedes Epsilon gibt es ein N.
+== Reihen
+=== Partialsummen
+Die Summe der ersten n Glieder.
+```]
+
+Aus `= Teil I` und `== Folgen` werden Abschnittsfolien, aus jedem `===` eine
+Folie. Die Übergangsfolien für *beide* Ebenen fallen dabei von selbst an: eine
+Abschnittsüberschrift ist hier schon die Trennfolie, es gibt also nichts
+anzuschalten und keinen Haken zu schreiben.
+
+`slide-level: 1` macht jede Überschrift zu einer Folie; das Deck hat dann
+überhaupt keine Struktur-Ebene mehr.
+
+Die fünf mitgelieferten Themes zeichnen eine tiefere Ebene ruhiger: der Titel
+wird kleiner, und darüber steht, worunter der Abschnitt hängt. Ein Theme mit
+eigener `section`-Funktion liest `s.depth` und `s.parents` vom Datensatz und
+darf beide übergehen -- dann sehen alle Ebenen gleich aus, und nichts bricht.
+
+Was das Deck über seine Gliederung weiß, steht in `info()`: `section` meint
+weiterhin die Ebene direkt über der Folie, `levels` hat einen Eintrag je
+Struktur-Ebene, und `outline` ist die ganze Gliederung. Der Abschnitt
+"`info()`: was das Deck über sich selbst weiß" sagt, was darin steht.
+
+=== Text, der zu keiner Folie gehört
+
+Zwischen einer Abschnittsüberschrift und der nächsten Überschrift ist kein
+Platz für Text. Eine Abschnittsfolie ist ein ganzes Bild, das das Theme
+zeichnet; sie hat keinen Rumpf. Früher fiel solcher Text ohne ein Wort aus dem
+Deck: es übersetzte, die Folienzahl stimmte, der Absatz war schlicht weg. Seit
+es mehr als eine Art von Struktur-Überschrift gibt, gibt es dafür auch mehr
+Gelegenheiten, und deshalb bricht das Übersetzen dort jetzt mit einer Meldung
+ab.
+
+Ein Satz zwischen `= Der Beweis` und `== Die Zerlegung` bricht also mit
+`content between the heading "Der Beweis" and the next one belongs to no
+slide` ab:
+
+// check: dokument bricht=belongs_to_no_slide
+#show-code[```typ
+#show: presentation.with()
+= Der Beweis
+Dieser Satz gehört zu keiner Folie und hält das Übersetzen an.
+== Die Zerlegung
+```]
+
+Er gehört unter die Folienüberschrift:
+
+// check: dokument
+#show-code[```typ
+#show: presentation.with()
+= Der Beweis
+== Die Zerlegung
+Dieser Satz gehört zur Folie und wird gesetzt.
+```]
+
+Zwei Vorbehalte, damit hier nicht mehr versprochen wird, als der Code hält.
+Erstens wird auch der Text *vor* der ersten Überschrift abgewiesen, aber nur
+dann, wenn das Deck überhaupt eine Überschrift hat: ein Rumpf ohne eine
+einzige Überschrift ist keine Präsentation in der Überschriften-Schreibweise,
+und dort fehlt nicht eine Folie, sondern es gibt keine. Zweitens greift das
+Ganze nur in der Überschriften-Schreibweise; wer Folien als Argumente übergibt,
+schreibt jeden Rumpf ohnehin selbst hin.
 
 == Wenn die Folien berechnet werden
 
@@ -2670,7 +2751,60 @@ Was zurückkommt:
     ersten],
   [`section.total`], [So viele Abschnitte hat das Deck],
   [`section.title`], [Sein Titel, oder `none` vor dem ersten],
+  [`levels`], [Ein Eintrag je Struktur-Ebene, von außen nach innen. Leer bei
+    `slide-level: 1`],
+  [`outline`], [Die ganze Gliederung, ein Eintrag je Abschnittsfolie in der
+    Reihenfolge, in der sie kommen],
 )
+
+`section` meint immer die Ebene direkt über der Folie. Bei der Vorgabe
+`slide-level: 2` ist das die einzige, die es gibt, und dann ist `section`
+dasselbe wie `levels.last()` ohne dessen `depth`.
+
+Wer mehr als eine Ebene hat -- siehe "Mehr als zwei Ebenen" --, findet sie in
+`levels` und in `outline`:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Feld eines Eintrags*], [*Was darin steht*]),
+  [`levels.at(i).depth`], [Die Überschriftentiefe, `1` für `=`, `2` für `==`],
+  [`levels.at(i).title`], [Der Titel, oder `none`, solange auf dieser Ebene
+    kein Abschnitt läuft],
+  [`levels.at(i).number`], [Der wievielte Abschnitt dieser Ebene im *ganzen*
+    Deck. Geht nie zurück und liest sich deshalb auch als Fortschritt],
+  [`levels.at(i).total`], [So viele Abschnitte hat diese Ebene im ganzen Deck],
+  [`levels.at(i).index`], [Der wievielte *unter demselben Elternteil* -- das,
+    was Beamer als `1.2` druckt],
+  [`levels.at(i).count`], [So viele Geschwister hat er dort. `index` und
+    `count` sind `0`, solange auf dieser Ebene kein Abschnitt läuft],
+  [`outline.at(j).depth`], [Ebendas für den Eintrag der Gliederung],
+  [`outline.at(j).title`], [Sein Titel],
+  [`outline.at(j).number`], [Dieselbe Zählung wie `levels.at(..).number`.
+    Der Vergleich beider sagt, ob der Eintrag vorbei ist, läuft oder noch
+    kommt],
+  [`outline.at(j).here`], [Ob die gezeigte Folie genau dieser Eintrag ist.
+    Nur eine Abschnittsfolie kann das sein, und lesen kann es dort nur eine
+    eigene `section`-Funktion eines Themes -- eine Abschnittsfolie hat keinen
+    Rumpf, in den ein Deck schreiben könnte],
+)
+
+Eine fortschreitende Gliederung braucht damit keine zweite Zählung:
+
+// check: folie
+#show-code[```typ
+#context {
+  let d = info()
+  stack(spacing: 0.6em, ..d.outline.map(e => {
+    let lauf = d.levels.at(e.depth - 1).number
+    text(
+      weight: if e.number == lauf { "bold" } else { "regular" },
+      fill: if e.number <= lauf { black } else { luma(60%) },
+      [#h((e.depth - 1) * 1.4em)#e.title],
+    )
+  }))
+}
+```]
 
 Eine Zahl steht bewusst daneben: Sprecheransicht und Übersicht zählen *alle*
 Folien, Titel- und Abschnittsfolien eingeschlossen, `info().slide.total` zählt
@@ -2801,7 +2935,8 @@ Medien und Brücke, zuletzt die Maße und Farben.
 // `split-body`, `pause-tokens` und `apply-pauses` zerlegen den Rumpf und
 // gehören nicht zur öffentlichen Fläche.
 #show-module(read("../src/present.typ"), name: "typstage",
-             exclude: ("split-body", "pause-tokens", "apply-pauses"))
+             exclude: ("split-body", "pause-tokens", "apply-pauses",
+                       "slides-from-body", "stiller-lauf"))
 
 == Folien
 

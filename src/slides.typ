@@ -22,6 +22,13 @@
   // So that all three notations work: `slide[body]` (without a title),
   // `slide([title])[body]` and `slide(none)[body]`. A single piece is the
   // body, two are title and body.
+  // `..rest` would otherwise swallow any named argument without a word: a
+  // deck writing `slide(titel: [X])[…]` would get a slide without a title and
+  // no hint why. The same check the palette makes on its keys.
+  assert(rest.named().len() == 0,
+         message: "typstage: slide() does not know "
+                + rest.named().keys().join(", ")
+                + ". It takes title, note, transition and invert.")
   let teile = rest.pos()
   let kopf = title
   let rumpf = []
@@ -60,9 +67,19 @@
 #let invert = metadata("typstage-invert")
 
 /// A section slide.
-#let section(title, transition: none) = (
-  kind: "section", title: title, note: none, transition: transition, body: none,
-)
+///
+/// `depth` is the level in the heading hierarchy the section stands on: `1`
+/// for `=`, `2` for `==` and so on, up to one below the deck's `slide-level`.
+/// In the heading notation it comes from the heading; here it is written out.
+/// The five bundled themes draw a deeper section more quietly, and a theme of
+/// your own reads it from `s.depth`.
+#let section(title, depth: 1, transition: none) = {
+  assert(type(depth) == int and depth >= 1, message:
+    "typstage: section(depth: ..) is the heading level, an integer from 1 "
+    + "upwards, not " + repr(depth))
+  (kind: "section", title: title, depth: depth, note: none,
+   transition: transition, body: none)
+}
 
 /// The title slide.
 #let title-slide(title: [], subtitle: [], author: [], date: none) = (
@@ -124,8 +141,27 @@
 ///   first one where it covers several. On paper a slide is one page in its
 ///   final state, so `number` is `total` there.
 /// - `section.number`, `section.total`, `section.title`: which section the
-///   slide belongs to, how many the deck has, and its title. Before the first
-///   `=` heading, `number` is `0` and `title` is `none`.
+///   slide belongs to, how many the deck has, and its title. The section is
+///   always the level directly above the slide, so at the default
+///   `slide-level: 2` this is the `=` heading and nothing about it has
+///   changed. Before the first such heading, `number` is `0` and `title` is
+///   `none`. A deck at `slide-level: 1` has no structure level at all, and
+///   then all three read `0`, `0` and `none`.
+/// - `levels`: one entry per structure level, from the outermost inwards, so
+///   `levels.last()` is the same section as above and `levels.first()` the
+///   outermost part. Empty at `slide-level: 1`. Each entry carries
+///   `depth` (1 for `=`, 2 for `==`), `title` (`none` while no section of
+///   that level is running), `number` and `total` (counted across the whole
+///   deck, the way `section` counts), and `index` and `count` (counted among
+///   the siblings under the same parent, which is what Beamer prints as
+///   `1.2`). `number` never goes back, so it also reads as progress; `title`,
+///   `index` and `count` clear when the level above them moves on.
+/// - `outline`: the whole structure of the deck, one entry per section slide
+///   in the order they come, each with `depth`, `title`, `number` (the same
+///   count as in `levels`) and `here`, which is `true` only on that section
+///   slide itself. Comparing an entry's `number` with
+///   `levels.at(entry.depth - 1).number` says whether it is past, running or
+///   still to come, and that is how a progressive agenda is built.
 ///
 /// Only in a context. *Before* any presentation has run there is nothing to
 /// read and this stops with a message rather than handing out zeros. *After*
