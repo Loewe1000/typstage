@@ -383,6 +383,25 @@
     return svg ? marken(SLIDES[i], svg.getBoundingClientRect()) : {};
   }
 
+  // ── Less motion ───────────────────────────────────────────────────────────
+  //
+  // `prefers-reduced-motion: reduce` is set by the person at the machine, in
+  // the operating system, and the browser hands it on. It asks for less
+  // motion, not for less deck: what this runtime drops is travel, and only
+  // travel. Opacity stays everywhere, because a fade says "this is new"
+  // without carrying anything across the screen, and that saying is the
+  // whole job of an entrance.
+  //
+  // Read afresh at every use rather than latched at load. Someone who turns
+  // the setting on during a talk gets the next step under the new rule, and
+  // a flipbook already running stops within a frame; turning it off again
+  // lets everything back in the same way. That costs a media-query lookup
+  // per step, which is nothing, and saves a listener plus the state behind
+  // it.
+  var WENIGER = window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  function wenigerBewegung() { return !!(WENIGER && WENIGER.matches); }
+
   // ── Effects ───────────────────────────────────────────────────────────────
   var EFFECT = {
     "fade":       [{ opacity: 0 }, { opacity: 1 }],
@@ -404,12 +423,24 @@
     el.getAnimations().forEach(function (a) { try { a.cancel(); } catch (e) {} });
   }
 
+  // The effect, with its travel taken out when less motion is asked for.
+  // Every entry of the table above names an opacity in both of its two
+  // states, so stripping it down to that leaves a plain fade and never an
+  // empty pair. What goes with the rest is `blur`'s blur: it does not move,
+  // but it is decoration on top of the fade, and the fade already carries
+  // everything the effect has to say.
+  function effekt(name) {
+    var f = EFFECT[name] || EFFECT["fade"];
+    if (!wenigerBewegung()) return f;
+    return [{ opacity: f[0].opacity }, { opacity: f[1].opacity }];
+  }
+
   function fadeIn(el, name, dur, delay) {
     clearAnims(el);
     // "none" means no effect. Animating from 1 to 1 would not merely be
     // pointless: played backwards it would keep the element visible.
     if (name === "none") { el.style.opacity = "1"; return; }
-    var f = EFFECT[name] || EFFECT["fade"];
+    var f = effekt(name);
     el.style.opacity = "";
     var a = el.animate([f[0], f[1]],
       { duration: dur, delay: delay, easing: EASE, fill: "both" });
@@ -436,7 +467,7 @@
   function fadeOut(el, name, dur, von) {
     clearAnims(el);
     if (name === "none") { el.style.opacity = "0"; return; }
-    var f = EFFECT[name] || EFFECT["fade"];
+    var f = effekt(name);
     var ab = f[1];
     // Leaving out of the dimmed state starts where the element stands. Taken
     // from the effect's full end value it would flash back to full strength
@@ -756,6 +787,13 @@
   }
 
   function fly(fromSlide, toSlide, fallback) {
+    // Magic move is travel and nothing but travel: the point of it is that
+    // the eye follows a shape from where it stood to where it now stands.
+    // Asked for less motion there is nothing left of it worth keeping, so
+    // the slide change falls back to the ordinary transition. `false` says
+    // "no morph happened", the same answer a slide pair without a matching
+    // name gives, and it is the same route a jump already takes.
+    if (wenigerBewegung()) return false;
     flyTimers.forEach(function (t) { clearTimeout(t); });
     flyTimers = [];
     finishTransitionNow();
@@ -947,15 +985,35 @@
       var t = ticking[k];
       var n = +t.el.dataset.frames, fps = +t.el.dataset.fps || 30;
       if (!n) continue;
-      // With the clock pinned the start time drops out as well. Otherwise the
-      // frame would still depend on when the slide was entered.
-      var i = Math.floor((current - (PRUEFUHR === null ? t.t0 : 0)) / 1000 * fps);
-      if (t.el.dataset.pingpong === "1") {
-        var p = n > 1 ? 2 * n - 2 : 1;
-        var m = i % p;
-        i = m < n ? m : p - m;
-      } else if (t.el.dataset.loop === "0") { i = Math.min(i, n - 1); }
-      else { i = i % n; }
+      var i;
+      if (wenigerBewegung()) {
+        // Frozen on one frame. A looping flipbook is the loudest thing this
+        // package can put on a slide: it runs from the moment the slide
+        // comes up until the moment it goes, and it pulls the eye the whole
+        // while, including while someone is talking beside it.
+        //
+        // Which frame it freezes on is not a matter of taste. A flipbook
+        // that does not loop plays once and comes to rest on its last frame,
+        // and that resting frame is its finished state; it stays the
+        // finished state, only the way there falls away. One that loops or
+        // ping-pongs has no rest to come to, and there frame 0 is the right
+        // answer twice over: it is the frame Typst put in the box before any
+        // clock started, and it is the frame the handout shows on paper.
+        //
+        // `pingpong` beats `loop` here, exactly as it does below.
+        i = (t.el.dataset.pingpong !== "1" && t.el.dataset.loop === "0")
+          ? n - 1 : 0;
+      } else {
+        // With the clock pinned the start time drops out as well. Otherwise the
+        // frame would still depend on when the slide was entered.
+        i = Math.floor((current - (PRUEFUHR === null ? t.t0 : 0)) / 1000 * fps);
+        if (t.el.dataset.pingpong === "1") {
+          var p = n > 1 ? 2 * n - 2 : 1;
+          var m = i % p;
+          i = m < n ? m : p - m;
+        } else if (t.el.dataset.loop === "0") { i = Math.min(i, n - 1); }
+        else { i = i % n; }
+      }
       if (i === t.letztes) continue;
       t.letztes = i;
       var kinder = t.el.children;
@@ -2293,6 +2351,13 @@
 
     ELN.fort.textContent = (st.slide + 1) + " / " + SLIDES.length;
     ELN.fortSchritt.textContent = (current + 1) + " / " + STEPS.length;
+    // The bar's right edge travels across it, so with less motion asked for
+    // it jumps to its new place instead of gliding there. Set here rather
+    // than as a media query in the stylesheet, so one predicate answers the
+    // question for the whole runtime and the two halves cannot drift apart.
+    // The empty string takes the inline value away again and hands the bar
+    // back to the rule in the stylesheet.
+    ELN.balken.style.transition = wenigerBewegung() ? "none" : "";
     ELN.balken.style.width =
       (STEPS.length < 2 ? 100 : (current * 100 / (STEPS.length - 1))) + "%";
 
@@ -2552,6 +2617,14 @@
     var o = asSpec(hasMorph ? "fade"
                                : (attr(later, "transition") || CFG.transition));
     var bau = TRANSITION[o.kind] === undefined ? TRANSITION["fade"] : TRANSITION[o.kind];
+    // Asked for less motion, every transition becomes the cross-fade. All the
+    // others move the whole slide, and a slide is the largest thing on the
+    // screen: `slide` and `push` and `cover` carry it across, `zoom` grows it,
+    // `flip` and `cube` turn it, `iris` and `wipe` drag an edge over it. The
+    // fade keeps what a transition is actually for, which is to mark the cut
+    // between one slide and the next, and it keeps it at the same length.
+    // `"none"` stays untouched, because nothing is already what it does.
+    if (bau && wenigerBewegung()) bau = TRANSITION["fade"];
     if (instant || !bau) return;
 
     var d = CFG.transitionDuration;

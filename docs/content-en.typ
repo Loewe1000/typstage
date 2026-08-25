@@ -610,7 +610,8 @@ motion that Typst can draw and CSS cannot: a curve being traced, a mechanism
 turning, a diagram assembling itself.
 
 `loop`, `pingpong` and `still` decide how it plays and which frame stands on
-paper.
+paper. If the viewer has turned on "reduce motion" in their operating system,
+it never starts playing at all; see "Less motion".
 
 #warning[
   Every frame is really typeset. Twenty-four frames are twenty-four layouts and
@@ -888,6 +889,72 @@ Measured in Chrome, Firefox 154 and Safari 26: the six example decks run
 through in all three with the same numbers, and the speaker view opens in all
 three on one keypress. A *real* keypress is the condition, since `window.open`
 without a user gesture would fall to the popup blocker everywhere.
+
+== Less motion
+
+Someone who has turned on "reduce motion" in their operating system gets a
+quieter deck. The browser passes the setting on as
+`prefers-reduced-motion: reduce`, and the runtime asks for it afresh on every
+step and on every frame: turning it on in the middle of a talk takes effect on
+the next key press, and a running flip book stops within a frame. There is
+nothing to configure for it, neither in the deck nor at build time.
+
+The setting says "less motion", not "no motion", and that is how it is
+implemented here: *opacity stays, travel goes.* An entrance still says "this is
+new", which is what an entrance is for, but nothing crosses the slide any more.
+
+#table(
+  columns: (auto, 1fr),
+  inset: 6pt,
+  stroke: (x, y) => if y == 0 { (bottom: 0.6pt) } else { (bottom: 0.3pt + luma(80%)) },
+  table.header([What], [What becomes of it]),
+  [Entrances],
+  [Every effect keeps its opacity and loses its travel: `fade-up`, `fade-down`,
+   `fade-left`, `fade-right`, `scale`, `scale-down`, `rise` and `blur` become a
+   plain cross-fade. `fade` and `none` are left as they are. `duration` and
+   `delay` do not change.],
+  [Slide transitions],
+  [Every kind but `none` becomes the cross-fade, over the same
+   `transition-duration`. `none` stays the hard cut.],
+  [Magic move],
+  [Does not happen. Nothing flies, and the slide changes the way it would
+   change without a morph.],
+  [Flip book],
+  [Stands still on one frame. Without `loop` and without `pingpong` that is the
+   last one, where it would have come to rest anyway; only the way there falls
+   away. With `loop` or `pingpong` it is frame zero. `still` does not apply:
+   the frame for paper is typeset content and is not in the HTML at all, which
+   carries only the frames themselves.],
+  [`after: "dimmed"`],
+  [Stays. A point stepping back changes its opacity and does not move.],
+  [The progress bar in the speaker view],
+  [Jumps to its new width instead of gliding there.],
+)
+
+Two things are deliberately left alone.
+
+*Video.* A video is content, not decoration, and switching it off would take
+something away rather than calm it down. Whoever does not want it to start by
+itself writes `autoplay: false`; whoever gives controls leaves the decision to
+the viewer.
+
+*Embedded documents.* What sits inside an `embed` or is driven over the bridge
+is a foreign document with a style of its own, and the runtime does not reach
+into it. The setting does reach it, though: inside the frame,
+`matchMedia("(prefers-reduced-motion: reduce)").matches` is true as well.
+Anyone animating something in an embedded document therefore writes their own
+`@media` rule there. The signal board in the `theme-night` example does not,
+and its blinking carries on under the setting.
+
+#info[
+  There is no switch with which a deck can overrule the setting. Such a switch
+  would be half a line of work, but it would answer the wrong question: the
+  package cannot know whether a motion is essential, and whoever believes
+  theirs is would turn it on everywhere. Where a motion really does carry the
+  argument -- the flip book in `theme-default`, which walks a quantity
+  continuously through zero -- it belongs in words as well, and those are read
+  by the people who never see it run.
+]
 
 = Three outputs from one source
 
@@ -2106,7 +2173,10 @@ then media and the bridge, and last the measurements and colours.
 
 == Revealing, moving, staggering
 
-#show-module(read("../src/elements.typ"), name: "typstage")
+// `anim-kern` is the checked inside of `anim`. `stagger` uses it from
+// within, and `lib.typ` does not hand it out.
+#show-module(read("../src/elements.typ"), name: "typstage",
+             exclude: ("anim-kern",))
 
 == Layouts
 

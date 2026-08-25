@@ -106,6 +106,9 @@
 ///
 /// Backwards each one runs as a true reversal. If a morph meets the slide it
 /// cross-fades regardless: the movement is then carried by the morph.
+///
+/// Under `prefers-reduced-motion: reduce` every kind but `"none"` becomes the
+/// cross-fade, over the same duration. See the manual.
 #let transition(kind, ..spec) = transition-state.update((kind: kind) + spec.named())
 
 /// What the deck knows about itself, read from inside a slide.

@@ -158,6 +158,10 @@
 /// `render` receives `t` running from 0.0 to 1.0. Every frame is rendered by
 /// Typst: CeTZ, Fletcher, equations, anything Typst can do. The frames sit in
 /// the file as SVG and stay sharp at any size.
+///
+/// Under `prefers-reduced-motion: reduce` it does not play. It stands on its
+/// last frame without `loop` and without `pingpong`, and on frame zero
+/// otherwise. See the manual.
 #let flipbook(
   render,
   frames: 24,

@@ -1137,7 +1137,9 @@ schaltet sie nur weiter.
 Abspielen (Vorgabe 30). `loop` ist an und wiederholt von vorn; `pingpong` läuft
 statt dessen vor und zurück und geht dem `loop` vor. Ist beides aus, bleibt das
 letzte Bild stehen. Auf Papier steht ein einziges: `render(0.0)`, oder was
-`still` an seine Stelle setzt.
+`still` an seine Stelle setzt. Hat der Zuschauer im Betriebssystem
+"Bewegung reduzieren" eingeschaltet, läuft das Daumenkino gar nicht erst los --
+siehe "Weniger Bewegung".
 
 #warning[
   Jedes Einzelbild wird wirklich gesetzt. 24 Bilder heißen 24 Layouts und 24
@@ -1412,6 +1414,75 @@ abgeschaltet werden.
   Eine unbekannte Art bricht den Bau nicht ab, sondern wird im Browser zur
   Überblendung. Ein Tippfehler in `#transition("iirs")` fällt also erst auf,
   wenn nichts geschieht.
+]
+
+== Weniger Bewegung
+
+Wer im Betriebssystem "Bewegung reduzieren" eingeschaltet hat, bekommt ein
+ruhigeres Deck. Der Browser reicht die Einstellung als
+`prefers-reduced-motion: reduce` durch, und die Laufzeit fragt sie bei jedem
+Schritt und bei jedem Einzelbild neu ab: Wer sie mitten im Vortrag umlegt,
+sieht die Wirkung beim nächsten Tastendruck, und ein laufendes Daumenkino hält
+innerhalb eines Bildes an. Einzustellen gibt es dafür nichts, weder im Deck
+noch beim Bauen.
+
+Die Einstellung heißt "weniger Bewegung", nicht "keine Bewegung", und so ist
+sie hier auch umgesetzt: *Deckkraft bleibt, Ortsveränderung fällt weg.* Eine
+Einblendung sagt weiterhin "das hier ist neu" -- das ist ihre Aufgabe --, aber
+nichts wandert dabei mehr über die Folie.
+
+#table(
+  columns: (auto, 1fr),
+  inset: 6pt,
+  stroke: (x, y) => if y == 0 { (bottom: 0.6pt) } else { (bottom: 0.3pt + luma(80%)) },
+  table.header([Was], [Was daraus wird]),
+  [Einblendungen],
+  [Jeder Effekt behält seine Deckkraft und verliert seinen Weg: `fade-up`,
+   `fade-down`, `fade-left`, `fade-right`, `scale`, `scale-down`, `rise` und
+   `blur` werden zur schlichten Überblendung. `fade` und `none` bleiben, wie
+   sie sind. `duration` und `delay` ändern sich nicht.],
+  [Folienübergänge],
+  [Jede Art außer `none` wird zur Überblendung, in derselben
+   `transition-duration`. `none` bleibt der harte Schnitt.],
+  [Magic Move],
+  [Fällt aus. Es fliegt nichts, und die Folie wechselt so, wie sie es ohne
+   Morph täte.],
+  [Daumenkino],
+  [Steht auf einem Bild still. Ohne `loop` und ohne `pingpong` ist es das
+   letzte -- dort bliebe es ohnehin stehen, es fällt nur der Weg dorthin weg.
+   Mit `loop` oder `pingpong` ist es das erste. `still` gilt dabei nicht: das
+   Bild fürs Papier ist gesetzter Inhalt und steht gar nicht in der HTML, in
+   der nur die Einzelbilder liegen.],
+  [`after: "dimmed"`],
+  [Bleibt. Ein Punkt, der zurücktritt, ändert seine Deckkraft und rührt sich
+   nicht von der Stelle.],
+  [Fortschrittsbalken der Sprecheransicht],
+  [Springt auf seine neue Breite, statt hinzugleiten.],
+)
+
+Zwei Dinge bleiben mit Absicht unangetastet.
+
+*Video.* Ein Video ist Inhalt, keine Verzierung, und es abzuschalten hieße,
+etwas wegzunehmen statt es zu beruhigen. Wer nicht will, dass es von selbst
+anläuft, schreibt `autoplay: false`; wer Bedienelemente gibt, überlässt die
+Entscheidung dem Zuschauer.
+
+*Eingebettete Dokumente.* Was in `embed` steckt oder über die Brücke bedient
+wird, ist ein fremdes Dokument mit eigenem Stil, und die Laufzeit greift nicht
+hinein. Die Einstellung erreicht es trotzdem: Auch dort ist
+`matchMedia("(prefers-reduced-motion: reduce)").matches` wahr. Wer in einem
+eingebetteten Dokument etwas animiert, schreibt dort also seine eigene
+`@media`-Regel dafür. Im Beispiel `theme-night` tut das Ampelbrett das nicht,
+und sein Blinken läuft unter der Einstellung weiter.
+
+#info[
+  Es gibt keinen Schalter, mit dem ein Deck die Einstellung überstimmt. Ein
+  solcher Schalter wäre nur einen Halbsatz Arbeit, aber er beantwortete die
+  falsche Frage: Ob eine Bewegung unentbehrlich ist, weiß das Paket nicht, und
+  wer sie für unentbehrlich hält, schaltete ihn überall an. Wo eine Bewegung
+  wirklich das Argument trägt -- das Daumenkino in `theme-default`, das eine
+  Größe stetig durch die Null führt --, gehört sie zusätzlich in Worte, und die
+  liest auch, wer sie nicht laufen sieht.
 ]
 
 = Aus einer Quelle drei Ausgaben
@@ -2944,7 +3015,10 @@ Medien und Brücke, zuletzt die Maße und Farben.
 
 == Einblenden, Bewegen, Staffeln
 
-#show-module(read("../src/elements.typ"), name: "typstage")
+// `anim-kern` ist das geprüfte Innere von `anim`. `stagger` benutzt es von
+// innen, `lib.typ` reicht es nicht hinaus.
+#show-module(read("../src/elements.typ"), name: "typstage",
+             exclude: ("anim-kern",))
 
 == Layouts
 
