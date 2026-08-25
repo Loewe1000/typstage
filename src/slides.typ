@@ -7,7 +7,18 @@
 ///
 /// `title: none`, or a bare `==` in heading form, leaves out the title bar;
 /// the body then gets the whole area.
-#let slide(title: none, note: none, transition: none, ..rest) = {
+///
+/// `invert: true` sets this one slide in the palette turned around, for the
+/// slide that carries a single number. The ground becomes the palette's text
+/// color and the text becomes its ground; `muted`, `border` and `surface` are
+/// mixed from those two; `strong` and `accent` carry over unchanged. The
+/// chrome follows, so the running header, the footer and the progress bar are
+/// set in the same colors as the slide under them.
+///
+/// Only a regular slide inverts. A title slide and a section slide are whole
+/// pictures the theme draws itself, and three of the five bundled themes build
+/// them from colors an inversion would not reach; neither takes the argument.
+#let slide(title: none, note: none, transition: none, invert: false, ..rest) = {
   // So that all three notations work: `slide[body]` (without a title),
   // `slide([title])[body]` and `slide(none)[body]`. A single piece is the
   // body, two are title and body.
@@ -23,8 +34,30 @@
   // Same rule as for `speaker-note`, because this is the other way of writing
   // the same thing. `none` stays legal: that is a slide without a note.
   if note != none { notiz-pruefen(note) }
-  (kind: "slide", title: kopf, note: note, transition: transition, body: rumpf)
+  (kind: "slide", title: kopf, note: note, transition: transition,
+   invert: invert, body: rumpf)
 }
+
+/// The same thing in the heading notation, written into the slide body.
+///
+/// ```typ
+/// == Reached in 2026
+/// #invert
+/// #statement[74 %]
+/// ```
+///
+/// A marker, like `#pause`, because a heading carries no arguments. Unlike
+/// `#pause` it is only looked for, never split on, so the walk goes all the
+/// way down: it is found in a `block`, an `align`, a table cell, a grid,
+/// however deeply nested, in the heading itself, and behind `#set` and
+/// `#show`. It is not found where the content is handed to a closure -- in
+/// `context`, `fit`, `anim`, `card` or `alternatives` -- and there nothing
+/// happens and nothing is said. Measured, those five are the whole of it;
+/// `slide(invert: true)` is the form that never depends on the walk.
+///
+/// It prints nothing, so it may stand anywhere in the body; it inverts the
+/// whole slide either way, not the part after it.
+#let invert = metadata("typstage-invert")
 
 /// A section slide.
 #let section(title, transition: none) = (

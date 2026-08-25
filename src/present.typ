@@ -4,7 +4,8 @@
 #import "internal.typ": *
 #import "slides.typ": *
 #import "theme.typ": handout-body, slide-body, slide-chrome
-#import "themes.typ": theme-state, themes
+#import "themes.typ": mit-palette, theme-state, themes
+#import "palettes.typ": palette-pruefen
 #import "render.typ": *
 #import "elements.typ": anim, pause
 
@@ -189,6 +190,27 @@
 /// `themes.night + (accent: blue)`. The `style` hook stays untouched by this
 /// and sits further *inside*: whatever is set there overrides the theme.
 ///
+/// `palette:` changes the colors and leaves the design alone. It is a
+/// dictionary over the eight color entries and it overwrites *partially*, so
+/// `palette: (accent: blue)` moves the accent and nothing else. Five are
+/// bundled, `palettes.light`, `palettes.mono`, `palettes.textbook`,
+/// `palettes.parchment` and `palettes.dark`, and each of them composes with
+/// each theme:
+///
+/// ```typ
+/// #show: presentation.with(theme: themes.lesson, palette: palettes.dark)
+/// ```
+///
+/// Two colors of a theme are not palette entries: `title-fill` and
+/// `rule-fill`. All five bundled themes let them follow, either as a function
+/// of the palette or as `none`, which means the accent and follows with it. A
+/// theme of your own that names a fixed color there keeps it under every
+/// palette, which is deliberate.
+///
+/// Both changed type with this: reading `themes.X.title-fill` used to give a
+/// color and now gives a function, and `rule-fill` gives `none` where it gave
+/// the accent. Writing them, `themes.X + (title-fill: red)`, is unchanged.
+///
 /// The PDF is a handout: one page per slide, every tracked element in its
 /// final state. What belongs only to the motion, the notes, the slide transitions,
 /// the bridge jobs, are state updates without output and fall away by themselves.
@@ -229,6 +251,7 @@
   date: none,
   assets: "inline",
   theme: themes.default,
+  palette: (:),
   transition: "slide",
   transition-duration: 420,
   duration: 520,
@@ -261,9 +284,35 @@
     } else { rest }
   }
   let all = all.map(s => if s.body == none { s } else {
-    s + (body: apply-pauses(s.body))
+    // The marker is looked for in the body as it was written, before the
+    // pauses cut it into runs: after that, a marker standing behind a pause
+    // sits inside an `anim` wrapper and the walk would miss it. The title is
+    // searched too, because in heading notation `== A slide #invert` is the
+    // place the marker naturally lands, and it went unseen there.
+    s + (invert: s.at("invert", default: false)
+                 or hat-invert(s.body) or hat-invert(s.title),
+         body: apply-pauses(s.body))
   })
   let total = all.filter(s => s.kind == "slide").len()
+
+  // The theme with the palette laid over it, once for the deck and once
+  // turned around. Both are worked out here rather than per slide: they are
+  // the same two dictionaries on every slide, and the inverted one is only
+  // ever reached for by a slide that asked for it.
+  //
+  // Both are built from the theme as it came in, not the inverted one from
+  // the merged one. `mit-palette` resolves `title-fill` and `rule-fill` into
+  // colors, so a theme that has already been through it no longer carries the
+  // functions the inversion has to ask again.
+  let palette = palette-pruefen(palette)
+  let thema-hell = mit-palette(theme, palette)
+  let thema-dunkel = mit-palette(theme, palette, invert: true)
+  let thema(s) = if s.at("invert", default: false) { thema-dunkel } else { thema-hell }
+  // Whether any slide inverts at all. A deck without one writes the theme
+  // into its state exactly once, as before; only a deck that inverts pays for
+  // an update per slide, and there it is needed, since a `card` reads its
+  // tints out of that state and has to see the slide it stands on.
+  let wechselt = all.any(s => s.at("invert", default: false))
 
   // Everything the deck knows about itself, one entry per slide, counted here
   // and nowhere else. All three outputs read from this list, and so does a
@@ -306,13 +355,14 @@
     let per = if handout == true { 2 } else { handout }
     assert(type(per) == int and per >= 1 and per <= 6,
            message: "typstage: handout takes true or 1 to 6 slides per page")
-    theme-state.update(theme)
+    theme-state.update(thema-hell)
     html-output.update(false)
-    handout-body(all, facts, style, geo, theme, per, overflow: overflow)
+    handout-body(all, facts, style, geo, thema-hell, per,
+                 thema: if wechselt { thema } else { none }, overflow: overflow)
     ueberlauf-bericht(overflow)
   } else if target() != "html" {
     set page(width: geo.width, height: geo.height, margin: 0pt)
-    theme-state.update(theme)
+    theme-state.update(thema-hell)
     // Said out loud, not left to the default. `bundle()` writes several
     // documents from one compilation, and a state carries on from one into the
     // next: without this the slide deck and the handout of a bundle were still
@@ -334,13 +384,14 @@
                  // its last value standing.
                  + step-here.update(())
                  + sprite-number.update(none)
-                 + slide-body(s, style, geo, theme, overflow: overflow))
+                 + (if wechselt { theme-state.update(thema(s)) } else { none })
+                 + slide-body(s, style, geo, thema(s), overflow: overflow))
     }
     pages.join(pagebreak(weak: true))
     ueberlauf-bericht(overflow)
   } else {
     html-output.update(true)
-    theme-state.update(theme)
+    theme-state.update(thema-hell)
     morph-index.update(())
     let parts = ()
     let chrome-teile = ()
@@ -369,7 +420,7 @@
           deck-info.update(hier)
           step-here.update(())
           sprite-number.update(none)
-          html.frame(slide-chrome(geo, theme))
+          html.frame(slide-chrome(geo, thema(s)))
         } else { [] }))
       parts.push({
         slide-counter.step()
@@ -382,12 +433,16 @@
         bridge-jobs.update(())
         note-state.update(s.note)
         transition-state.update(s.at("transition", default: none))
+        // Only a deck that inverts somewhere writes this per slide. A `card`
+        // and a `callout` read their tints out of this state and would
+        // otherwise light the slide they stand on as if it were not inverted.
+        if wechselt { theme-state.update(thema(s)) }
         // Order is everything here: the frame has to come BEFORE the `context`
         // that reads the sprite list. Otherwise nothing that only registers
         // while the frame is laid out would be entered any more.
         html.elem("section", attrs: (class: "ts-slide"), {
           html.elem("div", attrs: (class: "ts-bg"),
-                    html.frame(slide-body(s, style, geo, theme, chrome: false,
+                    html.frame(slide-body(s, style, geo, thema(s), chrome: false,
                                           overflow: overflow)))
           // Second chrome, only for the print view (key `p`). There each
           // slide stands on its own page, there is no transition. And the
@@ -398,7 +453,7 @@
             html.elem("div", attrs: (class: "ts-chromep"), {
               step-here.update(())
               sprite-number.update(none)
-              html.frame(slide-chrome(geo, theme))
+              html.frame(slide-chrome(geo, thema(s)))
             })
           }
           context {

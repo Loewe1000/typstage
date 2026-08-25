@@ -15,8 +15,15 @@
 )
 
 #import "themes.typ": theme, themes
+#import "palettes.typ": (
+  // Color as a thing of its own, and the instrument the bundled palettes are
+  // measured with.
+  palettes, contrast, palette-report,
+)
 #import "slides.typ": (
   slide, section, title-slide, transition, speaker-note,
+  // One slide in the palette turned around, for the heading notation.
+  invert,
   // What the deck knows about itself, so a deck can build its own chrome
   // instead of forking the theme.
   info,

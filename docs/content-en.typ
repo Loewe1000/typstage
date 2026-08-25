@@ -850,6 +850,193 @@ whole pictures rather than variations on one another.
   checks them and says which values it accepts.
 ]
 
+== Colour, separately: palettes
+
+A theme says how a slide is *built*; a *palette* says what colour it is. The
+two vary separately, which is why they are separate arguments: the classroom
+design is still the classroom design in a darkened room. A palette overwrites
+*partially*, only the entries written down:
+
+#show-code[```typ
+#show: presentation.with(theme: themes.lesson, palette: (accent: blue))
+#show: presentation.with(theme: themes.lesson, palette: palettes.dark)
+```]
+
+A palette carries eight entries, and they are exactly a theme's colour
+entries: `paper` the ground of the slide, `ink` the body text, `strong` the
+carrying dark colour, `accent` the signal colour, `muted` the secondary
+matter, `surface` the ground of a card, `border` its edge, and `inverted`,
+whether light text stands on a dark ground. An entry that does not exist is
+refused: `palette: (acent: blue)` stops with a message rather than quietly
+doing nothing.
+
+Five ship with the package, and each composes with each of the five themes:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Palette*], [*Where it comes from*]),
+  [`palettes.light`], [Exactly the colours of `themes.default`, so this one
+    changes nothing about the default.],
+  [`palettes.mono`], [The greys of `themes.plain`, two of them moved so it
+    passes the contract below.],
+  [`palettes.textbook`], [The textbook colours measured for `themes.lesson`,
+    one grey moved.],
+  [`palettes.parchment`], [The laid paper of `themes.editorial`, two tones
+    moved.],
+  [`palettes.dark`], [The dark ground of `themes.night`, with a deeper
+    accent.],
+)
+
+Which is the whole reason no further theme is needed for the dark room:
+*darkness is a palette rather than a design.* `themes.lesson` under
+`palettes.dark` is still the lesson design, only dark.
+
+`themes.night` stays a theme all the same, and the reason is measured. Its
+cyan `#5ec8f2` carries the title on night's own ground at 9.77 to 1, and on
+the ground an inverted slide lays behind it at 1.59. A colour that holds on
+both would have to sit between roughly 0.13 and 0.23 relative luminance; the
+cyan sits at 0.52. So `palettes.dark` takes a deeper blue that holds on both,
+and `themes.night` keeps the cyan it was designed around.
+
+#warning[
+  Two colours of a theme are not palette entries: `title-fill` and
+  `rule-fill`. Whether they follow is up to the theme. All five bundled ones
+  let them follow -- either as a function of the palette,
+  `title-fill: p => p.strong`, or as `none`, which means the accent and
+  follows with it. Both changed type for that: reading `themes.X.title-fill`
+  used to give a colour and now gives a function, and `rule-fill` gives `none`
+  where it gave the accent. Writing them, `themes.X + (title-fill: red)`, is
+  unchanged. A theme of your own that names a fixed colour there keeps it
+  under every palette. That is deliberate: a colour someone named out loud is
+  not swapped behind their back.
+]
+
+And `themes.night` stays a theme all the same. Its cyan `#5ec8f2` measures
+9.77 to 1 on the dark ground, which is why it glows there, but only 1.59 to 1
+on its own text colour, and that is exactly what an inverted slide puts behind
+it. `palettes.dark` therefore takes a deeper tone. The theme keeps its own; it
+is a design decision, and a measured one rather than an oversight.
+
+== Inverting one slide
+
+For the slide that carries a single number there is `invert`. The ground
+becomes the palette's text colour and the text becomes its ground; `muted`,
+`border` and `surface` are mixed from those two, and `strong` and `accent`
+carry over unchanged. The chrome follows: running head, footer, slide number
+and progress bar are set in the same colours as the slide beneath them, and so
+are `card` and `callout`.
+
+In the heading notation it is a marker in the slide body, like `#pause`:
+
+#show-code[```typ
+== Reached by 2026
+#invert
+#statement[74 %]
+```]
+
+In the argument notation it is an argument of `slide`:
+
+#show-code[```typ
+#slide([Reached by 2026], invert: true)[#statement[74 %]]
+```]
+
+#warning[
+  Only a regular slide inverts. A title slide and a section slide are whole
+  pictures the theme draws itself, and three of the five bundled themes build
+  them from colours an inversion does not reach; neither takes the argument.
+
+  The `#invert` marker is found wherever the body can be walked: at the top
+  level, inside a `block` or an `align`, in a table cell, in a grid, however
+  deeply nested, in the slide's own heading, and behind `#set` and `#show`
+  rules. It is *not* found where the content is handed to a closure the walk
+  cannot enter -- inside `context`, `fit`, `anim`, `card` or `alternatives` --
+  and there the slide is simply left as it is, without a word. Measured, those
+  five are the whole of it. Where you need one of them, write the slide as
+  `slide(invert: true)`, which never depends on the walk.
+]
+
+== The contrast contract
+
+The bundled palettes are measured before they ship. The arithmetic is real
+WCAG 2 contrast: each channel linearised, from those the relative luminance
+$0.2126 R + 0.7152 G + 0.0722 B$, and from two luminances the ratio
+$(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Six pairs are checked:
+
+#table(
+  columns: (auto, auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Pair*], [*At least*], [*What for*]),
+  [`ink` on `paper`], [4.5], [body text on the slide],
+  [`ink` on `surface`], [4.5], [body text in a card],
+  [`muted` on `paper`], [4.5], [footer, subtitle, running head],
+  [`accent` on `paper`], [3.0], [rules, progress bar, marker],
+  [`accent` on `ink`], [3.0], [the same on an inverted slide],
+  [`border` on `paper`], [1.2], [hairlines],
+)
+
+Every one of the five palettes is checked, and its inverted form with it, by an
+assertion in `src/palettes.typ` that runs when the package is loaded. A colour
+moved there that breaks the contract stops the build and names the number it
+missed.
+
+#warning[
+  *The contract holds only the bundled palettes.* A palette of your own faces
+  no such gate: it is neither warned about nor recoloured. `palette-report(…)`
+  hands back the same measurement as a list for anyone who wants to see it:
+
+  #show-code[```typ
+  #for f in palette-report((paper: white, ink: black, surface: white,
+                            muted: luma(55%), accent: blue, border: luma(86%))) [
+    #f.pair: #calc.round(f.ratio, digits: 2) (wants #f.min) #f.ok \
+  ]
+  ```]
+
+  `contrast(a, b)` is the arithmetic itself and takes any two colours.
+]
+
+*And the five themes do not all pass it.* The contract was run over them before
+the palettes existed, and the result stands here rather than being quietly
+coloured away:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Theme*], [*What falls short*]),
+  [`themes.default`], [nothing, all six pairs hold],
+  [`themes.lesson`], [`muted` on `paper` measures 4.25 against 4.5],
+  [`themes.night`], [`accent` on `ink` measures 1.59 against 3.0],
+  [`themes.plain`], [`muted` on `paper` measures 3.35 against 4.5;
+    `accent` on `ink` measures 1.27 against 3.0],
+  [`themes.editorial`], [`muted` on `paper` measures 3.51 against 4.5;
+    `accent` on `paper` measures 2.84 against 3.0],
+)
+
+None of those colours was changed. They sit in designs that were measured in
+their own right, those of `themes.lesson` off a sample page of a German maths
+textbook, and moving them would have changed every deck already written. What
+`muted` carries is the secondary matter: slide number, subtitle, running head.
+Anyone who wants the numbers met lays the matching palette over the theme:
+
+#show-code[```typ
+#show: presentation.with(theme: themes.editorial, palette: palettes.parchment)
+```]
+
+#warning[
+  *The text colour is never inferred from the fill.* A muted sage such as
+  `#aebdb3` reads as "light" to a luminance rule, yet white on it measures
+  1.96 to 1, far under the 4.5 that body text wants. That is why the package
+  measures with `contrast` and recolours nothing on its own.
+
+  The one exception lives in the theme rather than in the palette, and it is a
+  measurement too. Where a theme sets `strong` as *text*, the heading in
+  `themes.lesson`, the section title in `themes.plain`, it picks between
+  `strong` and `ink` by measured contrast against the ground, because one
+  colour cannot be a dark band and text on a dark ground at the same time.
+  Where the colour named first suffices, and it does for all five themes in
+  their own colours, that is the one that stays.
+]
+
 == The canvas
 
 `width`, `height` and `margin` on `presentation` set the canvas. The default is
@@ -1697,6 +1884,13 @@ then media and the bridge, and last the measurements and colours.
 // section pictures are building blocks of those and do not stand alone.
 #show-module(read("../src/themes.typ"), name: "typstage",
              only: ("theme", "themes"))
+
+== Palettes
+
+// Only what `lib.typ` hands out. `kanal`, `leuchtdichte`, `lesbar` and the
+// check itself are internals.
+#show-module(read("../src/palettes.typ"), name: "typstage",
+             only: ("palettes", "contrast", "palette-report"))
 
 == Media and embeds
 

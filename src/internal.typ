@@ -492,6 +492,25 @@
   false
 }
 
+/// Does the top level of a slide body carry the `invert` marker?
+///
+/// Deliberately the *shallow* walk, the same one `apply-pauses` does, and not
+/// the one above. It runs on every slide of every deck, before anything is
+/// laid out, and a full descent into every block of every slide would be paid
+/// for by decks that never invert a slide. A `#set` or `#show` written above
+/// the marker wraps it in a `styled`, and a marker produced by a `#for` sits
+/// in a nested `sequence`; both are unpacked, so the two cases that actually
+/// happen are covered. Deeper than that, the marker is not found, and the
+/// slide is simply not inverted.
+#let hat-invert(body) = {
+  if type(body) != content { return false }
+  if body.func() == metadata { return body.value == "typstage-invert" }
+  if body.has("children") { return body.children.any(hat-invert) }
+  if body.has("child") { return hat-invert(body.child) }
+  if body.has("body") { return hat-invert(body.body) }
+  false
+}
+
 /// What a fit says when something inside it may not be there.
 ///
 /// Named, because the same sentence has to come out of nine functions and out

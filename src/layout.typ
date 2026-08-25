@@ -18,7 +18,7 @@
                         hat-pause, im-fit, step-cursor, umgebungs-block,
                         unloesbar, zeilen-hoehe)
 #import "config.typ": doc-word
-#import "themes.typ": theme-state
+#import "themes.typ": lesbar, theme-state
 
 /// A named box: Beamer's `block`.
 ///
@@ -64,7 +64,15 @@
   // far below the slide.
   let zeile = zeilen-hoehe.get()
   let eigene-farbe = color != auto
-  let color = if color == auto { t.strong } else { color }
+  // In the bar style the color is a *ground* and carries white on it, so it
+  // has to stay the theme's strong tone. In the label style the same entry is
+  // *text* on the surface, and there the strong tone of a dark palette sits
+  // too close to that surface to be read. So that one is measured rather than
+  // named. Where the theme's own colors already work, and they do in all five,
+  // the measurement returns exactly what stood here before.
+  let color = if color != auto { color } else if stil == "label" {
+    lesbar(t.surface, t.strong, t.ink)
+  } else { t.strong }
   // In the label style, the tint carries the same meaning as the text on
   // it: a box labeled in blue sits on blue, a red one on red. Only someone
   // giving no color gets `surface`: in the textbook theme that is the

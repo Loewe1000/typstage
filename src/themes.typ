@@ -13,8 +13,53 @@
 //
 // The second line is the whole trick to varying a theme: a theme is a
 // dictionary, and `+` overwrites individual entries.
+//
+// The eight color entries are also a *palette*, and `presentation` takes one
+// separately (`palettes.typ`). The difference is what each is for: `+` on a
+// theme reaches every entry, including the fonts and the measures, while a
+// palette reaches the colors and nothing else, and therefore composes with
+// any design. `mit-palette` at the bottom of this file is where the two meet.
 
 #import "config.typ": margins
+#import "palettes.typ": (contrast, invert-palette, palette-keys, palette-pruefen,
+                        palettes)
+
+/// The first of the given colors that is readable on `grund`, measured.
+///
+/// `strong` is the one role a palette cannot settle on its own. In
+/// `themes.default` and `themes.editorial` it is a *ground* that carries light
+/// text; in `themes.lesson` and `themes.plain` it is the color of the heading
+/// *on* the paper. No single color does both once the paper turns dark, so
+/// every place that sets `strong`, or `paper`, as text asks here instead of
+/// naming a color outright.
+///
+/// The pick is a measurement, not a lightness rule, and that distinction is
+/// the whole point. A muted sage such as `rgb("#aebdb3")` reads as "light" to
+/// a luminance rule, yet white on it measures 1.96 to 1. Here the candidates
+/// are weighed by `contrast`, and the first one that reaches 4.5 to 1 wins, so
+/// the color a theme names first is the one it keeps wherever that color
+/// works. Where none reaches it, the strongest of them is taken rather than
+/// nothing.
+#let lesbar(grund, ..kandidaten) = {
+  let ks = kandidaten.pos()
+  let gut = ks.find(c => contrast(c, grund) >= 4.5)
+  if gut != none { gut } else { ks.sorted(key: c => -contrast(c, grund)).first() }
+}
+
+/// The same for a shape rather than for text.
+///
+/// A bar, a rule, a marker carries no letterforms, so the contract asks 3.0 of
+/// it and not the 4.5 body text wants -- the same two numbers the palette
+/// report uses. Of the five bundled themes only `default` and `night` draw a
+/// progress indicator at all, and on their own grounds their accent measures
+/// 3.26 and 9.77, so both keep the accent and nothing moves. It is the ground
+/// an inverted slide puts underneath that this answers: night's cyan measures
+/// 1.59 against it.
+#let sichtbar(grund, ..kandidaten) = {
+  let ks = kandidaten.pos()
+  let gut = ks.find(c => contrast(c, grund) >= 3.0)
+  if gut != none { gut } else { ks.sorted(key: c => -contrast(c, grund)).first() }
+}
 
 /// The full-bleed ground of a title or section slide.
 ///
@@ -103,7 +148,8 @@
   place(top + left, dx: m.left, dy: geo.height * 0.32, {
     stapel(
       text(..font-args(t.title-font), size: 34pt * k, weight: "bold",
-           fill: t.strong, [#s.title <ts-title-slide-title>]),
+           fill: lesbar(t.paper, t.strong, t.ink),
+           [#s.title <ts-title-slide-title>]),
       6pt * k,
       zierlinie(190pt * k, 2.5pt * k, t.accent, "title"),
       8pt * k,
@@ -123,7 +169,8 @@
       zierlinie(62pt * k, 2.5pt * k, t.accent, "section"),
       10pt * k,
       text(..font-args(t.title-font), size: 30pt * k, weight: "bold",
-           fill: white, [#s.title <ts-section-slide-title>]),
+           fill: lesbar(t.strong, white, t.paper, t.ink),
+           [#s.title <ts-section-slide-title>]),
     )
   })
 }
@@ -143,7 +190,8 @@
     set align(center)
     stapel(
       text(..font-args(t.title-font), size: 38pt * k, weight: "bold",
-           fill: t.strong, [#s.title <ts-title-slide-title>]),
+           fill: lesbar(t.paper, t.strong, t.ink),
+           [#s.title <ts-title-slide-title>]),
       14pt * k,
       zierlinie(130pt * k, 3pt * k, t.accent, "title"),
       14pt * k,
@@ -158,14 +206,22 @@
   let k = geo.scale
   let m = margins(geo)
   let balken = 16pt * k
-  grund(t.accent.lighten(88%), "section")
+  // The tinted ground of the section slide. Lightened on a light palette,
+  // darkened on a dark one, the same switch `card` and `callout` make: an
+  // accent lightened by 88 percent is nearly white, and a full-bleed white
+  // section slide in the middle of a dark deck is a flash, not a pause.
+  grund(if t.inverted { t.accent.darken(72%) } else { t.accent.lighten(88%) },
+        "section")
   place(top + left, {
     set rect(fill: t.accent, stroke: none)
     [#rect(width: balken, height: 100%) <ts-section-slide-bar>]
   })
   place(horizon + left, dx: m.left + balken,
     block(width: geo.width - 2 * m.left - balken,
-      text(..font-args(t.title-font), size: 32pt * k, weight: "bold", fill: t.strong,
+      text(..font-args(t.title-font), size: 32pt * k, weight: "bold",
+           fill: lesbar(
+             if t.inverted { t.accent.darken(72%) } else { t.accent.lighten(88%) },
+             t.strong, t.ink),
            [#s.title <ts-section-slide-title>])))
 }
 
@@ -217,7 +273,8 @@
   grund(t.paper, "title")
   place(top + left, dx: m.left, dy: geo.height * 0.42, block(width: geo.width * 0.7, {
     stapel(
-      text(..font-args(t.title-font), size: 30pt * k, fill: t.strong,
+      text(..font-args(t.title-font), size: 30pt * k,
+           fill: lesbar(t.paper, t.strong, t.ink),
            tracking: 0.3pt * k, [#s.title <ts-title-slide-title>]),
       12pt * k,
       text(size: 15pt * k, fill: t.muted, [#s.subtitle <ts-title-slide-subtitle>]),
@@ -238,7 +295,8 @@
   grund(t.paper, "section")
   place(horizon + left, dx: m.left, block(width: geo.width * 0.7, {
     stapel(
-      text(..font-args(t.title-font), size: 26pt * k, fill: t.strong,
+      text(..font-args(t.title-font), size: 26pt * k,
+           fill: lesbar(t.paper, t.strong, t.ink),
            tracking: 0.3pt * k, [#s.title <ts-section-slide-title>]),
       11pt * k,
       zierlinie(40pt * k, 0.8pt * k, t.muted, "section"),
@@ -259,7 +317,8 @@
     stapel(
       zierlinie(64pt * k, 0.9pt * k, t.accent, "title"),
       18pt * k,
-      text(..font-args(t.title-font), size: 34pt * k, fill: t.strong,
+      text(..font-args(t.title-font), size: 34pt * k,
+           fill: lesbar(t.paper, t.strong, t.ink),
            tracking: 0.5pt * k, [#s.title <ts-title-slide-title>]),
       12pt * k,
       text(size: 16pt * k, style: "italic", fill: t.muted,
@@ -284,7 +343,8 @@
     stapel(
       zierlinie(44pt * k, 0.9pt * k, t.accent, "section"),
       20pt * k,
-      text(..font-args(t.title-font), size: 30pt * k, fill: t.paper,
+      text(..font-args(t.title-font), size: 30pt * k,
+           fill: lesbar(t.strong, t.paper, t.ink, white),
            tracking: 0.5pt * k, [#s.title <ts-section-slide-title>]),
     )
   }))
@@ -304,6 +364,15 @@
 /// rule-size rule-fill head-gap foot-gap band-height box footer
 /// footer-rule progress`) and the two whole pictures (`title-slide`,
 /// `section`).
+///
+/// The eight colors are also the entries a *palette* may carry, and that is
+/// how a theme is recolored without touching the rest of it. Two of the
+/// entries above are colors that are not palette entries, `title-fill` and
+/// `rule-fill`, and each may be written either as a color or as a function
+/// of the palette, `p => p.strong`. A color stays what it is under every
+/// palette; a function is asked again whenever one is applied, and that is
+/// what lets the title of a light theme follow into the dark. `rule-fill:
+/// none` means the accent and follows it.
 ///
 /// Font sizes: measured against Beamer and Metropolis, where the body
 /// text takes up around 3.0% of the slide width and the title 3.9%. The
@@ -346,7 +415,7 @@
   weight: "bold",
   tracking: 0pt,
   header: "band",
-  title-fill: white,
+  title-fill: p => lesbar(p.strong, white, p.paper, p.ink),
   rule-size: 0pt,
   rule-fill: none,
   head-gap: 20pt,
@@ -377,7 +446,7 @@
   font: font, title-font: if title-font == none { font } else { title-font },
   size: size, title-size: title-size, weight: weight, tracking: tracking,
   header: header, title-fill: title-fill,
-  rule-size: rule-size, rule-fill: if rule-fill == none { accent } else { rule-fill },
+  rule-size: rule-size, rule-fill: rule-fill,
   head-gap: head-gap, foot-gap: foot-gap, band-height: band-height,
   footer: footer, footer-rule: footer-rule, progress: progress, box: box,
   title-slide: title-slide, section: section,
@@ -432,7 +501,10 @@
     // color and its own size; boldness would be a third signal for the
     // same thing.
     weight: 600,
-    title-fill: rgb("#c1361c"),
+    // Written as the palette's `strong` rather than as the color itself. The
+    // value is the same one; said this way the heading follows into any
+    // palette instead of staying vermilion on a dark ground.
+    title-fill: p => lesbar(p.paper, p.strong, p.ink),
     // No line under the title. In the book, the colored line belongs to
     // the page's running header, not to the heading; placed underneath it
     // turns two things into one in two colors. The heading carries its
@@ -446,6 +518,9 @@
     // explained anything the header does not say better: it names the
     // chapter you are in, not merely the fraction.
     header: "run",
+    // The hairline under the running header. Same value as the default, said
+    // out loud so it follows a palette.
+    rule-fill: p => p.accent,
     footer: "none",
     progress: "none",
     box: "label",
@@ -469,7 +544,12 @@
     size: 19pt,
     title-size: 24pt,
     header: "plain",
-    title-fill: rgb("#5ec8f2"),
+    // The cyan carries the title on the deck's own dark ground, 9.77 to 1.
+    // On an inverted slide the ground becomes this palette's ink, and there
+    // the same cyan measures 1.59 to 1 -- the pairing the contrast report
+    // lists as night's failing one. So it is asked for rather than named, and
+    // on the dark ground the answer is still the cyan, byte for byte.
+    title-fill: p => lesbar(p.paper, p.accent, p.ink),
     head-gap: 16pt,
     footer: "number",
     progress: "top",
@@ -494,7 +574,10 @@
     weight: "medium",
     tracking: 0.8pt,
     header: "plain",
-    title-fill: luma(30%),
+    // luma(30%) written as a step off the ink, because `black.lighten(30%)`
+    // *is* luma(30%) to the byte. On a dark palette the same expression walks
+    // the other way and lifts the title off the ground instead of sinking it.
+    title-fill: p => p.ink.lighten(30%),
     head-gap: 34pt,
     foot-gap: 20pt,
     footer: "number",
@@ -530,9 +613,9 @@
     weight: "regular",
     tracking: 0.5pt,
     header: "plain",
-    title-fill: rgb("#7b2d26"),
+    title-fill: p => lesbar(p.paper, p.strong, p.ink),
     rule-size: 0.9pt,
-    rule-fill: rgb("#ded2ba"),
+    rule-fill: p => p.border,
     head-gap: 22pt,
     foot-gap: 30pt,
     footer: "center",
@@ -544,6 +627,34 @@
 )
 
 
+/// The theme with a palette laid over it, and optionally inverted.
+///
+/// The one place where a theme and a palette meet. `presentation` calls it for
+/// every deck, with an empty palette when none was given, and once more per
+/// slide that carries `invert: true`.
+///
+/// Three steps, in this order. The theme's own eight colors are read out as a
+/// palette and the given one is written over it, entry by entry, so a palette
+/// of `(accent: blue)` changes the accent and nothing else. If `invert` is
+/// set, that palette is turned around by `invert-palette`. Only then are
+/// `title-fill` and `rule-fill` resolved, so a theme that wrote them as
+/// functions sees the colors the slide will actually be set in.
+#let mit-palette(t, p, invert: false) = {
+  let farben = (:)
+  for k in palette-keys { farben.insert(k, t.at(k)) }
+  farben = farben + p
+  if invert { farben = invert-palette(farben) }
+  let aufloesen(v) = if type(v) == function { v(farben) } else { v }
+  t + farben + (
+    title-fill: aufloesen(t.title-fill),
+    // `none` has meant "the accent" since the first version and keeps meaning
+    // it. Resolved here rather than in `theme()` so that it follows a palette
+    // instead of freezing the accent the theme was built with.
+    rule-fill: if t.rule-fill == none { farben.accent } else { aufloesen(t.rule-fill) },
+  )
+}
+
+
 /// The theme currently being set under.
 ///
 /// `card` and `callout` sit *inside* the slide body and know nothing
@@ -551,4 +662,4 @@
 /// would have to be handed its colors; this way it fetches them itself.
 /// `presentation` writes it once, right at the start, and anyone using a
 /// card outside a presentation gets the default.
-#let theme-state = state("typstage-theme", themes.default)
+#let theme-state = state("typstage-theme", mit-palette(themes.default, (:)))

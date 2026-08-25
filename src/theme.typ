@@ -29,7 +29,7 @@
                         slide-counter, sprite-number, step-cursor, step-here,
                         ueberlauf-pruefen, umgebungs-block)
 #import "slides.typ": info
-#import "themes.typ": font-args
+#import "themes.typ": font-args, sichtbar, theme-state
 
 /// The body of one slide, background included.
 ///
@@ -103,14 +103,18 @@
     // Progress: a growing bar at the bottom or top, or a marker that
     // travels along its track: even at seventy slides that still shows
     // where you are, while the bar there only grows longer very slowly.
+    // The accent unless the ground has swallowed it. On the five bundled
+    // themes' own grounds this is the accent, byte for byte; it is the ground
+    // an inverted slide lays underneath that this answers.
+    let balken = sichtbar(t.paper, t.accent, t.strong, t.ink)
     if t.progress == "bar" {
       place(bottom + left, {
-        set rect(fill: t.accent, stroke: none)
+        set rect(fill: balken, stroke: none)
         [#rect(width: 100% * n / total, height: 2.5pt * k) <ts-slide-progress>]
       })
     } else if t.progress == "top" {
       place(top + left, {
-        set rect(fill: t.accent, stroke: none)
+        set rect(fill: balken, stroke: none)
         [#rect(width: 100% * n / total, height: 2.5pt * k) <ts-slide-progress>]
       })
     } else if t.progress == "tick" {
@@ -127,11 +131,15 @@
       // the end.
       let schritte = calc.max(1, total - 1)
       place(bottom + left, {
-        set rect(fill: t.accent.lighten(78%), stroke: none)
+        // The track the marker travels on. Lightened on a light palette,
+        // darkened on a dark one, as in `card` and `callout`: a track
+        // lightened by 78 percent is a bright band across a dark slide.
+        set rect(fill: if t.inverted { balken.darken(70%) }
+                       else { balken.lighten(78%) }, stroke: none)
         [#rect(width: 100%, height: 3pt * k) <ts-slide-progress-track>]
       })
       place(bottom + left, dx: (geo.width - breite) * (n - 1) / schritte, {
-        set rect(fill: t.accent, stroke: none)
+        set rect(fill: balken, stroke: none)
         [#rect(width: breite, height: 3pt * k) <ts-slide-progress>]
       })
     }
@@ -290,7 +298,15 @@
 /// Where a slide has a speaker note it stands in that room; where it has none,
 /// ruled lines take its place. Both are the same thing really: the space is
 /// for whatever is not on the slide itself.
-#let handout-body(all, facts, style, geo, t, per-page, overflow: "none") = {
+#let handout-body(all, facts, style, geo, t, per-page, thema: none,
+                  overflow: "none") = {
+  // Which theme a single slide is set in. A slide carrying `invert` is set in
+  // the turned palette on paper too, or the handout would show a different
+  // slide than the talk did. `presentation` hands the function in only for a
+  // deck that inverts somewhere; without it nothing per slide is written into
+  // the theme state, and a deck that never inverts builds exactly as it did.
+  let wechselt = thema != none
+  let thema = if thema == none { s => t } else { thema }
   set page(paper: "a4", margin: (x: 1.5cm, y: 1.4cm))
   set text(size: 10pt, fill: t.strong)
   let gap = 14pt
@@ -349,7 +365,8 @@
       [#block(width: w, height: h, clip: true, {
         set block(fill: aussen.fill, stroke: aussen.stroke, radius: aussen.radius)
         scale(w / geo.width * 100%, origin: top + left,
-              slide-body(item.slide, style, geo, t, overflow: overflow))
+              slide-body(item.slide, style, geo, thema(item.slide),
+                         overflow: overflow))
       }) <ts-handout-frame>]
     }
 
@@ -362,6 +379,7 @@
       // shrunk slide draws its own chrome and reads the numbers from here,
       // exactly as the full-size one does.
       deck-info.update(item.fakten)
+      if wechselt { theme-state.update(thema(item.slide)) }
       step-cursor.update(0)
       step-here.update(())
       sprite-number.update(none)

@@ -1547,11 +1547,85 @@ dunkel, `head-gap`, `foot-gap` und `band-height` für die Luft um den Rumpf --
 und `title-slide` und `section`, die ganze Bilder sind: Funktionen
 `(t, s, geo) => content`. Die vollständige Liste steht in der API-Referenz.
 
+== Eine Palette wählen
+
+Ein Theme sagt, wie eine Folie *gebaut* ist; eine *Palette* sagt, welche Farbe
+sie hat. Beides ändert sich unabhängig voneinander: der Unterrichtsentwurf ist
+auch im abgedunkelten Raum noch der Unterrichtsentwurf. Deshalb nimmt
+`presentation` die Palette getrennt entgegen, und sie überschreibt
+*teilweise* -- nur die Einträge, die dastehen:
+
+#show-code[```typ
+#show: presentation.with(theme: themes.lesson, palette: (accent: blue))
+#show: presentation.with(theme: themes.lesson, palette: palettes.dark)
+```]
+
+Eine Palette trägt acht Einträge, und es sind genau die Farbeinträge eines
+Themes: `paper` der Grund der Folie, `ink` der Fließtext, `strong` die
+tragende dunkle Farbe, `accent` die Signalfarbe, `muted` das Nebensächliche,
+`surface` der Grund einer Karte, `border` deren Kante und `inverted`, ob heller
+Satz auf dunklem Grund steht. Ein Eintrag, den es nicht gibt, wird abgewiesen:
+`palette: (acent: blue)` bricht mit einer Meldung ab, statt still nichts zu
+tun.
+
+Fünf Paletten sind mitgeliefert. Jede läuft mit jedem der fünf Themes:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Palette*], [*Woher*]),
+  [`palettes.light`], [Genau die Farben von `themes.default`. Diese Palette
+    ändert an der Vorgabe nichts.],
+  [`palettes.mono`], [Das Grau von `themes.plain`, zwei Töne verschoben,
+    damit es den Vertrag unten besteht.],
+  [`palettes.textbook`], [Die am Schulbuch gemessenen Farben von
+    `themes.lesson`, ein Grau verschoben.],
+  [`palettes.parchment`], [Das Werkdruckpapier von `themes.editorial`, zwei
+    Töne verschoben.],
+  [`palettes.dark`], [Der dunkle Grund von `themes.night`, mit einem
+    tieferen Akzent.],
+)
+
+Daraus folgt der Satz, der sonst ein eigenes Theme kostet: *ein weiteres
+dunkles Theme braucht es nicht, weil Dunkelheit eine Palette ist und keine
+Gestaltung.* `themes.lesson` mit `palettes.dark` ist weiterhin der
+Unterrichtsentwurf, nur dunkel.
+
+`themes.night` bleibt trotzdem ein Theme, und der Grund ist gemessen. Sein
+Zyan `#5ec8f2` trägt die Überschrift auf dem eigenen Grund mit 9,77 zu 1 und
+auf dem Grund, den eine umgedrehte Folie dahinterlegt, mit 1,59. Eine Farbe,
+die auf beiden hält, müsste bei etwa 0,13 bis 0,23 relativer Leuchtdichte
+liegen; das Zyan liegt bei 0,52. Also nimmt `palettes.dark` ein tieferes Blau,
+das auf beiden hält, und `themes.night` behält das Zyan, um das herum es
+entworfen wurde.
+
+#warning[
+  Zwei Farben eines Themes sind keine Paletteneinträge: `title-fill` und
+  `rule-fill`. Ob sie mitfolgen, entscheidet das Theme. Alle fünf
+  mitgelieferten lassen sie mitfolgen -- entweder als Funktion der Palette,
+  `title-fill: p => p.strong`, oder als `none`, was den Akzent meint und mit
+  ihm wandert. Beide haben dafür den Typ gewechselt: `themes.X.title-fill`
+  *auszulesen* ergab früher eine Farbe und ergibt jetzt eine Funktion, und
+  `rule-fill` ergibt `none`, wo es den Akzent ergab. Sie zu *schreiben*,
+  `themes.X + (title-fill: red)`, ist unverändert. Ein eigenes Theme,
+  das dort eine feste Farbe hinschreibt, behält sie unter jeder Palette. Das
+  ist Absicht: eine Farbe, die jemand ausdrücklich genannt hat, wird nicht
+  hinter seinem Rücken getauscht.
+]
+
+Und `themes.night` bleibt trotzdem ein Theme. Sein Zyan `#5ec8f2`
+misst 9,77 zu 1 auf dem dunklen Grund und deshalb leuchtet es dort, aber nur
+1,59 zu 1 auf seiner eigenen Schriftfarbe -- und genau die liegt hinter dem
+Akzent, sobald eine Folie umgedreht wird. `palettes.dark` nimmt darum einen
+tieferen Ton. Das Theme behält seinen; es ist eine Gestaltungsentscheidung,
+und sie ist gemessen, nicht übersehen.
+
 == Die Farben eines Themes
 
 Sechs Rollen tragen ein Theme: `paper` der Grund der Folie, `ink` der
 Fließtext, `strong` die tragende dunkle Farbe, `accent` die Signalfarbe,
-`muted` das Nebensächliche, `surface` der Grund einer Karte. Die
+`muted` das Nebensächliche, `surface` der Grund einer Karte. Mit `border` und
+`inverted` sind es dieselben acht Einträge, die auch eine Palette trägt. Die
 mitgelieferten Themes belegen sie verschieden:
 
 #show-example(
@@ -1594,6 +1668,129 @@ Unabhängig vom Theme gibt das Paket vier Farbkonstanten heraus -- `dark`,
 `accent`, `paper` und `muted` --, die Palette des Vorgabe-Aussehens. Sie sind
 handlich, wo eine Folie einen Farbton braucht und das Theme nicht gewechselt
 wird; wer das Theme tauscht, greift besser auf dessen Einträge zu.
+
+== Eine Folie umdrehen
+
+Für die eine Folie, die nur eine große Zahl trägt, gibt es `invert`. Der Grund
+wird zur Schriftfarbe der Palette, der Satz zu ihrem Grund; `muted`, `border`
+und `surface` werden aus diesen beiden gemischt, `strong` und `accent` gehen
+unverändert mit. Das Chrom zieht mit: Kopfzeile, Fußzeile, Foliennummer und
+Fortschrittsbalken stehen in denselben Farben wie die Folie unter ihnen. Karte
+und Merkkasten ebenso.
+
+In der Überschriftenschreibweise steht `#invert` im Rumpf der Folie, so wie
+`#pause`:
+
+#show-code[```typ
+== Erreicht bis 2026
+#invert
+#statement[74 %]
+```]
+
+In der Argumentschreibweise ist es ein Argument von `slide`:
+
+#show-code[```typ
+#slide([Erreicht bis 2026], invert: true)[#statement[74 %]]
+```]
+
+#warning[
+  Nur eine gewöhnliche Folie dreht sich um. Titel- und Abschnittsfolie sind
+  ganze Bilder, die das Theme selbst malt, und drei der fünf mitgelieferten
+  bauen sie aus Farben, an die eine Umkehrung nicht heranreicht; beide nehmen
+  das Argument deshalb nicht an.
+
+  Die Marke `#invert` wird überall dort gefunden, wo der Rumpf begehbar ist:
+  auf der obersten Ebene, in einem `block` oder `align`, in einer
+  Tabellenzelle, in einem Raster, beliebig tief geschachtelt, in der
+  Folienüberschrift selbst und hinter `#set`- und `#show`-Regeln. *Nicht*
+  gefunden wird sie dort, wo der Inhalt an eine Closure abgegeben wird, in die
+  der Lauf nicht hineinkommt -- in `context`, `fit`, `anim`, `card` und
+  `alternatives` --, und die Folie bleibt dann einfach stehen, wie sie ist,
+  ohne ein Wort. Gemessen sind das genau diese fünf. Wer eine davon braucht,
+  schreibt die Folie als `slide(invert: true)`, was nie am Lauf hängt.
+]
+
+== Der Kontrastvertrag
+
+Die mitgelieferten Paletten werden gemessen, bevor sie ausgeliefert werden.
+Gerechnet wird der echte WCAG-2-Kontrast: jeder Kanal linearisiert, daraus die
+relative Leuchtdichte $0.2126 R + 0.7152 G + 0.0722 B$, und aus zwei Dichten
+das Verhältnis $(L_"hell" + 0.05) \/ (L_"dunkel" + 0.05)$. Sechs Paarungen
+werden geprüft:
+
+#table(
+  columns: (auto, auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Paarung*], [*Mindestens*], [*Wofür*]),
+  [`ink` auf `paper`], [4,5], [Fließtext auf der Folie],
+  [`ink` auf `surface`], [4,5], [Fließtext in einer Karte],
+  [`muted` auf `paper`], [4,5], [Fußzeile, Untertitel, Kopfzeile],
+  [`accent` auf `paper`], [3,0], [Striche, Fortschritt, Marke],
+  [`accent` auf `ink`], [3,0], [dasselbe auf einer umgedrehten Folie],
+  [`border` auf `paper`], [1,2], [Haarlinien],
+)
+
+Geprüft wird jede der fünf Paletten *und* ihre umgedrehte Form, als `assert`
+in `src/palettes.typ`, das beim Laden des Pakets läuft. Eine Farbe, die dort
+verschoben wird und den Vertrag verletzt, bricht den Bau mit der Zahl, die sie
+verfehlt hat.
+
+#warning[
+  *Der Vertrag gilt nur für die mitgelieferten Paletten.* Eine eigene Palette
+  wird nicht geprüft -- weder gewarnt noch umgefärbt. `palette-report(…)` gibt
+  dieselbe Messung als Liste zurück, wer sie für die eigene Palette sehen will:
+
+  #show-code[```typ
+  #for f in palette-report((paper: white, ink: black, surface: white,
+                            muted: luma(55%), accent: blue, border: luma(86%))) [
+    #f.pair: #calc.round(f.ratio, digits: 2) (will #f.min) #f.ok \
+  ]
+  ```]
+
+  `contrast(a, b)` ist die Rechnung selbst und nimmt zwei beliebige Farben.
+]
+
+*Und die fünf Themes bestehen ihn nicht.* Der Vertrag wurde über sie laufen
+gelassen, bevor die Paletten entstanden; das Ergebnis steht hier, statt
+stillschweigend weggefärbt zu werden:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Theme*], [*Was durchfällt*]),
+  [`themes.default`], [nichts, alle sechs Paarungen halten],
+  [`themes.lesson`], [`muted` auf `paper` misst 4,25 statt 4,5],
+  [`themes.night`], [`accent` auf `ink` misst 1,59 statt 3,0],
+  [`themes.plain`], [`muted` auf `paper` misst 3,35 statt 4,5;
+    `accent` auf `ink` misst 1,27 statt 3,0],
+  [`themes.editorial`], [`muted` auf `paper` misst 3,51 statt 4,5;
+    `accent` auf `paper` misst 2,84 statt 3,0],
+)
+
+Keine dieser Farben wurde geändert. Sie stehen in gemessenen Gestaltungen --
+die von `themes.lesson` stammen von einer Musterseite aus _Fundamente der
+Mathematik_ --, und ein Wechsel hätte jedes bestehende Deck anders aussehen
+lassen. Was `muted` trägt, ist Nebensächliches: Foliennummer, Untertitel,
+Kopfzeile. Wer die Zahlen einhalten will, legt die passende Palette darüber:
+
+#show-code[```typ
+#show: presentation.with(theme: themes.editorial, palette: palettes.parchment)
+```]
+
+#warning[
+  *Aus der Füllfarbe wird nicht auf die Schriftfarbe geschlossen.* Ein
+  mattes Salbeigrün wie `#aebdb3` sieht für eine Helligkeitsregel „hell" aus,
+  aber Weiß darauf misst 1,96 zu 1 -- weit unter den 4,5, die Fließtext will.
+  Deshalb rechnet das Paket mit `contrast` und färbt nirgends automatisch um.
+
+  Die eine Ausnahme steht im Theme, nicht in der Palette, und sie ist ebenfalls
+  eine Messung: wo ein Theme `strong` als *Schrift* setzt -- die Überschrift in
+  `themes.lesson`, der Abschnittstitel in `themes.plain` --, wählt es zwischen
+  `strong` und `ink` nach dem gemessenen Kontrast gegen den Grund, weil dieselbe
+  Farbe nicht zugleich dunkler Balken und Schrift auf dunklem Grund sein kann.
+  Wo die zuerst genannte Farbe reicht, und das tut sie bei allen fünf Themes
+  in ihren eigenen Farben, bleibt genau sie stehen.
+]
 
 == Die Leinwand
 
@@ -2518,6 +2715,13 @@ Medien und Brücke, zuletzt die Maße und Farben.
 // Abschnittsbilder sind Bausteine daraus und stehen nicht für sich.
 #show-module(read("../src/themes.typ"), name: "typstage",
              only: ("theme", "themes"))
+
+== Paletten
+
+// Nur, was `lib.typ` hinausreicht. `kanal`, `leuchtdichte`, `lesbar` und die
+// Prüfung selbst sind Innenleben.
+#show-module(read("../src/palettes.typ"), name: "typstage",
+             only: ("palettes", "contrast", "palette-report"))
 
 == Medien und Einbettungen
 
