@@ -11,3 +11,6 @@ _site/
 # Sicherungskopien beim Umbauen
 *.vor-*
 *.sicherung
+
+# Wegwerfdateien von .github/scripts/pruefe-beispiele.py
+.pruef-tmp/

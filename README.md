@@ -374,9 +374,37 @@ One run gives the printed manual, the website and its stylesheet:
 typst compile docs/docs.typ build --format bundle --features bundle,html --root .
 ```
 
+The site build also writes [llms.txt](https://loewe1000.github.io/typstage/llms.txt),
+one line per chapter with its title and first sentence, in both languages. It is
+generated from the built pages, so its anchors cannot go stale.
+
 `example.typ` in the repository is a deck that exercises everything: reveals,
 magic move, an embedded live canvas, a CeTZ flipbook. It is not shipped with
 the package, so build it from a clone.
+
+### The examples in the manual are compiled
+
+Every `typ` listing in both manuals is compiled against the real package before
+the site is built, so a renamed function or a changed signature cannot leave a
+listing behind:
+
+```bash
+python3 .github/scripts/pruefe-beispiele.py
+```
+
+Most listings are fragments rather than whole files, so the run wraps each one
+in a deck and a slide before compiling it. That is what it checks: that the
+code compiles in such a wrapper, not that the slide looks right. Where a
+fragment needs more than the wrapper gives it, a `// check:` line above the
+listing says so; the header of the script lists the words it takes. Listings
+that show what does *not* work are marked, have to keep failing, and say what
+they have to fail at -- a listing that breaks for some other reason is a failed
+check, not a passed one. The build runs this first and stops on it.
+
+What it does not reach: the prose beside a listing, listings in `bash` or
+`json` (it names how many it left alone), the paged output, and anything that
+compiles without doing what it claims -- a show rule on a label that no longer
+exists still compiles.
 
 ## Companion packages
 

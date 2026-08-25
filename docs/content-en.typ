@@ -74,6 +74,22 @@ This manual is ordered by intent rather than by function:
   The typeset examples in this manual are paper and therefore show the final
   state, everything at once. What happens one after another in the browser is
   said in the text beside them or as a comment in the source.
+
+  Every `typ` listing here is compiled against the real package before the site
+  is built, by `python3 .github/scripts/pruefe-beispiele.py`, so that no example
+  survives a rename in the package that makes it invalid. What the run does
+  *not* do belongs in the same breath: most listings are fragments rather than
+  whole files, so it wraps each one in a slide and checks that it compiles
+  there, not that the slide then looks right. Lines that deliberately raise an
+  error are marked as such and have to keep failing, and they name what they
+  have to fail at -- a line that breaks for some other reason is a failed
+  check, not a passed one. A line that does compile but does not do what was
+  wanted ("has no effect", "too late") it cannot tell from a correct one. It
+  compiles for the browser, not for paper, and it never looks at the prose
+  beside a listing -- which is where a stale number likes to sit. Listings in
+  other languages are left alone and counted, so nobody loses one by writing
+  the wrong fence. And an example whose companion package is missing is
+  skipped, and the run says which.
 ]
 
 = Your first presentation
@@ -86,30 +102,11 @@ without detours.
 No more than this is needed. An import, a show rule, and headings. The
 following file is complete and can be typed out:
 
-#show-code[```typ
-#import "@schule/typstage:0.1.0": *
-
-#show: presentation.with(
-  title: [The Pythagorean Theorem],
-  subtitle: [A derivation in four steps],
-  author: [Mathematics · Year 9],
-  date: datetime.today(),
-  transition: "slide",
-)
-
-= What this is about
-
-== The claim
-
-#speaker-note[Show the dissection first, then the formula, not the other way round.]
-
-In a right-angled triangle the two shorter sides together carry as much area
-as the longest one.
-
-#pause
-
-And that is the formula: $a^2 + b^2 = c^2$
-```]
+// Read from the file rather than copied out: "complete and can be typed out"
+// is a promise, and it only holds if these are the very bytes that
+// `.github/scripts/pruefe-beispiele.py` compiles.
+#show-code(raw(read("../examples/handbuch/first-deck.typ").trim(),
+               block: true, lang: "typ"))
 
 A first-level heading is a section slide, a second-level heading is a slide,
 and the text below it is its body. That is the whole structure.
@@ -318,6 +315,7 @@ drawn muted, legible but no longer the thing being talked about.
 
 #show-code[```typ
 #anim(at: "2-3", after: "dimmed")[A passing remark.]
+#anim(at: 4)[And on with the talk.]
 ```]
 
 Nothing moves and nothing is recoloured: the element settles to 65 percent
@@ -328,6 +326,11 @@ opacity and comes back up when you page back. `after` has exactly two values,
 slide, and what never leaves has no after; the package says so as an error
 rather than quietly doing nothing. `at: "3"` is that one step, `at: "2-3"` a
 range.
+
+The slide also needs a step after the range, which is what the second line
+above is for. If the range ends with the slide there is no step left on which
+the element could be seen muted; it would behave exactly like the default, and
+nothing would say so. That, too, is an error at compile time.
 
 *On paper `after` does nothing.* A page shows every step at once, and a point
 that is only quiet because the talk has moved past it has no past on a handout.
@@ -469,7 +472,7 @@ A frame with a `bridge:` has a name, and `bridge-job` sends it a dictionary
 when a step arrives:
 
 #show-code[```typ
-#embed(html: lamp, bridge: "lamp", width: 100%, height: 190pt)
+#embed(html: "…", bridge: "lamp", width: 100%, height: 190pt)
 
 #bridge-job("lamp", (color: "#16a34a"), at: 2)
 #bridge-job("lamp", (color: "#eb5e28"), at: 3)
@@ -497,6 +500,7 @@ applets.
 
 == Video
 
+// check: folie dateien=still.png
 #show-code[```typ
 #video("clip.mp4", width: 100%, height: 260pt, poster: image("still.png"))
 ```]
@@ -516,22 +520,27 @@ before it runs and what the PDF shows in its place.
 `flipbook` lets Typst render the motion itself, frame by frame:
 
 #show-code[```typ
-#flipbook(t => cetz.canvas({ … }), frames: 30, fps: 30,
-          width: 220pt, height: 160pt)
+#flipbook(
+  t => box(width: 100%, height: 100%,
+    place(left + horizon, dx: t * 88%, circle(radius: 9pt, fill: accent))),
+  frames: 24, fps: 20, width: 100%, height: 46pt,
+)
 ```]
 
-The function receives `t` running from 0 to 1 and is called once per frame.
-Every frame sits in the file as SVG and stays sharp at any size. That makes it
-the tool for motion that Typst can draw and CSS cannot: a curve being traced, a
-mechanism turning, a diagram assembling itself.
+The function receives `t` running from 0 to 1 and is called once per frame, and
+it may draw with anything Typst has, CeTZ and Fletcher included. Every frame
+sits in the file as SVG and stays sharp at any size. That makes it the tool for
+motion that Typst can draw and CSS cannot: a curve being traced, a mechanism
+turning, a diagram assembling itself.
 
 `loop`, `pingpong` and `still` decide how it plays and which frame stands on
 paper.
 
 #warning[
-  Thirty frames are thirty typeset drawings. That is the most expensive element
-  in this package, in compile time and in file size alike, and it is worth
-  reaching for only where the motion carries the argument.
+  Every frame is really typeset. Twenty-four frames are twenty-four layouts and
+  twenty-four SVG trees in the file. That is the most expensive element in this
+  package, in compile time and in file size alike, and it is worth reaching for
+  only where the motion carries the argument.
 ]
 
 = Developing a calculation
@@ -842,6 +851,7 @@ Since Typst 0.15 one compilation can write several files. That suits this
 package, because talk, deck and handout differ only in their target and in one
 argument. `bundle` writes all three at once:
 
+// check: dokument ziel=bundle
 #show-code[```typ
 #bundle(
   theme: themes.lesson,
@@ -1025,6 +1035,7 @@ In the heading notation it is a marker in the slide body, like `#pause`:
 
 In the argument notation it is an argument of `slide`:
 
+// check: argument
 #show-code[```typ
 #slide([Reached by 2026], invert: true)[#statement[74 %]]
 ```]
@@ -1176,6 +1187,7 @@ nothing in between, such a block runs over the edge of the slide. In the PDF it
 is still to be seen standing there; in the browser the slide sits in a frame of
 fixed size and whatever reaches past it is cut away.
 
+// check: folgen pre=tabelle
 #show-code(```typ
 == Regression results
 #fit(wrap: false, my-table)
@@ -1207,6 +1219,7 @@ A table, a chart or a drawing rearranges itself instead when it is offered a
 narrower width, and that changes the picture rather than its size.
 `wrap: false` measures such a block exactly as it stands:
 
+// check: folie pre=tabelle
 #show-code(```typ
 #fit(wrap: false, my-table)
 ```)
@@ -1250,6 +1263,7 @@ scaling: a `card` around a bare `block(height: 1fr)` behaves the same. Give
   `flipbook` -- in both outputs, and also when the fit sits inside another fit.
   The way round it is to put the fit *inside* the reveal rather than around it:
 
+  // check: folie pre=tabelle fehlt=2 weil=cannot_stand_inside_fit
   ```typ
   #anim(fit(wrap: false, my-table))   // yes
   #fit(anim(my-table))                // no
@@ -1754,6 +1768,7 @@ answer is nothing. `slide.numbered` says when that is the case:
 
 On an ordinary slide it goes into the body, that is, into the slide itself:
 
+// check: folgen davor
 #show-code[```typ
 == A slide
 #footline

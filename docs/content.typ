@@ -29,6 +29,23 @@ Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
   Die gesetzten Beispiele dieses Handbuchs sind Papier und zeigen deshalb den
   Endzustand -- alles auf einmal. Was im Browser nacheinander geschieht, steht
   im Text daneben oder als Kommentar in der Quelle.
+
+  Jeder `typ`-Block hier wird vor dem Bau der Website gegen das echte Paket
+  übersetzt -- `python3 .github/scripts/pruefe-beispiele.py` --, damit kein
+  Beispiel eine Umbenennung im Paket überlebt, die es ungültig macht. Was der
+  Lauf dabei *nicht* leistet, gehört dazugesagt: Die meisten Blöcke sind
+  Bruchstücke und keine ganzen Dateien, er setzt sie also in eine Folie und
+  prüft, dass sie darin übersetzen -- nicht, dass die Folie danach richtig
+  aussieht. Zeilen, die absichtlich einen Fehler auslösen, sind als solche
+  geführt, müssen fehlschlagen und nennen, woran -- eine Zeile, die aus einem
+  anderen Grund bricht, ist ein durchgefallener Test und kein bestandener. Eine
+  Zeile dagegen, die zwar übersetzt, aber nicht das Gewünschte tut („wirkt
+  nicht", „zu spät"), kann er von einer richtigen nicht unterscheiden. Er
+  übersetzt für den Browser, nicht für Papier, und er sieht nie auf die Prosa
+  neben einem Listing -- dort sitzt eine veraltete Zahl am liebsten. Blöcke in
+  anderen Sprachen bleiben ungeprüft und werden gezählt, damit niemand einen
+  davon durch einen verschriebenen Zaun verliert. Und ein Beispiel, für das ein
+  Begleitpaket fehlt, wird übersprungen; der Lauf sagt, welches.
 ]
 
 = Die erste Präsentation
@@ -41,37 +58,11 @@ Minuten und ohne Umwege.
 Mehr als dies braucht es nicht -- den Import, eine Show-Regel und
 Überschriften. Die folgende Datei ist vollständig und lässt sich abtippen:
 
-#show-code[```typ
-#import "@schule/typstage:0.1.0": *
-
-#show: presentation.with(
-  title: [Der Satz des Pythagoras],
-  subtitle: [Eine Herleitung in vier Schritten],
-  author: [Mathematik · Klasse 9],
-  date: datetime.today(),
-  transition: "slide",
-)
-
-= Worum es geht
-
-== Die Behauptung
-
-#speaker-note[Erst die Zerlegung zeigen, dann die Formel -- nicht umgekehrt.]
-
-#stagger[
-  - Ein rechtwinkliges Dreieck hat zwei Katheten und eine Hypotenuse.
-  - Über jeder Seite steht ein Quadrat.
-  - Die beiden kleinen sind zusammen so groß wie das große.
-]
-
-#v(1em)
-
-#anim(callout[Genau das behauptet der Satz.], enter: "scale")
-
-== Und das ist die Formel
-
-#statement[$ a^2 + b^2 = c^2 $]
-```]
+// Aus der Datei gelesen, nicht abgeschrieben: „vollständig und lässt sich
+// abtippen" ist eine Zusage, und die hält nur, wenn hier dieselben Zeichen
+// stehen, die `.github/scripts/pruefe-beispiele.py` auch übersetzt.
+#show-code(raw(read("../examples/handbuch/erste-praesentation.typ").trim(),
+               block: true, lang: "typ"))
 
 Daraus entstehen vier Folien: die Titelfolie aus `title`, eine Abschnittsfolie
 aus `=`, und je eine gewöhnliche Folie aus den beiden `==`. Der Text bis zur
@@ -274,6 +265,7 @@ Wo die Folien vollständig aus Daten entstehen, lassen sie sich auch einzeln
 übergeben. Dann ist jede Folie ein Funktionsaufruf, und eine Liste von Folien
 lässt sich mit `..` weiterreichen wie jedes andere Array:
 
+// check: dokument
 #show-code[```typ
 #presentation(
   title-slide(title: [Der Satz des Pythagoras], author: [A. Schulz]),
@@ -605,6 +597,7 @@ mehr das, worüber gerade gesprochen wird.
 
 #show-code[```typ
 #anim(at: "2-3", after: "dimmed")[Eine Randbemerkung.]
+#anim(at: 4)[Und weiter im Text.]
 ```]
 
 Nichts bewegt sich dabei, und umgefärbt wird auch nichts: Das Element sinkt auf
@@ -616,6 +609,11 @@ genau zwei Werte, `"hidden"` -- die Vorgabe und das bisherige Verhalten -- und
 Ende der Folie, und was nie geht, hat kein Danach; das Paket sagt das als
 Fehler, statt stillschweigend nichts zu tun. `at: "3"` ist genau dieser eine
 Schritt, `at: "2-3"` ein Bereich.
+
+Und die Folie braucht nach dem Bereich noch einen Schritt -- deshalb steht oben
+die zweite Zeile. Endet der Bereich mit der Folie, gibt es keinen Schritt, auf
+dem das Element gedämpft zu sehen wäre; es verhielte sich genau wie die Vorgabe,
+ohne dass irgendetwas das sagt. Auch das ist ein Fehler beim Übersetzen.
 
 *Auf dem Papier ändert `after` nichts.* Eine Seite zeigt alle Schritte auf
 einmal, und ein Punkt, der nur deshalb leise ist, weil der Vortrag an ihm vorbei
@@ -801,6 +799,7 @@ durchgereicht statt verfolgt (an Leerraum ist ohnehin nichts zu animieren);
 steht es zwischen anderem Inhalt, meldet das Paket einen Fehler, statt die
 Folie stillschweigend verrutschen zu lassen:
 
+// check: folie fehlt=1 weil=fr_spacer_inside_a_tracked_element
 #show-code(```typ
 #anim[Links #v(1fr) Rechts]        // Fehler -- das fr gehört nach draußen
 #anim[Links] #v(1fr) #anim[Rechts] // so ist es gemeint
@@ -852,6 +851,8 @@ Applet aufbauen und Schritt für Schritt weiterbewegen.
 #show-code[```typ
 #import "@schule/typstage:0.1.0": *
 #import "@schule/typstage-geogebra:0.1.0": *
+
+#show: presentation.with(theme: themes.lesson)
 
 == Parametervariation
 
@@ -1009,6 +1010,7 @@ tun.
 `video` legt ein echtes HTML5-Video über die Folie. Beim Betreten der Folie
 läuft es an, beim Verlassen hält es an.
 
+// check: folie dateien=welle.png
 #show-code[```typ
 #video("wellen.mp4", width: 100%, height: 240pt, poster: image("welle.png"))
 ```]
@@ -1114,6 +1116,7 @@ Aufbau auf:
 
 Damit besteht jede Folie der Kette aus zwei Zeilen:
 
+// check: folgen davor
 #show-code[```typ
 == Die Regel am Term -- Schritt 1 von 3
 #umformung(
@@ -1364,6 +1367,7 @@ Seit Typst 0.15 kann eine Übersetzung mehrere Dateien schreiben. Das passt zu
 diesem Paket, denn Vortrag, Foliensatz und Handout unterscheiden sich ohnehin
 nur im Ziel und in einer Angabe. `bundle` schreibt alle drei auf einmal:
 
+// check: dokument ziel=bundle
 #show-code[```typ
 #bundle(
   theme: themes.lesson,
@@ -1525,6 +1529,7 @@ Typst legt keine Dateien an, also müssen die beiden bei `"split"` und beim CDN
 einmal geschrieben werden. Ihr Inhalt steht in `runtime-files`; der
 Bündel-Export gibt sie in demselben Lauf aus, in dem auch der Vortrag entsteht:
 
+// check: ganz ziel=bundle
 #show-code[```typ
 #import "@schule/typstage:0.1.0": *
 
@@ -1785,6 +1790,7 @@ In der Überschriftenschreibweise steht `#invert` im Rumpf der Folie, so wie
 
 In der Argumentschreibweise ist es ein Argument von `slide`:
 
+// check: argument
 #show-code[```typ
 #slide([Erreicht bis 2026], invert: true)[#statement[74 %]]
 ```]
@@ -2109,6 +2115,7 @@ etwas dazwischen läuft so ein Block über den Rand. Im PDF sieht man ihn dort
 noch stehen; im Browser sitzt die Folie in einem Rahmen fester Größe, und was
 darüber hinausragt wird abgeschnitten.
 
+// check: folgen pre=tabelle
 #show-code(```typ
 == Ergebnisse der Regression
 #fit(wrap: false, meine-tabelle)
@@ -2141,6 +2148,7 @@ Eine Tabelle, ein Diagramm oder eine Zeichnung ordnet sich dagegen selbst um,
 wenn man ihr eine schmalere Breite anbietet, und das ändert das Bild statt
 seiner Größe. `wrap: false` misst so einen Block genau so, wie er steht:
 
+// check: folie pre=tabelle
 #show-code(```typ
 #fit(wrap: false, meine-tabelle)
 ```)
@@ -2187,6 +2195,7 @@ ausdrücklich an, dann rechnet das `fit` damit.
   Der Ausweg ist, das `fit` *innerhalb* der Einblendung zu setzen statt darum
   herum:
 
+  // check: folie pre=tabelle fehlt=2 weil=cannot_stand_inside_fit
   ```typ
   #anim(fit(wrap: false, meine-tabelle))   // so
   #fit(anim(meine-tabelle))                // nicht so
@@ -2723,6 +2732,7 @@ und die Antwort ist: nichts. `slide.numbered` sagt, wann das der Fall ist:
 
 Auf einer gewöhnlichen Folie steht sie im Rumpf, also in der Folie selbst:
 
+// check: folgen davor
 #show-code[```typ
 == Eine Folie
 #fusszeile
