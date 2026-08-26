@@ -141,16 +141,16 @@
   tote.map(((x, y)) => punkt(1, x, y)).join()
 
   pumpe(2, 215, 150)
-  // Die Beschriftung steht weit unter der Straße statt neben der Pumpe: neben
-  // ihr liegen die Toten, und ein Wort über ihnen nähme der Karte ihre Aussage.
-  // Der Strich beginnt erst unterhalb der Häuserreihe, sonst liefe er durch
-  // einen Punkt.
+  // Ein Fähnchen von der Pumpe zu ihrem Namen. Es beginnt erst unterhalb der
+  // Häuserreihe, sonst liefe es durch einen Toten.
+  //
   // Als Rechteck und nicht als `line`: eine gedrehte Linie ist ein Rahmen ohne
-  // Breite, und im Browser bekommt ein verfolgtes Element daraus nichts, was
-  // sich zeichnen ließe -- gemessen fehlte der Strich dort, während er auf
-  // Papier stand.
+  // Breite, und ein verfolgtes Element ohne Breite bekommt im Browser keinen
+  // Platz -- gemessen fehlte der Strich dort, während er auf Papier stand.
   auf(2, 214.5, 168, rect(width: 1pt, height: px(44), fill: wasser,
                           stroke: none))
+  // Der Name steht weit unter der Straße und nicht neben der Pumpe: neben ihr
+  // liegen die Toten, und ein Wort über ihnen nähme der Karte ihre Aussage.
   beschriftung(2, 174, 214, fill: wasser.darken(10%), size: 8.5pt,
                [Broad Street pump])
 
