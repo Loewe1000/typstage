@@ -230,8 +230,14 @@ const SOLL_HINWEIS = [
   "",
   "kamera steht nur beim Prüfdeck und beschreibt eine camera():",
   "  <Streckung je Schritt der Folie> · <tragen beide Ebenen dasselbe> ·",
-  "  <Streckung auf halber Zeit> · <nach einem Sprung> ·",
-  "  <Vorschau: ganz/nah/einig> · <Schritte der Folie mit der Fahrt allein>.",
+  "  <Mitte des Details auf der Bühne> · <Streckung auf halber Zeit> ·",
+  "  <nach einem Sprung> · <Vorschau: ganz/nah/einig> ·",
+  "  <Schritte der Folie mit der Fahrt allein>.",
+  "",
+  "Die Mitte muss 0.50/0.50 sein, und sie ist die eigentliche Zusage: das",
+  "Detail steht mitten im Bild. Eine Streckung allein sagt darüber nichts --",
+  "wer den Ursprung der Streckung von der linken oberen Ecke in die Mitte des",
+  "Kastens rückt, streckt genau gleich weit und zeigt die falsche Stelle.",
   "Streckungen und keine Verschiebungen: die Streckung ist das Verhältnis von",
   "Detail zu Folie und in jedem Fenster dieselbe, die Verschiebung stünde auf",
   "vier Nachkommastellen und hinge am Satz. Keine Dauer, die teilte --tempo",
@@ -879,6 +885,44 @@ const KAMERAPROBE = `(async function () {
     return { bg: streckung(f.querySelector(".ts-bg")),
              ov: streckung(f.querySelector(".ts-ov")) };
   }
+  // Wo die Mitte des Details auf der Buehne liegt, im Verhaeltnis zu ihr.
+  // Herangefahren muss sie in der Mitte sein, also 0.50/0.50 -- und das ist
+  // die eigentliche Zusage der Kamera. Eine Streckung allein sagt darueber
+  // nichts: wer den Ursprung der Streckung von der linken oberen Ecke in die
+  // Mitte des Kastens rueckt, streckt genau gleich weit und zeigt trotzdem die
+  // falsche Stelle. Ein Verhaeltnis und keine Pixel, damit die Zahl nicht am
+  // Satz und nicht am Fenster haengt.
+  function mitteVon(nr, pin) {
+    var f = folien[nr];
+    var svg = f.querySelector(".ts-bg svg");
+    if (!svg) return "-";
+    var b = svg.getBoundingClientRect();
+    var l = null, o = null, r = null, u = null;
+    f.querySelectorAll("path").forEach(function (p) {
+      var fl = (p.getAttribute("fill") || "").toLowerCase();
+      if (fl.length !== 9 || fl.slice(0, 3) !== "#fd" || fl.slice(7) !== "00") return;
+      if (parseInt(fl.slice(3, 7), 16) !== pin) return;
+      var wirt = p.closest(".ts-el");
+      if (wirt && !wirt.style.width) return;
+      var k = p.getBoundingClientRect();
+      if (!k.width && !k.height) return;
+      l = l === null ? k.left : Math.min(l, k.left);
+      o = o === null ? k.top : Math.min(o, k.top);
+      r = r === null ? k.right : Math.max(r, k.right);
+      u = u === null ? k.bottom : Math.max(u, k.bottom);
+    });
+    if (l === null) return "-";
+    // An der Buehne gemessen und nicht am Folien-SVG: das SVG faehrt mit, in
+    // ihm laege die Mitte immer dort, wo sie ohne Fahrt liegt.
+    var st = document.getElementById("ts-stage").getBoundingClientRect();
+    return ((l + r) / 2 - st.left) / st.width * 1 + "|"
+         + ((o + u) / 2 - st.top) / st.height;
+  }
+  function mitteKurz(nr, pin) {
+    var m = mitteVon(nr, pin);
+    if (m === "-") return "-";
+    return m.split("|").map(function (z) { return (+z).toFixed(2); }).join("/");
+  }
   function fahrten() {
     return document.getAnimations().filter(function (a) {
       var t = a.effect && a.effect.target;
@@ -903,19 +947,22 @@ const KAMERAPROBE = `(async function () {
     if (st.bg !== st.ov) einig = 0;
     ruhe.push(st.bg);
   }
+  // Und die Mitte des Details, herangefahren.
+  typstage.goto(erste + 1); await p.ruhig(4000);
+  var mitte = mitteKurz(nr, mit[0].liste[0].pin);
 
   // Und die Fahrt selbst, angehalten auf halber Zeit.
   typstage.goto(erste, true); await p.ruhig(4000);
   var vorher = stand(nr).bg;
   typstage.goto(erste + 1);
-  var a = fahrten(), mitte = -1;
+  var a = fahrten(), halb = -1;
   if (a.length === 2) {
     a.forEach(function (x) {
       x.pause();
       x.currentTime = x.effect.getTiming().duration / 2;
     });
     await zweiBilder();
-    mitte = stand(nr).bg;
+    halb = stand(nr).bg;
     a.forEach(function (x) { x.cancel(); });
   }
 
@@ -934,7 +981,8 @@ const KAMERAPROBE = `(async function () {
     + (ve && ve.style.transform === (vg ? vg.style.transform : "") ? "einig" : "?");
 
   return JSON.stringify({
-    ruhe: ruhe, einig: einig, vorher: vorher, fahrten: a.length, mitte: mitte,
+    ruhe: ruhe, einig: einig, mitte: mitte, vorher: vorher,
+    fahrten: a.length, halb: halb,
     sprung: sprung, sprungFahrten: sprungFahrten, vorschau: vorschau,
     allein: wieviele(mit[1].nr)
   });
@@ -1294,7 +1342,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
           + "beiden prüfen verschiedene Hälften des Falls.");
       } else {
         z.kamera = km.ruhe.join("/") + " · " + (km.einig ? "einig" : "ENTZWEIT")
-                 + " · Mitte " + km.mitte + " · Sprung " + km.sprung
+                 + " · Mitte " + km.mitte + " · halb " + km.halb
+                 + " · Sprung " + km.sprung
                  + " · " + km.vorschau + " · allein " + km.allein;
         if (km.fahrten !== 2) {
           z.maengel.push("beim Schritt in den Ausschnitt liefen " + km.fahrten
@@ -1313,10 +1362,17 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
             + "angeworfen. Ein Sprung stellt die Kamera, er fährt sie nicht: "
             + "dort gibt es keinen Weg, den jemand gesehen hätte.");
         }
-        if (!(km.mitte > km.vorher && km.mitte < km.ruhe[1])) {
-          z.maengel.push("auf halber Zeit steht die Streckung bei " + km.mitte
+        if (!(km.halb > km.vorher && km.halb < km.ruhe[1])) {
+          z.maengel.push("auf halber Zeit steht die Streckung bei " + km.halb
             + ", also nicht zwischen " + km.vorher + " und " + km.ruhe[1]
             + ". Die Kamera zeigt keinen Weg, sie springt.");
+        }
+        if (km.mitte !== "0.50/0.50") {
+          z.maengel.push("herangefahren liegt die Mitte des Details bei "
+            + km.mitte + " statt bei 0.50/0.50 der Bühne. Die Kamera streckt "
+            + "dann zwar richtig weit, zeigt aber die falsche Stelle -- genau "
+            + "das passiert, wenn der Ursprung der Streckung nicht in der "
+            + "linken oberen Ecke liegt.");
         }
         if (km.allein !== 3) {
           z.maengel.push("die Folie, auf der nichts als eine Fahrt steht, hat "

@@ -76,8 +76,14 @@
   "",
   "kamera steht nur beim Prüfdeck und beschreibt eine camera():",
   "  <Streckung je Schritt der Folie> · <tragen beide Ebenen dasselbe> ·",
-  "  <Streckung auf halber Zeit> · <nach einem Sprung> ·",
-  "  <Vorschau: ganz/nah/einig> · <Schritte der Folie mit der Fahrt allein>.",
+  "  <Mitte des Details auf der Bühne> · <Streckung auf halber Zeit> ·",
+  "  <nach einem Sprung> · <Vorschau: ganz/nah/einig> ·",
+  "  <Schritte der Folie mit der Fahrt allein>.",
+  "",
+  "Die Mitte muss 0.50/0.50 sein, und sie ist die eigentliche Zusage: das",
+  "Detail steht mitten im Bild. Eine Streckung allein sagt darüber nichts --",
+  "wer den Ursprung der Streckung von der linken oberen Ecke in die Mitte des",
+  "Kastens rückt, streckt genau gleich weit und zeigt die falsche Stelle.",
   "Streckungen und keine Verschiebungen: die Streckung ist das Verhältnis von",
   "Detail zu Folie und in jedem Fenster dieselbe, die Verschiebung stünde auf",
   "vier Nachkommastellen und hinge am Satz. Keine Dauer, die teilte --tempo",
@@ -1014,7 +1020,7 @@
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",
    "kino": "at 1- 0/0/0/12/23 · at 3- 0/0/0/12/23",
-   "kamera": "1/7.893/7.893/1 · einig · Mitte 6.346 · Sprung 7.893 · ganz/nah/einig · allein 3"
+   "kamera": "1/7.893/7.893/1 · einig · Mitte 0.50/0.50 · halb 6.346 · Sprung 7.893 · ganz/nah/einig · allein 3"
   }
  }
 }
