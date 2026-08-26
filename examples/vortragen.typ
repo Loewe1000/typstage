@@ -447,11 +447,16 @@
       )),
       ..tage.map(((tag, n)) => align(center, text(size: 0.55em, fill: leise, tag))),
     ))
-    // Der Strich am 8. September, auf der Fuge vor der neunten Säule.
-    place(top + left, dx: (saeule + luecke) * 8 - luecke / 2, dy: -6pt,
-          anim(at: 2, enter: "fade", line(
-            length: hoch + 8pt, angle: 90deg,
-            stroke: (paint: wasser, thickness: 1.4pt, dash: "dashed"))))
+    // Der Strich am 8. September, auf der Fuge vor der neunten Säule. Der
+    // Kasten drumherum ist nötig: eine gedrehte Linie ist ein Rahmen ohne
+    // Breite, und ein verfolgtes Element ohne Breite bekommt im Browser keinen
+    // Platz zugewiesen -- gemessen fehlte der Strich dort.
+    place(top + left, dx: (saeule + luecke) * 8 - luecke / 2 - 1pt, dy: -6pt,
+          anim(at: 2, enter: "fade", box(
+            width: 2pt, height: hoch + 8pt,
+            place(top + left, dx: 1pt, line(
+              length: hoch + 8pt, angle: 90deg,
+              stroke: (paint: wasser, thickness: 1.4pt, dash: "dashed"))))))
   },
 ))
 
@@ -482,7 +487,7 @@
 
 // Eine Zeile je Gesellschaft, mit einem gemeinsamen Spaltenmaß statt einer
 // `table`: eine Tabellenzelle sieht `#pause` nicht, ein `anim` schon.
-#let spalten = (330pt, auto, 1fr)
+#let spalten = (420pt, auto, 1fr)
 #let zeile(a, b, c, farbe: t.ink) = grid(
   columns: spalten, column-gutter: 14pt,
   align: (left + horizon, right + horizon, left + horizon),
@@ -497,13 +502,13 @@
 
 #anim(at: 2, enter: "fade-right", zeile(
   farbe: tot,
-  [*Southwark & Vauxhall* — Thames water from inside London],
+  [*Southwark & Vauxhall* — intake inside London],
   [315], [deaths per 10,000 houses],
 ))
 #v(0.3em)
 #anim(at: 3, enter: "fade-right", zeile(
   farbe: wasser,
-  [*Lambeth* — same water, taken upriver since 1852],
+  [*Lambeth* — intake above the tideway, 1852],
   [37], [deaths per 10,000 houses],
 ))
 #v(0.3em)

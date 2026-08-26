@@ -270,12 +270,17 @@ const SOLL_HINWEIS = [
 ];
 
 // ── Welche Decks ────────────────────────────────────────────────────────────
-// Die acht Beispiele plus das Prüfdeck. Letzteres steht nicht unter
+// Die neun Beispiele plus das Prüfdeck. Letzteres steht nicht unter
 // `examples/`, weil es nicht auf die Website gehört; es wird hier übersetzt.
 // Es deckt ab, was die anderen nicht anfassen. Nachgezählt in ihren Quellen:
-// `after: "dimmed"` 0x, `stagger(dim: true)` 0x, `invert` 0x, `info()` 0x,
-// `fit` 0x. Ohne das Prüfdeck kann man diese fünf zerstören, ohne dass hier
-// eine Zahl wackelt.
+// `invert` 0x, `info()` 0x, `fit` 0x. Ohne das Prüfdeck kann man diese drei
+// zerstören, ohne dass hier eine Zahl wackelt.
+//
+// Es waren einmal fünf. `after: "dimmed"` und `stagger(dim: true)` stehen
+// seit `vortragen` auch in einem Beispiel -- dreimal beziehungsweise einmal --,
+// und dort in einem Deck mit mehreren Folien und mit Ziffern daneben. Das
+// Prüfdeck behält sie trotzdem: es misst sie auf einer Folie für sich, und
+// zwei Stellen, die dasselbe zerbrechen sehen, sind hier keine zu viel.
 //
 // Die beiden GeoGebra-Decks messen den Rahmen, nicht das Applet. Was hier eine
 // Zahl hat -- Folien, Schritte, Elemente, gezeichnet und gedimmt, Grund, Hash,
@@ -284,7 +289,7 @@ const SOLL_HINWEIS = [
 // eigenen Fenster. Der Lauf ist deshalb nicht vom Netz abhängig: gemessen
 // ergeben beide Decks mit und ohne erreichbares GeoGebra dieselben Zahlen.
 const BEISPIELE = ["tour", "theme-default", "theme-editorial", "theme-lesson",
-                   "theme-night", "theme-plain", "geogebra",
+                   "theme-night", "theme-plain", "vortragen", "geogebra",
                    "geogebra-sprecher"];
 
 // Decks mit einem Applet darin. Sie werden mit abgeklemmtem GeoGebra gefahren,
