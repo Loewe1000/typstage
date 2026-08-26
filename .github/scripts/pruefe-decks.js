@@ -189,6 +189,12 @@ const SOLL_HINWEIS = [
   "gegeneinander und die geteilte Tinte sänke auf zwei Drittel -- am",
   "Ruhezustand ist davon nichts zu sehen, an den Zwischenbildern schon.",
   "",
+  "masz steht ebenfalls nur beim Prüfdeck und sagt, wie viele verschiedene",
+  "Maße die Stufen einer aufbau-Zeichnung melden. Es muss genau eines sein:",
+  "alle Stufen liegen deckungsgleich, weil ein Stück, das noch nicht dran ist,",
+  "als Luft dasteht und seinen Platz behält. Wird daraus mehr als eines,",
+  "springt die Zeichnung bei jedem Schritt.",
+  "",
   "grund ist die Füllfarbe des ersten Pfades im Hintergrund-SVG jeder Folie,",
   "also die Fläche, auf der sie steht. Daran hängen Palette und invert.",
   "",
@@ -363,7 +369,26 @@ const HALTPROBE = `(async function () {
   var raus = lesen(stufen[0]), rein = lesen(stufen[1]);
   await p.ruhig(4000);
   var an = stufen.filter(function (e) { return e.dataset.on === "1"; }).length;
-  return JSON.stringify({ raus: raus, rein: rein, an: an, stufen: stufen.length });
+  // Und das Mass: alle Stufen einer Zeichnung muessen deckungsgleich liegen.
+  // Das ist die eigentliche Zusage von aufbau -- ein Stueck, das noch nicht
+  // dran ist, steht als Luft da und behaelt seinen Platz. Fiele der Platz weg,
+  // laege die Stufe, die es hat, anders als die, die es noch nicht hat, und
+  // die Zeichnung spraenge bei jedem Schritt.
+  //
+  // Abgelesen an dem, was stelle den Sprites in Prozent der Buehne
+  // hinschreibt, und nicht an Pixeln: Prozente haengen nicht an der
+  // Fenstergroesse. Auf eine Nachkommastelle gerundet, das sind rund 0,1
+  // Prozent der Buehne; feiner gefragt zaehlte man das Rauschen der Messung
+  // mit. (Ohne Schraegstriche und ohne Akzente: der ganze Block steht in einer
+  // Zeichenkette mit Rueckwaertsakzenten, und ein weiterer schloesse sie.)
+  var masze = stufen.map(function (e) {
+    return ["left", "top", "width", "height"].map(function (k) {
+      return (Math.round(parseFloat(e.style[k]) * 10) / 10).toFixed(1);
+    }).join(",");
+  });
+  var einig = masze.filter(function (m, i) { return masze.indexOf(m) === i; });
+  return JSON.stringify({ raus: raus, rein: rein, an: an,
+                          stufen: stufen.length, masze: einig });
 })()`;
 
 // Animationen im Zeitraffer, ohne den Browser danach zu fragen. `playbackRate`
@@ -550,6 +575,14 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
         // blendet auf, und danach ist genau eine gezeichnet.
         z.halt = h.raus.kf.join(">") + "·" + h.rein.kf.join(">")
                + "·" + h.an + "/" + h.stufen;
+        z.masz = h.stufen + " Stufen · " + h.masze.length
+               + (h.masze.length === 1 ? " Maß" : " Maße");
+        if (h.masze.length !== 1) {
+          z.maengel.push("die Stufen einer aufbau-Zeichnung liegen nicht "
+            + "deckungsgleich: " + h.masze.join(" | ") + ". Ein Stück, das "
+            + "noch nicht dran ist, hat seinen Platz nicht behalten -- die "
+            + "Zeichnung springt dann bei jedem Schritt.");
+        }
         if (Math.round(h.raus.dauer) !== Math.round(h.rein.dauer)) {
           z.maengel.push("die abtretende aufbau-Stufe wartet "
             + Math.round(h.raus.dauer) + "ms, die ankommende braucht "
@@ -643,7 +676,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   // Nicht „stürzt nicht ab", sondern „verhält sich wie gestern".
   const felder = ["folien", "schritte", "elemente", "flieger", "fliegerRueck",
                   "hash", "hashStand", "sprecher", "grund", "sichtbar",
-                  "sichtbarRueck", "fehler", "halt", "satz", "satzBytes"];
+                  "sichtbarRueck", "fehler", "halt", "masz", "satz", "satzBytes"];
   // `satz` und `satzBytes` hängen an den Schriften des Rechners, nicht am
   // Paket: derselbe Stand ergibt auf macOS 546292 Bytes und auf einem
   // Ubuntu-Läufer 500912, während alle übrigen Felder -- Schritte, Elemente,

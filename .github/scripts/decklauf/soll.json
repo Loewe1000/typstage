@@ -37,6 +37,12 @@
   "gegeneinander und die geteilte Tinte sänke auf zwei Drittel -- am",
   "Ruhezustand ist davon nichts zu sehen, an den Zwischenbildern schon.",
   "",
+  "masz steht ebenfalls nur beim Prüfdeck und sagt, wie viele verschiedene",
+  "Maße die Stufen einer aufbau-Zeichnung melden. Es muss genau eines sein:",
+  "alle Stufen liegen deckungsgleich, weil ein Stück, das noch nicht dran ist,",
+  "als Luft dasteht und seinen Platz behält. Wird daraus mehr als eines,",
+  "springt die Zeichnung bei jedem Schritt.",
+  "",
   "grund ist die Füllfarbe des ersten Pfades im Hintergrund-SVG jeder Folie,",
   "also die Fläche, auf der sie steht. Daran hängen Palette und invert.",
   "",
@@ -743,11 +749,12 @@
    ],
    "fehler": [],
    "halt": "1>1·0>1·1/4",
+   "masz": "4 Stufen · 1 Maß",
    "satz": {
-    "darwin": "7050a4acbcbed88c"
+    "darwin": "a2c0fcb1a5bbff0e"
    },
    "satzBytes": {
-    "darwin": 850342
+    "darwin": 863863
    }
   }
  }

@@ -197,9 +197,17 @@ Dritter Schritt.
 // der Zeichnung, statt hinter ihr.
 //
 // Zweitens: was noch nicht dran ist, steht als Luft da und nicht als Tinte.
-// Im Browser gibt es dafuer keine Zahl -- Alpha 0 ist gezeichnet wie jede
-// andere Farbe --, aber `satz` haelt es fest. Gemessen, indem `durchsichtig`
-// seinen Wert unveraendert zurueckgab: `satz` fiel um.
+// Ob eine Farbe Alpha 0 traegt, hat im Browser keine Zahl -- gezeichnet wird
+// sie wie jede andere --, das haelt `satz` fest. Gemessen, indem
+// `durchsichtig` seinen Wert unveraendert zurueckgab: `satz` fiel um.
+//
+// Wohl aber eine Zahl hat, ob die Luft ihren *Platz* behaelt, und das ist die
+// eigentliche Zusage. Deshalb steht die Zeichnung hier nicht in einem Kasten
+// fester Groesse, sondern in einem `stack`, dessen Breite an ihren Stuecken
+// haengt, und das letzte Stueck ist Inhalt und keine Farbe: `hide` haelt
+// seinen Platz, `none` nicht. Alle vier Stufen muessen dasselbe Mass melden --
+// siehe `masz` in der Haltprobe. Gemessen, indem `durchsichtig` fuer Inhalt
+// `none` zurueckgab: aus einem Mass wurden zwei.
 //
 // Drittens: der Schrittzaehler laeuft in beiden Ausgaben gleich. Das sagt die
 // Zusicherung unter der Zeichnung, und `pruefe-decks.js` uebersetzt das Deck
@@ -208,12 +216,15 @@ Dritter Schritt.
 //
 // Wie die abtretende Stufe geht, statt *dass* sie geht, misst der Lauf eigens:
 // siehe `haltProbe` in `pruefe-decks.js`.
-#aufbau(ab => box(width: 300pt, height: 90pt, {
-  place(bottom + left, line(length: 100%))
-  place(bottom + left, dx: 10%, rect(width: 16%, height: 30pt, fill: ab(2, red)))
-  place(bottom + left, dx: 40%, rect(width: 16%, height: 60pt, fill: ab(3, green)))
-  place(bottom + left, dx: 70%, rect(width: 16%, height: 88pt, fill: ab(4, blue)))
-}), schritte: 4)
+#aufbau(ab => stack(dir: ltr, spacing: 8pt,
+  // Der Grund: steht auf jeder Stufe, weil er keine Nummer traegt.
+  rect(width: 44pt, height: 44pt, stroke: 0.6pt),
+  rect(width: 44pt, height: 44pt, fill: ab(2, red), stroke: ab(2, 0.6pt + black)),
+  rect(width: 44pt, height: 44pt, fill: ab(3, green), stroke: ab(3, 0.6pt + black)),
+  // Ein Stueck aus Inhalt statt aus Farbe. Daran haengt die Breite des Stapels
+  // und damit das Mass aller vier Stufen.
+  ab(4, box(width: 80pt, height: 44pt, align(center + horizon)[Beschriftung])),
+), schritte: 4)
 
 #anim[Ein Schritt nach der Zeichnung.]
 
