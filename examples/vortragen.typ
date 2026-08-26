@@ -236,9 +236,10 @@
   press its digit -- 1 to 5, in whatever order they come; the right arrow takes
   the next one nobody has named yet, so you can always move on. Do not correct
   the order: if the brewery comes first, the brewery comes first, and the map
-  is the same map either way. One more thing, if anyone in the room runs their
-  machine on "reduce motion": the layers still fade in, and what falls away is
-  the travel and not the fading, so nothing here stops being legible.
+  is the same map either way. One more thing, if anyone in the room has "reduce
+  motion" switched on: opacity stays and travel goes, so the points stop rising
+  and simply fade in, while the map layers were plain fades to begin with.
+  Nothing on this slide is carried by the movement.
 ]
 
 // Die Gruppe steht links und damit *vor* der Karte. Das ist keine Frage des
