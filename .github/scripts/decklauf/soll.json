@@ -38,9 +38,10 @@
   "Browser keine Zahl. Nach einem Typst-Wechsel darf er neu gesetzt werden,",
   "aber nur nachdem jemand nachgesehen hat, was sich geändert hat.",
   "",
-  "Das Pruefdeck hat eine zweite adaptive Gruppe bekommen; die linux-Werte von",
-  "satz und satzBytes gehoerten zum Stand davor und sind entfernt. Der naechste",
-  "CI-Lauf nennt die neuen."
+  "",
+  "Die linux-Werte stammen aus dem CI-Lauf, der sie gemeldet hat, nachdem das",
+  "Pruefdeck eine zweite adaptive Gruppe bekommen hatte. Alle sieben Decks",
+  "meldeten dort ok; genannt wurden nur diese beiden Felder."
  ],
  "decks": {
   "tour": {
@@ -717,10 +718,12 @@
    ],
    "fehler": [],
    "satz": {
-    "darwin": "94b0f9e90beddbb9"
+    "darwin": "94b0f9e90beddbb9",
+    "linux": "a1bb6454a330d668"
    },
    "satzBytes": {
-    "darwin": 696812
+    "darwin": 696812,
+    "linux": 632664
    }
   }
  }
