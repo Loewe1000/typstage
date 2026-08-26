@@ -813,6 +813,14 @@ beide im Gleichschritt laufen, und sonst nicht. Ein `anim` mit eigenem Bereich
 in einem gedimmten `anim` bleibt also voll stehen -- gemessen an einem inneren
 `at: "1-"` in einem äußeren `at: "1"`.
 
+Was ein inneres Element dagegen nie tut: früher erscheinen als das, worin es
+steht. Sein Zustand wird an dem seines Wirts gedeckelt, die ganze Kette hinauf.
+Ohne das stand ein `morph` in einem `anim(at: "2-")` schon auf Schritt 1 in
+voller Stärke da, während sein eigener Satz noch unsichtbar war -- die Sprites
+sind im Markup Geschwister, der Wirt kann also nichts verdecken. Weniger
+sichtbar als sein Wirt darf ein inneres Element weiterhin sein; dafür ist sein
+eigener Bereich da.
+
 In der Praxis stehen `morph`, `video`, `embed` und `flipbook` damit ganz
 außerhalb dieser Vererbung: alle vier haben `at: "1-"` als Vorgabe, einen
 offenen Bereich, und ein offener kann zu einem geschlossenen nie passen. In

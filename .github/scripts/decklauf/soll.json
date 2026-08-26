@@ -38,10 +38,9 @@
   "Browser keine Zahl. Nach einem Typst-Wechsel darf er neu gesetzt werden,",
   "aber nur nachdem jemand nachgesehen hat, was sich geändert hat.",
   "",
-  "",
-  "Die linux-Werte stammen aus dem CI-Lauf, der sie gemeldet hat, nachdem das",
-  "Pruefdeck eine zweite adaptive Gruppe bekommen hatte. Alle sieben Decks",
-  "meldeten dort ok; genannt wurden nur diese beiden Felder."
+  "Das Pruefdeck hat einen Fall fuer verfolgte Elemente ineinander bekommen;",
+  "die linux-Werte von satz und satzBytes gehoerten zum Stand davor und sind",
+  "entfernt. Der naechste CI-Lauf nennt die neuen."
  ],
  "decks": {
   "tour": {
@@ -631,11 +630,11 @@
    "fehler": []
   },
   "pruefdeck": {
-   "folien": 16,
-   "schritte": 28,
-   "elemente": 18,
-   "flieger": 2,
-   "fliegerRueck": 2,
+   "folien": 18,
+   "schritte": 31,
+   "elemente": 22,
+   "flieger": 6,
+   "fliegerRueck": 6,
    "hash": 8,
    "hashStand": "1/0",
    "sprecher": 67,
@@ -654,6 +653,8 @@
     "#0f1319",
     "#0f1319",
     "#0c2733",
+    "#0f1319",
+    "#0f1319",
     "#0f1319",
     "#0f1319"
    ],
@@ -685,45 +686,49 @@
     "10/4·0/0",
     "10/4·0/0",
     "10/4·0/0",
-    "10/4·0/0"
+    "10/4·0/0",
+    "10/4·0/0",
+    "13/4·3/0",
+    "14/4·1/0"
    ],
    "sichtbarRueck": [
-    "10/4·0/0",
-    "10/4·0/0",
-    "10/4·0/0",
-    "10/4·0/0",
-    "10/4·0/0",
-    "10/4·0/0",
+    "14/4·3/0",
+    "11/4·0/0",
+    "11/4·0/0",
+    "11/4·0/0",
+    "11/4·0/0",
+    "11/4·0/0",
+    "11/4·0/0",
+    "11/4·0/0",
+    "11/4·0/0",
+    "11/4·1/0",
+    "11/4·1/0",
+    "11/4·0/0",
+    "11/4·0/0",
+    "11/4·0/0",
+    "11/4·2/0",
     "10/4·1/0",
-    "10/4·1/0",
-    "10/4·0/0",
-    "10/4·0/0",
-    "10/4·0/0",
-    "10/4·2/0",
-    "9/4·1/0",
-    "8/4·0/0",
-    "8/4·0/0",
-    "8/4·0/0",
-    "8/4·0/0",
-    "8/4·3/2",
-    "7/3·2/1",
-    "6/2·1/0",
-    "6/2·3/2",
-    "5/1·2/1",
-    "5/0·2/0",
-    "4/0·1/0",
-    "3/0·0/0",
-    "3/0·0/0",
-    "3/0·0/0"
+    "9/4·0/0",
+    "9/4·0/0",
+    "9/4·0/0",
+    "9/4·0/0",
+    "9/4·3/2",
+    "8/3·2/1",
+    "7/2·1/0",
+    "7/2·3/2",
+    "6/1·2/1",
+    "6/0·2/0",
+    "5/0·1/0",
+    "4/0·0/0",
+    "4/0·0/0",
+    "4/0·0/0"
    ],
    "fehler": [],
    "satz": {
-    "darwin": "94b0f9e90beddbb9",
-    "linux": "a1bb6454a330d668"
+    "darwin": "532bdaa668f6dce2"
    },
    "satzBytes": {
-    "darwin": 696812,
-    "linux": 632664
+    "darwin": 793484
    }
   }
  }

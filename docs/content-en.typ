@@ -519,6 +519,13 @@ and `duration` reach inwards: it applies where both run in lockstep, and not
 otherwise. So an `anim` with a range of its own inside a dimmed `anim` stays at
 full strength, measured on an inner `at: "1-"` inside an outer `at: "1"`.
 
+What an inner element never does, on the other hand, is appear before the
+thing it sits in. Its state is capped by its host's, all the way up the chain.
+Without that a `morph` inside an `anim(at: "2-")` stood there at full strength
+on step 1 while its own sentence was still invisible -- the sprites are
+siblings in the markup, so the host cannot cover anything. Being *less* visible
+than its host is still allowed; that is what its own range is for.
+
 In practice that puts `morph`, `video`, `embed` and `flipbook` outside the
 inheritance altogether: all four default to `at: "1-"`, an open range, and an
 open range can never match a closed one. Inside a dimmed element they keep

@@ -511,12 +511,39 @@
   }
 
   // Which of the three a sprite is in on a given step.
-  function zustand(el, schritt) {
+  function eigenerZustand(el, schritt) {
     if (activeAt(el.dataset.at, schritt)) return 2;
     // The cheap question first. Almost every selector runs to the end of the
     // slide, and then there is nothing to look up.
     if (schritt > endeBei(el.dataset.at) && erbt(el, "after") === "dimmed") return 1;
     return 0;
+  }
+
+  function wirtVon(el) {
+    if (!el.dataset.parent) return null;
+    var folie = el.closest(".ts-slide");
+    return folie
+      ? folie.querySelector('.ts-el[data-n="' + el.dataset.parent + '"]') : null;
+  }
+
+  // Nothing is more visible than what it sits inside.
+  //
+  // A tracked element inside another keeps its own range -- `morph`, `video`,
+  // `embed` and `flipbook` all default to `at: "1-"` -- and the sprites are
+  // siblings in the DOM, so the host cannot hide it by covering it. Measured
+  // on a `morph` inside an `anim(at: "2-")`: on step 1 the formula stood there
+  // at full strength while its own bullet was still invisible.
+  //
+  // The host is known: `stelle` writes `data-parent` whenever a marker was
+  // found inside another element's sprite. So the state is simply capped by
+  // the host's, up the whole chain. An inner element may still be *less*
+  // visible than its host -- that is what its own range is for.
+  function zustand(el, schritt, tiefe) {
+    var z = eigenerZustand(el, schritt);
+    if (z === 0 || (tiefe || 0) > 8) return z;
+    var wirt = wirtVon(el);
+    if (!wirt) return z;
+    return Math.min(z, zustand(wirt, schritt, (tiefe || 0) + 1));
   }
 
   // ── Magic move ────────────────────────────────────────────────────────────

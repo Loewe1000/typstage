@@ -155,3 +155,18 @@ Ein dritter.
   - anderer erster Punkt
   - anderer zweiter Punkt
 ]
+
+== Verfolgtes im Verfolgten
+// Ein `morph` in einem `anim`, das erst spaeter kommt. Die Sprites sind im
+// DOM Geschwister, der Wirt kann das Innere also nicht verdecken -- und ein
+// `morph` traegt `at: "1-"` als Vorgabe. Ohne die Deckelung stand die Formel
+// auf Schritt 1 in voller Staerke da, waehrend ihr eigener Satz noch
+// unsichtbar war. Der Lauf sieht das an `sichtbar`: auf dem ersten Schritt
+// dieser Folie darf nichts gezeichnet sein.
+Sichtbar ab Schritt 1.
+#anim(at: "2-")[Erst auf Schritt 2, mit #morph(<verschachtelt>)[$x^2$] darin.]
+#pause
+Dritter Schritt.
+
+== Danach
+#align(center, morph(<verschachtelt>, text(size: 2em)[$x^2$]))
