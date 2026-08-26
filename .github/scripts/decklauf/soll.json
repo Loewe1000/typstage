@@ -38,13 +38,10 @@
   "Browser keine Zahl. Nach einem Typst-Wechsel darf er neu gesetzt werden,",
   "aber nur nachdem jemand nachgesehen hat, was sich geändert hat.",
   "",
-  "satz, satzBytes und sprecher haengen an den Schriften des Rechners und nicht",
-  "am Paket. Wo die Plattformen sich einig sind, steht eine schlichte Zahl, und",
-  "dann wird auch plattformuebergreifend verglichen. Geteilt wird erst, wo eine",
-  "Plattform nachweislich abweicht -- heute nur theme-night.sprecher und der",
-  "Satz-Fingerabdruck des Pruefdecks. Die linux-Werte stammen aus den ersten",
-  "beiden CI-Laeufen dieses Prueflaufs, in denen alle sieben Decks sonst ok",
-  "meldeten; ein Ubuntu-Laeufer setzt theme-night mit einer Glyphe weniger."
+  "Das Pruefdeck ist um eine adaptive Gruppe gewachsen; die linux-Werte von satz",
+  "und satzBytes gehoerten zum alten Stand und sind deshalb entfernt. Der naechste",
+  "CI-Lauf faellt daran um und nennt die neuen -- das ist beabsichtigt: eine Zahl,",
+  "die niemand gemessen hat, gehoert nicht in einen Sollstand."
  ],
  "decks": {
   "tour": {
@@ -634,9 +631,9 @@
    "fehler": []
   },
   "pruefdeck": {
-   "folien": 13,
-   "schritte": 21,
-   "elemente": 10,
+   "folien": 15,
+   "schritte": 26,
+   "elemente": 16,
    "flieger": 2,
    "fliegerRueck": 2,
    "hash": 8,
@@ -655,6 +652,8 @@
     "#0f1319",
     "#0c2733",
     "#0f1319",
+    "#0f1319",
+    "#0c2733",
     "#0f1319"
    ],
    "sichtbar": [
@@ -678,9 +677,19 @@
     "8/4·0/0",
     "8/4·0/0",
     "9/4·1/0",
-    "10/4·1/0"
+    "10/4·1/0",
+    "10/4·0/0",
+    "10/4·0/0",
+    "10/4·0/0",
+    "10/4·0/0",
+    "10/4·0/0"
    ],
    "sichtbarRueck": [
+    "10/4·0/0",
+    "10/4·0/0",
+    "10/4·0/0",
+    "10/4·0/0",
+    "10/4·1/0",
     "10/4·1/0",
     "10/4·0/0",
     "10/4·0/0",
@@ -704,12 +713,10 @@
    ],
    "fehler": [],
    "satz": {
-    "darwin": "8e355be08071f7c8",
-    "linux": "070d0e2da7d3159b"
+    "darwin": "ab308e9c86036597"
    },
    "satzBytes": {
-    "darwin": 546292,
-    "linux": 500912
+    "darwin": 644853
    }
   }
  }

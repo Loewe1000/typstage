@@ -128,3 +128,20 @@ Ein dritter.
 #v(1fr)
 
 #speaker-note[Eine Notiz, damit die Sprecheransicht etwas zu zeigen hat.]
+
+= Adaptiv
+
+== Freie Reihenfolge
+// Eine adaptive Gruppe. Sie deckt nichts von selbst auf: alle Punkte stehen
+// beiseite, bis eine Ziffer sie ruft. Fuer den Prueflauf heisst das, dass
+// `sichtbar` auf diesen Schritten null gedimmte und null gezeichnete Elemente
+// meldet -- faellt der Wächter aus, der sie beiseitestellt, kaemen sie von
+// selbst und die Reihe wuerde umfallen.
+#adaptiv("probe", start: 2)[
+  - erster Punkt
+  - zweiter Punkt
+  - dritter Punkt
+]
+#adaptiv-schicht("probe", 1, [Beiwerk zum ersten])
+#adaptiv-schicht("probe", 2, [Beiwerk zum zweiten])
+#adaptiv-schicht("probe", 3, [Beiwerk zum dritten])

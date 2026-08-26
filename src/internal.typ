@@ -147,6 +147,14 @@
 /// All morphs of the document: each entry is slide, name and whether it
 /// stands from step one. Checked at the end: a delayed morph must not share
 /// its name with one on the slide before it, or the flight there is lost.
+/// The adaptive groups of a slide: name -> (start, count).
+///
+/// `adaptiv` records which steps its points were given; `adaptiv-schicht`
+/// looks it up so that it shares one. The coupling then falls out of the
+/// shared step -- swapping the step moves the point and everything tied to it
+/// at once, and nothing has to be linked by name.
+#let adaptiv-gruppen = state("typstage-adaptiv", (:))
+
 #let morph-index = state("typstage-morphs", ())
 
 /// Every element that asked to rest dimmed: its slide and the last step of

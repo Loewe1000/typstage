@@ -1,6 +1,6 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (fit-meldung, html-output, im-deck, im-fit, name-of,
+#import "internal.typ": (adaptiv-gruppen, fit-meldung, html-output, im-deck, im-fit, name-of,
                         offenes-ende, pin-index, pin-marker, selector,
                         step-cursor, track)
 
@@ -16,8 +16,11 @@
 /// the sprite record rather than in `extra`, which becomes markup attributes.
 #let anim-kern(body, at: auto, enter: "fade-up", exit: "fade",
                after: "hidden", duration: auto, delay: 0,
-               dim-freiwillig: false) = track(
+               dim-freiwillig: false, ad: none, ad-nr: none) = track(
   "anim", body, at: at, dim-freiwillig: dim-freiwillig, extra: (
+    // Membership in an adaptive group. `none` never travels into the markup,
+    // so an ordinary element gains no new attribute.
+    ad: ad, "ad-nr": ad-nr,
     enter: enter, exit: exit, delay: delay,
     duration: if duration == auto { none } else { duration },
     // Only the departure from the default travels into the markup. `hidden`
@@ -276,6 +279,85 @@
 /// The last point dims too as soon as the slide has a further step after it,
 /// because then the walk has moved on from it as well. And `stride: 0`, which
 /// puts every point on one step, makes them all dim together on the next.
+/// A group that is revealed in whatever order it is called out.
+///
+/// For points that have no order of their own: what the class names gets
+/// shown, in the order it comes rather than the order it stands in. The digits
+/// `1` to `9` choose; the speaker view shows which digit belongs to which
+/// point.
+///
+/// ```typ
+/// #adaptiv("ablesen", start: 2)[
+///   - positive und negative Werte
+///   - tiefster und höchster Wert
+///   - Abnahme und Zunahme
+/// ]
+/// ```
+///
+/// The group owns as many steps as it has points, and the order changes
+/// nothing about that. Everything that hangs on the step count -- the progress
+/// bar, `info().step.total`, the overflow check, the handout -- is therefore
+/// untouched.
+///
+/// Set, the list keeps its reading order: a point not yet named holds its
+/// place, so nothing jumps when it arrives later.
+#let adaptiv(name, ..items, start: auto, spacing: 0.65em) = context {
+  assert(type(name) == str and name != "", message:
+    "typstage: adaptiv() wants a name as its first argument, so that "
+    + "adaptiv-schicht() can point at the same group.")
+  assert(items.named().len() == 0, message:
+    "typstage: adaptiv() does not know "
+    + items.named().keys().join(", ") + ". It takes start and spacing.")
+  assert(im-fit.get() == 0, message: fit-meldung("adaptiv"))
+  let gegeben = items.pos()
+  assert(gegeben.len() > 0, message: "typstage: adaptiv() wants something to reveal")
+  // A single piece can be a list: then its items are the points. The same
+  // unwrapping as in `stagger` -- a body is rarely the list itself, usually a
+  // sequence in which it stands beside whitespace.
+  let punkte = if gegeben.len() == 1 {
+    let body = gegeben.first()
+    let teile = if body.has("children") { body.children } else { (body,) }
+    teile.filter(c => c.func() in (list.item, enum.item))
+  } else { () }
+  let stuecke = if punkte.len() > 0 { punkte.map(p => p.body) } else { gegeben }
+  let ab = if start == auto { step-cursor.get().first() } else { start }
+  // Recorded so that `adaptiv-schicht` finds the steps again.
+  adaptiv-gruppen.update(g => g + ((name): (start: ab, anzahl: stuecke.len())))
+  for (i, b) in stuecke.enumerate() {
+    if i > 0 { v(spacing, weak: true) }
+    block(anim-kern(
+      if punkte.len() > 0 { list(b) } else { b },
+      at: str(ab + i) + "-", ad: name, ad-nr: i + 1))
+  }
+}
+
+/// Something that appears together with one point of an adaptive group.
+///
+/// A drawing layer, a picture, a sentence beside it: it shares the step with
+/// its point and therefore travels with it, without having to be linked.
+///
+/// ```typ
+/// #adaptiv-schicht("ablesen", 1, schicht-vorzeichen)
+/// ```
+///
+/// The group has to stand *before* its layers in the source, because a layer
+/// looks up which step its point was given. Standing after them, the package
+/// says so rather than quietly doing nothing.
+#let adaptiv-schicht(name, nr, body, enter: "fade") = context {
+  let g = adaptiv-gruppen.get()
+  assert(name in g, message:
+    "typstage: adaptiv-schicht(\"" + name + "\") finds no group of that name. "
+    + "An adaptiv() group has to stand before its layers in the source, "
+    + "because a layer looks up which step its point was given.")
+  let e = g.at(name)
+  assert(nr >= 1 and nr <= e.anzahl, message:
+    "typstage: adaptiv-schicht(\"" + name + "\", " + str(nr) + ") -- that "
+    + "group has " + str(e.anzahl) + " point"
+    + (if e.anzahl == 1 { "" } else { "s" }) + ", so the number is out of range.")
+  anim-kern(body, at: str(e.start + nr - 1) + "-", ad: name, ad-nr: nr,
+            enter: enter)
+}
+
 #let stagger(
   ..items,
   start: auto,

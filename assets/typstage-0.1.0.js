@@ -2468,6 +2468,11 @@
     sprecherStand();
     tinteStand();
     mark();
+    // Last, because `ruhe` above has just written an opacity onto every
+    // element: a point still waiting to be called out would otherwise be
+    // invisible to the speaker as well, and there is nothing to choose from
+    // in an empty column.
+    adSprecher();
   }
 
   // ── Slide transitions ─────────────────────────────────────────────────────
@@ -2883,8 +2888,152 @@
     var n = t.tagName.toLowerCase();
     return n === "input" || n === "textarea" || n === "select" || !!t.isContentEditable;
   }
+
+  // ── Adaptive groups ────────────────────────────────────────────────────────
+  //
+  // Points a class calls out in whatever order they come. Every member of a
+  // group carries `data-ad` (its name) and `data-ad-nr` (which point it
+  // belongs to); a point and everything tied to it -- a drawing layer, a
+  // sentence beside it -- share one number and therefore one step. Swapping
+  // the step moves them together, so no separate link is needed.
+  //
+  // The group owns as many steps as it has points. Which point gets which of
+  // them is decided here, at the keyboard; the count never changes, and with
+  // it neither the progress bar, nor `info().step.total`, nor the overflow
+  // check, nor the handout.
+  var AD = {};
+
+  function adSammeln() {
+    AD = {};
+    [].forEach.call(document.querySelectorAll(".ts-el[data-ad]"), function (el) {
+      var name = el.dataset.ad;
+      var g = AD[name] || (AD[name] = { reihen: {}, plaetze: [], folge: [] });
+      var nr = +el.dataset.adNr;
+      (g.reihen[nr] || (g.reihen[nr] = [])).push(el);
+      // The step the point was written for. Remembered once, because
+      // `data-at` is what gets rewritten below.
+      if (!el.dataset.adPlatz) el.dataset.adPlatz = el.dataset.at;
+    });
+    Object.keys(AD).forEach(function (name) {
+      var g = AD[name];
+      g.plaetze = Object.keys(g.reihen)
+        .map(function (nr) { return g.reihen[nr][0].dataset.adPlatz; })
+        .sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+      g.aus = (STEPS.length + 2) + "-";
+    });
+    // Nothing has been called out yet, so every point stands aside. Without
+    // this the first point would simply appear on its own step, which is the
+    // behaviour an adaptive group exists to replace.
+    Object.keys(AD).forEach(function (name) { adStellen(name, false); });
+    adSprecher();
+  }
+
+  // `malen` is false while the deck is being set up: there is no current step
+  // yet, and `goto` would have nothing to go to.
+  function adStellen(name, malen) {
+    var g = AD[name];
+    if (!g) return;
+    Object.keys(g.reihen).forEach(function (nr) {
+      var p = g.folge.indexOf(+nr);
+      var at = p >= 0 ? g.plaetze[p] : g.aus;
+      g.reihen[nr].forEach(function (el) { el.dataset.at = at; });
+    });
+    adSprecher();
+    if (malen !== false) goto(current, true);
+  }
+
+  // The digits, and only in the speaker view. A point that has not been called
+  // out yet is invisible in the hall -- that is the whole idea -- but the
+  // speaker has to see what there is to choose from, and which digit picks
+  // it. So it stands there pale, with its number in front of it.
+  //
+  // Written as inline style rather than as a CSS rule, and not out of taste:
+  // the stylesheet is embedded in every deck, so a rule would move the
+  // typeset fingerprint the deck check keeps per platform -- and the Linux
+  // value cannot be re-recorded from here.
+  function adSprecher() {
+    if (ROLLE !== "speaker") return;
+    Object.keys(AD).forEach(function (name) {
+      var g = AD[name];
+      Object.keys(g.reihen).forEach(function (nr) {
+        var offen = g.folge.indexOf(+nr) < 0;
+        g.reihen[nr].forEach(function (el, i) {
+          el.style.opacity = offen ? "0.3" : "";
+          el.style.visibility = offen ? "visible" : "";
+          // One badge per point, on the first member. The layer that travels
+          // with it needs no second number.
+          // Beside the point, not inside it. A badge inside inherits the
+          // element's opacity, and a point waiting to be called stands at 0.3
+          // -- measured, the digit was as pale as the text it labels and no
+          // help at all. As a sibling it keeps its own strength and takes the
+          // point's own left/top, which `setzen` has already written.
+          // Nur das erste Mitglied raeumt auf und legt an. Lief das Aufraeumen
+          // fuer jedes Mitglied, entfernte die Schicht die Marke, die ihr
+          // eigener Punkt gerade angelegt hatte -- gemessen: keine einzige
+          // Ziffer im Bild, obwohl jede angelegt worden war.
+          if (i > 0) return;
+          var eig = el.parentNode
+            && el.parentNode.querySelector(':scope > .ts-ad-nr[data-fuer="' + name + "-" + nr + '"]');
+          if (eig) eig.remove();
+          if (!offen) return;
+          var b = document.createElement("span");
+          b.className = "ts-ad-nr";
+          b.dataset.fuer = name + "-" + nr;
+          b.textContent = nr;
+          b.style.left = el.style.left;
+          b.style.top = el.style.top;
+          // An explicit colour, not `currentColor`: beside `color:#fff` in the
+          // same declaration that resolves to white, and the badge was white
+          // on white -- measured, invisible in the speaker view.
+          //
+          // Placed inside the element, not to its left: a point sits at the
+          // left edge of its column, and anything outside is clipped away.
+          var wo = "left:" + (el.style.left || "0") + ";top:" + (el.style.top || "0") + ";";
+          b.style.cssText = "position:absolute;" + wo
+            + "font:700 0.72em/1.55 system-ui,sans-serif;width:1.55em;"
+            + "height:1.55em;border-radius:50%;text-align:center;"
+            + "background:#eb5e28;color:#fff;opacity:1;"
+            // Auf den Aufzaehlungspunkt, nicht daneben: die Ziffer nimmt den
+            // Platz des Punktes ein, den sie ohnehin ersetzt, und die Zeile
+            // rueckt nicht.
+            + "pointer-events:none;z-index:5;transform:translate(-12%,6%)";
+          if (el.parentNode) el.parentNode.appendChild(b);
+        });
+      });
+    });
+  }
+
+  // Which groups are on the slide the deck is standing on.
+  function adHier() {
+    var sec = SLIDES[STEPS[current].slide];
+    return Object.keys(AD).filter(function (name) {
+      return Object.keys(AD[name].reihen).some(function (nr) {
+        return AD[name].reihen[nr].some(function (el) { return sec.contains(el); });
+      });
+    });
+  }
+
+  // A digit reveals that point of the group on this slide. Pressed again it
+  // does nothing: taking a point back is what paging backwards is for.
+  function adTaste(ziffer) {
+    var namen = adHier();
+    if (!namen.length) return false;
+    var g = AD[namen[0]];
+    if (!(ziffer in g.reihen)) return false;
+    if (g.folge.indexOf(ziffer) >= 0) return false;
+    g.folge.push(ziffer);
+    adStellen(namen[0], false);
+    // And go there. Naming a point and then having to press onwards would be
+    // two moves for one thought; the step is the one the point just took, so
+    // the count and the progress bar say the same as before.
+    var platz = parseInt(g.plaetze[g.folge.length - 1], 10) - 1;
+    goto(platz, false);
+    return true;
+  }
+
   addEventListener("keydown", function (e) {
     if (tippt(e)) return;
+    if (/^[1-9]$/.test(e.key) && adTaste(+e.key)) { e.preventDefault(); return; }
     if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { goto(current + 1); e.preventDefault(); }
     else if (e.key === "ArrowLeft" || e.key === "PageUp") { goto(current - 1); e.preventDefault(); }
     else if (e.key === "Home") goto(0, true);
@@ -2999,6 +3148,10 @@
   });
 
   fit();
+  // Before the first `goto`, because the very first step already has to know
+  // whether a point of an adaptive group has been called out yet -- none has,
+  // so all of them stand aside until a digit says otherwise.
+  adSammeln();
   // The speaker view starts at the first slide and waits for the talk to
   // tell it where it stands. The talk itself takes the number from the
   // hash, this one time and never again after that.
