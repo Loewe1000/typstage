@@ -170,3 +170,66 @@ Dritter Schritt.
 
 == Danach
 #align(center, morph(<verschachtelt>, text(size: 2em)[$x^2$]))
+
+= Zeichnen
+
+== Eine Zeichnung in Stufen
+// `aufbau`: eine Zeichnung, die in vier Stufen entsteht. Sie steht hier aus
+// schlichten Rechtecken und nicht aus CeTZ oder lilaq -- geprueft wird das
+// Paket und nicht ein fremdes Zeichenpaket, und ein Prueflauf, der dafuer
+// etwas aus dem Netz holen muesste, prueft an dem Tag nichts, an dem das Netz
+// fehlt. Wie `aufbau` sich zu CeTZ und lilaq verhaelt, halten die Beispiele
+// der Handbuecher fest; hier steht, was die Laufzeit damit macht.
+//
+// Drei Dinge haengen daran.
+//
+// Erstens: auf jedem Schritt dieser Folie ist genau *eine* Stufe gezeichnet,
+// nie zwei und nie null, und die letzte bleibt bis zum Ende der Folie stehen.
+// Dafuer steht der `anim` unter der Zeichnung: ohne einen Schritt *nach* der
+// letzten Stufe faellt eine Stufe, deren Bereich zu frueh schliesst, gar nicht
+// auf -- ihr letzter Schritt ist dann zugleich der letzte der Folie. Gemessen,
+// indem die letzte Stufe einen geschlossenen statt eines offenen Bereichs
+// bekam: ohne den `anim` bewegte sich in `sichtbar` keine Zahl, mit ihm ging
+// der letzte Schritt dieser Folie von 2/0 auf 1/0.
+//
+// Ein `anim` und kein `#pause`: `#pause` nummeriert seine Schritte fuer sich
+// (`at: i + 2` in `apply-pauses`) und stuende hier auf Schritt 2, mitten in
+// der Zeichnung, statt hinter ihr.
+//
+// Zweitens: was noch nicht dran ist, steht als Luft da und nicht als Tinte.
+// Ob eine Farbe Alpha 0 traegt, hat im Browser keine Zahl -- gezeichnet wird
+// sie wie jede andere --, das haelt `satz` fest. Gemessen, indem
+// `durchsichtig` seinen Wert unveraendert zurueckgab: `satz` fiel um.
+//
+// Wohl aber eine Zahl hat, ob die Luft ihren *Platz* behaelt, und das ist die
+// eigentliche Zusage. Deshalb steht die Zeichnung hier nicht in einem Kasten
+// fester Groesse, sondern in einem `stack`, dessen Breite an ihren Stuecken
+// haengt, und das letzte Stueck ist Inhalt und keine Farbe: `hide` haelt
+// seinen Platz, `none` nicht. Alle vier Stufen muessen dasselbe Mass melden --
+// siehe `masz` in der Haltprobe. Gemessen, indem `durchsichtig` fuer Inhalt
+// `none` zurueckgab: aus einem Mass wurden zwei.
+//
+// Drittens: der Schrittzaehler laeuft in beiden Ausgaben gleich. Das sagt die
+// Zusicherung unter der Zeichnung, und `pruefe-decks.js` uebersetzt das Deck
+// eigens ein zweites Mal auf Papier, weil sie sonst nur im Browser gefragt
+// wuerde -- und der Papierzweig von `aufbau` ist ein anderer.
+//
+// Wie die abtretende Stufe geht, statt *dass* sie geht, misst der Lauf eigens:
+// siehe `haltProbe` in `pruefe-decks.js`.
+#aufbau(ab => stack(dir: ltr, spacing: 8pt,
+  // Der Grund: steht auf jeder Stufe, weil er keine Nummer traegt.
+  rect(width: 44pt, height: 44pt, stroke: 0.6pt),
+  rect(width: 44pt, height: 44pt, fill: ab(2, red), stroke: ab(2, 0.6pt + black)),
+  rect(width: 44pt, height: 44pt, fill: ab(3, green), stroke: ab(3, 0.6pt + black)),
+  // Ein Stueck aus Inhalt statt aus Farbe. Daran haengt die Breite des Stapels
+  // und damit das Mass aller vier Stufen.
+  ab(4, box(width: 80pt, height: 44pt, align(center + horizon)[Beschriftung])),
+), schritte: 4)
+
+#anim[Ein Schritt nach der Zeichnung.]
+
+#context assert(info().step.total == 5, message:
+  "Prüfdeck: die Folie mit aufbau() zählt " + str(info().step.total)
+  + " Schritte statt 5. Der Schrittzeiger zählt aufbau() falsch -- und diese "
+  + "Zahl muss in beiden Ausgaben dieselbe sein, sonst zeigt das Handout eine "
+  + "andere Fußzeile als der Vortrag.")

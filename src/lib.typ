@@ -28,8 +28,8 @@
   // instead of forking the theme.
   info,
 )
-#import "elements.typ": (adaptiv, adaptiv-schicht, alternatives, anim, morph,
-                         pause, pin, stagger)
+#import "elements.typ": (adaptiv, adaptiv-schicht, alternatives, anim, aufbau,
+                         morph, pause, pin, stagger)
 #import "layout.typ": card, callout, fit, side-by-side, statement, tiles
 #import "media.typ": video, embed, flipbook
 #import "bridge.typ": bridge-job, bridge-targets

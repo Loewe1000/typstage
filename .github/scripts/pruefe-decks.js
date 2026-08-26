@@ -183,6 +183,20 @@ const SOLL_HINWEIS = [
   "über #8. Er muss dem Wert des Durchblätterns auf demselben Schritt",
   "gleichen, sonst spielt der Einstieg den Lauf falsch nach.",
   "",
+  "halt steht nur beim Prüfdeck und beschreibt den Schrittwechsel einer",
+  "Zeichnung aus aufbau(): <Deckkraft der abtretenden Stufe> · <die der",
+  "ankommenden> · <danach gezeichnete Stufen>/<Stufen der Folie>. Die",
+  "abtretende Stufe wartet, statt zu gehen, deshalb steht dort 1>1 und nicht",
+  "1>0. Ginge sie auf dem gewöhnlichen Weg, blendeten zwei fast gleiche Bilder",
+  "gegeneinander und die geteilte Tinte sänke auf zwei Drittel -- am",
+  "Ruhezustand ist davon nichts zu sehen, an den Zwischenbildern schon.",
+  "",
+  "masz steht ebenfalls nur beim Prüfdeck und sagt, wie viele verschiedene",
+  "Maße die Stufen einer aufbau-Zeichnung melden. Es muss genau eines sein:",
+  "alle Stufen liegen deckungsgleich, weil ein Stück, das noch nicht dran ist,",
+  "als Luft dasteht und seinen Platz behält. Wird daraus mehr als eines,",
+  "springt die Zeichnung bei jedem Schritt.",
+  "",
   "grund ist die Füllfarbe des ersten Pfades im Hintergrund-SVG jeder Folie,",
   "also die Fläche, auf der sie steht. Daran hängen Palette und invert.",
   "",
@@ -298,6 +312,27 @@ function ueberlaufProbe() {
     + "mehr, was übersteht.";
 }
 
+// Und dasselbe Deck noch einmal auf Papier. Der Browser sieht nur den
+// HTML-Zweig, und `aufbau` hat einen zweiten: dort wird nur die letzte Stufe
+// gesetzt, und der Schrittzähler muss trotzdem so weit laufen wie im Browser.
+// Die Zusicherung dazu steht im Prüfdeck selbst; hier wird sie nur gefragt.
+// Ohne diesen Aufruf bliebe der ganze Papierzweig ungeprüft -- gemessen, indem
+// dort das Weiterzählen wegfiel: der Browserlauf blieb grün.
+function papierProbe() {
+  const quelle = path.join(__dirname, "decklauf", "pruefdeck.typ");
+  const aus = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "typstage-pp2-")),
+                        "pruefdeck.pdf");
+  try {
+    execFileSync("typst", ["compile", "--root", WURZEL,
+                           "--package-path", paketpfad, quelle, aus],
+                 { stdio: ["ignore", "ignore", "pipe"] });
+  } catch (e) {
+    return "Das Prüfdeck ließ sich nicht auf Papier übersetzen: "
+      + String(e.stderr || e.message).slice(0, 400);
+  }
+  return null;
+}
+
 // ── Der Durchlauf, als ein Stück Seitencode ─────────────────────────────────
 const DURCHLAUF = `(async function () {
   var p = typstage.pruef, S = typstage.steps;
@@ -349,6 +384,69 @@ const DURCHLAUF = `(async function () {
     fristen: fristen, grund: grund,
     vor: vor, zurueck: zurueck, fehler: p.fehler()
   });
+})()`;
+
+// ── Wie eine Stufe abtritt ──────────────────────────────────────────────────
+//
+// Der Durchlauf oben misst die Ruhezustände: auf jedem Schritt ist genau eine
+// Stufe von `aufbau` gezeichnet. Was er nicht sieht, ist der Weg dazwischen,
+// und genau dort steckt die Absicht: die abtretende Stufe geht nicht, sie
+// wartet, bis die neue vollständig dasteht (`exit: "hold"`).
+//
+// Ginge sie auf dem gewöhnlichen Weg, blendeten zwei fast gleiche Bilder
+// gegeneinander, und die Tinte, die beide teilen, sänke währenddessen auf zwei
+// Drittel: das ganze Bild blinkt bei jedem Schritt. Am Ruhezustand ist davon
+// nichts zu sehen, deshalb wird hier die Animation selbst gefragt und nicht
+// eine Deckkraft zu einem geratenen Zeitpunkt -- eine Messung, die an einer
+// Uhr hängt, hängt am Rechner.
+//
+// Tempounabhängig: `--tempo` teilt beide Dauern durch dieselbe Zahl, also
+// bleibt ihre Gleichheit stehen. In den Sollstand geht nur, was keine Dauer
+// ist.
+const HALTPROBE = `(async function () {
+  var p = typstage.pruef, S = typstage.steps;
+  var alle = [].slice.call(document.querySelectorAll('.ts-el[data-exit="hold"]'));
+  if (alle.length < 2) return JSON.stringify({ fehlt: alle.length });
+  var folien = [].slice.call(document.querySelectorAll(".ts-slide"));
+  var folie = alle[0].closest(".ts-slide");
+  var nr = folien.indexOf(folie);
+  var stufen = alle.filter(function (e) { return e.closest(".ts-slide") === folie; });
+  var erste = -1;
+  for (var i = 0; i < S.length; i++) if (S[i].slide === nr) { erste = i; break; }
+  if (erste < 0) return JSON.stringify({ fehlt: -1 });
+  typstage.goto(erste, true); await p.ruhig(4000);
+  // Ein Schritt weiter, und sofort gefragt: zwischen goto und dieser Zeile
+  // liegt kein await, die Animationen laufen also noch.
+  typstage.goto(erste + 1);
+  function lesen(el) {
+    var a = el.getAnimations()[0];
+    if (!a) return null;
+    return { dauer: a.effect.getTiming().duration,
+             kf: a.effect.getKeyframes().map(function (k) { return String(k.opacity); }) };
+  }
+  var raus = lesen(stufen[0]), rein = lesen(stufen[1]);
+  await p.ruhig(4000);
+  var an = stufen.filter(function (e) { return e.dataset.on === "1"; }).length;
+  // Und das Mass: alle Stufen einer Zeichnung muessen deckungsgleich liegen.
+  // Das ist die eigentliche Zusage von aufbau -- ein Stueck, das noch nicht
+  // dran ist, steht als Luft da und behaelt seinen Platz. Fiele der Platz weg,
+  // laege die Stufe, die es hat, anders als die, die es noch nicht hat, und
+  // die Zeichnung spraenge bei jedem Schritt.
+  //
+  // Abgelesen an dem, was stelle den Sprites in Prozent der Buehne
+  // hinschreibt, und nicht an Pixeln: Prozente haengen nicht an der
+  // Fenstergroesse. Auf eine Nachkommastelle gerundet, das sind rund 0,1
+  // Prozent der Buehne; feiner gefragt zaehlte man das Rauschen der Messung
+  // mit. (Ohne Schraegstriche und ohne Akzente: der ganze Block steht in einer
+  // Zeichenkette mit Rueckwaertsakzenten, und ein weiterer schloesse sie.)
+  var masze = stufen.map(function (e) {
+    return ["left", "top", "width", "height"].map(function (k) {
+      return (Math.round(parseFloat(e.style[k]) * 10) / 10).toFixed(1);
+    }).join(",");
+  });
+  var einig = masze.filter(function (m, i) { return masze.indexOf(m) === i; });
+  return JSON.stringify({ raus: raus, rein: rein, an: an,
+                          stufen: stufen.length, masze: einig });
 })()`;
 
 // Animationen im Zeitraffer, ohne den Browser danach zu fragen. `playbackRate`
@@ -437,6 +535,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   });
   const ueberlauf = ueberlaufProbe();
   if (ueberlauf) console.error("ABWEICHUNG ueberlauf: " + ueberlauf);
+  const papier = papierProbe();
+  if (papier) console.error("ABWEICHUNG papier: " + papier);
   let pd;
   try { pd = decklaufBauen("pruefdeck"); }
   catch (e) {
@@ -518,6 +618,40 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
         z.maengel.push("rückwärts: Schritt " + soll + " meldete " + s.schritt); });
     if (r.fehler.length)
       z.maengel.push(r.fehler.length + " Fehler/Warnungen: " + r.fehler.join(" | "));
+
+    // Wie eine Stufe von `aufbau` abtritt. Nur im Prüfdeck: nur dort steht eine.
+    if (d.satz) {
+      const h = JSON.parse(await b.ev(HALTPROBE));
+      if (h.fehlt !== undefined) {
+        z.maengel.push("keine zwei aufbau-Stufen im Prüfdeck gefunden ("
+          + h.fehlt + "). Entweder ist die Folie weg oder data-exit=\"hold\" "
+          + "steht nicht mehr an ihren Stufen.");
+      } else if (!h.raus || !h.rein) {
+        z.maengel.push("beim Schrittwechsel lief an einer aufbau-Stufe keine "
+          + "Animation: abtretend " + JSON.stringify(h.raus)
+          + ", ankommend " + JSON.stringify(h.rein));
+      } else {
+        // Der Sollwert trägt keine Dauer, die hinge am --tempo. Er trägt, was
+        // gemeint ist: die abtretende Stufe bleibt voll stehen, die neue
+        // blendet auf, und danach ist genau eine gezeichnet.
+        z.halt = h.raus.kf.join(">") + "·" + h.rein.kf.join(">")
+               + "·" + h.an + "/" + h.stufen;
+        z.masz = h.stufen + " Stufen · " + h.masze.length
+               + (h.masze.length === 1 ? " Maß" : " Maße");
+        if (h.masze.length !== 1) {
+          z.maengel.push("die Stufen einer aufbau-Zeichnung liegen nicht "
+            + "deckungsgleich: " + h.masze.join(" | ") + ". Ein Stück, das "
+            + "noch nicht dran ist, hat seinen Platz nicht behalten -- die "
+            + "Zeichnung springt dann bei jedem Schritt.");
+        }
+        if (Math.round(h.raus.dauer) !== Math.round(h.rein.dauer)) {
+          z.maengel.push("die abtretende aufbau-Stufe wartet "
+            + Math.round(h.raus.dauer) + "ms, die ankommende braucht "
+            + Math.round(h.rein.dauer) + "ms. Sie muss so lange warten, wie "
+            + "die neue braucht, sonst sinkt das Bild zum Schluss doch noch ab.");
+        }
+      }
+    }
 
     // Wiedereintritt über den Hash. Frische Seite, sonst ist es nur ein Sprung.
     const ziel = Math.min(8, r.schritte);
@@ -603,7 +737,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   // Nicht „stürzt nicht ab", sondern „verhält sich wie gestern".
   const felder = ["folien", "schritte", "elemente", "flieger", "fliegerRueck",
                   "hash", "hashStand", "sprecher", "grund", "sichtbar",
-                  "sichtbarRueck", "fehler", "satz", "satzBytes"];
+                  "sichtbarRueck", "fehler", "halt", "masz", "satz", "satzBytes"];
   // `satz` und `satzBytes` hängen an den Schriften des Rechners, nicht am
   // Paket: derselbe Stand ergibt auf macOS 546292 Bytes und auf einem
   // Ubuntu-Läufer 500912, während alle übrigen Felder -- Schritte, Elemente,
@@ -680,6 +814,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   }
   bericht.forEach(z => { if (z.maengel.length) schlecht++; });
   if (ueberlauf) schlecht++;
+  if (papier) schlecht++;
   bericht.forEach(z => z.maengel.forEach(m =>
     process.stderr.write("ABWEICHUNG " + z.deck + ": " + m + "\n")));
 

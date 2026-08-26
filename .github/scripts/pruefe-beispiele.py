@@ -108,9 +108,23 @@ VORSPANN = {
     "#let meine-tabelle = table(columns: 2, [Jahr], [Wert], [2024], [7])\n"
     "#let my-table = meine-tabelle\n"
   ),
-  # Zeichnungen im Handbuch entstehen mit CeTZ. Das Paket ist keine Abhängigkeit
-  # von typstage -- deshalb steht der Import hier und nicht im Listing.
-  "cetz": '#import "@preview/cetz:0.4.2"\n',
+  # Die drei Zeichenpakete, die die Handbücher vorführen. Die Importe stehen
+  # hier und nicht im gezeigten Block: im Handbuch werden sie einmal im
+  # Fließtext genannt, und ein Import mitten im Beispiel machte aus jedem
+  # Bruchstück eine ganze Datei, die der Prüfer dann anders einwickelte.
+  #
+  # Die Versionen sind dieselben wie im Fließtext. Wer eine davon hier
+  # hochzieht, muss sie dort mitziehen, sonst zeigt das Handbuch eine Zeile,
+  # die niemand geprüft hat.
+  "cetz": '#import "@preview/cetz:0.5.2"\n',
+  "lilaq": (
+    '#import "@preview/lilaq:0.6.0" as lq\n'
+    "#let x = (0, 1, 2, 3, 4)\n"
+    "#let messung = (1, 2, 1.5, 2.5, 2)\n"
+    "#let modell = (0.8, 1.9, 1.7, 2.4, 2.1)\n"
+    "#let measured = messung\n"
+    "#let model = modell\n"
+  ),
 }
 
 # Dasselbe, aber im Rumpf der Folie statt davor. Ein Applet muss auf der Folie

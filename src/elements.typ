@@ -1,8 +1,8 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (adaptiv-gruppen, fit-meldung, html-output, im-deck, im-fit, name-of,
-                        offenes-ende, pin-index, pin-marker, selector,
-                        step-cursor, track)
+#import "internal.typ": (adaptiv-gruppen, durchsichtig, fit-meldung, html-output,
+                        im-deck, im-fit, name-of, offenes-ende, pin-index,
+                        pin-marker, selector, step-cursor, track, will-fuellen)
 
 /// What `anim` does once its arguments have been checked.
 ///
@@ -432,4 +432,175 @@
       enter: enter, duration: duration, delay: i * stagger,
     )
   }
+}
+
+
+// ── Eine Zeichnung, die wächst ───────────────────────────────────────────────
+//
+// Eine cetz-Zeichnung oder ein lilaq-Diagramm ist ein Stück, nicht viele:
+// Typst reicht den fertigen Satz heraus, und was darin eine Linie und was eine
+// Datenreihe war, ist von außen nicht mehr zu greifen. Ein `anim` um ein Stück
+// der Zeichnung gibt es also nicht.
+//
+// Was es gibt, ist die Zeichnung selbst, so oft man sie haben will. `aufbau`
+// ruft sie einmal je Schritt und legt die Fassungen übereinander: auf Stufe
+// k steht die Zeichnung so, wie sie nach k Schritten aussieht. Sichtbar ist
+// immer genau eine Stufe.
+//
+// Zwei Fragen entscheiden, ob das trägt, und beide sind nachgemessen.
+//
+// *Springt das Bild?* Nein, weil kein Stück je wirklich fehlt: was noch nicht
+// dran ist, steht als Luft da (siehe `durchsichtig` in `internal.typ`). Alle
+// Stufen messen deshalb auf die Stelle genau gleich, und der Block, in dem
+// sie liegen, hat ohnehin eine feste Größe.
+//
+// *Warum eine Stufe und nicht alle übereinander?* Weil sich gemalte Tinte
+// addiert. Drei Stufen desselben lilaq-Diagramms gegen eines: 3.7 Prozent
+// der Bildpunkte weichen um mehr als 8 von 255 ab, die größte Abweichung 99 --
+// Achsen, Beschriftung und der halbdurchsichtige Kasten der Legende werden
+// dreimal gemalt und dadurch fetter. Mit disjunkten Stufen, in denen nur
+// das eigene Stück steht, ist es nicht besser: dieselbe Messung ergab 3.5
+// Prozent und eine größte Abweichung von 243, denn die Achsen gehören zu
+// keinem Stück und stehen deshalb auf jeder Stufe. Eine Stufe auf einmal
+// ist die einzige Anordnung, die genau das Bild ergibt, das dastünde, wenn man
+// die Zeichnung einmal setzte.
+//
+// Der Preis dafür ist der Übergang: zwei fast gleiche Bilder, die einander
+// ablösen, blenden sich gegenseitig aus. Dagegen steht `exit: "hold"` in der
+// Laufzeit -- die abtretende Stufe bleibt stehen, bis die neue da ist, und
+// geht dann ohne Bewegung. Vorwärts ist der Übergang damit sauber; rückwärts
+// überlagern sich Ausblenden und Einblenden für einen Augenblick, und die
+// geteilte Tinte sinkt kurz auf drei Viertel. Das Handbuch sagt es.
+
+/// A drawing or a diagram that comes into being step by step.
+///
+/// A CeTZ canvas and a lilaq diagram are one piece, not many: Typst hands out
+/// the finished setting, and what was a line and what was a data series in it
+/// cannot be reached from outside any more. So there is no `anim` around a
+/// part of a drawing. What there is, is the drawing itself, as often as one
+/// wants it.
+///
+/// `zeichnen` is called once per step and is handed a question. It is called
+/// `ab` here -- "from" -- because it says exactly what `at:` says elsewhere.
+///
+/// - `ab(k, value)` gives `value` back once the k-th piece is due, and
+///   otherwise the same thing made of air: a colour with alpha 0, a stroke
+///   with a transparent brush, a text in `hide`. The piece is therefore never
+///   really missing, and every stage measures the same to the point.
+/// - `ab(k)` says the same as a boolean, for everything that cannot be
+///   recoloured. In CeTZ that is where `hide(…, bounds: true)` belongs.
+///
+/// Whatever carries no number stands there from the start.
+///
+/// ```typ
+/// #aufbau(ab => cetz.canvas({
+///   import cetz.draw: *
+///   line((0,0), (4,0))                        // there from the start
+///   line((4,0), (4,3), stroke: ab(2, black))  // from step 2
+///   content((2,3.4), ab(3, [hypotenuse]))     // from step 3
+/// }), schritte: 3)
+/// ```
+///
+/// `schritte` is the number of stages and hence the number of steps the
+/// drawing takes on the slide. It is said and not guessed: what `zeichnen`
+/// does with its question is nobody's business from outside.
+///
+/// `start` is `auto`: the drawing begins on the next free step and pushes the
+/// cursor along by `schritte`, the way `stagger` and `alternatives` do. A
+/// number sets the first step itself.
+///
+/// Exactly one stage is drawn at a time, and that is not a saving but the only
+/// arrangement that yields the picture that would stand there if the drawing
+/// were set once. Ink adds up: three layers of the same lilaq diagram against
+/// one, and 3.7 percent of the pixels differ by more than 8 of 255, the
+/// largest deviation 99 -- axes, labels and the half-transparent box of the
+/// legend get painted three times and grow fatter by it.
+///
+/// On paper only the last stage is set, in a block of the same size: a page
+/// shows every step at once, and stacked stages would be overprint. The
+/// cursor still runs there, so that `info().step.total` names the same number
+/// in both outputs.
+///
+/// Under `prefers-reduced-motion: reduce` nothing changes: the stages fade,
+/// they do not travel, and what would fall away is a motion that is not there.
+#let aufbau(zeichnen, schritte: 2, start: auto, enter: "fade", duration: auto) = {
+  assert(type(zeichnen) == function, message:
+    "typstage: aufbau() nimmt als erstes eine Funktion, die die Zeichnung "
+    + "malt, und keine fertige Zeichnung. Sie wird einmal je Schritt gerufen "
+    + "und bekommt dabei die Frage ab(k) gereicht.")
+  assert(type(schritte) == int and schritte >= 1, message:
+    "typstage: aufbau(schritte: …) ist die Zahl der Stufen und zählt ab 1. "
+    + "Eine 0 hieße eine Zeichnung ohne eine einzige Stufe.")
+  assert(start == auto or (type(start) == int and start >= 1), message:
+    "typstage: aufbau(start: …) zählt ab 1, nicht ab 0. Auf Schritt 0 stünde "
+    + "die erste Stufe nie.")
+  layout(available => context {
+    // Wie bei `alternatives`: die Prüfung steht hier und nicht in `track`,
+    // weil der Papierzweig weiter unten über ein `return` hinausgeht und ein
+    // `return` alles fallen lässt, was vorher zusammengefügt wurde.
+    assert(im-fit.get() == 0, message: fit-meldung("aufbau"))
+    // Die Frage, die eine Stufe ihrem Zeichner reicht. Ein Argument heißt
+    // fragen, zwei heißen einfärben; das spart dem Deck zwei Namen für
+    // dieselbe Auskunft.
+    let frage(k) = (nr, ..wert) => {
+      assert(type(nr) == int and nr >= 1 and nr <= schritte, message:
+        "typstage: ab(" + repr(nr) + ") -- diese Zeichnung hat " + str(schritte)
+        + " Stufe" + (if schritte == 1 { "" } else { "n" }) + ", die Nummer "
+        + "liegt also außerhalb. Ein Stück hinter der letzten Stufe käme nie.")
+      assert(wert.named().len() == 0 and wert.pos().len() <= 1, message:
+        "typstage: ab() nimmt die Nummer der Stufe und höchstens eine Sache, "
+        + "die auf ihr erscheinen soll.")
+      if wert.pos().len() == 0 { return k >= nr }
+      if k >= nr { wert.pos().first() } else { durchsichtig(wert.pos().first()) }
+    }
+    let stufen = range(1, schritte + 1).map(k => zeichnen(frage(k)))
+    // Zweimal gemessen, die größere zählt: dieselbe Falle wie in `track` und
+    // in `alternatives`. Ein `height: 100%` in einer Stufe fiele ohne
+    // Höhenbezug auf 0pt zusammen, und eine Messung allein gegen die Höhe
+    // schnitte ab, was übersteht.
+    let frei = stufen.map(s => measure(s, width: available.width))
+    let gedeckelt = stufen.map(s => measure(s, width: available.width,
+                                            height: available.height))
+    // Was sich selbst mittig setzt, misst sich trotzdem so schmal wie seine
+    // Tinte -- `measure(align(center, x), width: 400pt)` gibt die Breite von
+    // `x` zurück und nicht 400pt. Ein Block von dieser Breite nähme dem `align`
+    // genau den Platz weg, in dem es zentrieren wollte, und die Zeichnung
+    // stünde links, obwohl im Quelltext `center` steht. `track` kennt diese
+    // Falle und weicht ihr mit `will-fuellen` aus; hier muss dasselbe gelten,
+    // sonst verhielte sich `aufbau(align(center, …))` anders als
+    // `anim(align(center, …))`. Gemessen: die Stufen lagen bei 3,80 Prozent
+    // der Bühne statt bei 44,61.
+    let fuellt = stufen.any(will-fuellen)
+    let breite = if fuellt { available.width } else {
+      calc.max(..frei.map(m => m.width), ..gedeckelt.map(m => m.width))
+    }
+    let hoehe = calc.max(..frei.map(m => m.height), ..gedeckelt.map(m => m.height))
+    let erster = if start == auto { step-cursor.get().first() + 1 } else { start }
+    if not html-output.get() {
+      // Nur die letzte Stufe, und der Zähler läuft trotzdem. Genau wie
+      // `alternatives`: auf Papier steht die Zeichnung fertig da.
+      return {
+        if im-deck() {
+          step-cursor.update(c => calc.max(c, erster + schritte - 1))
+        }
+        // Ohne `place`, anders als im Zweig darunter: hier steht nur eine
+        // Stufe, es ist also nichts zu stapeln, und `place` nähme einem
+        // `align` in der Stufe den Platz, in dem es ausrichten wollte.
+        // Gemessen an `place(top + left, align(center, rect))` in einem Block
+        // voller Breite: die Tinte lag bei x = 39 statt bei x = 312.
+        block(width: breite, height: hoehe, stufen.last())
+      }
+    }
+    let letzte = schritte - 1
+    block(width: breite, height: hoehe, {
+      for (i, s) in stufen.enumerate() {
+        // Jede Stufe hält genau ihren Schritt, die letzte den Rest der Folie.
+        // Eine Stufe, die bliebe, läge unter der nächsten und würde ein
+        // zweites Mal gemalt.
+        let bereich = if i == letzte { str(erster + i) + "-" } else { str(erster + i) }
+        place(top + left, anim-kern(s, at: bereich, enter: enter,
+                                    exit: "hold", duration: duration))
+      }
+    })
+  })
 }

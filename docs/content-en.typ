@@ -219,7 +219,7 @@ standing there finished.
 
 == Which tool for what
 
-Four building blocks cover very nearly everything. They mix on one slide, and
+Five building blocks cover very nearly everything. They mix on one slide, and
 which one is right depends on how finely the slide needs to be steered.
 
 #table(
@@ -238,6 +238,9 @@ which one is right depends on how finely the slide needs to be steered.
   [`alternatives(…)`],
   [Several versions of the same thing in the same place, each replacing the
    one before.],
+  [`aufbau(…)`],
+  [A drawing or a diagram that comes into being in stages -- one CeTZ line,
+   one lilaq data series, one label after another.],
 )
 
 Beside them stand `tiles` for a grid that staggers itself, and `morph` for
@@ -399,6 +402,10 @@ than quietly doing nothing.
   A layer carries *only its own contribution*, no grid and no base curve.
   Otherwise the layer set last paints over the first, and that regardless of
   the order things are revealed in.
+
+  Where the drawing is to grow in the order it was written instead, `aufbau`
+  is the tool -- see "A drawing that grows". There every stage carries the
+  *whole* drawing, and the question of painting over does not arise.
 ]
 
 #info[
@@ -557,6 +564,149 @@ The box is as large as the largest version, so nothing around it jumps when
 the content grows. `align` decides where the smaller ones sit inside it,
 `start` on which step the first one appears, and `inline: true` puts the whole
 thing in a line of text instead of in a block of its own.
+
+== A drawing that grows
+
+A CeTZ canvas and a lilaq diagram are *one* piece, not many. Typst hands out
+the finished setting, and what was a line and what was a data series in it
+cannot be reached from outside any more. So there is no `anim` around a single
+line of a drawing.
+
+What there is, is the drawing itself -- as often as you want it. `aufbau` calls
+it once per step and lays the versions exactly on top of one another: on stage
+#box[$k$] the drawing stands as it looks after #box[$k$] steps. Exactly one of
+them is on show.
+
+Which piece joins when is said by the question every stage is handed. It is
+called `ab` -- "from" -- because it says what `at:` says elsewhere:
+
+// check: folie pre=cetz
+#show-code[```typ
+#aufbau(ab => cetz.canvas({
+  import cetz.draw: *
+  line((0,0), (4,0))                          // there from the start
+  line((4,0), (4,3), stroke: ab(2, black))    // from step 2
+  line((4,3), (0,0), stroke: ab(3, 1.4pt + red))
+  content((2.2, 1.8), ab(4, [$c$]))
+  if ab(4) { circle((4,0), radius: 0.18) }
+  else { hide(circle((4,0), radius: 0.18), bounds: true) }
+}), schritte: 4)
+```]
+
+`ab(2, black)` gives the colour back once the second piece is due, and
+otherwise the same colour with alpha 0. The base line carries no number and
+therefore stands there from the start. `schritte: 4` says how many stages there
+are; that is not guessed, because what the drawing function does with its
+question nobody can see from outside. And `ab(4)` with a single argument is the
+same question as a boolean, for everything that cannot be recoloured -- in CeTZ
+that is where `hide(…, bounds: true)` belongs.
+
+=== Why alpha 0 and not leaving it out
+
+Because a piece that is missing takes the room it had along with it. Measured
+on a CeTZ drawing of three lines whose third reaches beyond the other two, and
+on a lilaq diagram of two data series:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*How it is hidden*], [*What comes of it*]),
+  [left out],
+  [The room is gone. CeTZ measures 113 #sym.times 85 instead of
+   198 #sym.times 170; in lilaq the `viewBox` moves from 186.58 to 189.64,
+   because without the second series the axis gets different labels. That is
+   exactly the jump nobody wants.],
+  [`stroke: none`],
+  [The measure holds, but Typst writes the path out without a single stroke
+   attribute -- 933 bytes become 831. In lilaq the marks of a series thereby
+   lose their geometry as well, 141 paths instead of 149.],
+  [alpha 0],
+  [The measure holds, the path stays whole, only its colour carries 00:
+   `stroke="#00000000"`, 935 bytes against 933. In lilaq all 149 paths remain
+   and the `viewBox` holds to the decimal.],
+)
+
+`ab` makes air out of a colour, out of a stroke (the brush goes, thickness and
+dashing stay, because the measure hangs on those), out of the colours inside a
+dictionary, and out of content, which goes into `hide`. Out of a gradient it
+makes nothing: a `gradient` has no opacity to turn, and the package says so
+instead of trying.
+
+=== A lilaq diagram
+
+A data series turns to air in two places: at its colour and at its label in the
+legend. The second is easy to forget -- the entry would otherwise stand in the
+legend while its curve is still missing:
+
+// check: folie pre=lilaq
+#show-code[```typ
+#aufbau(ab => lq.diagram(
+  width: 7cm, height: 4.5cm,
+  legend: (position: top + left),
+  lq.plot(x, measured, color: ab(1, red), label: ab(1, [measured])),
+  lq.plot(x, model, color: ab(2, blue), label: ab(2, [model])),
+), schritte: 2)
+```]
+
+Because the series stays in the data as air, lilaq reckons its axes over both:
+the scale is settled from the start, and the first curve does not jump when the
+second arrives. Leaving the series out would bring a new tick division with it.
+
+=== The arguments
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Argument*], [*Effect*]),
+  [`schritte`], [number of stages, and hence of steps (default 2)],
+  [`start`], [first step; `auto` follows on from the cursor],
+  [`enter`], [motion a stage arrives with (default `"fade"`)],
+  [`duration`], [duration in milliseconds],
+)
+
+On paper only the last stage is set, in a block of the same size: a page shows
+every step at once, and stacked stages would be overprint. Measured on a deck
+with a CeTZ drawing and a lilaq diagram, the pages come out pixel for pixel the
+same as those of a deck that simply writes the drawing down. On paper `aufbau`
+costs nothing. Under "reduce motion" nothing changes either: the stages fade,
+they do not travel, and what the setting would take away is a motion that is
+not there.
+
+#info[
+  Why only *one* stage is on show: because painted ink adds up. Three stages of
+  the same lilaq diagram on top of one another, against that diagram set once
+  -- 3.7 percent of the pixels differ by more than 8 of 255, the largest
+  deviation 99. Axes, labels and the half-transparent box of the legend get
+  painted three times and grow fatter by it. With stages that carry only their
+  own piece it is no better: the same measurement gives 3.5 percent and a
+  largest deviation of 243, because the axes belong to no piece and would then
+  stand on every stage. One stage at a time is the only arrangement that yields
+  the picture that would stand there if the drawing were set once.
+
+  The price is the crossing, since two nearly identical pictures relieving each
+  other fade against one another. Forwards that is solved: the stage stepping
+  down stays until the new one has fully arrived, and then goes without motion.
+  Backwards the fading out and the fading in overlap for a moment, and the ink
+  the two share drops to three quarters while they do. It shows only on paging
+  back, and only while the crossing runs.
+]
+
+#warning[
+  Every stage really is typeset. Four stages mean four layouts and four SVG
+  trees in the file -- for an elaborate drawing both grow as fast as they do
+  for a flip book. A drawing in twenty stages is not a good idea.
+]
+
+#warning[
+  After a drawing comes `anim`, not `#pause`. `#pause` numbers its steps by
+  itself: the first pause on a slide is always step 2, the second step 3, no
+  matter how many steps have been handed out above it. Behind a four-stage
+  drawing the text after a `#pause` therefore lands on step 2, in the middle of
+  the drawing instead of behind it -- measured, the run got `at: "2-"` instead
+  of `at: "5-"`. `#anim[…]` asks the cursor and follows on. The same holds for
+  a `#pause` behind `stagger` or `alternatives`; with a drawing it simply comes
+  up more often, because a drawing takes several steps at once.
+]
 
 == Three stumbling blocks
 
@@ -971,7 +1121,7 @@ image, a table, and above all a drawing with CeTZ:
   rendered: {
     import "../src/lib.typ": geogebra
     import "../src/lib.typ": dark
-    import "@preview/cetz:0.4.2"
+    import "@preview/cetz:0.5.2"
     geogebra(height: 120pt, link: "https://www.geogebra.org/calculator",
       fallback: cetz.canvas(length: 0.8cm, {
         import cetz.draw: *

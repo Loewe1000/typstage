@@ -413,7 +413,18 @@
     "scale-down": [{ opacity: 0, transform: "scale(1.14)" },       { opacity: 1, transform: "none" }],
     "blur":       [{ opacity: 0, filter: "blur(7px)" },            { opacity: 1, filter: "blur(0px)" }],
     "rise":       [{ opacity: 0, transform: "translateY(26px) scale(.96)" }, { opacity: 1, transform: "none" }],
-    "none":       [{ opacity: 1 }, { opacity: 1 }]
+    "none":       [{ opacity: 1 }, { opacity: 1 }],
+    // Kein Abgang, sondern ein Warten. `aufbau` legt eine Zeichnung in
+    // Stufen uebereinander, eine je Schritt, und laesst immer nur eine
+    // sehen. Ginge die abtretende Stufe auf dem gewohnten Weg, blendeten
+    // zwei fast gleiche Bilder gegeneinander, und die Tinte, die beide
+    // teilen, saenke waehrenddessen auf zwei Drittel -- das ganze Bild
+    // blinkt. Also bleibt sie stehen, bis die neue da ist, und geht danach
+    // ohne Bewegung: `fadeOut` faehrt von 1 nach 1 und setzt am Ende 0.
+    //
+    // Als Eintritt ist es dasselbe wie "none", und das ist kein Zufall: wer
+    // wartet, statt zu gehen, kommt auch, ohne zu kommen.
+    "hold":       [{ opacity: 1 }, { opacity: 1 }]
   };
 
   // An animation with `fill: both` pins its end value even long after it is
@@ -467,6 +478,13 @@
   function fadeOut(el, name, dur, von) {
     clearAnims(el);
     if (name === "none") { el.style.opacity = "0"; return; }
+    // Ein Warten dauert so lange wie der Eintritt, den es abwartet. `goto`
+    // gibt einem Abgang drei Viertel der Dauer und dem, was hereinkommt, die
+    // ganze; die abtretende Stufe ginge sonst, wenn die neue erst bei drei
+    // Vierteln steht, und das Bild saenke fuer den Rest des Wegs doch noch
+    // ab. Rueckwaerts wird "hold" nie gefragt: dort spielt `goto` den
+    // Eintritt rueckwaerts, und der heisst anders.
+    if (name === "hold") dur = dur / 0.75;
     var f = effekt(name);
     var ab = f[1];
     // Leaving out of the dimmed state starts where the element stands. Taken

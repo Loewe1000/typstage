@@ -62,6 +62,81 @@
   calc.rem(h, 65536)
 }
 
+// ── Luft statt Tinte ─────────────────────────────────────────────────────────
+//
+// Ein Stück einer Zeichnung, das noch nicht an der Reihe ist, darf nicht
+// fehlen. Es muss unsichtbar sein und trotzdem seinen Platz behalten, denn
+// sonst rechnet cetz seinen Rahmen kleiner und lilaq seine Achse anders, und
+// die Zeichnung springt bei jedem Schritt.
+//
+// Nachgemessen an einer cetz-Zeichnung aus drei Linien, deren dritte über die
+// beiden anderen hinausragt, und an einem lilaq-Diagramm aus zwei Reihen:
+//
+//   weggelassen    Der Platz ist weg. cetz misst 113x85 statt 198x170; bei
+//                  lilaq wandert die viewBox von 186.58 auf 189.64, weil die
+//                  Achse ohne die zweite Reihe andere Beschriftungen bekommt.
+//                  Genau das ist der Sprung, den niemand will.
+//   stroke: none   Das Maß bleibt, aber Typst schreibt den Pfad ohne jedes
+//                  Strichattribut heraus, aus 933 Bytes werden 831. Bei lilaq
+//                  fallen damit die Marken der Reihe als Geometrie mit weg,
+//                  141 Pfade statt 149.
+//   Alpha 0        Das Maß bleibt, der Pfad bleibt vollständig, nur seine
+//                  Farbe trägt 00: `stroke="#00000000"`, 935 Bytes gegen 933.
+//                  Bei lilaq stehen alle 149 Pfade und die viewBox auf die
+//                  Stelle genau.
+//
+// Alpha 0 also. Es ist dieselbe Technik, mit der `marker` seine Messfläche in
+// die Ausgabe legt, nur hier auf fremde Zeichenpakete angewandt.
+
+/// Dieselbe Sache aus Luft: sichtbar nicht mehr da, gemessen unverändert.
+///
+/// Was hindurchgeht, geht nur, weil es Maß hält. Eine Farbe verliert ihre
+/// Deckkraft, ein Strich seinen Pinsel und sonst nichts, ein Text geht in
+/// `hide`, ein Wörterbuch reicht die Frage an seine Farben weiter. Alles
+/// andere -- Dicke, Strichelung, Größe -- bleibt stehen, denn daran hängt der
+/// Platz.
+#let durchsichtig(wert) = {
+  let t = type(wert)
+  if wert == none or wert == auto { wert }
+  else if t == color { wert.transparentize(100%) }
+  else if t == stroke {
+    // Jedes Feld einzeln zurückgegeben, nicht nur die Farbe: was ein Strich
+    // nicht nennt, bleibt `auto`, und `auto` holt sich seinen Wert aus dem
+    // Strich, in dem er steht, statt aus dem, der hier gemeint ist. Derselbe
+    // Faltungsfehler, gegen den `fester-strich` weiter unten gebaut ist.
+    stroke(
+      // Ein Pinsel, den es nicht gibt, wird durchsichtiges Schwarz. Welche
+      // Farbe es war, spielt bei Alpha 0 keine Rolle mehr.
+      paint: if wert.paint == auto { rgb(0, 0, 0, 0%) }
+             else { durchsichtig(wert.paint) },
+      thickness: wert.thickness, cap: wert.cap, join: wert.join,
+      dash: wert.dash, miter-limit: wert.miter-limit,
+    )
+  } else if t == dictionary {
+    // Ein Wörterbuch beschreibt einen Strich oder einen Stil. Nur was Farbe
+    // trägt, wird zu Luft; ein `dash: (3pt, 3pt)` ist keine Farbe und würde
+    // unter der Frage zerbrechen.
+    wert.pairs().map(((k, v)) =>
+      (k, if type(v) in (color, stroke, dictionary) { durchsichtig(v) } else { v })
+    ).to-dict()
+  } else if t == array { wert.map(durchsichtig) }
+  else if t == content or t == str {
+    // `hide` ist die Antwort des Pakets auf genau diese Frage, seit es das
+    // Paket gibt: setzen, ohne zu zeichnen.
+    hide(wert)
+  } else if t == gradient or repr(t) == "tiling" {
+    panic("typstage: ein Verlauf oder eine Kachelung lässt sich nicht zu Luft "
+      + "machen -- beide haben keine Deckkraft, an der sich drehen ließe. Gib "
+      + "dem Stück eine Farbe, oder frag mit ab(k) nach und lass es weg; in "
+      + "cetz behält hide(…, bounds: true) dabei das Maß.")
+  } else {
+    panic("typstage: ab() macht Farben, Striche, Wörterbücher und Inhalt "
+      + "unsichtbar, nicht " + str(t) + ". Was kein Pinsel und kein Inhalt "
+      + "ist, trägt keine Tinte, und was keine Tinte trägt, muss auch nicht "
+      + "verschwinden.")
+  }
+}
+
 /// Plain text out of content, for speaker notes.
 #let plain-text(c) = {
   if type(c) == str { c } else if type(c) != content { "" } else if c.func() == text {

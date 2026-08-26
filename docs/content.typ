@@ -372,7 +372,7 @@ Druck weiter.
 
 == Welches Mittel wofür
 
-Vier Bausteine decken so gut wie alles ab. Sie lassen sich auf einer Folie
+Fünf Bausteine decken so gut wie alles ab. Sie lassen sich auf einer Folie
 mischen; welcher der richtige ist, hängt daran, wie fein die Folie gesteuert
 werden soll.
 
@@ -393,6 +393,9 @@ werden soll.
   [`alternatives(…)`],
   [Mehrere Fassungen derselben Sache an derselben Stelle, jede die vorige
    ersetzend.],
+  [`aufbau(…)`],
+  [Eine Zeichnung oder ein Diagramm, das in Stufen entsteht -- eine CeTZ-Linie,
+   eine lilaq-Datenreihe, eine Beschriftung nach der anderen.],
 )
 
 Dazu kommt `tiles` für ein Kachelraster, das sich von selbst staffelt (Kapitel
@@ -656,6 +659,10 @@ es, statt still nichts zu tun.
   Eine Schicht trägt dabei *nur ihren eigenen Beitrag*, kein Gitter und keine
   Grundkurve. Sonst übermalt die zuletzt gesetzte Schicht die erste, und zwar
   unabhängig davon, in welcher Reihenfolge aufgedeckt wird.
+
+  Soll die Zeichnung dagegen in der geschriebenen Reihenfolge wachsen, nimmt
+  man `aufbau` -- siehe "Eine Zeichnung, die wächst". Dort trägt jede Stufe die
+  *ganze* Zeichnung, und die Frage nach dem Übermalen stellt sich nicht.
 ]
 
 #info[
@@ -881,6 +888,198 @@ in demselben Kasten, sodass die Seite die Abstände der Folie behält.
   Unterschiedlich hohe Fassungen wirken im gemeinsamen Kasten oft unruhig, weil
   die kürzeren oben kleben. `align: center + horizon` setzt jede in die Mitte
   des Kastens, und der Wechsel wird ruhig.
+]
+
+== Eine Zeichnung, die wächst
+
+Eine CeTZ-Zeichnung und ein lilaq-Diagramm sind *ein* Stück, nicht viele. Typst
+reicht den fertigen Satz heraus; was darin eine Linie und was eine Datenreihe
+war, ist von außen nicht mehr zu greifen. Ein `anim` um eine einzelne Linie
+gibt es deshalb nicht.
+
+Was es gibt, ist die Zeichnung selbst -- so oft man sie haben will. `aufbau`
+ruft sie einmal je Schritt und legt die Fassungen deckungsgleich übereinander:
+auf Stufe #box[$k$] steht die Zeichnung so, wie sie nach #box[$k$] Schritten
+aussieht. Zu sehen ist immer genau eine.
+
+Welches Stück wann dazukommt, sagt die Frage, die jede Stufe gereicht bekommt.
+Sie heißt `ab`, weil sie dasselbe sagt wie `at:` sonst:
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": *
+    aufbau(ab => box(width: 260pt, height: 58pt, {
+      place(bottom + left, line(length: 100%))
+      place(bottom + left, line(angle: -90deg, length: 52pt))
+      place(bottom + left, dx: 22%, rect(width: 12%, height: 22pt, fill: ab(2, accent)))
+      place(bottom + left, dx: 44%, rect(width: 12%, height: 36pt, fill: ab(3, accent)))
+      place(bottom + left, dx: 66%, rect(width: 12%, height: 50pt, fill: ab(4, accent)))
+    }), schritte: 4)
+  },
+  source: ```typ
+  #aufbau(ab => box(width: 260pt, height: 58pt, {
+    place(bottom + left, line(length: 100%))
+    place(bottom + left, line(angle: -90deg, length: 52pt))
+    place(bottom + left, dx: 22%, rect(width: 12%, height: 22pt, fill: ab(2, accent)))
+    place(bottom + left, dx: 44%, rect(width: 12%, height: 36pt, fill: ab(3, accent)))
+    place(bottom + left, dx: 66%, rect(width: 12%, height: 50pt, fill: ab(4, accent)))
+  }), schritte: 4)
+  ```,
+  width: 13cm,
+)
+
+`ab(2, accent)` gibt die Farbe zurück, sobald das zweite Stück an der Reihe
+ist, und sonst dieselbe Farbe mit Alpha 0. Das Achsenkreuz trägt keine Nummer
+und steht deshalb von Anfang an da. `schritte: 4` sagt, wie viele Stufen es
+gibt; geraten wird das nicht, denn was der Zeichner mit seiner Frage anstellt,
+sieht von außen niemand.
+
+=== Warum Alpha 0 und nicht weglassen
+
+Weil ein Stück, das fehlt, den Platz mitnimmt, den es hatte. Nachgemessen an
+einer CeTZ-Zeichnung aus drei Linien, deren dritte über die beiden anderen
+hinausragt, und an einem lilaq-Diagramm aus zwei Datenreihen:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Wie versteckt*], [*Was daraus wird*]),
+  [weggelassen],
+  [Der Platz ist weg. CeTZ misst 113 #sym.times 85 statt 198 #sym.times 170;
+   bei lilaq wandert die `viewBox` von 186,58 auf 189,64, weil die Achse ohne
+   die zweite Reihe andere Beschriftungen bekommt. Genau das ist der Sprung,
+   den niemand will.],
+  [`stroke: none`],
+  [Das Maß bleibt, aber Typst schreibt den Pfad ohne jedes Strichattribut
+   heraus -- aus 933 Bytes werden 831. Bei lilaq fallen damit die Marken einer
+   Reihe als Geometrie mit weg, 141 Pfade statt 149.],
+  [Alpha 0],
+  [Das Maß bleibt, der Pfad bleibt vollständig, nur seine Farbe trägt 00:
+   `stroke="#00000000"`, 935 Bytes gegen 933. Bei lilaq stehen alle 149 Pfade,
+   und die `viewBox` steht auf die Stelle genau.],
+)
+
+Deshalb Alpha 0. `ab` macht daraus, was zu machen ist:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Was hineingeht*], [*Was herauskommt*]),
+  [eine Farbe], [dieselbe Farbe mit Alpha 0],
+  [ein Strich], [derselbe Strich mit durchsichtigem Pinsel; Dicke, Strichelung
+                 und Enden bleiben, denn daran hängt das Maß],
+  [ein Wörterbuch], [dasselbe Wörterbuch, in dem nur die Farben und Striche zu
+                     Luft geworden sind],
+  [Inhalt], [`hide(…)` -- gesetzt, aber nicht gezeichnet],
+  [ein Verlauf], [nichts. Ein `gradient` hat keine Deckkraft, an der sich
+                  drehen ließe; das Paket sagt es, statt es zu versuchen],
+)
+
+Was `ab` nicht umfärben kann, bekommt die Frage mit einem einzigen Argument:
+`ab(3)` ist wahr, sobald das dritte Stück an der Reihe ist. In CeTZ gehört
+dorthin `hide(…, bounds: true)`, das ein ganzes Stück verschwinden lässt und
+sein Maß behält.
+
+=== Eine CeTZ-Zeichnung
+
+Mit `#import "@preview/cetz:0.5.2"` daneben:
+
+// check: folie pre=cetz
+#show-code[```typ
+#aufbau(ab => cetz.canvas({
+  import cetz.draw: *
+  line((0,0), (4,0))                          // steht von Anfang an
+  line((4,0), (4,3), stroke: ab(2, black))    // ab Schritt 2
+  line((4,3), (0,0), stroke: ab(3, 1.4pt + red))
+  content((2.2, 1.8), ab(4, [$c$]))
+  if ab(4) { circle((4,0), radius: 0.18) }
+  else { hide(circle((4,0), radius: 0.18), bounds: true) }
+}), schritte: 4)
+```]
+
+=== Ein lilaq-Diagramm
+
+Mit `#import "@preview/lilaq:0.6.0" as lq` daneben. Eine Datenreihe wird an
+zwei Stellen zu Luft: an ihrer Farbe und an ihrer Beschriftung in der Legende.
+Die zweite ist leicht zu vergessen -- der Eintrag steht sonst schon in der
+Legende, während seine Kurve noch fehlt:
+
+// check: folie pre=lilaq
+#show-code[```typ
+#aufbau(ab => lq.diagram(
+  width: 7cm, height: 4.5cm,
+  legend: (position: top + left),
+  lq.plot(x, messung, color: ab(1, red), label: ab(1, [gemessen])),
+  lq.plot(x, modell, color: ab(2, blue), label: ab(2, [Modell])),
+), schritte: 2)
+```]
+
+Weil die Reihe als Luft in den Daten stehen bleibt, rechnet lilaq seine Achsen
+über beide -- die Skala steht von Anfang an fest, und die erste Kurve springt
+nicht, wenn die zweite dazukommt. Wer die Reihe statt dessen weglassen würde,
+bekäme mit ihr eine neue Achsenteilung.
+
+=== Die Argumente
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Argument*], [*Wirkung*]),
+  [`schritte`], [Zahl der Stufen und damit der Schritte (Vorgabe 2)],
+  [`start`], [erster Schritt; `auto` schließt an den Zeiger an],
+  [`enter`], [Bewegung beim Erscheinen einer Stufe (Vorgabe `"fade"`)],
+  [`duration`], [Dauer in Millisekunden],
+)
+
+Auf Papier wird nur die letzte Stufe gesetzt, im Block derselben Größe: eine
+Seite zeigt alle Schritte auf einmal, und übereinandergelegte Stufen gäben
+Doppeldruck. Gemessen an einem Deck mit einer CeTZ-Zeichnung und einem
+lilaq-Diagramm: die Seiten sind Bildpunkt für Bildpunkt dieselben wie die eines
+Decks, das die Zeichnung schlicht hinschreibt. `aufbau` kostet auf dem Papier
+nichts.
+
+Unter "Bewegung reduzieren" ändert sich ebenfalls nichts. Die Stufen blenden,
+sie wandern nicht, und was die Einstellung wegnähme, wäre eine Bewegung, die es
+hier nicht gibt.
+
+#info[
+  Warum immer nur *eine* Stufe zu sehen ist: weil sich gemalte Tinte addiert.
+  Drei Stufen desselben lilaq-Diagramms übereinander, gegen dasselbe Diagramm
+  einmal gesetzt -- 3,7 Prozent der Bildpunkte weichen um mehr als 8 von 255
+  ab, die größte Abweichung 99. Achsen, Beschriftung und der halbdurchsichtige
+  Kasten der Legende werden dreimal gemalt und werden dadurch fetter. Mit
+  Stufen, die nur ihr eigenes Stück tragen, ist es nicht besser: dieselbe
+  Messung ergibt 3,5 Prozent und eine größte Abweichung von 243, denn die
+  Achsen gehören zu keinem Stück und stünden dann auf jeder Stufe. Eine Stufe
+  auf einmal ist die einzige Anordnung, die genau das Bild ergibt, das
+  dastünde, wenn man die Zeichnung einmal setzte.
+
+  Der Preis dafür ist der Übergang, denn zwei fast gleiche Bilder, die
+  einander ablösen, blenden gegeneinander. Vorwärts ist das gelöst: die
+  abtretende Stufe bleibt stehen, bis die neue vollständig da ist, und geht
+  dann ohne Bewegung. Rückwärts überlagern sich Ausblenden und Einblenden für
+  einen Augenblick, und die Tinte, die beide teilen, sinkt dabei kurz auf drei
+  Viertel. Sichtbar ist das nur beim Zurückblättern und nur, solange die
+  Überblendung läuft.
+]
+
+#warning[
+  Jede Stufe wird wirklich gesetzt. Vier Stufen heißen vier Layouts und vier
+  SVG-Bäume in der Datei -- bei einer aufwendigen Zeichnung wächst beides
+  ebenso schnell wie beim Daumenkino. Eine Zeichnung in zwanzig Stufen ist
+  keine gute Idee.
+]
+
+#warning[
+  Nach einer Zeichnung gehört `anim` und nicht `#pause`. `#pause` nummeriert
+  seine Schritte für sich: die erste Pause einer Folie ist immer Schritt 2, die
+  zweite Schritt 3, ganz gleich, wie viele Schritte darüber schon vergeben
+  sind. Hinter einer vierstufigen Zeichnung landet der Text nach `#pause`
+  deshalb auf Schritt 2, mitten in der Zeichnung, statt hinter ihr -- gemessen,
+  der Abschnitt bekam `at: "2-"` statt `at: "5-"`. `#anim[…]` fragt dagegen den
+  Schrittzeiger und schließt an. Dasselbe gilt für `#pause` hinter `stagger`
+  oder `alternatives`; bei einer Zeichnung fällt es nur häufiger an, weil sie
+  gleich mehrere Schritte belegt.
 ]
 
 == Drei Stolpersteine
@@ -1493,7 +1692,7 @@ Inhalt -- ein Bild, eine Tabelle, und vor allem eine Zeichnung mit CeTZ:
   rendered: {
     import "../src/lib.typ": geogebra
     import "../src/lib.typ": dark
-    import "@preview/cetz:0.4.2"
+    import "@preview/cetz:0.5.2"
     geogebra(height: 120pt, link: "https://www.geogebra.org/calculator",
       fallback: cetz.canvas(length: 0.8cm, {
         import cetz.draw: *
