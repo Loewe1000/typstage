@@ -119,6 +119,7 @@ written.
 | `card`, `callout`, `side-by-side`, `tiles`, `statement` | layouts inside a slide; `tiles` staggers itself, and `side-by-side(equal: true)` makes its columns the same height |
 | `fit` | scales one block down to the room it has, for a wide table or a generated chart; no reveal may sit inside it |
 | `overflow:` | a checking pass, off by default: `"error"` builds the deck and then names every slide whose body runs over its room, with the step; `"record"` files the same as queryable metadata |
+| `drift:` | the second checking pass, and this one is on: every `scene` measures its frames and the ones that come out different sizes are named, because a drawing is as large as what it holds and a wider frame puts it somewhere else in its box. `scene(steady: false)` says the frames of one scene are meant to differ |
 | `cue`, `cue-layer` | reveal points in the order a class calls them out; the digits `1` to `9` choose, and anything hung on the same step travels with the point |
 | `info` | what the deck knows about itself: title, slide and step number, section, and with `slide-level` the whole outline — for a footer, a running head or an agenda of your own |
 | `transition`, `speaker-note` | how this slide comes in, and what only you see |
@@ -489,8 +490,9 @@ six examples never use `after: "dimmed"`, `stagger(dim: true)`, `invert`,
 `info()` or `fit`. Counted in their sources: zero times each. The dim lookup was
 deliberately broken and nothing in the six moved. The check deck is not under
 `examples/`, so it stays off the website and the published decks keep their
-pages unchanged. Beside it, `ueberlauf.typ` is a deck that has to *fail* to
-compile, so that the overflow check is caught when it stops finding anything.
+pages unchanged. Beside it, `ueberlauf.typ` and `wanderung.typ` are decks that have to *fail* to
+compile, so that the overflow check and the drift check are caught when they
+stop finding anything.
 
 What it does not reach: how a slide looks. No images are compared, no sizes and
 no positions are measured. And it reads *attributes*, not what the eye sees --
