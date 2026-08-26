@@ -2054,6 +2054,16 @@
       // schweben sie dann ohne den Text, zu dem sie gehoeren. Waehlen kann man
       // dort ohnehin nicht.
       k.querySelectorAll(".ts-ad-nr").forEach(function (x) { x.remove(); });
+      // Und eine Feder, die gerade faehrt. Der Klon nimmt die Strichelung als
+      // Stil mit -- die Animation bleibt beim Original, ihr Ausgangswert nicht
+      // --, und so stuende in einem Standbild ein Strich auf halber Strecke,
+      // und zwar fuer immer: der Klon wird nie fertig, weil er nie faehrt.
+      // Ein Standbild zeigt den Ruhezustand, und dort ist die Zeichnung fertig.
+      k.querySelectorAll("[data-ts-feder]").forEach(function (x) {
+        x.style.strokeDasharray = "";
+        x.style.strokeDashoffset = "";
+        x.removeAttribute("data-ts-feder");
+      });
       k.querySelectorAll(".ts-el").forEach(function (el, i) {
         el.removeAttribute("data-hold");
         // The preview answers "what stands there after the next keypress",
@@ -3605,7 +3615,10 @@
           // tragen. Bleibt eine stehen, ist ein Strich auf halber Strecke
           // eingefroren -- sichtbar waere das erst bei dem einen Deck, das den
           // Sprung genau dorthin macht.
-          federOffen: document.querySelectorAll("[data-ts-feder]").length,
+          // Nur auf der Buehne gezaehlt und nicht im ganzen Dokument: die
+          // Sprecheransicht haelt daneben ein Standbild des naechsten
+          // Schritts, und ein Standbild ist kein Zustand.
+          federOffen: (B || document).querySelectorAll("[data-ts-feder]").length,
           fehler: FEHLER.length
         };
       },
