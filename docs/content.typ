@@ -731,6 +731,8 @@ der Platz, den sie einnehmen, ist in beiden Zielen derselbe.
   [`"scale-down"`], [schrumpft zusammen],
   [`"blur"`], [schärft sich ein],
   [`"rise"`], [steigt von unten auf und wächst dabei ein wenig],
+  [`"draw"`], [zeichnet sich selbst -- siehe "Ein Pfad, der sich selbst
+               zeichnet"],
   [`"none"`], [ohne Bewegung -- der Inhalt ist schlicht da],
 )
 
@@ -752,6 +754,76 @@ Selektor ein Ende hat.
 (`duration:` auf `presentation`, 520). `delay` ist 0. Beide sind Zahlen in
 Millisekunden und gelten für den Auftritt; beim Zurückblättern entfällt die
 Verzögerung, damit der Rückweg nicht zäh wird.
+
+=== Die Kurve
+
+Alles, was dieses Paket bewegt, läuft auf derselben Kurve: langsam los, zügig
+durch, weich aus. `easing` gibt sie einem einzelnen Element aus der Hand -- ein
+Ergebnis darf über sein Ziel hinausschießen und zurückschwingen, ein Stapel
+Stichpunkte darf gleichmäßig ankommen.
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim(ergebnis, enter: "rise", easing: "out-back")
+#stagger(stride: 0, stagger: 60, easing: "out-quad")[
+  - erst dies
+  - dann das
+]
+```]
+
+Sie steht überall dort, wo auch `duration` steht: bei `anim`, `stagger`,
+`alternatives` und der Zeichnung in Stufen. Und sie gilt für alles, was das
+Element selbst tut -- den Auftritt, den Abgang und das Dimmen. Nicht für den
+Folienwechsel, der gehört der Folie und nicht dem Element; und nicht für den
+Flug eines Magic Move, der zwei Enden hat und dessen Kurve nicht auf einer
+Seite entschieden werden kann.
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Name*], [*Kurve*]),
+  [`"standard"`], [die Kurve dieses Pakets, ausgeschrieben -- dasselbe wie
+                   keine Angabe],
+  [`"linear"`], [gleichmäßig, ohne Anlauf und ohne Ausklang],
+  [`"ease"`, `"ease-in"`, `"ease-out"`, `"ease-in-out"`],
+  [die vier, die die Web Animations API von sich aus kennt],
+  [`"in-quad"`, `"out-quad"`, `"in-out-quad"`], [sachte],
+  [`"in-cubic"`, `"out-cubic"`, `"in-out-cubic"`], [deutlicher],
+  [`"in-expo"`, `"out-expo"`, `"in-out-expo"`], [scharf -- fast alles geschieht
+   an einem Ende],
+  [`"in-back"`, `"out-back"`, `"in-out-back"`], [holt aus und schwingt über],
+)
+
+`in` heißt langsam los, `out` heißt weich aus. Für einen Auftritt ist fast
+immer `out` das Richtige: das Auge sieht dem Ende zu und nicht dem Anfang.
+
+*Ein Name, den es nicht gibt, ist ein Fehler beim Übersetzen* und keine stille
+Vorgabe. Wer sich vertippt, bekäme sonst die Hauskurve zurück und suchte lange,
+warum sein Rückschwung nicht schwingt. Die Meldung zählt auf, was zur Wahl
+steht.
+
+// check: folie pre=zeichnung bricht=the_package_does_not_know_that_curve
+#show-code[```typ
+#anim(ergebnis, easing: "out-bounce")   // Fehler beim Übersetzen
+```]
+
+*Die drei `back`-Kurven gehen über ihr Ziel hinaus*, und das ist ihr Zweck. Auf
+einem Weg ist das der Rückschwung; auf der Deckkraft schneidet der Browser ab,
+was über 1 hinausreicht, ein `easing: "out-back"` auf einem schlichten `"fade"`
+ist deshalb nur ein schnelleres `"fade"`. Es lohnt sich zusammen mit einem
+Effekt, der wandert: `"rise"`, `"scale"`, `"fade-up"`.
+
+Federn und Sprünge -- `elastic`, `bounce` -- gibt es nicht. Sie sind keine
+kubischen Bézierkurven, und die Web Animations API kennt nur solche; sie ließen
+sich nur als Bildfolge nachbauen.
+
+#info[
+  Ohne `easing` ändert sich an einem Deck kein Byte. Der Name wird beim
+  Übersetzen zu einer fertigen Kurve aufgelöst und nur dann ins Markup
+  geschrieben, wenn er von der Vorgabe abweicht -- sonst trüge jedes Element
+  jedes Decks ein neues Attribut. Nachgemessen an den acht Beispielen dieses
+  Pakets, HTML wie PDF: dieselben Bytes wie vorher.
+]
 
 === Der gedimmte Ruhezustand
 
@@ -1027,8 +1099,10 @@ bekäme mit ihr eine neue Achsenteilung.
   table.header([*Argument*], [*Wirkung*]),
   [`schritte`], [Zahl der Stufen und damit der Schritte (Vorgabe 2)],
   [`start`], [erster Schritt; `auto` schließt an den Zeiger an],
-  [`enter`], [Bewegung beim Erscheinen einer Stufe (Vorgabe `"fade"`)],
+  [`enter`], [Bewegung beim Erscheinen einer Stufe (Vorgabe `"fade"`);
+              `"draw"` ist hier ein Fehler, siehe den nächsten Abschnitt],
   [`duration`], [Dauer in Millisekunden],
+  [`easing`], [Kurve der Bewegung, siehe "Die Kurve"],
 )
 
 Auf Papier wird nur die letzte Stufe gesetzt, im Block derselben Größe: eine
@@ -1069,6 +1143,197 @@ hier nicht gibt.
   ebenso schnell wie beim Daumenkino. Eine Zeichnung in zwanzig Stufen ist
   keine gute Idee.
 ]
+
+== Ein Pfad, der sich selbst zeichnet
+
+`enter: "draw"` lässt einen Strich *entstehen*, statt ihn einzublenden: die
+Feder setzt an und fährt den Pfad ab, von seinem Anfang bis zu seinem Ende.
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim(schaltbild, enter: "draw", duration: 900)
+#stagger(enter: "draw", stride: 1, achse, kurve, tangente)
+```]
+
+Das Mittel dahinter ist alt und schlicht. Ein gestrichener Pfad im SVG trägt
+seine Länge in sich; `stroke-dasharray` teilt ihn in einen Strich von genau
+dieser Länge und eine Lücke ebenso lang, und `stroke-dashoffset` schiebt den
+Strich hinein. Bei vollem Versatz ist nichts da, bei null alles -- dazwischen
+fährt eine Feder den Pfad ab.
+
+`duration` gilt wie überall, aber eine Zeichnung will mehr Zeit als ein
+Stichpunkt. 900 ist ein brauchbarer Anfang; die Vorgabe der Präsentation (520)
+ist für drei lange Linien knapp.
+
+=== Was sich abfahren lässt und was nicht
+
+*Text nicht.* Typst setzt Glyphen als gefüllte Umrisse ohne Kontur -- ein "a"
+ist eine Fläche und keine Linie, und eine Fläche hat keine Länge, an der
+entlang etwas zu fahren wäre. Dasselbe gilt für alles Gefüllte: eine
+Pfeilspitze, ein ausgefüllter Punkt, die Fläche einer Karte.
+
+Deshalb ist `draw` zweierlei zugleich. *Die Striche zeichnen sich, alles übrige
+blendet auf* -- so, wie es das ohne `draw` auch täte, und genau so lange. Die
+Beschriftung einer Zeichnung kommt also, während die Linien entstehen, und
+steht mit ihnen zusammen fertig da.
+
+Ein Element, an dem sich *gar nichts* abfahren lässt, blendet vollständig --
+aber nicht stillschweigend. Die Laufzeit sagt es in der Konsole des Browsers,
+einmal je Element:
+
+#show-code[```
+typstage: enter: "draw" on slide 4 (element 2) finds no stroked path to
+trace. What is drawn is an outline, and text has none: Typst sets glyphs
+as filled shapes. The element fades in instead. draw is for a drawing,
+the fade is for text.
+```]
+
+*Warum erst dort und nicht beim Übersetzen.* Weil Typst das SVG erst beim
+Export herausgibt. Im Dokument gibt es keine Frage, die "hat dieser Inhalt eine
+Kontur" beantwortete -- es ist derselbe blinde Fleck, wegen dessen dieses Paket
+überhaupt mit Rechtecken in Signalfarbe arbeitet und den Browser zurückmelden
+lässt, wo etwas steht. Erst im Browser steht der Pfad da und lässt sich zählen.
+Der Prüflauf des Pakets liest diese Meldung mit aus, damit sie nicht eines
+Tages aufhört zu kommen.
+
+=== Alle zugleich, und wie man sie nacheinander bekommt
+
+Alle gestrichenen Pfade eines Elements fahren *zugleich* los, und daran gibt es
+nichts zu drehen. Die Reihenfolge im SVG ist die Malreihenfolge von Typst und
+keine, die das Deck gewählt hätte; sie zur Erzählreihenfolge zu erklären wäre
+dieselbe Anmaßung, die dieses Paket beim Magic Move ausdrücklich ablehnt, wo
+Zeichen nicht nach Nachbarschaft einander zugeordnet werden. Und `duration`
+wäre keine Zahl mehr, die sich lesen ließe: sieben Striche zu 900 ms
+nacheinander sind 6,3 Sekunden.
+
+Eine Reihenfolge sagt man also, statt sie zu erben. Jedes Stück bekommt seinen
+eigenen Schritt:
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#stagger(enter: "draw", stride: 1, achse, kurve, tangente)
+```]
+
+=== Wo eine Zeichnung stehen muss
+
+*Nicht auf dem ersten Schritt ihrer Folie.* Wer eine Folie betritt, sieht keine
+Auftritte -- beim Folienwechsel stellt die Laufzeit nur den Zustand her, sonst
+liefen der Folienübergang und ein Dutzend Einblendungen gegeneinander. Eine
+Zeichnung auf Schritt eins stünde also einfach da. Sie braucht einen Schritt
+vor sich:
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim[Erst der Satz, der die Zeichnung ankündigt.]
+#anim(schaltbild, enter: "draw", duration: 900)
+```]
+
+Das gilt für jeden Effekt. Bei `draw` fällt es nur besonders auf, weil dort der
+ganze Sinn im Weg steckt.
+
+=== Wer Konturen liefert
+
+Nachgemessen im ausgegebenen SVG, je ein Element mit `enter: "draw"`:
+
+#table(
+  columns: (1fr, auto, auto, auto),
+  stroke: 0.5pt + luma(180),
+  align: (left, right, right, right),
+  table.header([*Gezeichnet mit*], [*Pfade*], [*gestrichen*], [*Glyphen*]),
+  [cetz 0.5.2 -- drei Linien, ein Kreis, eine Beschriftung], [11], [4], [7],
+  [cetz-plot 0.1.4 -- eine Funktion mit Schulbuchachsen], [59], [25], [53],
+  [lilaq 0.6.0 -- zwei Datenreihen], [70], [64], [6],
+  [fletcher 0.5.8 -- drei Knoten, zwei Kanten], [12], [6], [3],
+  [circuiteria 0.2.1 -- zwei Blöcke, eine Leitung], [7], [3], [2],
+  [Typsts eigenes `table` mit `stroke`], [13], [7], [6],
+  [`line`, `rect(stroke: …)`, `circle(stroke: …)`], [3], [3], [0],
+  [nur Text], [14], [0], [18],
+)
+
+Die Regel dahinter ist einfach: *was in Typst einen `stroke` bekommt, wird zu
+einem Pfad mit Kontur und lässt sich abfahren; was eine `fill` bekommt, nicht.*
+Ein Zeichenpaket liefert also genau so viel, wie es strichelt. Die 14 Pfade der
+letzten Zeile sind keine Tinte -- es sind die Messrechtecke und Schnittmasken,
+die das Paket und Typst in jede Ausgabe legen; keiner davon trägt eine Kontur.
+
+Zwei Zahlen verdienen einen zweiten Blick. Bei `lilaq` sind 64 der 70 Pfade
+gestrichen -- Gitter, Teilstriche, Rahmen und Marken gehören dazu --, und alle
+64 fahren zugleich los. Das sieht nicht nach einer Zeichnung aus, die entsteht,
+sondern nach einem Diagramm, das gleichmäßig hereinwischt. Bei `cetz` sind es
+vier, und das ist der Fall, für den `draw` gemacht ist: wenige lange Linien,
+denen ein Auge folgen kann. Für ein Diagramm ist die Zeichnung in Stufen aus
+dem vorigen Abschnitt das bessere Mittel.
+
+*Gestrichelte Linien bleiben bei der Blende.* Eine Strichelung steht in
+demselben Attribut, das die Feder braucht; es zu überschreiben hieße, die
+Strichelung für die Dauer der Zeichnung zu tilgen, und eine gestrichelte
+Hilfslinie käme durchgezogen herein. Sie blendet also auf, während ihre
+durchgezogenen Nachbarn sich zeichnen.
+
+=== In beide Richtungen, und was an den Rändern gilt
+
+#table(
+  columns: (auto, 1fr),
+  inset: 6pt,
+  stroke: (x, y) => if y == 0 { (bottom: 0.6pt) } else { (bottom: 0.3pt + luma(80%)) },
+  table.header([Wo], [Was geschieht]),
+  [Zurückblättern],
+  [Die Feder fährt heraus. `enter` gilt in beide Richtungen wie bei jedem
+   Effekt: was sich gezeichnet hat, zeichnet sich zurück.],
+  [Sprung auf einen Schritt],
+  [Kein Zeichnen. Ein Sprung -- über die Adresse, über die Übersicht, beim
+   Neuladen -- stellt den Endzustand her, und der ist die fertige Zeichnung.],
+  [`exit: "draw"`],
+  [Erlaubt und symmetrisch: ein Element, das seinen Bereich verlässt, nimmt
+   seine Striche zurück, statt zu verblassen.],
+  [Sprecheransicht],
+  [Die Vorschau des nächsten Schritts zeigt den Ruhezustand, also die fertige
+   Zeichnung. Bewegung gibt es dort keine.],
+  [Papier],
+  [Nichts. `enter` erreicht das PDF nie, die Zeichnung steht fertig da.
+   Nachgemessen an den acht Beispielen dieses Pakets: dieselben Bytes wie ohne
+   `draw`.],
+  [Bewegung reduzieren],
+  [Die Feder hält still, die Blende bleibt. Siehe gleich.],
+)
+
+=== Unter "Bewegung reduzieren"
+
+Die Regel dieses Pakets lautet: *Deckkraft bleibt, Ortsveränderung fällt weg.*
+Bei `draw` ist das keine Ausnahme, sondern der Regelfall in seiner reinsten
+Form -- das Zeichnen *ist* der Weg. Nimmt man ihn heraus, bleibt genau die
+Blende stehen, die ohnehin darunter lief, und die Zeichnung erscheint wie jedes
+andere Element auch, in derselben Dauer.
+
+Verloren geht dabei nichts, was das Argument trüge: eine Zeichnung, die
+entsteht, sagt dasselbe wie eine, die dasteht, nur langsamer. Wo das einmal
+nicht stimmt -- wo die Reihenfolge der Striche selbst etwas erklärt --, gehört
+sie zusätzlich in Worte, und die liest auch, wer sie nicht laufen sieht.
+
+Die Meldung über ein Element ohne Kontur kommt trotzdem. Sie gilt dem Deck und
+nicht der Maschine, auf der es gerade läuft; wer die Einstellung anhat, soll
+dieselbe Auskunft bekommen wie alle anderen.
+
+=== Zusammen mit einer Zeichnung in Stufen
+
+Beides zugleich geht nicht, und das Paket sagt es beim Übersetzen statt es zu
+versuchen:
+
+// check: folie pre=zeichnung bricht=is_at_odds_with_what_this_function_does
+#show-code[```typ
+#aufbau(zeichner, enter: "draw")   // Fehler beim Übersetzen
+```]
+
+Jede Stufe einer Zeichnung aus dem vorigen Abschnitt ist die *ganze* Zeichnung.
+Eine Stufe, die sich selbst zeichnete, zöge also bei jedem Schritt sämtliche
+Striche noch einmal nach, auch die, die längst standen. Und sie täte es über
+der abtretenden Stufe, die absichtlich stehenbleibt, bis die neue vollständig
+da ist -- die Feder führe über Tinte, die schon liegt, und zu sehen wäre
+nichts. Das Gegenteil dessen, was `draw` verspricht.
+
+Wer eine Zeichnung wirklich Strich für Strich entstehen lassen will, gibt die
+Striche als eigene Stücke hin und lässt jedes sich selbst zeichnen; wer ein
+Diagramm in Stufen wachsen lassen will, lässt es bei seiner Blende.
 
 == Drei Stolpersteine
 
@@ -2163,6 +2428,10 @@ nichts wandert dabei mehr über die Folie.
    `fade-down`, `fade-left`, `fade-right`, `scale`, `scale-down`, `rise` und
    `blur` werden zur schlichten Überblendung. `fade` und `none` bleiben, wie
    sie sind. `duration` und `delay` ändern sich nicht.],
+  [`enter: "draw"`],
+  [Die Feder hält still, die Blende bleibt. Das Zeichnen *ist* der Weg, und
+   was übrig bleibt, wenn man ihn herausnimmt, ist genau die Überblendung, die
+   ohnehin darunter lief.],
   [Folienübergänge],
   [Jede Art außer `none` wird zur Überblendung, in derselben
    `transition-duration`. `none` bleibt der harte Schnitt.],

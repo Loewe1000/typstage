@@ -437,7 +437,7 @@ than quietly doing nothing.
 
 === Entrance and exit
 
-`enter` and `exit` name the motion. Ten of them exist:
+`enter` and `exit` name the motion. Eleven of them exist:
 
 #table(
   columns: (auto, 1fr),
@@ -451,6 +451,7 @@ than quietly doing nothing.
   [`"scale-down"`], [shrinks into place],
   [`"blur"`], [out of the blur],
   [`"rise"`], [from below and slightly smaller, the loudest of them],
+  [`"draw"`], [it draws itself -- see "A path that draws itself"],
   [`"none"`], [it is simply there],
 )
 
@@ -462,6 +463,78 @@ one after the other.
   An unknown name does not stop the build. It quietly becomes a cross-fade, so
   a typo in `enter: "fdae-up"` is only noticed by the motion being duller than
   it was meant to be.
+]
+
+=== The curve
+
+Everything this package moves runs on the same curve: slow off the mark, brisk
+through the middle, soft at the end. `easing` hands that curve to a single
+element -- a result may overshoot its mark and swing back, a stack of bullets
+may arrive at an even pace.
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim(result, enter: "rise", easing: "out-back")
+#stagger(stride: 0, stagger: 60, easing: "out-quad")[
+  - first this
+  - then that
+]
+```]
+
+It stands wherever `duration` stands: on `anim`, `stagger`, `alternatives` and
+the drawing that grows in stages. And it applies to everything the element does
+itself -- the entrance, the departure and the dimming. Not to the slide
+transition, which belongs to the slide and not to the element; and not to the
+flight of a magic move, which has two ends and whose curve cannot be settled
+from one of them.
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Name*], [*Curve*]),
+  [`"standard"`], [this package's own curve, written out -- the same as saying
+                   nothing],
+  [`"linear"`], [even, with no run-up and no run-out],
+  [`"ease"`, `"ease-in"`, `"ease-out"`, `"ease-in-out"`],
+  [the four the Web Animations API knows by itself],
+  [`"in-quad"`, `"out-quad"`, `"in-out-quad"`], [gentle],
+  [`"in-cubic"`, `"out-cubic"`, `"in-out-cubic"`], [more pronounced],
+  [`"in-expo"`, `"out-expo"`, `"in-out-expo"`], [sharp -- nearly everything
+   happens at one end],
+  [`"in-back"`, `"out-back"`, `"in-out-back"`], [winds up and overshoots],
+)
+
+`in` means slow off the mark, `out` means soft at the end. For an entrance
+`out` is nearly always the right one: the eye watches the ending, not the
+beginning.
+
+*A name that does not exist is an error at compile time* and not a silent
+default. A typo would otherwise hand back the house curve, and whoever wrote it
+would spend a while wondering why the overshoot does not overshoot. The message
+lists what there is to choose from. (For `enter` it is the other way round, and
+older; see the box above.)
+
+// check: folie pre=zeichnung bricht=the_package_does_not_know_that_curve
+#show-code[```typ
+#anim(result, easing: "out-bounce")   // an error at compile time
+```]
+
+*The three `back` curves go past their mark*, and that is what they are for. On
+a travel that is the swing back; on opacity the browser clips whatever reaches
+past 1, so `easing: "out-back"` on a plain `"fade"` is merely a faster
+`"fade"`. It pays off together with an effect that travels: `"rise"`,
+`"scale"`, `"fade-up"`.
+
+Springs and bounces -- `elastic`, `bounce` -- do not exist here. They are not
+cubic Bézier curves, and the Web Animations API knows only those; they could
+only be rebuilt as a sequence of frames.
+
+#info[
+  Without `easing` not a byte of a deck changes. The name is resolved to a
+  finished curve at compile time and written into the markup only where it
+  departs from the default -- otherwise every element of every deck would carry
+  a new attribute. Measured on this package's eight examples, HTML as well as
+  PDF: the same bytes as before.
 ]
 
 === The muted resting state
@@ -660,8 +733,10 @@ second arrives. Leaving the series out would bring a new tick division with it.
   table.header([*Argument*], [*Effect*]),
   [`schritte`], [number of stages, and hence of steps (default 2)],
   [`start`], [first step; `auto` follows on from the cursor],
-  [`enter`], [motion a stage arrives with (default `"fade"`)],
+  [`enter`], [motion a stage arrives with (default `"fade"`); `"draw"` is an
+              error here, see the next section],
   [`duration`], [duration in milliseconds],
+  [`easing`], [the curve of the motion, see "The curve"],
 )
 
 On paper only the last stage is set, in a block of the same size: a page shows
@@ -696,6 +771,187 @@ not there.
   trees in the file -- for an elaborate drawing both grow as fast as they do
   for a flip book. A drawing in twenty stages is not a good idea.
 ]
+
+== A path that draws itself
+
+`enter: "draw"` lets a stroke *come into being* instead of fading in: the pen
+is set down and traces the path, from its start to its end.
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim(circuit, enter: "draw", duration: 900)
+#stagger(enter: "draw", stride: 1, axes, curve, tangent)
+```]
+
+The means behind it is old and plain. A stroked path in the SVG carries its
+own length; `stroke-dasharray` cuts it into one dash of exactly that length and
+a gap just as long, and `stroke-dashoffset` slides the dash in. At full offset
+nothing is there, at zero everything is -- and in between a pen traces the path.
+
+`duration` applies as it does everywhere, but a drawing wants more time than a
+bullet point. 900 is a workable start; the presentation's default of 520 is
+tight for three long lines.
+
+=== What can be traced and what cannot
+
+*Text cannot.* Typst sets glyphs as filled shapes with no outline -- an "a" is
+an area and not a line, and an area has no length to travel along. The same
+holds for everything filled: an arrow head, a solid dot, the face of a card.
+
+So `draw` is two things at once. *The strokes draw themselves, everything else
+fades in* -- exactly as it would without `draw`, and over exactly the same
+time. The label of a drawing therefore arrives while the lines are being drawn,
+and stands finished together with them.
+
+An element on which *nothing at all* can be traced fades in completely -- but
+not in silence. The runtime says so in the browser's console, once per element:
+
+#show-code[```
+typstage: enter: "draw" on slide 4 (element 2) finds no stroked path to
+trace. What is drawn is an outline, and text has none: Typst sets glyphs
+as filled shapes. The element fades in instead. draw is for a drawing,
+the fade is for text.
+```]
+
+*Why there and not at compile time.* Because Typst only hands out the SVG on
+export. In the document there is no question that would answer "does this
+content have an outline" -- it is the same blind spot for which this package
+paints rectangles in a signal colour and has the browser report back where
+things are. Only in the browser is the path there to be counted. The package's
+own check run reads this message along, so that it cannot one day stop coming.
+
+=== All at once, and how to get them one after another
+
+Every stroked path of an element sets off *at the same time*, and there is no
+knob for that. The order in the SVG is Typst's painting order and not one the
+deck chose; declaring it the order of the argument would be the same
+presumption this package explicitly refuses in the magic move, where glyphs are
+not paired by proximity. And `duration` would stop being a number anyone can
+read: seven strokes at 900 ms one after another are 6.3 seconds.
+
+An order is therefore said rather than inherited. Each piece gets its own step:
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#stagger(enter: "draw", stride: 1, axes, curve, tangent)
+```]
+
+=== Where a drawing has to stand
+
+*Not on the first step of its slide.* Entering a slide plays no entrances --
+on a slide change the runtime only restores the state, or the transition and a
+dozen reveals would run against each other. A drawing on step one would
+therefore simply be there. It needs a step in front of it:
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim[First the sentence that announces the drawing.]
+#anim(circuit, enter: "draw", duration: 900)
+```]
+
+That holds for every effect. With `draw` it merely stands out, because there
+the whole point is in the travel.
+
+=== Who delivers outlines
+
+Measured in the emitted SVG, one element with `enter: "draw"` each:
+
+#table(
+  columns: (1fr, auto, auto, auto),
+  stroke: 0.5pt + luma(180),
+  align: (left, right, right, right),
+  table.header([*Drawn with*], [*Paths*], [*stroked*], [*Glyphs*]),
+  [cetz 0.5.2 -- three lines, a circle, a label], [11], [4], [7],
+  [cetz-plot 0.1.4 -- one function with school-book axes], [59], [25], [53],
+  [lilaq 0.6.0 -- two data series], [70], [64], [6],
+  [fletcher 0.5.8 -- three nodes, two edges], [12], [6], [3],
+  [circuiteria 0.2.1 -- two blocks, one wire], [7], [3], [2],
+  [Typst's own `table` with `stroke`], [13], [7], [6],
+  [`line`, `rect(stroke: …)`, `circle(stroke: …)`], [3], [3], [0],
+  [text only], [14], [0], [18],
+)
+
+The rule behind it is simple: *whatever gets a `stroke` in Typst becomes a path
+with an outline and can be traced; whatever gets a `fill` does not.* A drawing
+package therefore delivers exactly as much as it strokes. The 14 paths of the
+last row are not ink -- they are the measuring rectangles and clip paths that
+the package and Typst put into every output; none of them carries an outline.
+
+Two numbers deserve a second look. With `lilaq`, 64 of the 70 paths are stroked
+-- grid, ticks, frame and markers are among them -- and all 64 set off at once.
+That does not look like a drawing coming into being but like a diagram wiping
+in evenly. With `cetz` there are four, and that is the case `draw` was made
+for: a few long lines an eye can follow. For a diagram, the drawing that grows
+in stages from the previous section is the better tool.
+
+*Dashed lines stay with the fade.* A dash pattern lives in the very attribute
+the pen needs; overwriting it would erase the dashes for the duration of the
+drawing, and a dashed guide line would come in solid. So it fades in while its
+solid neighbours draw themselves.
+
+=== In both directions, and what holds at the edges
+
+#table(
+  columns: (auto, 1fr),
+  inset: 6pt,
+  stroke: (x, y) => if y == 0 { (bottom: 0.6pt) } else { (bottom: 0.3pt + luma(80%)) },
+  table.header([Where], [What happens]),
+  [Paging back],
+  [The pen traces its way out. `enter` applies in both directions as it does
+   for every effect: what drew itself undraws itself.],
+  [Jumping to a step],
+  [No drawing. A jump -- through the address, through the overview, on a reload
+   -- restores the end state, and that is the finished drawing.],
+  [`exit: "draw"`],
+  [Allowed and symmetric: an element leaving its range takes its strokes back
+   instead of fading away.],
+  [Speaker view],
+  [The preview of the next step shows the resting state, that is the finished
+   drawing. There is no motion there.],
+  [Paper],
+  [Nothing. `enter` never reaches the PDF, the drawing simply stands there.
+   Measured on this package's eight examples: the same bytes as without
+   `draw`.],
+  [Reduce motion],
+  [The pen holds still, the fade remains. See just below.],
+)
+
+=== Under "reduce motion"
+
+This package's rule is: *opacity stays, travel goes.* For `draw` that is not an
+exception but the rule in its purest form -- the drawing *is* the travel. Take
+it out and what remains is exactly the fade that was running underneath it
+anyway, and the drawing appears like any other element, over the same duration.
+
+Nothing is lost that carried the argument: a drawing coming into being says the
+same as one that is already there, only more slowly. Where that is once not
+true -- where the order of the strokes itself explains something -- it belongs
+in words as well, and those are read by the people who never see it run.
+
+The message about an element without an outline still comes. It is about the
+deck and not about the machine it happens to be running on; whoever has the
+setting turned on should get the same answer as everyone else.
+
+=== Together with a drawing that grows in stages
+
+Both at once does not work, and the package says so at compile time instead of
+trying:
+
+// check: folie pre=zeichnung bricht=is_at_odds_with_what_this_function_does
+#show-code[```typ
+#aufbau(painter, enter: "draw")   // an error at compile time
+```]
+
+Every stage of a drawing from the previous section is the *whole* drawing. A
+stage that drew itself would therefore retrace every stroke on every step,
+including the ones that had long been standing. And it would do so on top of
+the stage stepping down, which deliberately stays until the new one has fully
+arrived -- the pen would travel over ink that is already down, and nothing
+would be seen. The opposite of what `draw` promises.
+
+To have a drawing really come into being stroke by stroke, hand the strokes
+over as pieces of their own and let each draw itself; to have a diagram grow in
+stages, leave it with its fade.
 
 == Three stumbling blocks
 
@@ -1606,6 +1862,10 @@ new", which is what an entrance is for, but nothing crosses the slide any more.
    `fade-left`, `fade-right`, `scale`, `scale-down`, `rise` and `blur` become a
    plain cross-fade. `fade` and `none` are left as they are. `duration` and
    `delay` do not change.],
+  [`enter: "draw"`],
+  [The pen holds still, the fade remains. The drawing *is* the travel, and what
+   is left when it is taken out is exactly the cross-fade that ran underneath
+   it anyway.],
   [Slide transitions],
   [Every kind but `none` becomes the cross-fade, over the same
    `transition-duration`. `none` stays the hard cut.],

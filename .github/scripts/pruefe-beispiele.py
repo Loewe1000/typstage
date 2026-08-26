@@ -116,6 +116,27 @@ VORSPANN = {
   # Die Versionen sind dieselben wie im Fließtext. Wer eine davon hier
   # hochzieht, muss sie dort mitziehen, sonst zeigt das Handbuch eine Zeile,
   # die niemand geprüft hat.
+  # Was die Handbücher als Zeichnung vorführen, ohne sie zu erklären. Für
+  # `enter: "draw"` müssen es Striche sein und keine Flächen — sonst prüfte der
+  # Lauf einen Fall, den das Handbuch gar nicht zeigt. Aus Typsts eigenen
+  # Formen, damit kein fremdes Paket dafür geladen werden muss.
+  "zeichnung": (
+    "#let schaltbild = rect(width: 80pt, height: 40pt, stroke: 1pt)\n"
+    "#let achse = line(length: 80pt, stroke: 1pt)\n"
+    "#let kurve = line(length: 60pt, angle: -30deg, stroke: 1pt)\n"
+    "#let tangente = line(length: 50pt, angle: 20deg, stroke: 1pt)\n"
+    "#let circuit = schaltbild\n"
+    "#let axes = achse\n"
+    "#let curve = kurve\n"
+    "#let tangent = tangente\n"
+    "#let ergebnis = [42]\n"
+    "#let result = ergebnis\n"
+    # Eine Zeichnerfunktion, wie die Stufenzeichnung sie nimmt. Nur dafür da,
+    # dass das Gegenbeispiel an seiner Zusicherung scheitert und nicht an einem
+    # fehlenden Namen.
+    "#let zeichner = frage => rect(width: 40pt, height: 40pt, stroke: 1pt)\n"
+    "#let painter = zeichner\n"
+  ),
   "cetz": '#import "@preview/cetz:0.5.2"\n',
   "lilaq": (
     '#import "@preview/lilaq:0.6.0" as lq\n'
