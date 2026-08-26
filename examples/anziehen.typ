@@ -45,7 +45,7 @@
   paper: themes.default.paper, ink: themes.default.ink,
   strong: themes.default.strong, accent: themes.default.accent,
   muted: themes.default.muted, surface: themes.default.surface,
-  border: themes.default.border, inverted: false,
+  border: themes.default.border, inverted: themes.default.inverted,
 ) + p
 
 // ── Seven rules, and the whole look of this deck ────────────────────────────
