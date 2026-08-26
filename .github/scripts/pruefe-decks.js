@@ -194,9 +194,9 @@ const SOLL_HINWEIS = [
   "feder und federRueck sind die Zahl der Pfade, die sich auf dem Hin- und auf",
   "dem Rueckweg selbst gezeichnet haben (enter: \"draw\"). Gezaehlt wie flieger:",
   "in der Laufzeit, dort wo sie entstehen (FEDER in assets/typstage-0.1.0.js),",
-  "und nicht am DOM. Sie stehen bei allen Decks; nur das Pruefdeck zeichnet,",
-  "bei den anderen sind sie 0 -- und das ist selbst eine Aussage, denn ein Deck,",
-  "das ploetzlich zeichnet, hat sich veraendert.",
+  "und nicht am DOM. Sie stehen bei allen Decks; gezeichnet wird im Pruefdeck",
+  "und in zeichnen, bei den anderen sind sie 0 -- und das ist selbst eine",
+  "Aussage, denn ein Deck, das ploetzlich zeichnet, hat sich veraendert.",
   "",
   "zeichnung steht nur beim Pruefdeck und beschreibt eine Fahrt der Feder:",
   "  <Pfade hin>+<Pfade zurueck> · <Richtung hin>/<Richtung zurueck> ·",
@@ -270,7 +270,7 @@ const SOLL_HINWEIS = [
 ];
 
 // ── Welche Decks ────────────────────────────────────────────────────────────
-// Die acht Beispiele plus das Prüfdeck. Letzteres steht nicht unter
+// Die neun Beispiele plus das Prüfdeck. Letzteres steht nicht unter
 // `examples/`, weil es nicht auf die Website gehört; es wird hier übersetzt.
 // Es deckt ab, was die anderen nicht anfassen. Nachgezählt in ihren Quellen:
 // `after: "dimmed"` 0x, `stagger(dim: true)` 0x, `invert` 0x, `info()` 0x,
@@ -284,7 +284,7 @@ const SOLL_HINWEIS = [
 // eigenen Fenster. Der Lauf ist deshalb nicht vom Netz abhängig: gemessen
 // ergeben beide Decks mit und ohne erreichbares GeoGebra dieselben Zahlen.
 const BEISPIELE = ["tour", "theme-default", "theme-editorial", "theme-lesson",
-                   "theme-night", "theme-plain", "geogebra",
+                   "theme-night", "theme-plain", "zeichnen", "geogebra",
                    "geogebra-sprecher"];
 
 // Decks mit einem Applet darin. Sie werden mit abgeklemmtem GeoGebra gefahren,
@@ -972,7 +972,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
 
   // Die Sollwerte sind ohne „Bewegung reduzieren" aufgenommen, und die
   // Laufzeit hält sich daran: unter der Einstellung fliegt kein Morph, also
-  // steht `flieger` bei allen sieben Decks auf 0. Der Lauf schlägt dann fehl,
+  // steht `flieger` bei allen Decks auf 0. Der Lauf schlägt dann fehl,
   // aber mit vierzehn Zeilen „soll 82, ist 0", aus denen niemand die Ursache
   // liest. Gemessen mit --force-prefers-reduced-motion: genau diese vierzehn.
   // Darum einmal gefragt und beim Namen genannt. Nur `flieger` weicht ab;

@@ -837,7 +837,7 @@ sich nur als Bildfolge nachbauen.
   Übersetzen zu einer fertigen Kurve aufgelöst und nur dann ins Markup
   geschrieben, wenn er von der Vorgabe abweicht -- sonst trüge jedes Element
   jedes Decks ein neues Attribut. Nachgemessen an den acht Beispielen dieses
-  Pakets, HTML wie PDF: dieselben Bytes wie vorher.
+  Pakets, die keine Kurve nennen, HTML wie PDF: dieselben Bytes wie vorher.
 ]
 
 === Der gedimmte Ruhezustand
@@ -1306,7 +1306,7 @@ durchgezogenen Nachbarn sich zeichnen.
    Zeichnung. Bewegung gibt es dort keine.],
   [Papier],
   [Nichts. `enter` erreicht das PDF nie, die Zeichnung steht fertig da.
-   Nachgemessen an den acht Beispielen dieses Pakets: dieselben Bytes wie ohne
+   Nachgemessen an den neun Beispielen dieses Pakets: dieselben Bytes wie ohne
    `draw`.],
   [Bewegung reduzieren],
   [Die Feder hält still, die Blende bleibt. Siehe gleich.],
