@@ -29,7 +29,7 @@
   info,
 )
 #import "elements.typ": (adaptiv, adaptiv-schicht, alternatives, anim, aufbau,
-                         morph, pause, pin, stagger, szene, szene-schicht)
+                         morph, pause, pin, scene, scene-layer, stagger)
 #import "layout.typ": card, callout, fit, side-by-side, statement, tiles
 #import "media.typ": video, embed, flipbook
 #import "bridge.typ": bridge-job, bridge-targets

@@ -178,7 +178,7 @@
       // Schritt je weiterem Halt. Ohne diese Zeile waere eine Folie, auf der
       // nichts als eine Szene steht, einen Schritt lang, und die Szene kaeme
       // nie ueber ihren ersten Halt hinaus.
-      if (el.dataset.halte) schau(+el.dataset.ab + +el.dataset.halte - 1);
+      if (el.dataset.stops) schau(+el.dataset.from + +el.dataset.stops - 1);
     });
     var s = f.querySelector("script.ts-bridge");
     if (s) JSON.parse(s.textContent).forEach(function (j) { schau(j.at); });
@@ -1063,7 +1063,7 @@
     // Ein Zug, den niemand mehr sieht, laeuft nicht weiter. Wo die Szene beim
     // Abbruch stehenbleibt, ist gleich: der Rueckweg auf diese Folie ist ein
     // Folienwechsel und stellt sie ohnehin.
-    SLIDES[i].querySelectorAll(".ts-szene").forEach(szeneAus);
+    SLIDES[i].querySelectorAll(".ts-scene").forEach(szeneAus);
   }
 
   // ── Szene ─────────────────────────────────────────────────────────────────
@@ -1080,7 +1080,7 @@
 
   // Welcher Halt auf einem Schritt gilt, und welches Bild dazu gehoert.
   function szeneHalt(el, schritt) {
-    var halte = +el.dataset.halte || 1, ab = +el.dataset.ab || 1;
+    var halte = +el.dataset.stops || 1, ab = +el.dataset.from || 1;
     return Math.max(0, Math.min(halte - 1, schritt - ab));
   }
   function szeneRahmen(el, schritt) {
@@ -1116,7 +1116,7 @@
     var von = el.tsBild == null ? bis : el.tsBild;
     szeneAus(el);
     if (sofort || wenigerBewegung() || von === bis) { szeneBild(el, bis); return; }
-    var d = +el.dataset.zug || CFG.duration;
+    var d = +el.dataset.pull || CFG.duration;
     // Der Takt ist eine gewoehnliche Web-Animation ohne eine einzige
     // Eigenschaft darin, und sie haengt am Rumpf des Dokuments. Beides mit
     // Grund. Am Sprite selbst risse `clearAnims` sie beim naechsten Auftritt
@@ -1147,7 +1147,7 @@
   // Vor dem ersten `goto`: jede Szene steht auf ihrem ersten Halt. Ohne das
   // traegt keines ihrer Bilder `data-on`, und eine Szene auf einer nie
   // betretenen Folie waere in der Sprechervorschau ein leerer Kasten.
-  document.querySelectorAll(".ts-szene").forEach(function (el) { szeneBild(el, 0); });
+  document.querySelectorAll(".ts-scene").forEach(function (el) { szeneBild(el, 0); });
   // `null` is the wall clock, a number is a pinned time in milliseconds. A
   // flipbook otherwise shows whatever frame the machine happened to reach, and
   // two runs of the same deck never agree on it.
@@ -2025,7 +2025,7 @@
       // Der Klon traegt das Bild, das gerade im Vortrag steht; gefragt ist
       // aber, was dann dasteht. Ohne das zeigte die Vorschau eine Szene, die
       // sich nie bewegt.
-      k.querySelectorAll(".ts-szene").forEach(function (el) {
+      k.querySelectorAll(".ts-scene").forEach(function (el) {
         var i = szeneRahmen(el, schritt);
         var f = el.querySelectorAll(".ts-frame");
         for (var j = 0; j < f.length; j++) {
@@ -2669,7 +2669,7 @@
     // Die Szenen dieser Folie an den Halt ziehen, der auf diesem Schritt gilt.
     // Nach den Sprites, weil `ruhe` dort gerade die Deckkraft gesetzt hat und
     // eine Szene, die noch gar nicht da ist, nichts zu ziehen hat.
-    SLIDES[dst.slide].querySelectorAll(".ts-szene").forEach(function (el) {
+    SLIDES[dst.slide].querySelectorAll(".ts-scene").forEach(function (el) {
       szeneZiehen(el, dst.step, instant || changed);
     });
 

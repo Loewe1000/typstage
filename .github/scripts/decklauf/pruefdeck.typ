@@ -240,3 +240,81 @@ Dritter Schritt.
   + " Schritte statt 5. Der Schrittzeiger zählt aufbau() falsch -- und diese "
   + "Zahl muss in beiden Ausgaben dieselbe sein, sonst zeigt das Handout eine "
   + "andere Fußzeile als der Vortrag.")
+
+= Bewegen
+
+== Eine Szene mit vier Halten
+// `scene`: eine Zeichnung als Funktion eines Werts, mit vier Halten und acht
+// Zwischenbildern je Strecke -- 4 + 3·8 = 28 Bilder. Aus schlichten Rechtecken
+// und nicht aus CeTZ, aus demselben Grund wie bei `aufbau` daneben: geprüft
+// wird dieses Paket und nicht ein fremdes Zeichenpaket.
+//
+// Vier Dinge hängen daran, und `szeneProbe` in `pruefe-decks.js` fragt sie.
+//
+// Erstens: auf welchem Bild die Szene in Ruhe steht. Halt k liegt auf Bild
+// k·(tween + 1), hier also auf 0, 9, 18 und 27. Verrechnet sich die Zuordnung
+// von Schritt zu Halt, wandert diese Reihe.
+//
+// Zweitens: dass ein Schritt die Strecke wirklich *zieht* und nicht springt.
+// Gefragt wird nicht zu einem geratenen Zeitpunkt -- eine Messung an der Uhr
+// hängt am Rechner --, sondern die Animation selbst: sie muss laufen, und auf
+// halber Zeit muss ein Bild aus der Mitte der Strecke dastehen.
+//
+// Drittens: dass die Kurve die des Pakets ist. Auf halber Zeit steht Bild 7
+// von 9 und nicht Bild 4 oder 5; wer die Kurve gegen eine Gerade tauscht,
+// bekommt genau das zu sehen.
+//
+// Viertens: dass ein Sprung stellt, statt zu ziehen. Nach `goto(…, true)` darf
+// keine Bewegung laufen und das Bild muss am Ziel stehen.
+//
+// Der `anim` darunter ist derselbe Wächter wie bei `aufbau`: ohne einen
+// Schritt *nach* der Szene fiele es nicht auf, wenn sie zu wenige verbrauchte
+// -- ihr letzter Halt wäre dann zugleich der letzte Schritt der Folie.
+#scene("wanderung", x => box(width: 240pt, height: 60pt,
+  place(left + horizon, dx: x * 1pt,
+        rect(width: 30pt, height: 30pt, fill: red))),
+  stops: (0, 60, 120, 180), tween: 8, width: 240pt, height: 60pt)
+
+// Zwei Schichten an zwei Halten. Sie belegen, dass eine Schicht den Schritt
+// ihres Halts findet, ohne dass irgendwo eine Zahl doppelt stünde: wer den
+// zweiten Halt verschiebt, verschiebt den Satz mit.
+#scene-layer("wanderung", 2)[Beim zweiten Halt.]
+#scene-layer("wanderung", 4)[Und beim letzten.]
+
+#anim[Ein Schritt nach der Szene.]
+
+#context assert(info().step.total == 5, message:
+  "Prüfdeck: die Folie mit scene() zählt " + str(info().step.total)
+  + " Schritte statt 5. Eine Szene mit vier Halten verbraucht drei Schritte, "
+  + "der anim darunter den vierten -- und diese Zahl muss in beiden Ausgaben "
+  + "dieselbe sein, sonst zeigt das Handout eine andere Fußzeile als der "
+  + "Vortrag. Der Papierzweig von scene() ist ein anderer.")
+
+== Ein Daumenkino, das erst spät kommt
+// Die Uhr eines Daumenkinos beginnt, wenn es zu sehen ist, und nicht, wenn
+// seine Folie kommt. Genau das war einmal falsch: `mediaOn` stempelte den
+// Startpunkt beim Folieneintritt, für jedes Daumenkino der Folie und ohne
+// nach Sichtbarkeit zu fragen. Ein `flipbook(at: "3-", loop: false)` stand im
+// Augenblick des Aufdeckens deshalb schon auf Bild 23 von 24 -- abgelaufen,
+// bevor es zu sehen war.
+//
+// Schlimmer: der Prüfstand konnte das nicht sehen. Unter der festgenagelten
+// Uhr kürzte sich der Startpunkt aus der Rechnung heraus, und das Kino zeigte
+// auf jedem Schritt dasselbe Bild, das verborgene wie das aufgedeckte.
+//
+// `kinoProbe` in `pruefe-decks.js` fragt jetzt beides an einem Stück: Bild 0
+// auf den ersten beiden Schritten, Bild 0 im Augenblick des Aufdeckens, und
+// danach eine Uhr, die weitergestellt wird und das Kino laufen lässt.
+// Gemessen mit dem alten Stand: 23·23·23·23 statt 0·0·12·23.
+//
+// `loop: false` mit Absicht: ein laufendes Kino ist nach einer Sekunde wieder
+// bei sich selbst, und dann sagte die letzte Zahl nichts mehr.
+Erster Schritt.
+#pause
+Zweiter Schritt.
+#pause
+#flipbook(
+  t => box(width: 100%, height: 100%,
+    place(left + horizon, dx: t * 88%, circle(radius: 9pt, fill: red))),
+  frames: 24, fps: 24, loop: false, at: "3-", width: 240pt, height: 40pt,
+)

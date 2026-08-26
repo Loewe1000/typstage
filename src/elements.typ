@@ -614,7 +614,7 @@
 // ── Eine Zeichnung, die sich bewegt ──────────────────────────────────────────
 //
 // `aufbau` darüber legt Stufen übereinander: die Zeichnung wächst, Stück für
-// Stück, und was noch nicht dran ist, steht als Luft da. `szene` ist die
+// Stück, und was noch nicht dran ist, steht als Luft da. `scene` ist die
 // andere Hälfte derselben Idee. Hier kommt nichts hinzu -- hier ändert sich
 // eine *Größe*, und das Bild hängt daran.
 //
@@ -625,9 +625,9 @@
 // Werten der Vortrag hält, Typst rendert jeden Halt und die Bilder dazwischen,
 // und ein Tastendruck zieht das Bild von Halt zu Halt.
 //
-// Dass `halt` die Werte selbst nennt und nicht 0 bis 1, ist der ganze
-// Unterschied zu `flipbook` und der Grund, warum `szene` den Tracker ablöst:
-// `x => tangente-an(f, x)` mit `halt: (-3, 0, 1.5, 3)` steht da, wo in manim
+// Dass `stops` die Werte selbst nennt und nicht 0 bis 1, ist der ganze
+// Unterschied zu `flipbook` und der Grund, warum `scene` den Tracker ablöst:
+// `x => tangent-at(f, x)` mit `stops: (-3, 0, 1.5, 3)` steht da, wo in manim
 // vier `tracker.animate.set_value(…)` stünden, und die Zahlen sind dieselben.
 //
 // Was der Übersetzung verlorengeht: in manim können sich mehrere Tracker
@@ -640,13 +640,13 @@
 // Datei. Die rohe Zahl allein gibt ein falsches Bild, weil die Bäume einander
 // so ähnlich sind, dass gzip fast alles davon wegnimmt.
 
-/// Ein Halt, so wie ihn `szene` versteht -- und was er nicht sein darf.
+/// Ein Halt, so wie ihn `scene` versteht -- und was er nicht sein darf.
 ///
 /// Zwischen zwei Halten wird gerechnet: `a + (b - a) * u`. Was das nicht
 /// aushält, wird hier abgewiesen, einmal beim Aufschreiben und nicht bei jedem
 /// der vielleicht dreißig Bilder. Ein Text oder ein Stück Inhalt lässt sich
 /// nicht halbieren, und ein Halt, der es versuchte, bräche mitten im Rendern
-/// mit einer Meldung, in der `szene` nicht vorkäme.
+/// mit einer Meldung, in der `scene` nicht vorkäme.
 #let szene-messbar = (int, float, length, angle, ratio, relative)
 
 /// Der Wert an der Stelle `u` zwischen zwei Halten, komponentenweise.
@@ -654,46 +654,55 @@
   range(a.len()).map(i => szene-zwischen(a.at(i), b.at(i), u))
 } else { a + (b - a) * u }
 
-/// Eine Zeichnung als Funktion eines Werts, mit Halten für den Vortrag.
+/// A drawing as a function of a value, with stops for the talk.
 ///
 /// ```typ
-/// #szene(
-///   x => tangente-an(f, x),
-///   halt: (-3, 0, 1.5, 3),   // vier Halte, drei Schritte
-///   tween: 8,                // Zwischenbilder je Strecke
+/// #scene(
+///   x => tangent-at(f, x),
+///   stops: (-3, 0, 1.5, 3),   // four stops, three steps
+///   tween: 8,                 // frames between two stops
 /// )
 /// ```
 ///
-/// `halt` sind die Werte selbst, nicht 0 bis 1. Die Szene verbraucht
-/// `halt.len() - 1` Schritte: der erste Halt steht da, sobald die Szene
-/// erscheint, jeder weitere kostet einen Tastendruck.
+/// This is manim's `ValueTracker` turned around. There a number changes while
+/// the film runs and the picture follows it; here Typst draws at compile time
+/// and a number can only change at a step. So the deck writes a function from
+/// a value to a picture and says at which values the talk stops. Typst renders
+/// every stop and the frames in between, and a keypress pulls the picture from
+/// one stop to the next.
 ///
-/// Ein Halt darf ein Tupel sein, dann bekommt der Zeichner ebenso viele
-/// Argumente: `(a, b) => …` mit `halt: ((1, 1), (1, 3), (2, 3))`.
+/// `stops` are the values themselves, not 0.0 to 1.0 -- that is the whole
+/// difference to `flipbook`. The scene takes `stops.len() - 1` steps: the
+/// first stop is there as soon as the scene appears, every further one costs a
+/// keypress.
 ///
-/// `tween` ist die Zahl der Bilder *zwischen* zwei Halten. Mit `tween: 0`
-/// springt die Szene von Halt zu Halt, ohne etwas dazwischen zu zeigen.
+/// A stop may be a tuple, and then the drawing function takes that many
+/// arguments: `(a, b) => …` with `stops: ((1, 1), (1, 3), (2, 3))`. What is
+/// lost against manim is that there several trackers may move independently;
+/// here everything travels from stop to stop together.
 ///
-/// `duration` ist die Zeit, die ein Zug von Halt zu Halt braucht, nicht die
-/// des Auftritts -- dieselbe Trennung wie bei `morph`, und aus demselben
-/// Grund: das eine ist ein Weg, das andere eine Blende.
+/// `tween` is the number of frames *between* two stops. With `tween: 0` the
+/// scene jumps from stop to stop and shows nothing in between.
 ///
-/// Die Szene steht in einem Kasten fester Größe, und jedes Bild wird darauf
-/// beschnitten. Anders als bei `aufbau` misst das Paket die Bilder nicht: sie
-/// sind Zeichnungen zu verschiedenen Werten und dürfen ohne Weiteres
-/// verschieden groß ausfallen. Ein gemeinsamer Rahmen ist die einzige
-/// Anordnung, in der die Zeichnung dabei nicht springt.
+/// `duration` is the time one pull from stop to stop takes, not the time of
+/// the entrance -- the same separation `morph` draws, and for the same reason:
+/// one is a journey, the other a fade.
 ///
-/// Auf Papier steht der letzte Halt, wie bei `alternatives`; `still`
-/// überschreibt das. Der Schrittzeiger läuft dort trotzdem, damit
-/// `info().step.total` in beiden Ausgaben dieselbe Zahl nennt.
+/// The scene stands in a box of a fixed size and every frame is clipped to it.
+/// Unlike `aufbau` the package does not measure the frames: they are drawings
+/// of different values and may legitimately come out different sizes. One
+/// shared frame is the only arrangement in which the drawing does not jump.
 ///
-/// Unter `prefers-reduced-motion: reduce` fallen die Zwischenbilder weg: die
-/// Szene springt von Halt zu Halt. Das ist die Regel des Pakets an jeder
-/// anderen Stelle auch -- was bleibt, ist das Ziel, was geht, ist der Weg.
-#let szene(
-  ..teile,
-  halt: (),
+/// On paper the last stop is set, as with `alternatives`; `still` overrides
+/// that. The step cursor still runs there, so `info().step.total` names the
+/// same number in both outputs.
+///
+/// Under `prefers-reduced-motion: reduce` the frames in between fall away and
+/// the scene jumps from stop to stop. That is the package's rule everywhere
+/// else too: what stays is the destination, what goes is the travel.
+#let scene(
+  ..parts,
+  stops: (),
   tween: 8,
   start: auto,
   width: 100%,
@@ -702,54 +711,54 @@
   enter: "fade",
   still: auto,
 ) = {
-  // `..teile` schluckte sonst jedes benannte Argument wortlos: ein Tippfehler
-  // in `tween:` ließe die Szene auf der Vorgabe laufen und sagte nichts.
-  assert(teile.named().len() == 0, message:
-    "typstage: szene() kennt " + teile.named().keys().join(", ")
-    + " nicht. Es nimmt halt, tween, start, width, height, duration, enter "
-    + "und still.")
-  let gegeben = teile.pos()
+  // `..parts` would otherwise swallow any named argument without a word: a
+  // typo in `tween:` would leave the scene on the default and say nothing.
+  assert(parts.named().len() == 0, message:
+    "typstage: scene() does not know " + parts.named().keys().join(", ")
+    + ". It takes stops, tween, start, width, height, duration, enter and "
+    + "still.")
+  let gegeben = parts.pos()
   assert(gegeben.len() in (1, 2), message:
-    "typstage: szene() nimmt die Funktion, die das Bild malt, und davor "
-    + "wahlweise einen Namen, unter dem szene-schicht() sie wiederfindet.")
+    "typstage: scene() takes the function that draws the picture, and before "
+    + "it, optionally, a name under which scene-layer() finds it again.")
   let name = if gegeben.len() == 2 { name-of(gegeben.first()) } else { none }
   let zeichnen = gegeben.last()
   assert(type(zeichnen) == function, message:
-    "typstage: szene() nimmt als Zeichner eine Funktion vom Wert auf das Bild "
-    + "und keine fertige Zeichnung. Sie wird für jeden Halt und jedes "
-    + "Zwischenbild einmal gerufen.")
-  assert(type(halt) == array and halt.len() >= 2, message:
-    "typstage: szene(halt: …) sind die Werte, an denen der Vortrag hält, und "
-    + "es braucht mindestens zwei davon. Mit einem einzigen bewegt sich "
-    + "nichts, und dafür genügt anim().")
+    "typstage: scene() takes a function from a value to the picture as its "
+    + "drawer, not a finished drawing. It is called once for every stop and "
+    + "every frame in between.")
+  assert(type(stops) == array and stops.len() >= 2, message:
+    "typstage: scene(stops: …) are the values at which the talk stops, and it "
+    + "wants at least two of them. With a single one nothing moves, and anim() "
+    + "is enough for that.")
   assert(type(tween) == int and tween >= 0, message:
-    "typstage: szene(tween: …) ist die Zahl der Zwischenbilder je Strecke und "
-    + "zählt ab 0. Mit 0 springt die Szene von Halt zu Halt.")
+    "typstage: scene(tween: …) is the number of frames between two stops and "
+    + "counts from 0. With 0 the scene jumps from stop to stop.")
   assert(start == auto or (type(start) == int and start >= 1), message:
-    "typstage: szene(start: …) zählt ab 1, nicht ab 0. Auf Schritt 0 stünde "
-    + "der erste Halt nie.")
+    "typstage: scene(start: …) counts from 1, not 0. On step 0 the first stop "
+    + "would never stand.")
   // Jeder Halt einmal angesehen, bevor irgendein Bild entsteht. Sonst bräche
   // die Rechnung `a + (b - a) * u` irgendwo im dreißigsten Zwischenbild, mit
-  // einer Meldung, in der weder `szene` noch `halt` vorkäme.
-  let breit = type(halt.first()) == array
-  let wieviele(n) = if n == 1 { "eine Größe" } else { str(n) + " Größen" }
-  for (i, w) in halt.enumerate() {
+  // einer Meldung, in der weder `scene` noch `stops` vorkäme.
+  let breit = type(stops.first()) == array
+  let wieviele(n) = if n == 1 { "one value" } else { str(n) + " values" }
+  for (i, w) in stops.enumerate() {
     let stellen = if type(w) == array { w } else { (w,) }
     assert(breit == (type(w) == array)
-             and stellen.len() == (if breit { halt.first().len() } else { 1 }),
+             and stellen.len() == (if breit { stops.first().len() } else { 1 }),
       message:
-      "typstage: szene(halt: …) -- Halt " + str(i + 1) + " nennt "
-      + wieviele(stellen.len()) + ", der erste "
-      + wieviele(if breit { halt.first().len() } else { 1 })
-      + ". Zwischen zwei Halten wird Größe für Größe gerechnet, sie müssen "
-      + "also überall gleich viele sein.")
+      "typstage: scene(stops: …) -- stop " + str(i + 1) + " names "
+      + wieviele(stellen.len()) + ", the first one "
+      + wieviele(if breit { stops.first().len() } else { 1 })
+      + ". Between two stops the arithmetic runs value by value, so there "
+      + "have to be equally many of them everywhere.")
     for g in stellen {
       assert(type(g) in szene-messbar, message:
-        "typstage: szene(halt: …) -- Halt " + str(i + 1) + " trägt "
-        + str(type(g)) + ". Zwischen zwei Halten wird gerechnet, also geht "
-        + "dort nur, was sich teilen lässt: eine Zahl, eine Länge, ein "
-        + "Winkel, ein Anteil. Was sich nicht teilen lässt, gehört an den "
-        + "Zeichner, nicht an den Halt.")
+        "typstage: scene(stops: …) -- stop " + str(i + 1) + " carries "
+        + str(type(g)) + ". Between two stops there is arithmetic, so only "
+        + "what can be halved belongs there: a number, a length, an angle, a "
+        + "ratio. What cannot be halved belongs in the drawer, not in the "
+        + "stop.")
     }
   }
 
@@ -759,19 +768,19 @@
   // hier: sonst wäre sie in die Datei gebacken und ein anderer Rhythmus hieße
   // neu übersetzen.
   let werte = ()
-  for k in range(halt.len() - 1) {
-    let a = halt.at(k)
-    let b = halt.at(k + 1)
+  for k in range(stops.len() - 1) {
+    let a = stops.at(k)
+    let b = stops.at(k + 1)
     for j in range(tween + 1) {
       werte.push(szene-zwischen(a, b, j / (tween + 1)))
     }
   }
-  werte.push(halt.last())
+  werte.push(stops.last())
   let male(w) = if breit { zeichnen(..w) } else { zeichnen(w) }
 
   // Wie bei `flipbook` und `embed`: auf Papier kommt das hier nie bei `track`
   // an, die Fit-Prüfung kann also nicht dort stehen bleiben.
-  fit-verbot("szene")
+  fit-verbot("scene")
   context {
     // Der erste Halt steht da, sobald die Szene erscheint -- er kostet keinen
     // eigenen Schritt, wie bei `morph` und anders als bei `anim`. Steht die
@@ -782,32 +791,32 @@
     } else { start }
     // Halt k steht auf Schritt `erster + k`. Der erste kostet nichts -- er
     // steht schon da --, jeder weitere einen Tastendruck; zusammen sind das
-    // `halt.len() - 1` Schritte.
-    let letzter = erster + halt.len() - 1
+    // `stops.len() - 1` Schritte.
+    let letzter = erster + stops.len() - 1
     if im-deck() { step-cursor.update(c => calc.max(c, letzter)) }
-    // Eingetragen, damit `szene-schicht` die Schritte wiederfindet.
+    // Eingetragen, damit `scene-layer` die Schritte wiederfindet.
     if name != none {
-      szene-gruppen.update(g => g + ((name): (start: erster, halte: halt.len())))
+      szene-gruppen.update(g => g + ((name): (start: erster, stops: stops.len())))
     }
     if not html-output.get() {
       // Auf Papier ein Standbild, und zwar der letzte Halt: eine Seite zeigt
       // alle Schritte auf einmal, und das ist der Zustand, in dem die Szene
       // die Folie verlässt. Genau wie `alternatives`.
       block(width: width, height: height,
-            if still == auto { male(halt.last()) } else { still })
+            if still == auto { male(stops.last()) } else { still })
     } else {
       track(
-        "szene",
-        box(width: width, height: height, clip: true, male(halt.first())),
+        "scene",
+        box(width: width, height: height, clip: true, male(stops.first())),
         at: str(erster) + "-",
         extra: (
-          halte: halt.len(), tween: tween, ab: erster, enter: enter,
-          // `zug`, nicht `duration`: das ist die Dauer des *Wegs* von Halt zu
+          stops: stops.len(), tween: tween, from: erster, enter: enter,
+          // `pull`, nicht `duration`: das ist die Dauer des *Wegs* von Halt zu
           // Halt, nicht die der Blende, mit der die Szene auftritt. Dieselbe
           // Trennung, die `morph` mit `fly` zieht, und aus demselben Grund --
           // beide unter einem Namen laufen zu lassen zieht dieselbe Bewegung
           // sichtbar auseinander.
-          zug: if duration == auto { none } else { duration },
+          pull: if duration == auto { none } else { duration },
         ),
         raw-frames: werte.map(w => box(
           width: width, height: height, clip: true, male(w),
@@ -817,33 +826,33 @@
   }
 }
 
-/// Etwas, das zu einem bestimmten Halt einer Szene gehört.
+/// Something that belongs to one particular stop of a scene.
 ///
-/// Ein Satz daneben, eine Formel, eine zweite Zeichnung: es teilt sich den
-/// Schritt mit seinem Halt und wandert deshalb mit ihm, ohne verdrahtet zu
-/// werden.
+/// A sentence beside it, a formula, a second drawing: it shares the step with
+/// its stop and therefore travels with it, without having to be linked.
 ///
 /// ```typ
-/// #szene("ableitung", x => tangente-an(f, x), halt: (-3, 0, 3))
+/// #scene("derivative", x => tangent-at(f, x), stops: (-3, 0, 3))
 ///
-/// #szene-schicht("ableitung", 2)[Im Scheitel ist die Steigung null.]
+/// #scene-layer("derivative", 2)[At the vertex the slope is zero.]
 /// ```
 ///
-/// Die Szene muss im Quelltext *vor* ihren Schichten stehen, denn eine Schicht
-/// schlägt nach, auf welchem Schritt ihr Halt liegt. Steht sie dahinter, sagt
-/// das Paket es, statt still nichts zu tun.
+/// The scene has to stand *before* its layers in the source, because a layer
+/// looks up which step its stop was given. Standing after them, the package
+/// says so rather than quietly doing nothing.
 ///
-/// Eine Schicht bleibt vom Halt an bis zum Ende der Folie stehen, wie
-/// `adaptiv-schicht`: was zu einem Halt gesagt ist, gilt danach weiter.
-#let szene-schicht(name, nr, body, enter: "fade") = context {
+/// A layer stays from its stop to the end of the slide, as `adaptiv-schicht`
+/// does: what was said at a stop goes on holding afterwards.
+#let scene-layer(name, nr, body, enter: "fade") = context {
   let g = szene-gruppen.get()
   assert(name in g, message:
-    "typstage: szene-schicht(\"" + name + "\") findet keine Szene dieses "
-    + "Namens. Eine szene() muss im Quelltext vor ihren Schichten stehen, "
-    + "denn eine Schicht schlägt nach, auf welchem Schritt ihr Halt liegt.")
+    "typstage: scene-layer(\"" + name + "\") finds no scene of that name. A "
+    + "scene() has to stand before its layers in the source, because a layer "
+    + "looks up which step its stop was given.")
   let e = g.at(name)
-  assert(type(nr) == int and nr >= 1 and nr <= e.halte, message:
-    "typstage: szene-schicht(\"" + name + "\", " + str(nr) + ") -- diese "
-    + "Szene hat " + str(e.halte) + " Halte, die Nummer liegt also außerhalb.")
+  assert(type(nr) == int and nr >= 1 and nr <= e.stops, message:
+    "typstage: scene-layer(\"" + name + "\", " + str(nr) + ") -- that scene "
+    + "has " + str(e.stops) + " stop" + (if e.stops == 1 { "" } else { "s" })
+    + ", so the number is out of range.")
   anim-kern(body, at: str(e.start + nr - 1) + "-", enter: enter)
 }

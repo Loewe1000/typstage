@@ -230,10 +230,10 @@
 /// at once, and nothing has to be linked by name.
 #let adaptiv-gruppen = state("typstage-adaptiv", (:))
 
-/// Die Szenen einer Folie: Name -> (start, halte).
+/// Die Szenen einer Folie: Name -> (start, stops).
 ///
-/// Dasselbe Buch wie nebenan, aus demselben Grund. `szene` traegt ein, auf
-/// welchem Schritt welcher Halt steht; `szene-schicht` schlaegt nach und legt
+/// Dasselbe Buch wie nebenan, aus demselben Grund. `scene` traegt ein, auf
+/// welchem Schritt welcher Halt steht; `scene-layer` schlaegt nach und legt
 /// sich auf denselben. Wer einen Halt verschiebt, verschiebt alles mit, was
 /// daran haengt, ohne dass irgendwo eine Zahl doppelt stuende.
 #let szene-gruppen = state("typstage-szenen", (:))
