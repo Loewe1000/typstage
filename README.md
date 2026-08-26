@@ -484,13 +484,16 @@ how many elements are marked as drawn and as dimmed on every step, the
 number of ghosts a magic move produces, re entry through the hash, the speaker
 view, the ground colour of every slide and the runtime's own error list.
 
-The seventh deck, `.github/scripts/decklauf/pruefdeck.typ`, exists because the
-six examples never use `after: "dimmed"`, `stagger(dim: true)`, `invert`,
-`info()` or `fit`. Counted in their sources: zero times each. The dim lookup was
-deliberately broken and nothing in the six moved. The check deck is not under
-`examples/`, so it stays off the website and the published decks keep their
-pages unchanged. Beside it, `ueberlauf.typ` is a deck that has to *fail* to
-compile, so that the overflow check is caught when it stops finding anything.
+The tenth deck, `.github/scripts/decklauf/pruefdeck.typ`, exists because no
+example deck uses `invert`, `info()` or `fit`. Counted in their sources: zero
+times each. `after: "dimmed"` and `stagger(dim: true)` stood on that list too
+until `vortragen` came along and used them; back when nothing in the examples
+touched them, the dim lookup was deliberately broken and not one of them moved,
+which is why the check deck still measures both on a slide of its own. The check
+deck is not under `examples/`, so it stays off the website and the published
+decks keep their pages unchanged. Beside it, `ueberlauf.typ` is a deck that has
+to *fail* to compile, so that the overflow check is caught when it stops finding
+anything.
 
 What it does not reach: how a slide looks. No images are compared, no sizes and
 no positions are measured. And it reads *attributes*, not what the eye sees --
