@@ -62,7 +62,7 @@
 #let KAPP-OBEN = 4.30
 #let KAPP-UNTEN = -0.45
 
-/// Der Ort der Tür zur Zeit `t`, als Anteil des Wegs von auf bis zu.
+/// Der Ort der Tür zur Zeit `tt`, als Anteil des Wegs von auf bis zu.
 ///
 /// Drei Fälle, und der mittlere ist keine Feinheit: bei `z = 1` fallen die
 /// beiden Wurzeln zusammen, und die Formel für den Schwingfall teilte dort
@@ -127,13 +127,14 @@
 
   // Die Skala, auf der ζ steht. Sie ist die eigentliche Auskunft der Szene:
   // was hier wandert, ist der Wert, den die Taste zieht.
-  let skala(x) = (0.3 + x / 2.0 * 2.6, -0.72)
+  let skala(x) = (0.3 + x / 2.0 * 2.6, -0.68)
   line(skala(0.0), skala(2.0), stroke: 1.0pt + riss)
-  for m in (0.0, 1.0, 2.0) {
-    line((skala(m).at(0), -0.86), (skala(m).at(0), -0.58), stroke: 1.0pt + riss)
+  for m in (0, 1, 2) {
+    line((skala(m).at(0), -0.78), (skala(m).at(0), -0.58), stroke: 1.0pt + riss)
+    content((skala(m).at(0), -0.80), text(size: 7pt, fill: leise)[#m],
+            anchor: "north")
   }
-  content((0.15, -0.72), text(size: 9pt, fill: leise)[$zeta$], anchor: "east")
-  content(skala(1.0), text(size: 7.5pt, fill: leise)[1], anchor: "north")
+  content((0.15, -0.68), text(size: 9pt, fill: leise)[$zeta$], anchor: "east")
   circle(skala(calc.min(2.0, z)), radius: 0.13, fill: zug, stroke: none)
 
   // Die Ablesung. In einem Kasten fester Breite, damit eine Ziffer mehr nichts
