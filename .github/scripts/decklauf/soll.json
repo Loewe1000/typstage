@@ -84,6 +84,35 @@
   "die Hälfte ihrer Zeit gestellt. Es muss 7 von 9 sein und nicht 4 oder 5:",
   "daran hängt, dass der Zug die Kurve des Pakets fährt und keine Gerade.",
   "",
+  "kamera steht nur beim Prüfdeck und beschreibt eine camera():",
+  "  <Streckung je Schritt der Folie> · <tragen beide Ebenen dasselbe> ·",
+  "  <Mitte des Details auf der Bühne> · <Streckung auf halber Zeit> ·",
+  "  <nach einem Sprung> · <Vorschau: ganz/nah/einig> ·",
+  "  <Schritte der Folie mit der Fahrt allein>.",
+  "",
+  "Die Mitte muss 0.50/0.50 sein, und sie ist die eigentliche Zusage: das",
+  "Detail steht mitten im Bild. Eine Streckung allein sagt darüber nichts --",
+  "wer den Ursprung der Streckung von der linken oberen Ecke in die Mitte des",
+  "Kastens rückt, streckt genau gleich weit und zeigt die falsche Stelle.",
+  "Streckungen und keine Verschiebungen: die Streckung ist das Verhältnis von",
+  "Detail zu Folie und in jedem Fenster dieselbe, die Verschiebung stünde auf",
+  "vier Nachkommastellen und hinge am Satz. Keine Dauer, die teilte --tempo",
+  "durch seine Zahl.",
+  "",
+  "Die Reihe ist 1/x/x/1: die Folie steht ganz da, dann zwei Schritte lang der",
+  "Ausschnitt, dann wieder ganz. Die Streckung auf halber Zeit muss echt",
+  "dazwischen liegen; daran hängt, dass die Kamera fährt und nicht springt.",
+  "Das Ziel der Fahrt steht mit Absicht in einem verfolgten Element: ein Pin",
+  "im Hintergrund verschwindet unter dem hide() seines Wirts und steht allein",
+  "im Sprite, und der zählt erst, wenn dieser seinen Platz gefunden hat.",
+  "Findet die Kamera nichts, klagt sie in die Konsole -- dann wächst fehler,",
+  "und die Reihe geht flach auf 1/1/1/1.",
+  "",
+  "allein ist 3 und nicht 2. Auf jener Folie steht nichts als ein Pin und eine",
+  "Fahrt darauf; dass die Folie einen Schritt mehr braucht -- den, auf dem die",
+  "Kamera wieder herausfährt --, muss die Laufzeit aus dem Bereich der Fahrt",
+  "selbst dazurechnen. Dieselbe Sorte Lücke wie bei der alleinstehenden Szene.",
+  "",
   "kino steht ebenfalls nur beim Prüfdeck. Die Uhr eines Daumenkinos beginnt,",
   "wenn es zu sehen ist, und nicht, wenn seine Folie kommt. Es stehen zwei",
   "Kinos auf der Folie und deshalb zwei Reihen hier: je fünf Zahlen, nämlich",
@@ -827,9 +856,9 @@
    "fehler": []
   },
   "pruefdeck": {
-   "folien": 26,
-   "schritte": 56,
-   "elemente": 40,
+   "folien": 28,
+   "schritte": 63,
+   "elemente": 42,
    "flieger": 6,
    "fliegerRueck": 6,
    "feder": 3,
@@ -860,6 +889,8 @@
     "#0f1319",
     "#0f1319",
     "#0c2733",
+    "#0f1319",
+    "#0f1319",
     "#0f1319",
     "#0f1319",
     "#0f1319",
@@ -921,9 +952,23 @@
     "28/4·1/0",
     "28/4·1/0",
     "29/4·1/0",
-    "29/4·1/0"
+    "29/4·1/0",
+    "29/4·0/0",
+    "30/4·1/0",
+    "30/4·1/0",
+    "31/4·2/0",
+    "31/4·0/0",
+    "31/4·0/0",
+    "31/4·0/0"
    ],
    "sichtbarRueck": [
+    "31/4·0/0",
+    "31/4·0/0",
+    "31/4·2/0",
+    "30/4·1/0",
+    "30/4·1/0",
+    "29/4·0/0",
+    "29/4·1/0",
     "29/4·1/0",
     "29/4·1/0",
     "29/4·1/0",
@@ -987,13 +1032,14 @@
    "zeichnung": "3+3 Pfade · hinein/heraus · 0>1 · 0/0 offen · Sprung 0/1/6",
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
-    "darwin": "76cc6889a8fd8a29"
+    "darwin": "698d7f482c4beac0"
    },
    "satzBytes": {
-    "darwin": 1185030
+    "darwin": 1285510
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",
-   "kino": "at 1- 0/0/0/12/23 · at 3- 0/0/0/12/23"
+   "kino": "at 1- 0/0/0/12/23 · at 3- 0/0/0/12/23",
+   "kamera": "1/7.893/7.893/1 · einig · Mitte 0.50/0.50 · halb 6.346 · Sprung 7.893 · ganz/nah/einig · allein 3"
   }
  }
 }

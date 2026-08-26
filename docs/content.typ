@@ -1627,6 +1627,200 @@ Blättern zeigt die wandernde Zeichnung.
   und mehrere Größen können sich nicht unabhängig bewegen.
 ]
 
+#info[
+  *Und `.animate`?* In manim macht `obj.animate.shift(RIGHT)` aus einem
+  Methodenaufruf eine Animation: man schreibt nicht den Zielzustand hin,
+  sondern die Änderung. Dafür gibt es hier mit Absicht kein eigenes Wort, und
+  der Grund ist nicht Bequemlichkeit, sondern was davon überhaupt übrig bliebe.
+
+  Typst-Inhalt ist unveränderlich. Es gibt kein Objekt, an dem eine Methode
+  etwas verschöbe -- `move(dx: 40pt, karte)` ist nicht dieselbe Karte an einer
+  anderen Stelle, sondern ein neues Stück Inhalt. Eine typstage-Fassung von
+  `.animate` könnte deshalb nur, was ein Browser mit einem *fertig gesetzten*
+  Bild anstellen kann: verschieben, strecken, drehen, blenden. Alles Übrige,
+  was manim unter dieser Schreibweise anbietet -- `set_color`, `set_value`,
+  `become`, `next_to` --, heißt neu setzen, und neu setzen ist `scene`.
+
+  Bliebe das Argument, dass vier Zwischenbilder weniger auch vier Bilder
+  weniger sind. Es ist nachgemessen und trägt nicht. Dieselbe Bewegung -- eine
+  Karte wandert nach rechts und wächst dabei -- kostet als `scene` mit acht
+  Zwischenbildern *2,6 kB gepackt* über einer Folie, die dieselbe Karte nur
+  hinstellt. Über zwei Folien mit `morph` geschrieben, also auf dem Weg, den
+  ein Deck heute für dieselbe Geste nähme, kostet sie *12,0 kB*: die zweite
+  Folie trägt Titel, Zier und alles Übrige noch einmal. Der Weg, den das Paket
+  hat, ist bereits der billigere von beiden.
+]
+
+== In ein Detail hineinfahren
+
+Manchmal ist der nächste Schritt eines Vortrags kein neuer Satz, sondern
+derselbe Satz aus der Nähe: das eine Feld der Tabelle, der eine Term der
+Gleichung, das eine Bauteil im Schaltbild. `camera` fährt darauf zu und wieder
+weg.
+
+Die Kamera zielt auf ein `pin`, und auf sonst nichts. Das ist der Name, den
+dieses Paket ohnehin schon für ein benanntes Stück einer Folie führt, und sein
+Rechteck ist genau das, was die Laufzeit zu jedem Schritt vermisst.
+
+// check: folie
+#show-code[```typ
+#pin(<messwerk>, card(title: [Messwerk])[Thermoelement, Brücke, Verstärker.])
+
+#camera(<messwerk>)
+#anim[Und wieder heraus, im Schritt danach.]
+```]
+
+Dass das überhaupt geht, hat einen Grund, der eine Zeile wert ist. Typst gibt
+zur Übersetzungszeit keine Geometrie heraus -- `here().position()` liefert in
+der HTML-Ausgabe überall $(0, 0)$, und genau deshalb arbeitet dieses Paket mit
+Rechtecken in Signalfarbe. Im Browser liegt die Sache umgekehrt: dort *müssen*
+diese Rechtecke bekannt sein, sonst fände kein einziges Sprite seinen Platz.
+Die Kamera hängt sich daran. Das Deck nennt einen Namen, keine Koordinate, und
+wer die Folie umräumt, muss nichts nachrechnen.
+
+=== Wie man wieder herauskommt
+
+Gesagt, nicht geraten. `at` ist ein Schrittbereich wie überall sonst, und die
+Folie wird genau so lange durch die Kamera gesehen, wie er gilt:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Geschrieben*], [*Was passiert*]),
+  [`at: auto`],
+  [Der nächste freie Schritt, und der danach führt wieder heraus. Die Vorgabe.],
+  [`at: "3"`],
+  [Hinein auf Schritt drei, heraus auf vier.],
+  [`at: "3-5"`],
+  [Der Ausschnitt hält über drei Schritte.],
+  [`at: 3`],
+  [Hinein auf Schritt drei und bleiben; der Folienwechsel führt heraus.],
+)
+
+Der Rückweg ist ein Schritt und wird als einer gezählt. Eine Folie, auf der
+nichts steht als ein Pin und eine Fahrt darauf, hat drei Schritte: die ganze
+Folie, den Ausschnitt, die ganze Folie. `info().step.total` sagt dieselbe Zahl,
+und das Handout zählt genauso.
+
+#info[
+  `at: auto` ist hier ein *geschlossener* Bereich, bei `anim` dagegen ein
+  offener. Der Unterschied ist Absicht. Ein Auftritt hat kein natürliches Ende
+  -- was erschienen ist, bleibt. Eine Kamerafahrt hat eines: man kommt immer
+  wieder heraus. Und niemals auf Schritt eins: Schritt eins ist die Folie, wie
+  man sie betritt, und eine Fahrt dort hieße, dass niemand die Folie je ganz
+  gesehen hat.
+]
+
+=== Was mitfährt und was stehenbleibt
+
+Gefahren wird die Folie -- ihr Hintergrund und die Ebene der eingeblendeten
+Teile darüber, beide gemeinsam und mit derselben Verschiebung. Die Folienzier
+fährt *nicht* mit: Fußzeile, Seitenzahl, Fortschritt und laufender Kopf liegen
+seit jeher als eigene Ebene über der Bühne, damit sie beim Folienwechsel nicht
+mit hinausreisen. Genau das zahlt sich hier aus. Sie stehen still, während die
+Folie unter ihnen größer wird, und bleiben lesbar.
+
+Der Titel der Folie fährt dagegen mit. Er steht im Rumpf und gehört ihr.
+
+Was aus dem Bild fährt, wird an der Kante der Bühne abgeschnitten und nicht
+daneben gemalt -- dieselbe Kante, die eine überlaufende Folie beschneidet. Auch
+die Tinte bleibt stehen, wo sie gezogen wurde: was jemand auf die Folie malt,
+gehört nicht zur Folie.
+
+=== Wie weit sie fährt
+
+`margin` sagt, wie viel von der Folie um das Detail herum stehenbleibt,
+gemessen an der *unverfahrenen* Folie. Die Kamera passt Detail plus Rand ins
+Bild; die engere der beiden Richtungen entscheidet, damit das Ganze zu sehen
+ist und nicht seine Mitte.
+
+// check: folie
+#show-code[```typ
+#pin(<term>, $b^2$)
+#camera(<term>, margin: 4pt, duration: 900, easing: "out-quad")
+#anim[Danach.]
+```]
+
+Eine Grenze nach oben gibt es nicht. Ein Pin von der Größe eines Kommas wird
+wandgroß gezeigt -- was Typst gesetzt hat, bleibt dabei scharf, weil es als
+Vektor dasteht. Ein Video, ein Bild oder eine Einbettung in diesem Ausschnitt
+wird es nicht.
+
+Ein Detail, das schon so groß ist wie die Folie, gibt nichts zu fahren; dann
+bleibt die Folie ganz.
+
+=== Zwei Sonderfälle
+
+*Zwei Pins desselben Namens auf einer Folie.* Die Kamera rahmt beide, also den
+Kasten um sie herum. Das ist derselbe Fall, in dem sich bei einem `morph` eine
+Glyphe sichtbar teilt, und hier ist es die Antwort auf „zeig mir diese beiden".
+
+*Zwei Fahrten, die sich auf einem Schritt überlappen.* Die spätere im Quelltext
+gewinnt. Eine Regel, die man nachlesen kann, ist besser als zwei Kameras, die
+sich stumm streiten.
+
+=== Beim Springen, beim Zurückblättern, auf Papier
+
+Der Ausschnitt ist eine Funktion des Schritts und nichts sonst. Daraus folgt
+alles Übrige von selbst:
+
+- *Zurückblättern* fährt den Weg rückwärts und landet sauber wieder auf der
+  ganzen Folie.
+- *Ein Sprung* -- über die Übersicht, über `#3` in der Adresse, über einen
+  Klick in der Sprecheransicht -- stellt den Ausschnitt, statt ihn zu fahren.
+  Dort gibt es keinen Weg, den jemand gesehen hätte.
+- *Die Sprecheransicht* zeigt die laufende Folie als das, was sie ist: dort
+  steht die echte Bühne dieses Fensters, samt Fahrt. Und die Vorschau daneben
+  trägt den Ausschnitt mit, denn ihre Frage ist nicht „wie sieht die Folie
+  aus", sondern „was steht nach dem nächsten Tastendruck da".
+- Unter *Bewegung reduzieren* springt die Kamera auf den Ausschnitt, statt
+  dorthin zu fahren. Die Regel des Pakets an jeder anderen Stelle auch: was
+  bleibt, ist das Ziel, was wegfällt, ist der Weg.
+
+#warning[
+  *Auf Papier gibt es keine Kamera.* Das Handout setzt jede Folie ganz, wie es
+  sie ohne Fahrt setzte -- und das ist die einzige richtige Antwort: ein Blatt
+  zeigt alle Schritte auf einmal, und ein Ausschnitt darauf wäre ein Blatt, auf
+  dem die Hälfte fehlt. Auch die Druckansicht des Browsers (Taste `p`) setzt
+  jede Folie ganz zurück.
+
+  Daraus folgt eine Pflicht für das Deck: *die Folie muss ohne die Fahrt
+  vollständig und lesbar sein.* Wer das Detail nur im Ausschnitt beschriftet
+  -- eine 6-Punkt-Zeile, die man ja gleich heranholt --, hat auf Papier eine
+  Zeile, die niemand liest. Die Kamera ist eine Betonung, kein Layout.
+]
+
+=== Wenn der Name nicht steht
+
+Eine Kamera, die auf ein `pin` zielt, das es auf ihrer Folie nicht gibt, ist
+ein Fehler beim Übersetzen und kein stummes Stehenbleiben:
+
+// check: folie bricht=finds_no_pin_of_that_name
+#show-code[```typ
+#pin(<messwerk>, card[…])
+#camera(<messerk>)          // ein Buchstabe zu wenig
+```]
+
+Gefragt wird am Ende des Dokuments und nicht an Ort und Stelle: eine Fahrt darf
+vor ihrem Ziel stehen -- oft gehört sie an den Kopf der Folie --, und was auf
+einer Folie steht, ist erst gesetzt, wenn sie gesetzt ist. Ein Pin auf der
+Folie *davor* zählt nicht; das ist ein anderes Blatt Papier.
+
+Eine Sache bleibt dabei offen, und sie muss offenbleiben: ein Pin, der in einem
+`anim` steckt, das auf diesem Schritt noch nicht aufgedeckt ist, hat zwar ein
+Rechteck, aber nichts Sichtbares darin. Die Kamera fährt dann auf eine leere
+Stelle. Das kann beim Übersetzen niemand sehen -- welcher Schritt was zeigt,
+entscheidet sich im Browser --, und es ist die eine Art, wie man eine Kamera
+sinnlos machen kann, ohne dass das Paket etwas sagt.
+
+#info[
+  Woher die Idee kommt: manims `MovingCameraScene` bewegt die Kamera der Szene,
+  `camera.frame.animate` fährt sie auf einen Ausschnitt. Der Unterschied ist,
+  worauf gezielt wird. Dort ist es ein Punkt in einem Koordinatensystem, das
+  die Szene selbst aufgespannt hat; hier ist es ein Stück gesetzter Text, das
+  seine Lage erst im Browser bekommt -- und deshalb ein Name und keine Zahl.
+]
+
 == Drei Stolpersteine
 
 *Nur Einblendungen zählen.* Der Zeiger zählt `anim`, `stagger`, `alternatives`

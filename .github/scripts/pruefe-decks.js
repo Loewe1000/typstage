@@ -238,6 +238,35 @@ const SOLL_HINWEIS = [
   "die Hälfte ihrer Zeit gestellt. Es muss 7 von 9 sein und nicht 4 oder 5:",
   "daran hängt, dass der Zug die Kurve des Pakets fährt und keine Gerade.",
   "",
+  "kamera steht nur beim Prüfdeck und beschreibt eine camera():",
+  "  <Streckung je Schritt der Folie> · <tragen beide Ebenen dasselbe> ·",
+  "  <Mitte des Details auf der Bühne> · <Streckung auf halber Zeit> ·",
+  "  <nach einem Sprung> · <Vorschau: ganz/nah/einig> ·",
+  "  <Schritte der Folie mit der Fahrt allein>.",
+  "",
+  "Die Mitte muss 0.50/0.50 sein, und sie ist die eigentliche Zusage: das",
+  "Detail steht mitten im Bild. Eine Streckung allein sagt darüber nichts --",
+  "wer den Ursprung der Streckung von der linken oberen Ecke in die Mitte des",
+  "Kastens rückt, streckt genau gleich weit und zeigt die falsche Stelle.",
+  "Streckungen und keine Verschiebungen: die Streckung ist das Verhältnis von",
+  "Detail zu Folie und in jedem Fenster dieselbe, die Verschiebung stünde auf",
+  "vier Nachkommastellen und hinge am Satz. Keine Dauer, die teilte --tempo",
+  "durch seine Zahl.",
+  "",
+  "Die Reihe ist 1/x/x/1: die Folie steht ganz da, dann zwei Schritte lang der",
+  "Ausschnitt, dann wieder ganz. Die Streckung auf halber Zeit muss echt",
+  "dazwischen liegen; daran hängt, dass die Kamera fährt und nicht springt.",
+  "Das Ziel der Fahrt steht mit Absicht in einem verfolgten Element: ein Pin",
+  "im Hintergrund verschwindet unter dem hide() seines Wirts und steht allein",
+  "im Sprite, und der zählt erst, wenn dieser seinen Platz gefunden hat.",
+  "Findet die Kamera nichts, klagt sie in die Konsole -- dann wächst fehler,",
+  "und die Reihe geht flach auf 1/1/1/1.",
+  "",
+  "allein ist 3 und nicht 2. Auf jener Folie steht nichts als ein Pin und eine",
+  "Fahrt darauf; dass die Folie einen Schritt mehr braucht -- den, auf dem die",
+  "Kamera wieder herausfährt --, muss die Laufzeit aus dem Bereich der Fahrt",
+  "selbst dazurechnen. Dieselbe Sorte Lücke wie bei der alleinstehenden Szene.",
+  "",
   "kino steht ebenfalls nur beim Prüfdeck. Die Uhr eines Daumenkinos beginnt,",
   "wenn es zu sehen ist, und nicht, wenn seine Folie kommt. Es stehen zwei",
   "Kinos auf der Folie und deshalb zwei Reihen hier: je fünf Zahlen, nämlich",
@@ -847,6 +876,170 @@ const SZENENPROBE = `(async function () {
   });
 })()`;
 
+// ── Wie eine Kamera auf ein Detail faehrt ───────────────────────────────────
+//
+// Der Durchlauf oben sieht von einer Kamerafahrt nichts. Sie deckt kein
+// Element auf, sie zaehlt keinen Geist und sie zieht kein Bild weiter -- sie
+// verschiebt zwei Ebenen der Folie, und das steht in keiner der Zahlen, die er
+// zaehlt. Also wird hier eigens gefragt, und zwar sechsmal.
+//
+// *Worauf sie steht.* Die Fahrt gilt genau, solange ihr Bereich gilt. Auf
+// Schritt 1 steht die Folie ganz da, auf 2 und 3 der Ausschnitt, auf 4 wieder
+// die ganze Folie. Verrechnet sich die Zuordnung, wandert die ganze Reihe.
+//
+// *Dass beide Ebenen dasselbe tragen.* Der Hintergrund und die Sprite-Ebene
+// sind zwei Kaesten und muessen deckungsgleich bleiben. Laufen sie
+// auseinander, steht der Text neben dem Bild, zu dem er gehoert -- und am
+// Ruhezustand einer einzelnen Ebene waere davon nichts zu sehen.
+//
+// *Dass ein Schritt faehrt und nicht springt.* Nicht zu einem geratenen
+// Zeitpunkt gefragt -- das hinge am Rechner --, sondern an der Bewegung
+// selbst: sie wird angehalten und auf die Haelfte ihrer Zeit gestellt, und
+// dann muss eine Streckung zwischen Anfang und Ziel dastehen.
+//
+// *Dass ein Sprung stellt.* Nach `goto(…, true)` darf keine Fahrt laufen und
+// der Ausschnitt muss am Ziel stehen.
+//
+// *Dass die Vorschau den Ausschnitt traegt.* Sie klont die Sprite-Ebene
+// mitsamt Stilattribut, den Hintergrund aber ueber `innerHTML`. Ungefragt
+// stuenden die beiden Haelften des Standbilds gegeneinander verschoben.
+//
+// *Dass die alleinstehende Fahrt ihren Rueckweg bekommt.* Die Folie daneben
+// traegt nichts als einen Pin und eine Kamera; sie muss drei Schritte haben.
+//
+// In den Sollstand gehen Streckungen und keine Verschiebungen: die Streckung
+// haengt am Verhaeltnis von Detail zu Folie und ist in jedem Fenster dieselbe,
+// die Verschiebung stuende auf vier Nachkommastellen und wuerde vom Satz
+// abhaengen. Und keine Dauer -- die teilte `--tempo` durch seine Zahl.
+const KAMERAPROBE = `(async function () {
+  var p = typstage.pruef, S = typstage.steps;
+  var folien = [].slice.call(document.querySelectorAll(".ts-slide"));
+  // Die Folie mit der Fahrt ueber 2-3, und die, auf der nichts als eine Fahrt
+  // steht. Beide werden ueber ihre Kameraskripte gefunden und nicht ueber eine
+  // Nummer: wer eine Folie davor einfuegt, soll den Sollstand verschieben und
+  // nicht die Probe ins Leere laufen lassen.
+  var mit = [];
+  folien.forEach(function (f, i) {
+    var s = f.querySelector("script.ts-camera");
+    if (s) mit.push({ nr: i, liste: JSON.parse(s.textContent) });
+  });
+  if (mit.length !== 2) return JSON.stringify({ fehlt: mit.length });
+  function ersteVon(nr) { for (var i = 0; i < S.length; i++) if (S[i].slide === nr) return i; return -1; }
+  function wieviele(nr) { var n = 0; for (var i = 0; i < S.length; i++) if (S[i].slide === nr) n++; return n; }
+  // Die Streckung einer Ebene, auf drei Stellen. "none" wird zur 1.
+  function streckung(el) {
+    var t = el ? getComputedStyle(el).transform : "none";
+    if (!t || t === "none") return 1;
+    return +(new DOMMatrix(t).a).toFixed(3);
+  }
+  function stand(nr) {
+    var f = folien[nr];
+    return { bg: streckung(f.querySelector(".ts-bg")),
+             ov: streckung(f.querySelector(".ts-ov")) };
+  }
+  // Wo die Mitte des Details auf der Buehne liegt, im Verhaeltnis zu ihr.
+  // Herangefahren muss sie in der Mitte sein, also 0.50/0.50 -- und das ist
+  // die eigentliche Zusage der Kamera. Eine Streckung allein sagt darueber
+  // nichts: wer den Ursprung der Streckung von der linken oberen Ecke in die
+  // Mitte des Kastens rueckt, streckt genau gleich weit und zeigt trotzdem die
+  // falsche Stelle. Ein Verhaeltnis und keine Pixel, damit die Zahl nicht am
+  // Satz und nicht am Fenster haengt.
+  function mitteVon(nr, pin) {
+    var f = folien[nr];
+    var svg = f.querySelector(".ts-bg svg");
+    if (!svg) return "-";
+    var b = svg.getBoundingClientRect();
+    var l = null, o = null, r = null, u = null;
+    f.querySelectorAll("path").forEach(function (p) {
+      var fl = (p.getAttribute("fill") || "").toLowerCase();
+      if (fl.length !== 9 || fl.slice(0, 3) !== "#fd" || fl.slice(7) !== "00") return;
+      if (parseInt(fl.slice(3, 7), 16) !== pin) return;
+      var wirt = p.closest(".ts-el");
+      if (wirt && !wirt.style.width) return;
+      var k = p.getBoundingClientRect();
+      if (!k.width && !k.height) return;
+      l = l === null ? k.left : Math.min(l, k.left);
+      o = o === null ? k.top : Math.min(o, k.top);
+      r = r === null ? k.right : Math.max(r, k.right);
+      u = u === null ? k.bottom : Math.max(u, k.bottom);
+    });
+    if (l === null) return "-";
+    // An der Buehne gemessen und nicht am Folien-SVG: das SVG faehrt mit, in
+    // ihm laege die Mitte immer dort, wo sie ohne Fahrt liegt.
+    var st = document.getElementById("ts-stage").getBoundingClientRect();
+    return ((l + r) / 2 - st.left) / st.width * 1 + "|"
+         + ((o + u) / 2 - st.top) / st.height;
+  }
+  function mitteKurz(nr, pin) {
+    var m = mitteVon(nr, pin);
+    if (m === "-") return "-";
+    return m.split("|").map(function (z) { return (+z).toFixed(2); }).join("/");
+  }
+  function fahrten() {
+    return document.getAnimations().filter(function (a) {
+      var t = a.effect && a.effect.target;
+      return t && t.classList && (t.classList.contains("ts-bg")
+                                  || t.classList.contains("ts-ov"));
+    });
+  }
+  function zweiBilder() {
+    return new Promise(function (r) {
+      requestAnimationFrame(function () { requestAnimationFrame(r); });
+    });
+  }
+
+  var nr = mit[0].nr, erste = ersteVon(nr), wv = wieviele(nr);
+  // Die Ruhezustaende, Schritt fuer Schritt durch die Folie. Beide Ebenen,
+  // damit ein Auseinanderlaufen auffaellt.
+  typstage.goto(erste, true); await p.ruhig(4000);
+  var ruhe = [], einig = 1;
+  for (var k = 0; k < wv; k++) {
+    typstage.goto(erste + k); await p.ruhig(4000);
+    var st = stand(nr);
+    if (st.bg !== st.ov) einig = 0;
+    ruhe.push(st.bg);
+  }
+  // Und die Mitte des Details, herangefahren.
+  typstage.goto(erste + 1); await p.ruhig(4000);
+  var mitte = mitteKurz(nr, mit[0].liste[0].pin);
+
+  // Und die Fahrt selbst, angehalten auf halber Zeit.
+  typstage.goto(erste, true); await p.ruhig(4000);
+  var vorher = stand(nr).bg;
+  typstage.goto(erste + 1);
+  var a = fahrten(), halb = -1;
+  if (a.length === 2) {
+    a.forEach(function (x) {
+      x.pause();
+      x.currentTime = x.effect.getTiming().duration / 2;
+    });
+    await zweiBilder();
+    halb = stand(nr).bg;
+    a.forEach(function (x) { x.cancel(); });
+  }
+
+  // Ein Sprung stellt: keine Fahrt, und der Ausschnitt am Ziel.
+  typstage.goto(erste, true); await p.ruhig(4000);
+  typstage.goto(erste + 1, true);
+  await zweiBilder();
+  var sprung = stand(nr).bg, sprungFahrten = fahrten().length;
+  await p.ruhig(4000);
+
+  // Die Vorschau: Grund und Sprite-Ebene tragen denselben Ausschnitt.
+  var v1 = typstage.sprecher.bild(nr, 1), v2 = typstage.sprecher.bild(nr, 2);
+  var vg = v2.querySelector("svg"), ve = v2.querySelector(".ts-ov");
+  var vorschau = (v1.querySelector("svg").style.transform ? "?" : "ganz") + "/"
+    + (vg && vg.style.transform ? "nah" : "ganz") + "/"
+    + (ve && ve.style.transform === (vg ? vg.style.transform : "") ? "einig" : "?");
+
+  return JSON.stringify({
+    ruhe: ruhe, einig: einig, mitte: mitte, vorher: vorher,
+    fahrten: a.length, halb: halb,
+    sprung: sprung, sprungFahrten: sprungFahrten, vorschau: vorschau,
+    allein: wieviele(mit[1].nr)
+  });
+})()`;
+
 // ── Wann die Uhr eines Daumenkinos zu laufen beginnt ────────────────────────
 //
 // Beim Aufdecken, nicht beim Folieneintritt. Das war einmal falsch, und der
@@ -1218,6 +1411,53 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
             + ". Der Zug zeigt keine Zwischenbilder.");
         }
       }
+      const km = JSON.parse(await b.ev(KAMERAPROBE));
+      if (km.fehlt !== undefined) {
+        z.maengel.push("das Prüfdeck hat " + km.fehlt + " Folien mit einer "
+          + "Kamerafahrt statt zwei. Es braucht eine mit einem gesagten "
+          + "Bereich und eine, auf der nichts als eine Fahrt steht -- die "
+          + "beiden prüfen verschiedene Hälften des Falls.");
+      } else {
+        z.kamera = km.ruhe.join("/") + " · " + (km.einig ? "einig" : "ENTZWEIT")
+                 + " · Mitte " + km.mitte + " · halb " + km.halb
+                 + " · Sprung " + km.sprung
+                 + " · " + km.vorschau + " · allein " + km.allein;
+        if (km.fahrten !== 2) {
+          z.maengel.push("beim Schritt in den Ausschnitt liefen " + km.fahrten
+            + " Fahrten, erwartet genau zwei -- eine je Ebene. Fährt nur eine, "
+            + "steht die Sprite-Ebene neben dem Hintergrund; fährt keine, "
+            + "springt die Kamera, statt zu fahren.");
+        }
+        if (!km.einig) {
+          z.maengel.push("Hintergrund und Sprite-Ebene tragen verschiedene "
+            + "Verschiebungen. Sie sind derselbe Kasten und müssen "
+            + "deckungsgleich bleiben, sonst steht der Text neben dem Bild, "
+            + "zu dem er gehört.");
+        }
+        if (km.sprungFahrten !== 0) {
+          z.maengel.push("ein Sprung mit goto(…, true) hat eine Fahrt "
+            + "angeworfen. Ein Sprung stellt die Kamera, er fährt sie nicht: "
+            + "dort gibt es keinen Weg, den jemand gesehen hätte.");
+        }
+        if (!(km.halb > km.vorher && km.halb < km.ruhe[1])) {
+          z.maengel.push("auf halber Zeit steht die Streckung bei " + km.halb
+            + ", also nicht zwischen " + km.vorher + " und " + km.ruhe[1]
+            + ". Die Kamera zeigt keinen Weg, sie springt.");
+        }
+        if (km.mitte !== "0.50/0.50") {
+          z.maengel.push("herangefahren liegt die Mitte des Details bei "
+            + km.mitte + " statt bei 0.50/0.50 der Bühne. Die Kamera streckt "
+            + "dann zwar richtig weit, zeigt aber die falsche Stelle -- genau "
+            + "das passiert, wenn der Ursprung der Streckung nicht in der "
+            + "linken oberen Ecke liegt.");
+        }
+        if (km.allein !== 3) {
+          z.maengel.push("die Folie, auf der nichts als eine Fahrt steht, hat "
+            + km.allein + " Schritte statt drei. Der Rückweg ist ein Schritt, "
+            + "und die Laufzeit muss ihn aus dem Bereich der Fahrt selbst "
+            + "dazurechnen: die Kamera führe sonst hinein und nie heraus.");
+        }
+      }
       const ki = JSON.parse(await b.ev(KINOPROBE(UHR)));
       if (ki.fehlt !== undefined) {
         z.maengel.push("kein Daumenkino im Prüfdeck gefunden (" + ki.fehlt
@@ -1335,7 +1575,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
                   "feder", "federRueck", "hash", "hashStand", "sprecher",
                   "grund", "sichtbar", "sichtbarRueck", "fehler", "halt",
                   "haltRueck", "masz", "zeichnung", "kurve", "satz",
-                  "satzBytes", "szene", "kino"];
+                  "satzBytes", "szene", "kino", "kamera"];
   // `satz` und `satzBytes` hängen an den Schriften des Rechners, nicht am
   // Paket: derselbe Stand ergibt auf macOS 546292 Bytes und auf einem
   // Ubuntu-Läufer 500912, während alle übrigen Felder -- Schritte, Elemente,

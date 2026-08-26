@@ -1227,6 +1227,194 @@ travelling.
   independently.
 ]
 
+#info[
+  *And `.animate`?* In manim, `obj.animate.shift(RIGHT)` turns a method call
+  into an animation: you write the change rather than the target state. There
+  is deliberately no word of its own for that here, and the reason is not
+  convenience but what would be left of it.
+
+  Typst content is immutable. There is no object for a method to move --
+  `move(dx: 40pt, card)` is not the same card in another place but a new piece
+  of content. A typstage version of `.animate` could therefore only do what a
+  browser can do to a *finished* picture: translate, scale, rotate, fade.
+  Everything else manim offers under that spelling -- `set_color`,
+  `set_value`, `become`, `next_to` -- means setting it again, and setting it
+  again is `scene`.
+
+  That leaves the argument that eight frames fewer are eight frames fewer. It
+  has been measured, and it does not hold. The same motion -- a card travels
+  right and grows while doing so -- costs *2.6 kB compressed* as a `scene`
+  with eight tween frames, over a slide that merely puts the same card there.
+  Written across two slides with `morph`, that is, the way a deck would take
+  for the same gesture today, it costs *12.0 kB*: the second slide carries
+  title, furniture and everything else a second time. The way the package
+  already has is the cheaper of the two.
+]
+
+== Moving in on a detail
+
+Sometimes the next step of a talk is not a new sentence but the same sentence
+from close up: the one cell of the table, the one term of the equation, the one
+component in the circuit. `camera` moves in on it and back out again.
+
+The camera aims at a `pin`, and at nothing else. That is the word this package
+already has for a named piece of a slide, and its rectangle is exactly what the
+runtime measures on every step anyway.
+
+// check: folie
+#show-code[```typ
+#pin(<sensor>, card(title: [Sensor])[Thermocouple, bridge, amplifier.])
+
+#camera(<sensor>)
+#anim[And out again, on the step after.]
+```]
+
+That this works at all has a reason worth a line. Typst hands out no geometry
+at compile time -- `here().position()` gives $(0, 0)$ everywhere in the HTML
+output, and that is precisely why this package works with rectangles in signal
+colour. In the browser it is the other way round: there those rectangles *have*
+to be known, or not a single sprite would find its place. The camera hangs
+itself on that. The deck names a name, not a coordinate, and whoever rearranges
+the slide has nothing to recompute.
+
+=== How you get out again
+
+Said, not guessed. `at` is a step selector as everywhere else, and the slide is
+seen through the camera for exactly as long as it is active:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Written*], [*What happens*]),
+  [`at: auto`],
+  [The next free step, and the one after takes it back out. The default.],
+  [`at: "3"`],
+  [In on step three, out on four.],
+  [`at: "3-5"`],
+  [The crop holds across three steps.],
+  [`at: 3`],
+  [In on step three and stay; the slide change takes it out.],
+)
+
+The way back out is a step and is counted as one. A slide carrying nothing but
+a pin and a camera on it has three steps: the whole slide, the crop, the whole
+slide. `info().step.total` says the same number, and the handout counts the
+same way.
+
+#info[
+  `at: auto` is a *closed* range here, while for `anim` it is an open one. The
+  difference is deliberate. An entrance has no natural end -- what has appeared
+  stays. A camera move has one: you always come back out. And never step one:
+  step one is the slide as it is entered, and a move there would mean nobody
+  ever saw the slide whole.
+]
+
+=== What travels along and what stays put
+
+What travels is the slide -- its background and the layer of revealed parts
+above it, both together and with the same transform. The slide's furniture does
+*not* travel: footer, page number, progress and running header have always sat
+as their own layer above the stage, so that they do not travel out on a slide
+change. That is exactly what pays off here. They stand still while the slide
+grows underneath them, and stay legible.
+
+The slide's title does travel along. It stands in the body and belongs to it.
+
+Whatever travels out of frame is cut at the edge of the stage and not painted
+beside it -- the same edge that clips an overflowing slide. The ink stays put
+too, where it was drawn: what someone draws onto the slide does not belong to
+the slide.
+
+=== How far it goes
+
+`margin` says how much of the slide stays around the detail, measured on the
+*unzoomed* slide. The camera fits the detail plus that margin into the frame;
+the tighter of the two directions decides, so the whole of it is seen and not
+its middle.
+
+// check: folie
+#show-code[```typ
+#pin(<term>, $b^2$)
+#camera(<term>, margin: 4pt, duration: 900, easing: "out-quad")
+#anim[After that.]
+```]
+
+There is no upper limit. A pin the size of a comma is shown the size of a wall
+-- what Typst set stays sharp while it happens, because it stands there as
+vectors. A video, an image or an embedded document in that crop will not.
+
+A detail already as large as the slide gives nothing to travel to; then the
+slide stays whole.
+
+=== Two special cases
+
+*Two pins of the same name on one slide.* The camera frames both, that is, the
+box around them. It is the same case in which a glyph visibly splits in two
+under a `morph`, and here it is the answer to "show me these two".
+
+*Two moves overlapping on one step.* The later one in the source wins. A rule
+you can look up beats two cameras quietly fighting each other.
+
+=== On a jump, paging back, and on paper
+
+The crop is a function of the step and nothing else. Everything else follows
+from that on its own:
+
+- *Paging back* runs the way in reverse and lands cleanly on the whole slide
+  again.
+- *A jump* -- through the overview, through `#3` in the address, through a
+  click in the speaker view -- sets the crop instead of travelling to it.
+  There is no way there that anyone saw.
+- *The speaker view* shows the running slide as what it is: that is this
+  window's real stage, camera included. And the preview beside it carries the
+  crop along, because its question is not "what does the slide look like" but
+  "what stands there after the next keypress".
+- Under *reduced motion* the camera jumps to the crop instead of travelling to
+  it. The package's rule everywhere else too: what stays is the destination,
+  what goes is the travel.
+
+#warning[
+  *On paper there is no camera.* The handout sets every slide whole, exactly as
+  it would without a move -- and that is the only right answer: a page shows
+  every step at once, and a crop on it would be a page with half of it
+  missing. The browser's print view (key `p`) puts every slide back whole too.
+
+  A duty for the deck follows from that: *the slide has to be complete and
+  legible without the move.* Whoever labels the detail only for the crop -- a
+  6-point line, since we are going to move in on it anyway -- has a line on
+  paper that nobody reads. The camera is an emphasis, not a layout.
+]
+
+=== When the name is not there
+
+A camera aiming at a `pin` that does not exist on its slide is an error at
+compile time, and not a silent standstill:
+
+// check: folie bricht=finds_no_pin_of_that_name
+#show-code[```typ
+#pin(<sensor>, card[…])
+#camera(<senor>)            // one letter short
+```]
+
+The question is put at the end of the document rather than on the spot: a move
+may stand before its target -- it often belongs at the head of the slide -- and
+what stands on a slide is only settled once the slide is set. A pin on the
+slide *before* does not count; that is a different piece of paper.
+
+One thing stays open, and it has to. A pin sitting inside an `anim` that is not
+revealed on this step does have a rectangle, but nothing visible in it. The
+camera then moves in on an empty place. Nobody can see that at compile time --
+which step shows what is decided in the browser -- and it is the one way to
+make a camera pointless without the package saying anything.
+
+#info[
+  Where the idea comes from: manim's `MovingCameraScene` moves the scene's
+  camera, and `camera.frame.animate` takes it to a crop. The difference is what
+  is aimed at. There it is a point in a coordinate system the scene spanned
+  itself; here it is a piece of set text that only gets its position in the
+  browser -- and therefore a name and not a number.
+]
+
 == Three stumbling blocks
 
 *Only reveals count.* The cursor counts `anim`, `stagger`, `alternatives` and
