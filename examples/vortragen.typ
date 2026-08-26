@@ -318,17 +318,17 @@
 
 // Three tiles, each on its point. They hold their place open even while nobody
 // has called them out, so nothing jumps whichever order the reveals come in.
-#let tile(gross, klein) = block(
+#let tile(head, note) = block(
   // A fixed height, so the three tiles line up along one edge. Without it each
   // is as tall as its own text, and which one gets called first would decide
   // what the slide looks like.
   width: 100%, height: 116pt, inset: (x: 12pt, y: 10pt), radius: 6pt,
   fill: t.surface, stroke: 1pt + t.border,
   {
-    text(size: 1.25em, weight: 700, fill: dead, gross)
+    text(size: 1.25em, weight: 700, fill: dead, head)
     linebreak()
     v(0.15em)
-    text(size: 0.78em, fill: quiet, klein)
+    text(size: 0.78em, fill: quiet, note)
   },
 )
 
@@ -486,11 +486,11 @@
 // One row per company, on a shared column spec rather than in a `table`: a
 // table cell does not see `#pause`, an `anim` does.
 #let cols = (420pt, auto, 1fr)
-#let row(a, b, c, farbe: t.ink) = grid(
+#let row(a, b, c, colour: t.ink) = grid(
   columns: cols, column-gutter: 14pt,
   align: (left + horizon, right + horizon, left + horizon),
-  text(fill: farbe, a),
-  text(size: 1.3em, weight: 700, fill: farbe, b),
+  text(fill: colour, a),
+  text(size: 1.3em, weight: 700, fill: colour, b),
   text(size: 0.72em, fill: quiet, c),
 )
 
@@ -499,19 +499,19 @@
 #v(0.6em)
 
 #anim(at: 2, enter: "fade-right", row(
-  farbe: dead,
+  colour: dead,
   [*Southwark & Vauxhall* — intake inside London],
   [315], [deaths per 10,000 houses],
 ))
 #v(0.3em)
 #anim(at: 3, enter: "fade-right", row(
-  farbe: water,
+  colour: water,
   [*Lambeth* — intake above the tideway, 1852],
   [37], [deaths per 10,000 houses],
 ))
 #v(0.3em)
 #anim(at: 4, enter: "fade-right", row(
-  farbe: quiet,
+  colour: quiet,
   [The rest of London],
   [59], [deaths per 10,000 houses],
 ))
