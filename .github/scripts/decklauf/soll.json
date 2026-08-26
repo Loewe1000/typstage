@@ -104,7 +104,7 @@
   "theme-night/sprecher, geogebra-sprecher/sprecher, pruefdeck/satz und",
   "pruefdeck/satzBytes. Alle vier haengen an den Schriften des Rechners und an",
   "nichts sonst -- der erste CI-Lauf des Zusammenlegungszweigs hat es gezeigt:",
-  "von 9 Decks und ihren rund 20 Feldern wichen genau diese drei ab, jedes",
+  "von 9 Decks und ihren rund 20 Feldern wichen genau diese vier ab, jedes",
   "andere Feld nannte auf macOS und auf Ubuntu dieselbe Zahl.",
   "",
   "Wer ein Deck aendert, dessen Satz sich dabei verschiebt, macht die",
