@@ -184,9 +184,17 @@ Dritter Schritt.
 // Drei Dinge haengen daran.
 //
 // Erstens: auf jedem Schritt dieser Folie ist genau *eine* Stufe gezeichnet,
-// nie zwei und nie null. Der Lauf sieht das an `sichtbar`. Gemessen, indem die
-// letzte Stufe einen geschlossenen statt eines offenen Bereichs bekam: die
-// Reihe dieser Folie ging auf ihrem letzten Schritt von 1/0 auf 0/0.
+// nie zwei und nie null, und die letzte bleibt bis zum Ende der Folie stehen.
+// Dafuer steht der `anim` unter der Zeichnung: ohne einen Schritt *nach* der
+// letzten Stufe faellt eine Stufe, deren Bereich zu frueh schliesst, gar nicht
+// auf -- ihr letzter Schritt ist dann zugleich der letzte der Folie. Gemessen,
+// indem die letzte Stufe einen geschlossenen statt eines offenen Bereichs
+// bekam: ohne den `anim` bewegte sich in `sichtbar` keine Zahl, mit ihm ging
+// der letzte Schritt dieser Folie von 2/0 auf 1/0.
+//
+// Ein `anim` und kein `#pause`: `#pause` nummeriert seine Schritte fuer sich
+// (`at: i + 2` in `apply-pauses`) und stuende hier auf Schritt 2, mitten in
+// der Zeichnung, statt hinter ihr.
 //
 // Zweitens: was noch nicht dran ist, steht als Luft da und nicht als Tinte.
 // Im Browser gibt es dafuer keine Zahl -- Alpha 0 ist gezeichnet wie jede
@@ -207,8 +215,10 @@ Dritter Schritt.
   place(bottom + left, dx: 70%, rect(width: 16%, height: 88pt, fill: ab(4, blue)))
 }), schritte: 4)
 
-#context assert(info().step.total == 4, message:
+#anim[Ein Schritt nach der Zeichnung.]
+
+#context assert(info().step.total == 5, message:
   "Prüfdeck: die Folie mit aufbau() zählt " + str(info().step.total)
-  + " Schritte statt 4. Der Schrittzeiger zählt aufbau() falsch -- und diese "
+  + " Schritte statt 5. Der Schrittzeiger zählt aufbau() falsch -- und diese "
   + "Zahl muss in beiden Ausgaben dieselbe sein, sonst zeigt das Handout eine "
   + "andere Fußzeile als der Vortrag.")

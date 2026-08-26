@@ -635,8 +635,8 @@
   },
   "pruefdeck": {
    "folien": 20,
-   "schritte": 36,
-   "elemente": 26,
+   "schritte": 37,
+   "elemente": 27,
    "flieger": 6,
    "fliegerRueck": 6,
    "hash": 8,
@@ -700,9 +700,11 @@
     "15/4·1/0",
     "15/4·1/0",
     "15/4·1/0",
-    "15/4·1/0"
+    "15/4·1/0",
+    "16/4·2/0"
    ],
    "sichtbarRueck": [
+    "15/4·1/0",
     "15/4·1/0",
     "15/4·1/0",
     "15/4·1/0",
@@ -742,10 +744,10 @@
    "fehler": [],
    "halt": "1>1·0>1·1/4",
    "satz": {
-    "darwin": "750ad77ff0ad62e5"
+    "darwin": "7050a4acbcbed88c"
    },
    "satzBytes": {
-    "darwin": 832992
+    "darwin": 850342
    }
   }
  }
