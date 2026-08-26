@@ -388,6 +388,25 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   const bericht = []; let schlecht = 0;
   if (bildZiel) fs.mkdirSync(bildZiel, { recursive: true });
 
+  // Die Sollwerte sind ohne „Bewegung reduzieren" aufgenommen, und die
+  // Laufzeit hält sich daran: unter der Einstellung fliegt kein Morph, also
+  // steht `flieger` bei allen sieben Decks auf 0. Der Lauf schlägt dann fehl,
+  // aber mit vierzehn Zeilen „soll 82, ist 0", aus denen niemand die Ursache
+  // liest. Gemessen mit --force-prefers-reduced-motion: genau diese vierzehn.
+  // Darum einmal gefragt und beim Namen genannt. Nur `flieger` weicht ab;
+  // sichtbar, gedimmt, grund, hash, sprecher und satz halten, weil die
+  // Einstellung den Weg wegnimmt und nicht das Ziel.
+  await laden(b, "about:blank");
+  const leiser = await b.ev(
+    "matchMedia('(prefers-reduced-motion: reduce)').matches");
+  if (leiser) {
+    console.error("FEHLER: Dieser Browser meldet prefers-reduced-motion: "
+      + "reduce. Dann fliegt kein Magic Move und flieger steht überall auf 0. "
+      + "Der Lauf will einen Browser ohne die Einstellung.");
+    await b.ende();
+    process.exit(2);
+  }
+
   for (const d of decks) {
     const z = { deck: d.name, maengel: [] };
     // Jedes Deck bekommt eine frische Seite. Ein Sprung, der nur den Hash

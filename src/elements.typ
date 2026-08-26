@@ -4,6 +4,28 @@
                         offenes-ende, pin-index, pin-marker, selector,
                         step-cursor, track)
 
+/// What `anim` does once its arguments have been checked.
+///
+/// Split out for `stagger`, and for one reason: `dim-freiwillig`. An element
+/// written by hand with `after: "dimmed"` whose range ends with the slide is a
+/// mistake -- it would rest dim on a step that never comes -- and the check at
+/// the end of the document says so. A `stagger(dim: true)` produces exactly
+/// that shape for its *last* point on purpose: the point being talked about
+/// stays bright, and dims only if the deck goes on. So its points say they may
+/// end with the slide, and the late check leaves them alone. The flag rides in
+/// the sprite record rather than in `extra`, which becomes markup attributes.
+#let anim-kern(body, at: auto, enter: "fade-up", exit: "fade",
+               after: "hidden", duration: auto, delay: 0,
+               dim-freiwillig: false) = track(
+  "anim", body, at: at, dim-freiwillig: dim-freiwillig, extra: (
+    enter: enter, exit: exit, delay: delay,
+    duration: if duration == auto { none } else { duration },
+    // Only the departure from the default travels into the markup. `hidden`
+    // is what every sprite has always done after its range, and writing it
+    // out would put a new attribute on every element of every deck.
+    after: if after == "dimmed" { after } else { none },
+  ))
+
 /// Reveal content on particular steps.
 ///
 /// `at` is a step selector. `auto`, the default, takes the next free step,
@@ -35,28 +57,11 @@
 /// the slide, and an element that never leaves has no after; the package says
 /// so instead of doing nothing. `at: "3"` is that one step, `at: "2-3"` a
 /// range.
-/// What `anim` does once its arguments have been checked.
 ///
-/// Split out for `stagger`, and for one reason: `dim-freiwillig`. An element
-/// written by hand with `after: "dimmed"` whose range ends with the slide is a
-/// mistake -- it would rest dim on a step that never comes -- and the check at
-/// the end of the document says so. A `stagger(dim: true)` produces exactly
-/// that shape for its *last* point on purpose: the point being talked about
-/// stays bright, and dims only if the deck goes on. So its points say they may
-/// end with the slide, and the late check leaves them alone. The flag rides in
-/// the sprite record rather than in `extra`, which becomes markup attributes.
-#let anim-kern(body, at: auto, enter: "fade-up", exit: "fade",
-               after: "hidden", duration: auto, delay: 0,
-               dim-freiwillig: false) = track(
-  "anim", body, at: at, dim-freiwillig: dim-freiwillig, extra: (
-    enter: enter, exit: exit, delay: delay,
-    duration: if duration == auto { none } else { duration },
-    // Only the departure from the default travels into the markup. `hidden`
-    // is what every sprite has always done after its range, and writing it
-    // out would put a new attribute on every element of every deck.
-    after: if after == "dimmed" { after } else { none },
-  ))
-
+/// Under `prefers-reduced-motion: reduce` every effect keeps its opacity and
+/// loses its travel, so `enter` and `exit` become a plain cross-fade of the
+/// same length. `after: "dimmed"` is unaffected: it changes opacity and
+/// nothing else. See the manual.
 #let anim(
   body,
   at: auto,
@@ -101,6 +106,9 @@
 /// when the formula should appear together with its tile. It is allowed
 /// exactly when the preceding slide carries no morph of the same name; the
 /// package checks this at compile time and speaks up when it does not hold.
+///
+/// Under `prefers-reduced-motion: reduce` nothing flies. The slide changes the
+/// way it would change without a morph. See the manual.
 #let morph(name, body, at: "1-", duration: 900, match: "auto", inline: true) = track(
   "morph", body, at: at, inline: inline,
   // `fly`, not `duration`: this is the duration of the *flight*, and the

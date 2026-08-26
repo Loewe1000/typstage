@@ -207,6 +207,14 @@ phone or tablet the same works with a finger, and so does swiping: right to
 left brings the next slide, the other way the previous one. The address bar
 carries the current step (`#12`), so a reloaded window stands where it stood.
 
+Where the operating system asks for **reduced motion**, the deck obliges:
+opacity stays, travel goes. Entrances and slide transitions become plain
+cross-fades of the same length, the magic move does not fly, and a flip book
+stands still on one frame. Dimming stays as it is, and a video keeps playing.
+The setting is read afresh on every step, so it takes effect at once; there is
+nothing to configure and no way for a deck to overrule it. See "Less motion" in
+the manual.
+
 ## The speaker view
 
 `n` opens the same file a second time, with `#speaker` on the address, in a
