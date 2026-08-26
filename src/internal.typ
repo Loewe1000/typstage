@@ -185,20 +185,21 @@
   "in-out-back": "cubic-bezier(.68,-.6,.32,1.6)",
 )
 
-/// Die Kurve zu einem Namen, oder ein Fehler.
+/// The curve behind a name, or an error.
 ///
-/// `auto` gibt `none` zurück: nur der Abweichung von der Vorgabe wird ein
-/// Attribut geschrieben, sonst trüge jedes Element jedes Decks ein neues.
+/// `auto` gives back `none`: only a departure from the default gets an
+/// attribute, or every element of every deck would carry a new one.
 ///
-/// Ein unbekannter Name ist ein Fehler und keine stille Vorgabe. Wer sich
-/// vertippt, bekäme sonst die Hauskurve zurück und suchte lange, warum sein
-/// Rückschwung nicht schwingt.
+/// An unknown name is an error and not a silent default. A typo would
+/// otherwise hand back the house curve, and whoever wrote it would spend a
+/// while wondering why the overshoot does not overshoot.
 #let kurve(name, wo) = {
   if name == auto { return none }
   assert(type(name) == str and name in kurven, message:
-    "typstage: " + wo + "(easing: " + repr(name) + ") -- diese Kurve kennt das "
-    + "Paket nicht. Zur Wahl stehen: " + kurven.keys().join(", ") + ". Ohne "
-    + "Angabe gilt \"standard\", die Kurve, auf der dieses Paket alles bewegt.")
+    "typstage: " + wo + "(easing: " + repr(name) + ") -- the package does not "
+    + "know that curve. The names are: " + kurven.keys().join(", ") + ". "
+    + "Without one, \"standard\" applies: the curve this package moves "
+    + "everything on.")
   kurven.at(name)
 }
 

@@ -543,11 +543,11 @@
     el.dataset.federKlage = "1";
     var f = el.closest(".ts-slide");
     var nr = f ? SLIDES.indexOf(f) + 1 : 0;
-    console.warn("typstage: enter: \"draw\" auf Folie " + nr + " (Element "
-      + (el.dataset.n || "?") + ") findet keinen gestrichenen Pfad zum "
-      + "Abfahren. Gezeichnet wird eine Kontur, und Text hat keine: Typst "
-      + "setzt Glyphen als gefuellte Umrisse. Das Element blendet stattdessen "
-      + "auf. Fuer eine Zeichnung ist draw richtig, fuer Text die Blende.");
+    console.warn("typstage: enter: \"draw\" on slide " + nr + " (element "
+      + (el.dataset.n || "?") + ") finds no stroked path to trace. What is "
+      + "drawn is an outline, and text has none: Typst sets glyphs as filled "
+      + "shapes. The element fades in instead. draw is for a drawing, the "
+      + "fade is for text.");
   }
 
   // Die Feder ansetzen. `zurueck` heisst, sie faehrt den Pfad wieder heraus --

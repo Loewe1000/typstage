@@ -70,11 +70,11 @@
 /// same length. `after: "dimmed"` is unaffected: it changes opacity and
 /// nothing else. See the manual.
 ///
-/// `easing` ist die Kurve, auf der das Element sich bewegt -- für den
-/// Auftritt, den Abgang und das Dimmen gleichermaßen. `auto` ist die Kurve
-/// des Pakets; `"out-back"` schießt über und schwingt zurück, `"linear"`
-/// kommt gleichmäßig an. Ein Name, den es nicht gibt, ist ein Fehler beim
-/// Übersetzen und keine stille Vorgabe.
+/// `easing` is the curve the element moves on -- for the entrance, the
+/// departure and the dimming alike. `auto` is the package's own curve;
+/// `"out-back"` overshoots and swings back, `"linear"` arrives at an even
+/// pace. A name that does not exist is an error at compile time and not a
+/// silent default.
 #let anim(
   body,
   at: auto,
@@ -563,12 +563,13 @@
   // unsichtbar darüber. Das Gegenteil dessen, was `draw` verspricht, also
   // lieber ein Wort als ein stummes Nichts.
   assert(enter != "draw", message:
-    "typstage: aufbau(enter: \"draw\") beißt sich mit dem, was aufbau tut. "
-    + "Jede Stufe ist die *ganze* Zeichnung, und sie käme über der vorigen, "
-    + "die stehenbleibt, bis die neue da ist -- die Feder führe über Tinte, "
-    + "die schon liegt. Wer die Striche nacheinander ziehen lassen will, gibt "
-    + "sie einzeln hin: stagger(enter: \"draw\", stride: 1, achse, kurve). Wer "
-    + "eine Zeichnung in Stufen will, lässt aufbau bei seiner Blende.")
+    "typstage: enter: \"draw\" is at odds with what this function does. Every "
+    + "stage is the *whole* drawing, and it would arrive on top of the "
+    + "previous one, which stays put until the new one is there -- the pen "
+    + "would travel over ink that is already down. To have the strokes drawn "
+    + "one after another, hand them over one at a time: "
+    + "stagger(enter: \"draw\", stride: 1, axes, curve). For a drawing that "
+    + "grows in stages, leave the fade as it is.")
   let takt = kurve(easing, "aufbau")
   layout(available => context {
     // Wie bei `alternatives`: die Prüfung steht hier und nicht in `track`,
