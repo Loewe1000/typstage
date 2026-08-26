@@ -1,85 +1,84 @@
-// Clean Minimal — nach dem Editorial-Deck des Pakets mosaic.
+// Clean Minimal — after the Editorial deck of the mosaic package.
 //
-// Vorlage: „Cream, Green, and Black Geometric Blocks Clean Minimal
-// Presentation" von SlidesCarnival (https://www.slidescarnival.com/), CC BY
-// 4.0, bearbeitet; mosaic hat sie zuerst nach Typst geholt
-// (docs-src/examples/decks/editorial). Die Fotografien der Vorlage sind hier
-// nicht übernommen — an ihrer Stelle stehen geometrische Tafeln aus reinem
-// Typst. Die Vorlage heißt „Geometric Blocks"; sie verträgt das.
+// Source: the "Cream, Green, and Black Geometric Blocks Clean Minimal
+// Presentation" template by SlidesCarnival (https://www.slidescarnival.com/),
+// CC BY 4.0, adapted; mosaic brought it to Typst first
+// (docs-src/examples/decks/editorial). The template's photographs are not
+// carried over — geometric plates drawn in plain Typst stand in their place.
+// The template is called "Geometric Blocks"; it can take it.
 //
 //   typst compile mosaic-editorial.typ mosaic-editorial.html --format html --features html
 //   typst compile mosaic-editorial.typ mosaic-editorial.pdf
 //
-// mosaic baut dieses Deck aus benannten Zellen und malt sie mit `styled(..)`
-// an. typstage hat keine Zellen. An ihrer Stelle stehen `margin: 0pt`, ein
-// Theme, das von sich aus nichts zeichnet, und `plate(..)` unten — die
-// Entsprechung zu mosaics `surface(..)`. Der Rand liegt damit im Inhalt, wie
-// dort auch.
+// mosaic builds this deck out of named cells and paints them with `styled(..)`.
+// typstage has no cells. In their place stand `margin: 0pt`, a theme that draws
+// nothing of its own, and `plate(..)` below — the counterpart of mosaic's
+// `surface(..)`. The margin therefore lives in the content, as it does there.
 //
-// Was die Vorlage nicht kann und dieses Deck tut: die erste Zeile der Agenda
-// fliegt auf die Abschnittsfolie und wird dort zur Überschrift. Auf Papier
-// muss man dem Publikum sagen, wo man ist; hier sieht man es.
+// What the template cannot do and this deck does: the first line of the agenda
+// flies onto the section slide and becomes its heading. On paper you have to
+// tell the room where you are; here they watch it happen.
 
 #import "@schule/typstage:0.1.0": *
 
-// ── Farben ─────────────────────────────────────────────────────────────────
-// Wörtlich die vier der Vorlage. Weiß auf Salbei misst 1,96 zu 1 und wäre für
-// Fließtext zu wenig; die Vorlage setzt es trotzdem, und für die großen
-// Versalien bleibt es hier stehen.
+// ── Colours ────────────────────────────────────────────────────────────────
+// The template's four, taken literally. White on sage measures 1.96 to 1 and
+// would be too little for body copy; the template sets it anyway, and for the
+// large capitals it stands here too.
 #let cream = rgb("#f2eee5")
 #let sage = rgb("#aebdb3")
 #let ink = rgb("#111111")
 #let white = rgb("#f9f8f3")
 
-// ── Die Tafeln ─────────────────────────────────────────────────────────────
-// Wo die Vorlage fotografiert, wird hier gezeichnet. Sechs Kompositionen aus
-// Kreis, Balken und Bogen in den warmen Tönen des Decks: nah genug an den
-// Innenraum-Aufnahmen der Vorlage, um an ihrer Stelle zu stehen, und weit
-// genug von ihnen weg, um nichts vorzugeben.
+// ── The plates ─────────────────────────────────────────────────────────────
+// Where the template photographs, this deck draws. Six compositions out of
+// circle, bar and arch in the deck's warm tones: near enough to the template's
+// interior shots to stand in for them, far enough from them to pretend
+// nothing.
 
 #let sand = rgb("#d8cbb8")
 #let clay = rgb("#b5715a")
 #let rose = rgb("#cbb0a2")
 #let shell = rgb("#efe9e0")
 
-/// Eine Tafel: Grundton, darauf zwei bis drei Formen, hart beschnitten.
+/// One plate: a ground tone, two or three shapes on it, hard-cropped.
 ///
-/// `n` wählt die Komposition. Alle sechs füllen dieselbe Fläche, damit eine
-/// Tafel eine andere ersetzen kann, ohne dass daneben etwas rückt.
+/// `n` picks the composition. All six fill the same area, so one plate can
+/// replace another without anything beside it moving.
 #let plate-art(n) = block(width: 100%, height: 100%, clip: true, {
   let i = calc.rem(n, 6)
   place(top + left, rect(width: 100%, height: 100%,
                          fill: (shell, sand, rose, shell, sand, rose).at(i)))
   if i == 0 {
-    // Eine Scheibe über einer Kante.
+    // A disc above an edge.
     place(top + right, dx: -18pt, dy: 34pt, circle(radius: 46pt, fill: clay))
     place(bottom + left, rect(width: 100%, height: 26%, fill: sand))
   } else if i == 1 {
-    // Ein Torbogen: ein Rechteck, dem oben die Ecken genommen sind. Als
-    // Kreis auf einem Rechteck sah es aus wie ein Streichholz.
+    // An archway: a rectangle with its top corners taken off. As a circle on
+    // a rectangle it looked like a matchstick.
     place(bottom + center, dy: -14%, rect(
       width: 44%, height: 60%, fill: shell,
       radius: (top-left: 100%, top-right: 100%),
     ))
     place(bottom + left, dy: -8%, line(length: 100%, stroke: 1pt + clay))
   } else if i == 2 {
-    // Zwei Scheiben, die sich überschneiden.
+    // Two overlapping discs.
     place(center + horizon, dx: -22pt, circle(radius: 50pt, fill: shell))
     place(center + horizon, dx: 24pt, dy: 14pt,
           circle(radius: 36pt, stroke: 1.2pt + ink))
   } else if i == 3 {
-    // Gestapelte Bänder, wie ein Regal von der Seite.
+    // Stacked bands, like a shelf seen from the side.
     for (j, h) in (14%, 9%, 20%).enumerate() {
       place(top + left, dy: 16% + j * 22%,
             rect(width: 100%, height: h, fill: (clay, sand, rose).at(j)))
     }
   } else if i == 4 {
-    // Viertelscheibe in der Ecke, dazu eine hohe schmale Form.
+    // A quarter disc in the corner and one tall narrow form.
     place(top + left, dx: -58pt, dy: -58pt, circle(radius: 116pt, fill: rose))
     place(bottom + right, dx: -34pt, rect(width: 16%, height: 52%, fill: ink))
   } else {
-    // Eine Vase auf einem Tisch: unten breit, oben schmal, mit einer Scheibe
-    // darüber, die das Licht sein darf.
+    // A vase on a table: wide below, narrow above, a disc behind it that is
+    // allowed to be the light.
     place(bottom + center, dy: -18%, rect(
       width: 22%, height: 30%, fill: shell,
       radius: (top-left: 60%, top-right: 60%, bottom: 12pt),
@@ -89,39 +88,39 @@
   }
 })
 
-// ── Flächen ────────────────────────────────────────────────────────────────
+// ── Surfaces ───────────────────────────────────────────────────────────────
 
-/// Eine ganze Fläche in einer Farbe, mit ihrem eigenen Rand.
+/// One whole surface in one colour, carrying its own margin.
 ///
-/// Das Gegenstück zu mosaics `surface(fill: .., inset: .., align: ..)`: dort
-/// trägt die Zelle den Rand, hier der Inhalt. Dasselbe Rechteck.
+/// The counterpart of mosaic's `surface(fill: .., inset: .., align: ..)`:
+/// there the cell carries the margin, here the content does. The same
+/// rectangle.
 #let plate(body, fill: sage, inset: 0pt, align: top + left) = block(
   width: 100%, height: 100%, fill: fill, inset: inset, clip: true,
   std.align(align, body),
 )
 
-/// Zwei Flächen nebeneinander, ohne Fuge.
+/// Two surfaces side by side, with no gap.
 ///
-/// `grid` und nicht `side-by-side`: die Vorlage lebt davon, dass die Farben
-/// aneinanderstoßen. Eine Fuge, und sei sie klein, machte aus zwei Feldern
-/// zwei Kästen.
+/// `grid` rather than `side-by-side`: the template lives on the colours
+/// meeting. A gutter, however small, would turn two fields into two boxes.
 #let bands(fracs, ..cells) = grid(
   columns: fracs, rows: (100%,), column-gutter: 0pt, ..cells,
 )
 
-/// Die dünne weiße Linie, die auf der Vorlage über der halben Folie liegt.
+/// The thin white keyline the template lays over half its slides.
 #let framed(body) = block(width: 100%, height: 100%, {
   place(top + left, body)
   place(top + left, dx: 14pt, dy: 14pt,
         rect(width: 100% - 28pt, height: 100% - 28pt, stroke: 0.8pt + white))
 })
 
-/// Eine Überschrift im Ton der Vorlage: Versalien, fett, ohne Zierlinie.
+/// A heading in the template's voice: capitals, bold, no kicker rule.
 #let head(body, size: 2.1em, fill: ink) = text(
   size: size, weight: "bold", fill: fill, upper(body),
 )
 
-/// Eine kleine Rubrik, wie sie über den Rastern der Vorlage steht.
+/// A small rubric of the kind that stands over the template's grids.
 #let rubric(title, body) = block(width: 100%, {
   block(above: 0pt, below: 0.45em, text(weight: "bold", size: 1.05em, title))
   text(size: 0.86em, body)
@@ -131,12 +130,12 @@
 consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
 dolore magna aliqua.]
 
-// ── Die Titelfolie als Theme-Funktion ──────────────────────────────────────
-// mosaic legt die Titelfolie ins Theme (`layouts.title`), und typstage tut
-// dasselbe: `title-slide` ist ein Eintrag im Wörterbuch und bekommt Theme,
-// Folie und Geometrie gereicht. So bleibt `title:` am Deck stehen, statt in
-// eine handgebaute erste Folie auszuwandern, wo weder Browsertitel noch
-// Sprecheransicht sie fänden.
+// ── The title slide, as a theme function ───────────────────────────────────
+// mosaic puts the title slide in the theme (`layouts.title`), and typstage
+// does the same: `title-slide` is an entry in the dictionary and is handed the
+// theme, the slide and the geometry. That way `title:` stays with the deck
+// instead of emigrating into a hand-built first slide, where neither the
+// browser tab nor the speaker view would find it.
 #let cover(t, s, geo) = {
   let k = geo.scale
   {
@@ -155,24 +154,24 @@ dolore magna aliqua.]
            [#s.subtitle <ts-title-slide-subtitle>])
     })
     v(26pt * k)
-    // Die Linie unter dem Titel zeichnet sich selbst. Sie ist das einzige
-    // Ornament der Folie; sie darf einen Wimpernschlag brauchen.
+    // The rule under the title draws itself. It is the slide's only ornament;
+    // it may take the blink of an eye.
     anim(at: 2, enter: "draw", duration: 900, easing: "out-quad",
          line(length: 100%, stroke: 1pt + ink))
   }))
 }
 
-// ── Das Theme, das sich heraushält ─────────────────────────────────────────
-// Kein Kopfband, keine Fußzeile, kein Balken: mosaic setzt für dieses Deck
-// `foreground: none` und nimmt dem Theme damit die Seitenzahl. Hier tun
-// dieselbe Arbeit drei Wörter und zwei Nullen — `head-gap` und `foot-gap` auf
-// 0pt, damit der Körper wirklich bis an den Schnitt reicht.
+// ── The theme that keeps out of the way ────────────────────────────────────
+// No header band, no footer, no progress bar: for this deck mosaic sets
+// `foreground: none` and takes the folio away from the theme. Here three words
+// and two zeros do the same work — `head-gap` and `foot-gap` at 0pt, so that
+// the body really reaches the trim.
 #let t = theme(
   paper: cream,
   ink: ink,
   strong: sage,
-  // Keine Signalfarbe: dieses Deck kennt Creme, Salbei und Tinte, sonst
-  // nichts. Der „Akzent" ist deshalb die Tinte selbst.
+  // No signal colour: this deck knows cream, sage and ink and nothing else.
+  // The "accent" is therefore the ink itself.
   accent: ink,
   muted: ink.lighten(42%),
   surface: cream,
@@ -194,23 +193,23 @@ dolore magna aliqua.]
   subtitle: [A template from mosaic, taught to move],
   author: [after SlidesCarnival],
   date: [27 August 2026],
-  // Randlos. Alles, was hier wie ein Rand aussieht, ist Inhalt — genau wie bei
-  // mosaic, wo die Zelle `inset: 0pt` bekommt und `surface()` den Rand trägt.
+  // No margin. Everything here that looks like a margin is content — exactly
+  // as in mosaic, where the cell gets `inset: 0pt` and `surface()` carries it.
   margin: 0pt,
-  // „cover": die neue Folie legt sich über die alte, die stehenbleibt. Ein
-  // Deck aus rechteckigen Farbfeldern schiebt keine Folien, es legt Karten
-  // aufeinander.
+  // "cover": the new slide lays itself over the old one, which stays. A deck
+  // made of rectangular colour fields does not push slides, it lays down
+  // cards.
   transition: "cover",
   transition-duration: 520,
   duration: 560,
-  // Der Stil-Haken erreicht auch die Flieger des Morphs. Was hier nicht steht,
-  // sieht ein getracktes Element nie.
+  // The style hook reaches the morph's flyers too. Whatever is not written
+  // here, a tracked element never sees.
   style: it => { set par(justify: false, leading: 0.62em); it },
 
   // ── 02 Agenda ────────────────────────────────────────────────────────────
-  slide(none, note: [Die drei Punkte stehen auf einmal da. Wer eine
-                     Inhaltsübersicht tröpfeln lässt, lässt das Publikum auf
-                     etwas warten, was es mit einem Blick braucht.])[
+  slide(none, note: [The three points stand there at once. Trickling out a
+                     table of contents makes the room wait for something it
+                     needs at a glance.])[
     #bands((0.55fr, 0.45fr),
       plate(fill: cream, inset: 42pt)[
         #head([Agenda])
@@ -223,9 +222,9 @@ dolore magna aliqua.]
               inset: (x: 4pt, y: 15pt),
               grid(columns: (46pt, 1fr),
                 align: (left + horizon, left + horizon),
-                // Nur die erste Zeile fliegt weiter. Zahl und Wort tragen je
-                // einen Namen, damit auf der nächsten Folie jedes an seinen
-                // Platz findet, statt nach Gestalt gepaart zu werden.
+                // Only the first line travels on. Number and word each carry
+                // a name, so that on the next slide each finds its own place
+                // instead of being paired by shape.
                 if i == 0 {
                   morph(<agenda-no>,
                         text(size: 2em, weight: "bold", fill: ink, row.first()))
@@ -246,17 +245,17 @@ dolore magna aliqua.]
     )
   ],
 
-  // ── 03 Abschnitt: Introduction ───────────────────────────────────────────
-  slide(none, note: [Hier landet die erste Agendazeile. Nicht erklären, dass
-                     sie geflogen ist — man sieht es.])[
+  // ── 03 Section: Introduction ─────────────────────────────────────────────
+  slide(none, note: [This is where the first agenda line lands. Do not explain
+                     that it flew — they saw it.])[
     #framed(bands((0.56fr, 0.44fr),
       plate(fill: sage, inset: 70pt)[
         #v(1fr)
-        // Dieselben zwei Namen wie auf der Agenda, in anderer Größe und an
-        // anderem Ort. Mehr braucht ein Magic Move nicht. Wo ein Morph über
-        // die Folienkante geht, tritt „cover" zurück und die beiden Folien
-        // blenden ineinander — sonst führe der Flieger mit der alten Folie
-        // aus dem Bild.
+        // The same two names as on the agenda, at another size and in another
+        // place. A magic move needs no more than that. Where a morph crosses
+        // the slide boundary, "cover" steps aside and the two slides
+        // cross-fade instead — otherwise the flyer would ride out of frame
+        // with the old slide.
         #morph(<agenda-no>, text(size: 1.1em, weight: "bold", fill: white)[1])
         #v(6pt)
         #morph(<agenda-word>,
@@ -302,17 +301,19 @@ dolore magna aliqua.]
     ))
   ],
 
-  // ── 06 Vier Themen ───────────────────────────────────────────────────────
-  slide(none, note: [Ein Tastendruck, vier Felder. Die Welle läuft in
-                     Leserichtung, sonst wäre sie nur Zappeln.])[
+  // ── 06 Four topics ───────────────────────────────────────────────────────
+  slide(none, note: [One keypress, four fields. The wave runs in reading
+                     order; any other way it is only fidgeting.])[
     #framed(plate(fill: sage, inset: 34pt,
       grid(columns: (0.34fr, 1fr), column-gutter: 16pt, rows: (100%,),
         plate-art(1),
-        // `stride: 0`: alle vier auf einem Schritt, versetzt nur in
-        // Millisekunden. Vier Tastendrücke für vier gleichrangige Felder
-        // machten aus einer Übersicht eine Aufzählung.
+        // `stride: 0`: all four on one step, offset only in milliseconds.
+        // Four keypresses for four fields of equal rank would turn an
+        // overview into a list. `at: 2` and not `auto`, because `auto` on a
+        // slide with nothing before it means step one, and a field that is
+        // there on arrival was never revealed.
         tiles(columns: 2, gutter: 22pt, row-gutter: 18pt,
-              stride: 0, stagger: 90, enter: "fade-up",
+              at: 2, stride: 0, stagger: 90, enter: "fade-up",
           ..range(1, 5).map(n => text(fill: white, rubric(
             [Topic #n],
             [Elaborate on your topic here. Lorem ipsum dolor sit amet,
@@ -324,14 +325,14 @@ dolore magna aliqua.]
   ],
 
   // ── 07 About us ──────────────────────────────────────────────────────────
-  slide(none, note: [Der Kreis zeichnet sich. Das ist neben der Titellinie die
-                     einzige Kontur im Deck, die entsteht statt einzublenden —
-                     deshalb fällt sie auf.])[
+  slide(none, note: [The circle draws itself. Beside the rule on the cover it
+                     is the only outline in the deck that comes into being
+                     rather than fading in, which is why it is noticed.])[
     #bands((0.62fr, 0.38fr),
       plate(fill: cream, inset: 25pt, align: center + horizon)[
-        // `enter: "draw"` braucht eine gezeichnete Kontur, und dieser Kreis
-        // ist nichts anderes als eine. Der Text steht darin, ohne zu warten:
-        // er ist die Aussage, der Kreis ist der Rahmen um sie.
+        // `enter: "draw"` wants a stroked path, and this circle is nothing
+        // else. The text stands inside without waiting: it is the statement,
+        // the circle is the frame around it.
         #block(width: 330pt, height: 330pt, {
           place(center + horizon, anim(
             at: 2, enter: "draw", duration: 1100, easing: "out-quad",
@@ -360,13 +361,17 @@ dolore magna aliqua.]
     )
   ],
 
-  // ── 09 Das Team ──────────────────────────────────────────────────────────
+  // ── 09 The team ──────────────────────────────────────────────────────────
+  // Deliberately still. Four portraits arriving in a wave would explain
+  // nothing about four colleagues, and a movement that explains nothing is
+  // noise. The deck spends its motion on the agenda, the two outlines and the
+  // three discs, and on nothing else.
   slide(none)[
     #plate(fill: cream, inset: 20pt)[
       #v(1fr)
       #std.align(center, head([The team], size: 1.9em))
       #v(16pt)
-      #tiles(columns: 4, gutter: 14pt, stride: 0, stagger: 70, enter: "fade-up",
+      #grid(columns: (1fr, 1fr, 1fr, 1fr), column-gutter: 14pt,
         ..(([Jane Doe], [Director]), ([Jane Doe], [Marketing]),
            ([John Doe], [Sales]), ([Jane Doe], [PR]))
           .enumerate()
@@ -386,9 +391,9 @@ dolore magna aliqua.]
     ]
   ],
 
-  // ── 10 Ein Bild sagt mehr ────────────────────────────────────────────────
-  slide(none, note: [Kurz stehen lassen. Der Streifen ist der Witz der Folie,
-                     und er braucht eine Sekunde.])[
+  // ── 10 A picture is worth a thousand words ───────────────────────────────
+  slide(none, note: [Let it stand for a moment. The strip is the joke of the
+                     slide and it needs a second.])[
     #block(width: 100%, height: 100%, {
       place(top + left, plate-art(3))
       place(top + left, dx: 42%, block(width: 30pt, height: 100%, fill: cream,
@@ -402,10 +407,9 @@ dolore magna aliqua.]
     })
   ],
 
-  // ── 11 Marktforschung ────────────────────────────────────────────────────
-  slide(none, note: [Die Scheiben wachsen auf ihre Größe. Wer 28, 60 und 100
-                     nur hinstellt, verlangt einen Vergleich; wer sie wachsen
-                     lässt, führt ihn vor.])[
+  // ── 11 Market research ───────────────────────────────────────────────────
+  slide(none, note: [The discs grow to their size. Putting 28, 60 and 100 down
+                     asks for a comparison; letting them grow performs it.])[
     #framed(bands((0.78fr, 0.22fr),
       plate(fill: sage, inset: 22pt, align: center)[
         #v(14pt)
@@ -413,12 +417,12 @@ dolore magna aliqua.]
         #v(4pt)
         #text(size: 0.85em, fill: white)[Elaborate on the featured statistics.]
         #v(22pt)
-        // Alle drei auf Schritt 2, versetzt über `delay`, und jede wächst aus
-        // ihrer eigenen Mitte: der Größenunterschied entsteht vor dem Auge,
-        // statt fertig dazustehen. Das ist die Zahl selbst, in Bewegung
-        // übersetzt. Nicht `tiles`, weil dort weder `easing` noch `duration`
-        // durchgereicht wird und der Überschwung von „out-back" die halbe
-        // Wirkung ist.
+        // All three on step 2, offset through `delay`, each growing out of
+        // its own centre: the difference in size comes into being before the
+        // eye instead of standing there finished. That is the number itself,
+        // translated into motion. Not `tiles`, because it passes on neither
+        // `easing` nor `duration`, and the overshoot of "out-back" is half
+        // the effect.
         #grid(columns: (1fr, 1fr, 1fr), column-gutter: 30pt, align: bottom,
           ..((28, [28%]), (60, [60%]), (100, [100%])).enumerate().map(((i, s)) => {
             let r = 60pt * s.first() / 100
@@ -428,9 +432,10 @@ dolore magna aliqua.]
               std.align(center, {
                 box(height: 128pt, std.align(center + bottom, circle(
                   radius: r, fill: white,
-                  // Nicht `r * 0.52` allein: bei 28 Prozent wäre die Zahl
-                  // neun Punkt groß und die Scheibe leer. Der Kreis trägt
-                  // den Vergleich, die Zahl muss nur lesbar bleiben.
+                  // Not `r * 0.52` alone: at 28 percent the number would be
+                  // nine point and the disc would look empty. The circle
+                  // carries the comparison, the number only has to stay
+                  // legible.
                   std.align(center + horizon,
                             text(size: calc.max(r * 0.52, 13pt),
                                  weight: "bold", fill: ink, s.last())),
@@ -446,7 +451,7 @@ dolore magna aliqua.]
     ))
   ],
 
-  // ── 12 Kontakt ───────────────────────────────────────────────────────────
+  // ── 12 Contact ───────────────────────────────────────────────────────────
   slide(none)[
     #framed(bands((0.46fr, 0.54fr),
       plate(fill: sage, plate-art(4)),

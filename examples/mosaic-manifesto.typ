@@ -1,34 +1,33 @@
-// Manifesto — nach dem Manifesto-Deck des Pakets mosaic.
+// Manifesto — after the Manifesto deck of the mosaic package.
 //
-// Vorlage: „Minimalist White Slides" von SlidesCarnival
-// (https://www.slidescarnival.com/), CC BY 4.0, bearbeitet; mosaic hat sie
-// zuerst nach Typst geholt (docs-src/examples/decks/manifesto). Die
-// Fotografien der Vorlage sind nicht übernommen; an ihrer Stelle stehen
-// Duotonflächen aus reinem Typst — ein Plakat in einer Farbe verträgt keine
-// zweite, und ein Foto brächte sie mit.
+// Source: the "Minimalist White Slides" template by SlidesCarnival
+// (https://www.slidescarnival.com/), CC BY 4.0, adapted; mosaic brought it to
+// Typst first (docs-src/examples/decks/manifesto). The template's photographs
+// are not carried over; duotone surfaces drawn in plain Typst stand in their
+// place — a poster in one colour cannot take a second one, and a photograph
+// would bring one along.
 //
 //   typst compile mosaic-manifesto.typ mosaic-manifesto.html --format html --features html
 //   typst compile mosaic-manifesto.typ mosaic-manifesto.pdf
 //
-// Ein Plakat, kein Foliensatz: eine Schrift, eine Farbe, viel Weiß und
-// Haarlinien. mosaics Theme setzt Schrift und Farbe einmal für das ganze Deck
-// (`#set text(font: serif, fill: red)`); typstages Theme kann dasselbe, denn
-// `ink` ist die Textfarbe des Decks und nicht bloß die des Fließtexts.
+// A poster, not a slide deck: one typeface, one colour, a lot of white and
+// hairlines. mosaic's theme sets face and colour once for the whole deck
+// (`#set text(font: serif, fill: red)`); typstage's theme does the same,
+// because `ink` is the deck's text colour and not merely the body's.
 //
-// Was die Vorlage nicht kann und dieses Deck tut: die drei Fragen der
-// Vision-Folie treten einzeln vor und treten zurück, statt gemeinsam
-// dazustehen. Ein Manifest behauptet nacheinander.
+// What the template cannot do and this deck does: the three questions on the
+// vision slide step forward one at a time and step back again instead of
+// standing there together. A manifesto asserts in sequence.
 
 #import "@schule/typstage:0.1.0": *
 
-// ── Zwei Farben, mehr hat das Deck nicht ───────────────────────────────────
+// ── Two colours; the deck has no more ──────────────────────────────────────
 #let cream = rgb("#fffcf9")
 #let red = rgb("#c83224")
 
-// ── Duotonflächen ──────────────────────────────────────────────────────────
-// An der Stelle der Fotografien: Rot, Creme und die Zwischentöne dazwischen.
-// Vier Kompositionen, alle in derselben Fläche, damit eine die andere
-// vertreten kann.
+// ── Duotone surfaces ───────────────────────────────────────────────────────
+// In place of the photographs: red, cream and the tints between them. Four
+// compositions, all in the same area, so one can stand in for another.
 #let tint = red.lighten(62%)
 #let deep = red.darken(18%)
 
@@ -53,15 +52,15 @@
   }
 })
 
-/// Eine Fläche im roten Rahmen, wie ihn die Vorlage um ihre Bilder zieht.
+/// A surface in the red keyline the template draws around its pictures.
 #let plated(n) = rect(width: 100%, height: 100%, stroke: 1.5pt + red,
                       inset: 0pt, duotone(n))
 
-// ── Typografie des Plakats ─────────────────────────────────────────────────
-// Schrift und Farbe stehen im Theme; hier variiert nur die Größe, und bei den
-// Titeln das Gewicht. Genau die Aufteilung, die mosaics Preamble trifft.
-// Eng gesetzt: die Vorlage bricht ihre Titel über zwei und drei Zeilen, und
-// bei der Zeilenweite des Fließtexts fielen sie auseinander.
+// ── The poster's typography ────────────────────────────────────────────────
+// Face and colour live in the theme; here only the size varies, and for the
+// titles the weight. Exactly the division mosaic's preamble makes.
+// Set tight: the template breaks its titles over two and three lines, and at
+// the body's leading they would fall apart.
 #let title-text(body, size: 2.2em) = {
   set par(leading: 0.34em)
   text(size: size, weight: "bold", body)
@@ -71,7 +70,7 @@
 #let copy = [Presentations turn ideas into clear stories for an audience.
 They can inform, persuade, teach, or spark discussion.]
 
-// ── Flächen ────────────────────────────────────────────────────────────────
+// ── Surfaces ───────────────────────────────────────────────────────────────
 #let plate(body, fill: cream, inset: 0pt, align: top + left) = block(
   width: 100%, height: 100%, fill: fill, inset: inset, clip: true,
   std.align(align, body),
@@ -81,19 +80,19 @@ They can inform, persuade, teach, or spark discussion.]
   columns: fracs, rows: (100%,), column-gutter: 0pt, ..cells,
 )
 
-/// Die senkrechte Haarlinie, die auf der Vorlage Behauptung und Beleg trennt.
+/// The vertical hairline that separates claim from evidence in the template.
 ///
-/// Sie zeichnet sich, statt einzublenden: sie ist keine Zier, sondern die
-/// Geste des Decks — hier steht der Satz, dort steht, was ihn trägt. Eine
-/// Linie, die entsteht, sagt das; eine, die da ist, sagt es nicht.
+/// It draws itself rather than fading in: it is not ornament but the deck's
+/// gesture — here stands the sentence, there stands what carries it. A rule
+/// that comes into being says that; one that is simply there does not.
 #let divider = anim(at: 2, enter: "draw", duration: 700, easing: "out-quad",
                     line(angle: 90deg, length: 100%, stroke: 0.8pt + red))
 
-// ── Titelfolie und Abschnittsfolie als Theme-Funktionen ────────────────────
-// mosaic hält beide im Theme (`layouts.title`, `layouts.section`), typstage
-// auch: zwei Einträge im Wörterbuch, denen Theme, Folie und Geometrie gereicht
-// werden. Damit bleibt `title:` am Deck stehen und `section(..)` schreibt sich
-// im Fließtext.
+// ── Title slide and section slide as theme functions ───────────────────────
+// mosaic keeps both in the theme (`layouts.title`, `layouts.section`), and so
+// does typstage: two entries in the dictionary, handed the theme, the slide
+// and the geometry. That way `title:` stays with the deck and `section(..)`
+// writes itself in the flow.
 
 #let cover(t, s, geo) = {
   let k = geo.scale
@@ -117,11 +116,11 @@ They can inform, persuade, teach, or spark discussion.]
         text(size: 12pt * k, fill: red, [#s.author <ts-title-slide-byline>]))
 }
 
-/// Die rote Tafel: ganzflächig, ein Wort, ein Punkt.
+/// The red plate: full bleed, one word, one full stop.
 ///
-/// Der Punkt hinter dem Wort ist nicht Zierde. Auf der Vorlage endet jede
-/// Abschnittsüberschrift mit ihm, und er ist der Ton des ganzen Decks: hier
-/// wird nicht angekündigt, hier wird festgestellt.
+/// The stop after the word is not decoration. In the template every section
+/// heading ends with it, and it is the tone of the whole deck: nothing is
+/// announced here, things are stated.
 #let plate-section(t, s, geo) = {
   let k = geo.scale
   {
@@ -133,13 +132,14 @@ They can inform, persuade, teach, or spark discussion.]
          [#s.title. <ts-section-slide-title>])))
 }
 
-// ── Das Theme ──────────────────────────────────────────────────────────────
-// `ink` ist rot, nicht schwarz. Damit ist jedes Wort des Decks rot, ohne dass
-// irgendwo eine Farbe wiederholt wird — dieselbe Wirkung, die mosaic mit einem
-// einzigen `#set text(fill: red)` erreicht.
+// ── The theme ──────────────────────────────────────────────────────────────
+// `ink` is red, not black. Every word of the deck is therefore red without a
+// colour being repeated anywhere — the same effect mosaic gets from a single
+// `#set text(fill: red)`.
 //
-// Was hier fehlt und in der Vorlage steht: der Fortschrittsring in der Ecke.
-// typstage kennt Balken, Randstreifen und Wandermarke, aber keinen Ring.
+// What is missing here and stands in the template: the progress ring in the
+// corner. typstage knows a bar, a top edge and a travelling marker, but no
+// ring.
 #let t = theme(
   paper: cream,
   ink: red,
@@ -167,23 +167,23 @@ They can inform, persuade, teach, or spark discussion.]
   author: [after SlidesCarnival],
   date: [27 August 2026],
   margin: 0pt,
-  // Weiße Seiten blenden ineinander wie umgeschlagene Blätter. Die roten
-  // Tafeln unten tun ausdrücklich etwas anderes: sie werden gelegt.
+  // White pages cross-fade like turned leaves. The red plates below do
+  // something else on purpose: they are laid down.
   transition: "fade",
   transition-duration: 460,
   duration: 520,
   style: it => { set par(justify: false, leading: 0.66em); it },
 
-  // ── 02 Der erste Satz ────────────────────────────────────────────────────
-  slide(none, note: [Ein Satz, sonst nichts. Wer hier eine zweite Zeile
-                     einzieht, hat das Deck nicht verstanden.])[
+  // ── 02 The first sentence ────────────────────────────────────────────────
+  slide(none, note: [One sentence and nothing else. Anyone who pulls in a
+                     second line here has not understood the deck.])[
     #plate(align: center + horizon)[
       #block(width: 70%, std.align(center,
         title-text([Write a short introduction here.], size: 1.9em)))
     ]
   ],
 
-  // ── 03 Inhalt ────────────────────────────────────────────────────────────
+  // ── 03 Contents ──────────────────────────────────────────────────────────
   slide(none)[
     #plate(inset: (left: 48pt), align: left + horizon)[
       #set enum(numbering: "1.", indent: 0pt, body-indent: 12pt, spacing: 0.9em)
@@ -197,13 +197,13 @@ They can inform, persuade, teach, or spark discussion.]
     ]
   ],
 
-  // ── 04 Abschnitt ─────────────────────────────────────────────────────────
-  // „cover" von unten: die rote Tafel wird über die weiße Seite gelegt, und
-  // rückwärts wieder abgehoben. Auf einer weißen Seite, die sonst nur
-  // überblendet, ist das der einzige Griff im Deck, den man als Griff sieht.
+  // ── 04 Section ───────────────────────────────────────────────────────────
+  // "cover" from below: the red plate is laid over the white page, and lifted
+  // off again on the way back. In a deck of white pages that otherwise only
+  // cross-fade, this is the one handling one actually sees as handling.
   section([Introduction], transition: (kind: "cover", from: "bottom")),
 
-  // ── 05 Willkommen ────────────────────────────────────────────────────────
+  // ── 05 Welcome ───────────────────────────────────────────────────────────
   slide(none)[
     #bands((1fr, 0.72fr),
       plate(inset: (left: 48pt, right: 24pt), align: left + horizon)[
@@ -216,23 +216,23 @@ They can inform, persuade, teach, or spark discussion.]
     )
   ],
 
-  // ── 06 Drei Fragen ───────────────────────────────────────────────────────
-  slide(none, note: [Drei Tastendrücke. Die vorige Frage bleibt gedimmt
-                     stehen, damit die Reihe sichtbar bleibt — sie ist eine
-                     Reihe und keine Liste.])[
+  // ── 06 Three questions ───────────────────────────────────────────────────
+  slide(none, note: [Three keypresses. The previous question stays, dimmed, so
+                     that the sequence remains visible — it is a sequence and
+                     not a list.])[
     #bands((0.95fr, 4pt, 1fr),
       plate(inset: 48pt, align: left + horizon)[
         #set par(leading: 0.28em)
         #title-text([Our company was\ created with the\ vision to be the best\
                      in the industry.], size: 1.85em)
       ],
-      // Die Trennlinie, die sich zieht.
+      // The dividing rule, drawing itself.
       plate(align: center + horizon, divider),
       plate(inset: (left: 28pt, right: 45pt), align: left + horizon)[
-        // `dim: true`: jede Frage hält genau ihren Schritt und bleibt danach
-        // gedimmt stehen. Das ist nicht dasselbe wie eine Aufzählung, die
-        // sich füllt — hier ist immer *eine* Frage die, um die es gerade
-        // geht, und die anderen sind der Weg dorthin.
+        // `dim: true`: each question holds exactly its own step and then
+        // stays on, dimmed. That is not the same as a list filling up — here
+        // exactly *one* question is the one at issue, and the others are the
+        // way there.
         #stagger(dim: true, enter: "fade-up", spacing: 1.4em,
           ..(
             ([Who we are?], [Introduce the people behind the work.]),
@@ -247,10 +247,10 @@ They can inform, persuade, teach, or spark discussion.]
     )
   ],
 
-  // ── 07 Abschnitt ─────────────────────────────────────────────────────────
+  // ── 07 Section ───────────────────────────────────────────────────────────
   section([About us], transition: (kind: "cover", from: "bottom")),
 
-  // ── 08 Auftrag und Absicht ───────────────────────────────────────────────
+  // ── 08 Mission and vision ────────────────────────────────────────────────
   slide(none)[
     #bands((1fr, 1fr),
       plate(inset: 45pt, align: left + horizon)[
@@ -266,12 +266,12 @@ They can inform, persuade, teach, or spark discussion.]
     )
   ],
 
-  // ── 09 Abschnitt ─────────────────────────────────────────────────────────
+  // ── 09 Section ───────────────────────────────────────────────────────────
   section([Our projects], transition: (kind: "cover", from: "bottom")),
 
-  // ── 10 Zahlen ────────────────────────────────────────────────────────────
-  slide(none, note: [Eine Zahl je Tastendruck. Ein Plakat legt seine Zahlen
-                     hin, es reicht sie nicht als Tabelle herum.])[
+  // ── 10 Numbers ───────────────────────────────────────────────────────────
+  slide(none, note: [One number per keypress. A poster puts its numbers down;
+                     it does not hand them round as a table.])[
     #bands((1.05fr, 4pt, 0.91fr),
       plate(inset: 48pt, align: left + horizon)[
         #title-text([Market research], size: 2.05em)
@@ -280,10 +280,10 @@ They can inform, persuade, teach, or spark discussion.]
       ],
       plate(align: center + horizon, divider),
       plate(inset: 44pt, align: left + horizon)[
-        // „rise" mit „out-back": die Zahl kommt von unten, schießt einen Hauch
-        // über ihren Platz hinaus und setzt sich. Der lauteste Effekt des
-        // Pakets, und hier ist er richtig — die drei Zahlen sind das
-        // Lauteste, was diese Folie zu sagen hat.
+        // "rise" with "out-back": the number comes from below, overshoots
+        // its place by a hair and settles. The loudest effect in the package,
+        // and right here — those three numbers are the loudest thing this
+        // slide has to say.
         #stagger(enter: "rise", easing: "out-back", duration: 620,
                  spacing: 1.6em, start: 2,
           ..(([+88%], [Elaborate on the statistic here.]),
@@ -299,28 +299,27 @@ They can inform, persuade, teach, or spark discussion.]
     )
   ],
 
-  // ── 11 Die Kurve ─────────────────────────────────────────────────────────
-  slide(none, note: [Erst das Feld, dann die Kurve, dann die Marke. Drei
-                     Stufen, und die dritte ist die Behauptung.])[
+  // ── 11 The curve ─────────────────────────────────────────────────────────
+  slide(none, note: [First the field, then the curve, then the mark. Three
+                     stages, and the third one is the claim.])[
     #plate(inset: (top: 42pt, left: 48pt, right: 48pt, bottom: 34pt))[
       #title-text([Market research], size: 2.05em)
       #v(4pt)
       #body-text(copy)
       #v(18pt)
-      // `build` statt `anim`: eine Zeichnung ist ein Stück, nicht viele. Die
-      // Funktion wird je Stufe einmal gerufen und bekommt gefragt, was schon
-      // fällig ist; was noch nicht fällig ist, wird aus Luft gesetzt und
-      // nimmt trotzdem seinen Platz ein. Deshalb wackelt nichts, wenn die
-      // Kurve dazukommt.
+      // `build` rather than `anim`: a drawing is one piece, not many. The
+      // function is called once per stage and asked what is already due;
+      // whatever is not yet due is set out of air and still takes up its
+      // room. That is why nothing shifts when the curve arrives.
       #build(from => block(width: 100%, height: 210pt, {
         let w = 100%
-        // Achsen: von Anfang an da.
+        // Axes: there from the start.
         place(bottom + left, line(length: w, stroke: 0.8pt + red))
         place(bottom + left,
               line(angle: -90deg, length: 100%, stroke: 0.8pt + red))
-        // Die Kurve ab Stufe zwei. `from(2, red)` gibt auf Stufe eins
-        // dieselbe Farbe ohne Deckkraft zurück, nicht `none`: die Kurve wird
-        // also gesetzt und gemessen, sie ist nur nicht zu sehen.
+        // The curve from stage two. On stage one `from(2, red)` hands back
+        // the same colour with no opacity, not `none`: the curve is set and
+        // measured, it just cannot be seen.
         place(bottom + left, curve(
           stroke: 2pt + from(2, red),
           curve.move((4%, -12%)),
@@ -330,7 +329,7 @@ They can inform, persuade, teach, or spark discussion.]
           curve.line((76%, -58%)),
           curve.line((94%, -84%)),
         ))
-        // Und die Marke ab Stufe drei.
+        // And the mark from stage three.
         place(bottom + left, dx: 74%, dy: -84%,
               from(3, block(inset: 6pt, fill: cream,
                             title-text([+88%], size: 1.15em))))
@@ -338,9 +337,9 @@ They can inform, persuade, teach, or spark discussion.]
     ]
   ],
 
-  // ── 12 Zitat ─────────────────────────────────────────────────────────────
-  slide(none, note: [Nichts bewegt sich. Ein Zitat, das hereinkommt, ist ein
-                     Zitat, dem man beim Kommen zusieht statt es zu lesen.])[
+  // ── 12 Quote ─────────────────────────────────────────────────────────────
+  slide(none, note: [Nothing moves. A quotation that comes in is a quotation
+                     one watches arrive instead of reading.])[
     #plate(align: center + horizon)[
       #std.align(center)[
         #title-text([“], size: 2.8em)
@@ -354,7 +353,7 @@ They can inform, persuade, teach, or spark discussion.]
     ]
   ],
 
-  // ── 13 Kontakt ───────────────────────────────────────────────────────────
+  // ── 13 Contact ───────────────────────────────────────────────────────────
   slide(none)[
     #plate(inset: 48pt, align: left + horizon)[
       #title-text([Contact us], size: 2.05em)

@@ -1,51 +1,50 @@
-// Greyscale — nach dem Portfolio-Deck des Pakets mosaic.
+// Greyscale — after the Portfolio deck of the mosaic package.
 //
-// Vorlage: „Photojournalist Portfolio" von SlidesCarnival
-// (https://www.slidescarnival.com/), CC BY 4.0, bearbeitet; mosaic hat sie
-// zuerst nach Typst geholt (docs-src/examples/decks/portfolio). Die
-// Fotografien der Vorlage sind nicht übernommen; an ihrer Stelle stehen
-// Grauflächen aus reinem Typst — Verlauf, Horizont, Silhouette.
+// Source: the "Photojournalist Portfolio" template by SlidesCarnival
+// (https://www.slidescarnival.com/), CC BY 4.0, adapted; mosaic brought it to
+// Typst first (docs-src/examples/decks/portfolio). The template's photographs
+// are not carried over; grey surfaces drawn in plain Typst stand in their
+// place — a gradient, a horizon, a silhouette.
 //
 //   typst compile mosaic-greyscale.typ mosaic-greyscale.html --format html --features html
 //   typst compile mosaic-greyscale.typ mosaic-greyscale.pdf
 //
-// Der Punkt dieses Decks ist eine einzige Zeile. mosaic sagt über seine
-// Fassung: „Its monochrome look is one dictionary" — acht Einträge an
-// `m.setup(colors: ..)`. typstage hat dafür `palette:`, und das ist beinahe
-// wörtlich dasselbe: acht Rollen, teilweise überschreibbar, unabhängig vom
-// Entwurf. Alles unten, die Titelfolie und die Abschnittstafel eingeschlossen,
-// nennt nur Rollen (`t.ink`, `t.paper`, `t.strong`, `t.accent`). Wer
-// `palette: greyscale` gegen `palettes.textbook` tauscht, bekommt dasselbe
-// Deck in den Farben eines Mathebuchs, ohne eine zweite Zeile zu ändern.
+// The point of this deck is a single line. mosaic says of its own version:
+// "Its monochrome look is one dictionary" — eight entries handed to
+// `m.setup(colors: ..)`. typstage has `palette:` for that, and it is very
+// nearly the same thing: eight roles, overridable in part, independent of the
+// design. Everything below, the title slide and the section plate included,
+// names roles only (`t.ink`, `t.paper`, `t.strong`, `t.accent`). Swap
+// `palette: greyscale` for `palettes.textbook` and the same deck comes out in
+// the colours of a maths textbook, without a second line changing.
 //
-// Was die Vorlage nicht kann und dieses Deck tut: aus dem Kontaktbogen tritt
-// ein Bild heraus und wird zum Abzug. Und die große Zahl zählt sich hoch,
-// statt dazustehen.
+// What the template cannot do and this deck does: one picture steps out of
+// the contact sheet and becomes the print. And the big number counts itself
+// up instead of standing there.
 
 #import "@schule/typstage:0.1.0": *
 
-// ── Die eine Zeile ─────────────────────────────────────────────────────────
-// Nebeneinandergestellt mit mosaics `greyscale`-Wörterbuch:
+// ── The one line ───────────────────────────────────────────────────────────
+// Set beside mosaic's own `greyscale` dictionary:
 //
-//   mosaic          typstage    Wert
+//   mosaic          typstage    value
 //   canvas          paper       #f7f7f5
 //   text            ink         #111111
 //   muted           muted       #6b6b6b
 //   line            border      #d9d9d9
 //   surface         surface     white
-//   accent          accent      —  siehe unten
-//   warning, error  (fehlt)     typstage kennt keine Statusfarben
-//   (fehlt)         strong      der dunkle Grund von Titel- und
-//                               Abschnittsfolie
-//   (fehlt)         inverted    ob die Palette schon gewendet ist
+//   accent          accent      —  see below
+//   warning, error  (missing)   typstage has no status colours
+//   (missing)       strong      the dark ground of the title and section
+//                               slides
+//   (missing)       inverted    whether the palette is already turned around
 //
-// Der eine Wert, der nicht übernommen werden kann, ist der Akzent. mosaic
-// setzt ihn auf die Tinte, und das geht dort auf, weil sein Standard-Theme
-// keine Akzentform auf dunklem Grund zeichnet. typstage zeichnet eine:
-// die Zierlinie über dem Abschnittstitel steht auf `strong`, und Schwarz auf
-// Schwarz ist keine Linie. luma(40%) misst 5,74 zu 1 auf Weiß und 3,66 auf
-// Schwarz — das Fenster für ein Grau, das auf beiden Gründen hält, ist
-// schmal, und das ist die Mitte davon.
+// The one value that cannot be carried over is the accent. mosaic sets it to
+// the ink, and that works there because its default theme draws no accent
+// shape on a dark ground. typstage draws one: the rule above the section
+// title stands on `strong`, and black on black is not a rule. luma(40%)
+// measures 5.74 to 1 on white and 3.66 on black — the window for a grey that
+// holds on both grounds is narrow, and this is the middle of it.
 #let greyscale = (
   paper: rgb("#f7f7f5"),
   ink: rgb("#111111"),
@@ -56,22 +55,22 @@
   border: rgb("#d9d9d9"),
 )
 
-// ── Grauflächen ────────────────────────────────────────────────────────────
-// An der Stelle der Aufnahmen. Ein Verlauf gibt die Tiefe, zwei bis drei
-// dunkle Formen die Aussage; mehr braucht eine Fläche nicht, die für ein Foto
-// einsteht, ohne eines vorzugeben.
+// ── Grey surfaces ──────────────────────────────────────────────────────────
+// In place of the photographs. A gradient gives the depth, two or three dark
+// shapes the statement; a surface that stands in for a photograph without
+// pretending to be one needs no more.
 
-/// Eine Graufläche. `n` wählt die Komposition; alle füllen dieselbe Fläche.
+/// One grey surface. `n` picks the composition; all of them fill the same
+/// area.
 #let gplate(n) = block(width: 100%, height: 100%, clip: true, {
   let i = calc.rem(n, 5)
   place(top + left, rect(width: 100%, height: 100%,
     fill: gradient.linear(luma(90%), luma(52%), angle: 90deg)))
   if i == 0 {
-    // Nadelwald im Nebel. Von Hand aufgeschrieben und nicht gerechnet: eine
-    // Formel setzt die Stämme in gleichen Abständen, und was gleichmäßig
-    // steht, sieht aus wie ein Balkendiagramm und nicht wie ein Wald.
-    // Der kleine Neigungswinkel ist der ganze Unterschied: senkrecht sind es
-    // Balken, um ein Grad gekippt sind es Stämme.
+    // Conifers in fog. Written out by hand rather than computed: a formula
+    // puts the trunks at equal spacing, and what stands evenly looks like a
+    // bar chart and not like a wood. The small tilt is the whole difference:
+    // upright they are bars, a degree off they are trunks.
     for (x, w, h, tone, tilt) in (
       (5%, 3.4%, 74%, 20%, -1.2deg), (13%, 2.2%, 58%, 34%, 0.8deg),
       (22%, 4.0%, 82%, 17%, 1.4deg), (31%, 1.8%, 47%, 44%, -0.6deg),
@@ -82,19 +81,18 @@
       place(bottom + left, dx: x, dy: -6%, rotate(tilt, origin: bottom + center,
             reflow: false, rect(width: w, height: h, fill: luma(tone))))
     }
-    // Der Nebel darüber, damit die hinteren Stämme darin verschwinden.
+    // The fog over them, so that the trunks at the back disappear into it.
     place(bottom + left, rect(width: 100%, height: 46%,
       fill: gradient.linear(luma(70%).transparentize(100%), luma(74%),
                             angle: 90deg)))
   } else if i == 1 {
-    // Horizont mit tiefstehender Sonne.
+    // A horizon with a low sun.
     place(top + right, dx: -22%, dy: 18%, circle(radius: 26pt, fill: luma(96%)))
     place(bottom + left, rect(width: 100%, height: 34%, fill: luma(28%)))
   } else if i == 2 {
-    // Porträt gegen das Licht: Schultern, Kopf, und ein heller Saum, damit
-    // die Silhouette nicht aussieht wie ein Benutzersymbol.
-    // Angeschnitten, nicht zentriert: eine mittige Silhouette aus Kopf und
-    // Schultern ist ein Benutzersymbol, eine angeschnittene ist ein Porträt.
+    // A portrait against the light. Cropped, not centred: a centred
+    // silhouette of head and shoulders is a user icon, a cropped one is a
+    // portrait. The pale disc behind it is the light.
     place(bottom + left, dx: 6%, dy: -12%,
           ellipse(width: 34%, height: 34%, fill: luma(80%), stroke: none))
     place(bottom + right, dx: 14%, dy: 12%, rect(
@@ -104,14 +102,14 @@
     place(bottom + right, dx: -4%, dy: -38%,
           ellipse(width: 19%, height: 24%, fill: luma(16%), stroke: none))
   } else if i == 3 {
-    // Dünen, drei Kämme hintereinander, jeder heller als der davor.
+    // Dunes, three ridges one behind the other, each lighter than the last.
     for (dy, w, h, tone) in ((-4%, 150%, 46%, 24%), (-14%, 130%, 40%, 38%),
                              (-26%, 170%, 34%, 52%)) {
       place(bottom + center, dy: dy, ellipse(width: w, height: h,
                                              fill: luma(tone), stroke: none))
     }
   } else {
-    // Architektur: ein Raster aus Fenstern.
+    // Architecture: a grid of windows.
     place(top + left, rect(width: 100%, height: 100%, fill: luma(64%)))
     for a in range(4) {
       for b in range(5) {
@@ -122,7 +120,7 @@
   }
 })
 
-// ── Flächen ────────────────────────────────────────────────────────────────
+// ── Surfaces ───────────────────────────────────────────────────────────────
 #let plate(body, fill: none, inset: 0pt, align: top + left) = block(
   width: 100%, height: 100%, fill: fill, inset: inset, clip: true,
   std.align(align, body),
@@ -136,11 +134,11 @@
   columns: (100%,), rows: fracs, row-gutter: 0pt, ..cells,
 )
 
-/// Das schwarze Feld, aus dem dieses Deck seine Aussagen macht.
+/// The black field this deck makes its statements out of.
 ///
-/// Die Vorlage hat es auf fast jeder Folie: heller Grund, ein Rechteck in
-/// Tinte, Text darin in Papier. Beide Farben kommen aus der Palette, keine
-/// steht hier als Wert.
+/// The template has it on nearly every slide: a light ground, a rectangle in
+/// ink, text on it in paper. Both colours come from the palette; neither
+/// stands here as a value.
 #let panel(t, body, inset: 20pt, width: 100%) = block(
   width: width, fill: t.ink, inset: inset, text(fill: t.paper, body),
 )
@@ -149,23 +147,24 @@
 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
 veniam, quis nostrud exercitation ullamco laboris.]
 
-/// Die Zahl mit Tausenderpunkten, aus einem Zwischenwert der Szene.
+/// The number with thousands separators, out of one of the scene's
+/// intermediate values.
 ///
-/// Die Szene reicht Fließkommazahlen herein, eine je Zwischenbild; auf der
-/// Folie darf davon nichts zu sehen sein.
+/// The scene hands in floating-point numbers, one per tween frame; none of
+/// that may be visible on the slide.
 #let grouped(x) = {
   let s = str(int(calc.round(x)))
-  let teile = ()
+  let groups = ()
   let k = s.len()
-  while k > 3 { teile.push(s.slice(k - 3, k)); k -= 3 }
-  teile.push(s.slice(0, k))
-  teile.rev().join(",")
+  while k > 3 { groups.push(s.slice(k - 3, k)); k -= 3 }
+  groups.push(s.slice(0, k))
+  groups.rev().join(",")
 }
 
-// ── Titelfolie und Abschnittstafel ─────────────────────────────────────────
-// Beide nennen nur Rollen. Deshalb folgt das ganze Deck der Palette, und
-// deshalb steht die Behauptung oben — ein Wörterbuch, ein Deck — hier auch
-// für die Zier und nicht bloß für den Fließtext.
+// ── Title slide and section plate ──────────────────────────────────────────
+// Both name roles only. That is why the whole deck follows the palette, and
+// why the claim at the top — one dictionary, one deck — holds here for the
+// furniture too and not merely for the body copy.
 
 #let cover(t, s, geo) = {
   let k = geo.scale
@@ -173,7 +172,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     set rect(fill: t.strong, stroke: none)
     [#rect(width: 100%, height: 100%) <ts-title-slide-ground>]
   }
-  // Die Aufnahme unter dem Wort, dunkel genug, dass Papier darauf steht.
+  // The picture under the word, dark enough for paper to stand on it.
   place(top + left, block(width: 100%, height: 100%,
     std.align(center + horizon, block(width: 100%, height: 100%, {
       set block(spacing: 0pt)
@@ -199,8 +198,8 @@ veniam, quis nostrud exercitation ullamco laboris.]
     [#rect(width: 100%, height: 100%) <ts-section-slide-ground>]
   }
   place(horizon + left, dx: 40pt * k, block(width: geo.width - 80pt * k, {
-    // Die Zierlinie in der Akzentfarbe, auf dem dunklen Grund. Genau die
-    // Form, wegen der der Akzent oben nicht die Tinte sein darf.
+    // The rule in the accent colour, on the dark ground. Exactly the shape
+    // for whose sake the accent above may not be the ink.
     {
       set rect(fill: t.accent, stroke: none)
       [#rect(width: 74pt * k, height: 3pt * k) <ts-section-slide-rule>]
@@ -211,11 +210,11 @@ veniam, quis nostrud exercitation ullamco laboris.]
   }))
 }
 
-// ── Das Theme ──────────────────────────────────────────────────────────────
-// `themes.default`, um zwei Bilder und drei Maße abgewandelt. Keine Farbe
-// steht darin: die kommt vollständig aus `palette:` unten. Das ist die
-// Arbeitsteilung, die typstage von mosaic teilt — ein Theme sagt, wie gebaut
-// wird, eine Palette sagt, in welcher Farbe.
+// ── The theme ──────────────────────────────────────────────────────────────
+// `themes.default`, varied by two pictures and three measures. Not one colour
+// stands in it: the colour comes entirely from `palette:` below. That is the
+// division of labour typstage shares with mosaic — a theme says how a slide
+// is built, a palette says in what colour.
 #let t = themes.default + (
   font: ("Inter", "Helvetica Neue", "Arial", "DejaVu Sans"),
   size: 15pt,
@@ -228,29 +227,29 @@ veniam, quis nostrud exercitation ullamco laboris.]
   section: plate-section,
 )
 
-// Und derselbe Griff noch einmal, für das, was die Folien selbst brauchen:
-// ein aufgelöstes Theme, damit `panel(.., tp)` die Palettenfarben und nicht
-// eine zweite, danebenlaufende Kopie benutzt.
+// And the same move once more, for what the slides themselves need: a
+// resolved theme, so that `panel(tp, ..)` uses the palette's colours and not
+// a second copy running alongside them.
 #let tp = t + greyscale
 
 #presentation(
   theme: t,
-  // Acht Rollen, teilweise überschrieben. Mehr ist an diesem Deck nicht bunt
-  // — beziehungsweise: mehr ist an ihm nicht grau.
+  // Eight roles, overridden in part. Nothing more about this deck is
+  // coloured — or rather: nothing more about it is grey.
   palette: greyscale,
   title: [Greyscale],
   subtitle: [A photojournalist's portfolio],
   author: [after SlidesCarnival, via mosaic],
   date: [27 August 2026],
   margin: 0pt,
-  // Ein Foliensatz aus Aufnahmen blendet. Alles, was schiebt, wischt oder
-  // kippt, machte aus einer Folge von Bildern eine Bedienung.
+  // A deck made of pictures cross-fades. Anything that pushes, wipes or
+  // tilts would turn a sequence of images into an operation.
   transition: "fade",
   transition-duration: 440,
   duration: 500,
   style: it => { set par(justify: false, leading: 0.62em); it },
 
-  // ── 02 Inhalt ────────────────────────────────────────────────────────────
+  // ── 02 Contents ──────────────────────────────────────────────────────────
   slide(none)[
     #block(width: 100%, height: 100%, {
       place(top + left, bands((0.16fr, 0.64fr, 0.20fr),
@@ -273,7 +272,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     })
   ],
 
-  // ── 03 Hallo ─────────────────────────────────────────────────────────────
+  // ── 03 Hello ─────────────────────────────────────────────────────────────
   slide(none)[
     #bands((0.48fr, 0.52fr),
       plate(fill: white, inset: 28pt, align: center + horizon,
@@ -286,7 +285,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     )
   ],
 
-  // ── 04 Über uns ──────────────────────────────────────────────────────────
+  // ── 04 About us ──────────────────────────────────────────────────────────
   slide(none)[
     #rows-of((1.05fr, 0.95fr),
       block(width: 100%, height: 100%, {
@@ -300,7 +299,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     )
   ],
 
-  // ── 05 Auftrag und Absicht ───────────────────────────────────────────────
+  // ── 05 Mission and vision ────────────────────────────────────────────────
   slide(none)[
     #bands((1.3fr, 0.7fr),
       plate(fill: white, inset: 28pt)[
@@ -324,21 +323,20 @@ veniam, quis nostrud exercitation ullamco laboris.]
     )
   ],
 
-  // ── 06 Abschnitt ─────────────────────────────────────────────────────────
+  // ── 06 Section ───────────────────────────────────────────────────────────
   section([Our best shots]),
 
-  // ── 07 Der Kontaktbogen ──────────────────────────────────────────────────
-  slide(none, note: [Nicht sagen, welches Bild gemeint ist. Auf der nächsten
-                     Folie steht es groß da, und der Weg dorthin ist zu
-                     sehen.])[
+  // ── 07 The contact sheet ─────────────────────────────────────────────────
+  slide(none, note: [Do not say which picture is meant. On the next slide it
+                     stands there large, and the way it got there is visible.])[
     #plate(fill: white, inset: 26pt)[
       #grid(columns: (1fr, 1fr), rows: (1fr, 1fr), gutter: 10pt,
         gplate(2),
-        // Genau eine Kachel trägt einen Namen. Auf der nächsten Folie steht
-        // derselbe Name um die ganzflächige Fassung, und dazwischen fliegt
-        // das Bild. `match: "block"`: eine Fläche hat keine Glyphen, die man
-        // paaren könnte, und eine Paarung je Glyphe machte daraus einen
-        // Schwarm statt einer Bewegung.
+        // Exactly one tile carries a name. On the next slide the same name
+        // stands around the full-bleed version, and in between the picture
+        // flies. `match: "block"`: a surface has no glyphs worth pairing, and
+        // per-glyph matching would make a swarm of it rather than a
+        // movement.
         morph(<print>, gplate(1), match: "block"),
         gplate(4),
         gplate(3),
@@ -346,10 +344,10 @@ veniam, quis nostrud exercitation ullamco laboris.]
     ]
   ],
 
-  // ── 08 Der Abzug ─────────────────────────────────────────────────────────
-  slide(none, note: [Hier landet die Kachel. Der Vergrößerer ist die einzige
-                     Bewegung des Decks, die etwas behauptet: dieses eine
-                     Bild, groß.])[
+  // ── 08 The print ─────────────────────────────────────────────────────────
+  slide(none, note: [This is where the tile lands. The enlarger is the one
+                     movement in the deck that makes a claim: this one
+                     picture, large.])[
     #block(width: 100%, height: 100%, {
       place(top + left, morph(<print>, block(width: 100%, height: 100%,
                                              gplate(1)), match: "block"))
@@ -361,12 +359,15 @@ veniam, quis nostrud exercitation ullamco laboris.]
     })
   ],
 
-  // ── 09 Nummerierte Arbeiten ──────────────────────────────────────────────
-  slide(none, note: [Ein Tastendruck, vier Karten. Wie ein Kontaktbogen, der
-                     sich entwickelt.])[
+  // ── 09 Numbered work ─────────────────────────────────────────────────────
+  slide(none, note: [One keypress, four cards. Like a contact sheet coming up
+                     in the developer.])[
     #plate(fill: tp.ink, inset: (x: 96pt, y: 62pt), align: center + horizon)[
+      // `at: 2` and not `auto`: on a slide with nothing before it `auto`
+      // means step one, and a card that is there on arrival was never
+      // revealed.
       #tiles(columns: 2, gutter: 30pt, row-gutter: 26pt,
-             stride: 0, stagger: 110, enter: "fade-up",
+             at: 2, stride: 0, stagger: 110, enter: "fade-up",
         ..(("01", "02", "03", "04")).map(nr => grid(
           columns: (58pt, 1fr), column-gutter: 15pt, align: top,
           rect(fill: tp.paper, inset: 8pt,
@@ -380,17 +381,17 @@ veniam, quis nostrud exercitation ullamco laboris.]
     ]
   ],
 
-  // ── 10 Die große Zahl ────────────────────────────────────────────────────
-  slide(none, note: [Erst steht da eine Null. Dann fragen, wie viele es wohl
-                     sind — und dann erst drücken.])[
+  // ── 10 The big number ────────────────────────────────────────────────────
+  slide(none, note: [First a zero stands there. Then ask the room how many
+                     they think it is — and only then press.])[
     #block(width: 100%, height: 100%, {
       place(top + left, gplate(3))
       place(top + center, dy: 120pt, block(width: 100%, std.align(center, {
-        // `scene` statt `anim`: die Zahl soll nicht erscheinen, sie soll
-        // laufen. Zwei Halte, dazwischen achtzehn Zwischenbilder, und jedes
-        // wird von Typst gesetzt — die Ziffern bleiben deshalb scharf und in
-        // derselben Schrift wie alles andere. Der Preis steht im Handbuch:
-        // ein Bild je Zwischenschritt, und nichts davon wird gemessen.
+        // `scene` rather than `anim`: the number is not meant to appear, it
+        // is meant to run. Two stops, eighteen frames between them, and every
+        // one of them set by Typst — which is why the figures stay sharp and
+        // in the same face as everything else. The price is in the manual:
+        // one frame per tween step, and none of them is measured.
         scene(
           n => std.align(center, text(size: 74pt, weight: "bold",
                                       fill: tp.ink, grouped(n))),
@@ -408,7 +409,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     })
   ],
 
-  // ── 11 Das Diagramm ──────────────────────────────────────────────────────
+  // ── 11 The chart ─────────────────────────────────────────────────────────
   slide(none)[
     #bands((0.85fr, 1.15fr),
       plate(fill: tp.ink, inset: 27pt)[
@@ -417,13 +418,13 @@ veniam, quis nostrud exercitation ullamco laboris.]
         #text(size: 10.5pt, fill: tp.paper)[#lorem]
       ],
       plate(fill: white, inset: 20pt)[
-        // Ein Balkenfeld in fünf Grautönen: dieselbe Rolle, die in der
-        // Vorlage ein eingebettetes Bild spielt, nur dass es hier gesetzt
-        // wird und daher jede Palette mitmacht.
+        // A field of bars in a handful of greys: the role an embedded image
+        // plays in the template, except that this one is typeset and
+        // therefore follows any palette.
         #block(width: 100%, height: 100%, {
-          let werte = (34%, 58%, 46%, 79%, 63%, 92%)
+          let heights = (34%, 58%, 46%, 79%, 63%, 92%)
           place(bottom + left, line(length: 100%, stroke: 0.8pt + tp.border))
-          for (j, h) in werte.enumerate() {
+          for (j, h) in heights.enumerate() {
             place(bottom + left, dx: 4% + j * 16%, dy: -2pt,
                   rect(width: 11%, height: h,
                        fill: luma(78% - 9 * j * 1%)))
@@ -433,7 +434,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     )
   ],
 
-  // ── 12 Ausstellungen ─────────────────────────────────────────────────────
+  // ── 12 Exhibitions ───────────────────────────────────────────────────────
   slide(none)[
     #rows-of((0.28fr, 1fr),
       plate(fill: tp.ink, inset: (x: 34pt, y: 18pt), align: center + horizon,
@@ -454,7 +455,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     )
   ],
 
-  // ── 13 Schluss ───────────────────────────────────────────────────────────
+  // ── 13 Closing ───────────────────────────────────────────────────────────
   slide(none)[
     #bands((0.42fr, 0.58fr),
       plate(fill: tp.ink, inset: 32pt, align: left + horizon)[
