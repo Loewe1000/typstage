@@ -1165,6 +1165,30 @@ there.
   independently.
 ]
 
+#info[
+  *And `.animate`?* In manim, `obj.animate.shift(RIGHT)` turns a method call
+  into an animation: you write the change rather than the target state. There
+  is deliberately no word of its own for that here, and the reason is not
+  convenience but what would be left of it.
+
+  Typst content is immutable. There is no object for a method to move --
+  `move(dx: 40pt, card)` is not the same card in another place but a new piece
+  of content. A typstage version of `.animate` could therefore only do what a
+  browser can do to a *finished* picture: translate, scale, rotate, fade.
+  Everything else manim offers under that spelling -- `set_color`,
+  `set_value`, `become`, `next_to` -- means setting it again, and setting it
+  again is `scene`.
+
+  That leaves the argument that eight frames fewer are eight frames fewer. It
+  has been measured, and it does not hold. The same motion -- a card travels
+  right and grows while doing so -- costs *2.6 kB compressed* as a `scene`
+  with eight tween frames, over a slide that merely puts the same card there.
+  Written across two slides with `morph`, that is, the way a deck would take
+  for the same gesture today, it costs *12.0 kB*: the second slide carries
+  title, furniture and everything else a second time. The way the package
+  already has is the cheaper of the two.
+]
+
 == Moving in on a detail
 
 Sometimes the next step of a talk is not a new sentence but the same sentence
@@ -1258,7 +1282,7 @@ There is no upper limit. A pin the size of a comma is shown the size of a wall
 vectors. A video, an image or an embedded document in that crop will not.
 
 A detail already as large as the slide gives nothing to travel to; then the
-camera stays where it is.
+slide stays whole.
 
 === Two special cases
 

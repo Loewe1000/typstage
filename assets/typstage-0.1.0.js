@@ -512,7 +512,7 @@
       if (!KAMERA_KLAGE[k.name]) {
         KAMERA_KLAGE[k.name] = 1;
         console.warn("typstage: camera(" + k.name + ") finds no pin of that "
-          + "name drawn on this slide. The camera stays where it is.");
+          + "name drawn on this slide. The slide stays whole.");
       }
       return "";
     }

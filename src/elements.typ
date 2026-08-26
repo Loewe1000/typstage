@@ -314,7 +314,7 @@
 /// seen.
 ///
 /// A detail that is already as large as the slide gives nothing to travel to,
-/// and then the camera stays where it is.
+/// and then the slide stays whole.
 ///
 /// Two pins of the same name on one slide are framed together, and the camera
 /// shows the box around both.
@@ -354,11 +354,15 @@
     // als der Vortrag. Ein offener Bereich hat keinen Rueckweg: dort nimmt der
     // Folienwechsel die Kamera heraus.
     let letzter = max-step(sel) + (if offenes-ende(sel) { 0 } else { 1 })
-    if im-deck() { step-cursor.update(c => calc.max(c, letzter)) }
-    // Erst ausrechnen, dann eintragen: in der Funktion, die `update` bekommt,
-    // ist kein Kontext mehr bekannt.
-    let wo = deck-info.get().nr
-    kamera-index.update(a => a + ((slide: wo, name: name),))
+    // Ausserhalb eines Decks gibt es weder einen Zeiger noch eine Folie, nach
+    // deren Nummer sich fragen liesse. `pin` daneben fragt aus demselben Grund.
+    if im-deck() {
+      step-cursor.update(c => calc.max(c, letzter))
+      // Erst ausrechnen, dann eintragen: in der Funktion, die `update`
+      // bekommt, ist kein Kontext mehr bekannt.
+      let wo = deck-info.get().nr
+      kamera-index.update(a => a + ((slide: wo, name: name),))
+    }
     // Auf Papier bleibt es beim Zaehlen. Es gibt dort keine Kamera, und die
     // Folie hat vollstaendig und lesbar dazustehen.
     if html-output.get() {

@@ -1563,6 +1563,30 @@ sie nichts: dort steht ein einziges Standbild.
   und mehrere Größen können sich nicht unabhängig bewegen.
 ]
 
+#info[
+  *Und `.animate`?* In manim macht `obj.animate.shift(RIGHT)` aus einem
+  Methodenaufruf eine Animation: man schreibt nicht den Zielzustand hin,
+  sondern die Änderung. Dafür gibt es hier mit Absicht kein eigenes Wort, und
+  der Grund ist nicht Bequemlichkeit, sondern was davon überhaupt übrig bliebe.
+
+  Typst-Inhalt ist unveränderlich. Es gibt kein Objekt, an dem eine Methode
+  etwas verschöbe -- `move(dx: 40pt, karte)` ist nicht dieselbe Karte an einer
+  anderen Stelle, sondern ein neues Stück Inhalt. Eine typstage-Fassung von
+  `.animate` könnte deshalb nur, was ein Browser mit einem *fertig gesetzten*
+  Bild anstellen kann: verschieben, strecken, drehen, blenden. Alles Übrige,
+  was manim unter dieser Schreibweise anbietet -- `set_color`, `set_value`,
+  `become`, `next_to` --, heißt neu setzen, und neu setzen ist `scene`.
+
+  Bliebe das Argument, dass vier Zwischenbilder weniger auch vier Bilder
+  weniger sind. Es ist nachgemessen und trägt nicht. Dieselbe Bewegung -- eine
+  Karte wandert nach rechts und wächst dabei -- kostet als `scene` mit acht
+  Zwischenbildern *2,6 kB gepackt* über einer Folie, die dieselbe Karte nur
+  hinstellt. Über zwei Folien mit `morph` geschrieben, also auf dem Weg, den
+  ein Deck heute für dieselbe Geste nähme, kostet sie *12,0 kB*: die zweite
+  Folie trägt Titel, Zier und alles Übrige noch einmal. Der Weg, den das Paket
+  hat, ist bereits der billigere von beiden.
+]
+
 == In ein Detail hineinfahren
 
 Manchmal ist der nächste Schritt eines Vortrags kein neuer Satz, sondern
@@ -1659,7 +1683,7 @@ Vektor dasteht. Ein Video, ein Bild oder eine Einbettung in diesem Ausschnitt
 wird es nicht.
 
 Ein Detail, das schon so groß ist wie die Folie, gibt nichts zu fahren; dann
-bleibt die Kamera, wo sie ist.
+bleibt die Folie ganz.
 
 === Zwei Sonderfälle
 
