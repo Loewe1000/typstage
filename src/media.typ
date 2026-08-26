@@ -99,9 +99,9 @@
 
 /// Arbitrary web content in a sandboxed frame.
 ///
-/// `bridge` names the element so step jobs can be sent to it: that is how a
-/// companion package such as `typstage-geogebra` drives its applet without the
-/// core knowing anything about it.
+/// `bridge` names the element so step jobs can be sent to it: that is how
+/// `geogebra` drives its applet, and how a companion package of your own would
+/// drive anything else, without the core knowing what is inside.
 ///
 /// `fallback` and `link` only take effect in paged output; in the browser the
 /// embedded document itself stands there.

@@ -6,7 +6,9 @@
 // runtime posts them into the frame whose element carries that name.
 //
 // A companion package builds the document with `embed(html: …, bridge: name)`
-// and pushes its jobs here. `typstage-geogebra` is such a package; the same
+// and pushes its jobs here. `geogebra.typ` does exactly that and nothing more,
+// although it now lives in this package -- the bridge stays the only way in,
+// so a foreign package goes the same road as the one next door. The same
 // mechanism carries anything else that lives in an iframe.
 
 #import "internal.typ": (bridge-jobs, name-of, selector, slide-counter,
