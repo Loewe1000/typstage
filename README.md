@@ -10,7 +10,7 @@ typst compile deck.typ deck.pdf                                  # slides and ha
 
 ![A slide of a typstage deck in the browser, halfway through its reveals](assets/slide.png)
 
-**Try it without installing anything:** [six example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos: a tour of the package itself, how GPS finds you, why the four margins of a book are unequal, a school lesson on completing the square, a night of rolling deployments, and Simpson's paradox.
+**Try it without installing anything:** [eight example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos: a tour of the package itself, how GPS finds you, why the four margins of a book are unequal, a school lesson on completing the square, a night of rolling deployments, and Simpson's paradox. Two more show GeoGebra: one where the slides drive the applet, one where a hand drives it from the speaker window.
 
 ## Typst sets, the browser moves
 
@@ -124,7 +124,8 @@ written.
 | `palettes`, `palette:`, `invert` | colour separately from design: five bundled palettes that compose with every theme, a partial override on `presentation`, and one slide set in the palette turned around |
 | `contrast`, `palette-report` | the WCAG contrast of two colours, and the six pairs the bundled palettes are held to |
 | `video`, `embed`, `flipbook` | media, arbitrary web content in a sandboxed frame, and animation drawn frame by frame by Typst |
-| `bridge-job`, `bridge-targets` | send step jobs into an embedded document, which is how companion packages drive an applet |
+| `bridge-job`, `bridge-targets` | send step jobs into an embedded document, which is how a companion package drives an applet |
+| `geogebra`, `ggb-run`, `ggb-set`, `ggb-show`, `ggb-hide`, `ggb-style`, `ggb-view`, `ggb-animate`, `ggb-tween` | a GeoGebra applet on the slide and the jobs that drive it step by step; the applet itself is fetched from `geogebra.org` at run time |
 | `slide-width`, `slide-height`, `slide-margin`, `dark`, `accent`, `paper`, `muted` | the defaults behind `width:`, and the four colour constants of the default look |
 | `runtime-version`, `runtime-files` | the CSS and the JS, for `assets: "split"` and for CDNs |
 
@@ -238,9 +239,8 @@ window goes away.
 `m` switches the pointer between pen and embed. In pointer mode the pen rests
 and a click on an embedded frame reaches the projected one instead: the same
 spot, the same gesture, in whatever size that window happens to have. Where the
-embedded document can mirror itself, as a GeoGebra applet does through
-`typstage-geogebra`, you operate the live one in front of you and the projected
-copy follows.
+embedded document can mirror itself, as a GeoGebra applet does, you operate the
+live one in front of you and the projected copy follows.
 
 Steering works from either window, and either one may be reloaded: they find
 each other again and the strokes come back.
@@ -351,11 +351,17 @@ else, no Node, no bundler.
 - **The slides are SVG outlines, not text.** Glyphs go into the file as paths,
   so nothing in the browser is selectable, searchable or reflowable, screen
   readers see nothing, and the file grows with the deck. Measured: the little
-  deck above weighs 211 kB, the six example decks between 1.1 and 2.0 MB, and
-  the largest of them holds 127 SVG trees with 5581 glyph references across 23
-  slides. In exchange no font has to load and the layout cannot drift.
+  deck above weighs 211 kB, the eight example decks between 0.48 and 2.1 MB,
+  and the largest of them holds 127 SVG trees with 5581 glyph references across
+  23 slides. In exchange no font has to load and the layout cannot drift.
 - **`#pause` is read at the top level of a slide body only.** Inside a grid
   cell, a table or a figure it is not seen, so reach for `anim` there.
+- **GeoGebra is not in the box.** A typeset applet is an empty frame that
+  fetches GeoGebra from `geogebra.org` when the page is shown. Without a
+  network it stays empty, the viewer's browser talks to that host, and what
+  runs in the frame is under GeoGebra's terms rather than this package's MIT
+  licence. `codebase` points the frame somewhere else, at a local copy for
+  instance. The PDF fetches nothing.
 - **Not on Universe**, so `@preview` will not find it and there is no version
   resolution: you install it by hand, as above.
 - **German in places.** The manual is German throughout and the API comments
@@ -423,9 +429,9 @@ exists still compiles.
 
 ### The decks are driven in a browser
 
-Compiling proves nothing about motion. A second run loads the six example decks
-and a seventh check deck into a real browser, pages through every step forward
-and backward, and holds the numbers against a written record:
+Compiling proves nothing about motion. A second run loads the eight example
+decks and a ninth check deck into a real browser, pages through every step
+forward and backward, and holds the numbers against a written record:
 
 ```bash
 bash .github/scripts/build-site.sh          # the decks it measures
@@ -440,8 +446,8 @@ for WebKit or for the two window case; it is not a prerequisite.
 
 The runtime carries the surface the run reads, `window.typstage.pruef`, and it
 is always there rather than behind a build switch: a switch would mean checking
-a runtime that is not the one shipped. Measured over the six decks it costs
-between 0.47 and 0.84 percent of the compressed page. Two parts of it are what
+a runtime that is not the one shipped. Measured over the six decks without an
+applet it costs between 0.47 and 0.84 percent of the compressed page. Two parts of it are what
 make the run repeatable. `ruhig()` resolves when no animation is running
 anymore and replaces every fixed wait, and `uhr(ms)` pins the wall clock a
 flipbook reads. Five runs at three animation speeds in two browsers produced an
@@ -490,22 +496,45 @@ real windows talking to each other. Ghosts are counted as they appear and never
 as they are cleared away, so a magic move that forgets to tidy up goes
 unnoticed.
 
-## Companion packages
+## GeoGebra
 
-[**typstage-geogebra**](https://github.com/Loewe1000/typstage-geogebra) adds
-GeoGebra applets. GeoGebra builds the construction, the slides supply the
-dramaturgy: jobs sit on steps, so a value changes, an object appears or the
-viewport moves when the presenter pages. From the speaker view the applet in
+```typ
+#geogebra(width: 100%, height: 330pt)
+
+#ggb-run("a=1", "f(x)=a*x^2")
+#ggb-style("f", color: accent, thickness: 6)
+#ggb-tween("a", at: 2, to: 2.5, duration: 950)
+```
+
+GeoGebra builds the construction, the slides supply the dramaturgy: jobs sit on
+steps, so a value changes, an object appears or the viewport moves when the
+presenter pages. `ggb-run`, `-set`, `-show`, `-hide`, `-style`, `-view`,
+`-animate` and `-tween` all take the same step selector as `anim`. Paging back
+replays the run from its start, so a job has to be repeatable. With one applet
+on the slide no command has to name it. From the speaker view the applet in
 front of you is the live one, and the projected copy follows what your hand
 does to it.
 
-It is a package of its own so that a deck without applets carries none of it;
-everything it needs from the core is `embed(bridge: …)` and `bridge-job`.
-Its [two example decks](https://loewe1000.github.io/typstage-geogebra/beispiele/)
-run in the browser, and the manual is there in
-[English](https://loewe1000.github.io/typstage-geogebra/en.html) and
-[German](https://loewe1000.github.io/typstage-geogebra/).
+This was `typstage-geogebra`, a package of its own, and it still goes the way a
+foreign package would: `embed(bridge: …)` and `bridge-job`, nothing else. A
+deck that never calls `geogebra` therefore carries none of it — measured, such
+a deck is the same size to the byte as it was before the two packages became
+one.
+
+**Where the applet comes from.** This package does not ship GeoGebra. `geogebra`
+puts a frame on the slide, and the browser fetches what runs inside it from
+`codebase`, `https://www.geogebra.org/apps/` by default. So: without a network
+the frame stays empty; the viewer's browser talks to `geogebra.org`; and the
+applet is under **GeoGebra's own licence and terms of use**, not under this
+package's MIT licence — for commercial use those are the ones to read. Where
+that is unwanted, `codebase` points the frame at a local copy instead. On paper
+nothing is fetched at all: `fallback` and `link` stand there instead.
+
+The chapter *GeoGebra* in the manual has the rest, and the
+[two example decks](https://loewe1000.github.io/typstage/beispiele/) are on the
+site with the others.
 
 ## License
 
-MIT.
+MIT, for this package. A GeoGebra applet loaded at run time is GeoGebra's and
+carries GeoGebra's terms.
