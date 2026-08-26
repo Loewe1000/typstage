@@ -34,7 +34,9 @@
 //
 // Nicht geprüft wird, wie eine Folie aussieht. Es werden keine Bilder
 // verglichen (`--bilder` schießt welche, vergleicht sie aber nicht), keine
-// Schriftgrößen und keine Positionen gemessen. Was `fit`, `info()`, `invert`
+// Schriftgrößen und keine Positionen gemessen. Und nicht, was in einer
+// Einbettung läuft: die beiden GeoGebra-Decks fahren mit abgeklemmtem
+// GeoGebra, siehe `ohneGeoGebra`. Was `fit`, `info()`, `invert`
 // und die Paletten tun, entsteht in Typst und ist im Browser nicht als Zahl
 // zu haben; dafür steht `satz`, der Fingerabdruck der HTML-Ausgabe des
 // Prüfdecks ohne den Laufzeitblock, und `grund`, die Farbe jeder Folie.
@@ -188,18 +190,74 @@ const SOLL_HINWEIS = [
   "auf 16 Stellen gekürzt, satzBytes ihre Länge. Nur für das Prüfdeck: was",
   "fit, info(), invert und die Paletten tun, entsteht in Typst und hat im",
   "Browser keine Zahl. Nach einem Typst-Wechsel darf er neu gesetzt werden,",
-  "aber nur nachdem jemand nachgesehen hat, was sich geändert hat."
+  "aber nur nachdem jemand nachgesehen hat, was sich geändert hat.",
+  "",
+  "Die linux-Werte stammen aus dem CI-Lauf, der sie gemeldet hat, nachdem das",
+  "Pruefdeck den Fall fuer verfolgte Elemente ineinander bekommen hatte. Alle",
+  "sieben Decks meldeten dort ok.",
+  "",
+  "Dieser Absatz stand einmal von Hand in soll.json und war nach dem ersten",
+  "--neu-soll fort: was hier nicht steht, ueberlebt keine Neuaufnahme."
 ];
 
 // ── Welche Decks ────────────────────────────────────────────────────────────
-// Die sechs Beispiele plus das Prüfdeck. Letzteres steht nicht unter
+// Die acht Beispiele plus das Prüfdeck. Letzteres steht nicht unter
 // `examples/`, weil es nicht auf die Website gehört; es wird hier übersetzt.
-// Es deckt ab, was die sechs nicht anfassen. Nachgezählt in ihren Quellen:
+// Es deckt ab, was die anderen nicht anfassen. Nachgezählt in ihren Quellen:
 // `after: "dimmed"` 0x, `stagger(dim: true)` 0x, `invert` 0x, `info()` 0x,
 // `fit` 0x. Ohne das Prüfdeck kann man diese fünf zerstören, ohne dass hier
 // eine Zahl wackelt.
+//
+// Die beiden GeoGebra-Decks messen den Rahmen, nicht das Applet. Was hier eine
+// Zahl hat -- Folien, Schritte, Elemente, gezeichnet und gedimmt, Grund, Hash,
+// Sprecheransicht --, entsteht in Typst und in der Laufzeit; was in dem
+// Rahmen läuft, holt der Browser von `geogebra.org` und meldet sich in seinem
+// eigenen Fenster. Der Lauf ist deshalb nicht vom Netz abhängig: gemessen
+// ergeben beide Decks mit und ohne erreichbares GeoGebra dieselben Zahlen.
 const BEISPIELE = ["tour", "theme-default", "theme-editorial", "theme-lesson",
-                   "theme-night", "theme-plain"];
+                   "theme-night", "theme-plain", "geogebra",
+                   "geogebra-sprecher"];
+
+// Decks mit einem Applet darin. Sie werden mit abgeklemmtem GeoGebra gefahren,
+// siehe `ohneGeoGebra`.
+const MIT_APPLET = ["geogebra", "geogebra-sprecher"];
+
+// Wohin die Applets statt zu `geogebra.org` greifen. Port 9 ist der
+// Mülleimer-Port: die Verbindung wird sofort abgelehnt, es wird nichts
+// gewartet.
+const TOTE_QUELLE = "http://127.0.0.1:9/";
+const GGB_QUELLE = "https://www.geogebra.org/apps/";
+
+// Ein Deck mit Applets, aber ohne GeoGebra dahinter.
+//
+// Zwei Gründe, und der zweite ist der zwingende.
+//
+// Erstens gehört das Applet nicht zu dem, was hier gemessen wird. Der Lauf
+// zählt Folien, Schritte, Elemente, Gezeichnetes, Gedimmtes, Gründe, den
+// Wiedereintritt und die Sprecheransicht -- alles Zahlen, die in Typst und in
+// der Laufzeit entstehen. Was in dem Rahmen läuft, steht ausdrücklich außen
+// vor. Gemessen: dasselbe Deck einmal mit geladenem GeoGebra und einmal mit
+// abgeklemmtem liefert eine zeichengleiche Messreihe, bis auf die letzte
+// Ziffer jeder Zeile.
+//
+// Zweitens legt ein geladenes Applet den Lauf lahm. Gemessen in Chrome
+// headless: sobald die drei Applets eines Decks leben, kehrt das nächste
+// `Page.navigate` nicht mehr zurück -- über eine Minute gewartet, dann
+// abgebrochen. Mit abgeklemmter Quelle sind es 0,6 Sekunden. Der Lauf hing
+// also nicht an einer Animation, sondern an der Seite, die er verlassen
+// wollte.
+//
+// Ausgetauscht wird allein die Adresse, von der das Applet sein GeoGebra holt.
+// Die Laufzeit im Deck bleibt wörtlich stehen, und dass es dieselbe ist wie
+// die im Paket, prüft der Lauf weiter unten ohnehin nach.
+function ohneGeoGebra(datei) {
+  const text = fs.readFileSync(datei, "utf8");
+  if (text.indexOf(GGB_QUELLE) < 0) return datei;
+  const aus = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "typstage-ggb-")),
+                        path.basename(datei));
+  fs.writeFileSync(aus, text.split(GGB_QUELLE).join(TOTE_QUELLE), "utf8");
+  return aus;
+}
 
 // Die Laufzeit, wie sie im Paket liegt. Jedes Deck muss genau diese tragen.
 const LAUFZEIT = fs.readFileSync(path.join(WURZEL, "assets", "typstage-0.1.0.js"));
@@ -374,6 +432,9 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
       { console.error("FEHLER: " + d.datei + " fehlt. Erst build-site.sh laufen lassen."); }
   });
   if (decks.some(d => !fs.existsSync(d.datei))) process.exit(2);
+  decks.forEach(d => {
+    if (MIT_APPLET.indexOf(d.name) >= 0) d.datei = ohneGeoGebra(d.datei);
+  });
   const ueberlauf = ueberlaufProbe();
   if (ueberlauf) console.error("ABWEICHUNG ueberlauf: " + ueberlauf);
   let pd;

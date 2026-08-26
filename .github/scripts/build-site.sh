@@ -34,19 +34,10 @@ mkdir -p "$PAKETPFAD/schule/typstage"
 cp -R "$AGGREGAT/schuldocs" "$PAKETPFAD/schule/schuldocs"
 ln -s "$WURZEL" "$PAKETPFAD/schule/typstage/$VERSION"
 
-# Begleitpakete dazu, falls sie danebenliegen. Das Handbuch zeigt ein Beispiel
-# mit @schule/typstage-geogebra, und der Beispielprüfer kann es nur übersetzen,
-# wenn das Paket im Paketpfad steht. Fehlt es, überspringt er es und sagt es.
-# Auf die `typst.toml` gesehen, nicht auf das Verzeichnis: im Aggregat ist ein
-# Begleitpaket ein Submodul, und ein Checkout ohne `submodules: true` legt sein
-# Verzeichnis leer an. Ein leerer Baum kopiert sich anstandslos und bringt den
-# Prüflauf dann an der fehlenden `typst.toml` zu Fall, statt übersprungen zu
-# werden.
-for begleiter in typstage-geogebra; do
-  if compgen -G "$AGGREGAT/$begleiter/*/typst.toml" > /dev/null; then
-    cp -R "$AGGREGAT/$begleiter" "$PAKETPFAD/schule/$begleiter"
-  fi
-done
+# Kein Begleitpaket mehr im Paketpfad: GeoGebra steckt seit der Zusammenlegung
+# im Kern, und kein Handbuchbeispiel importiert noch ein zweites @schule-Paket.
+# Die Vorkehrung im Beispielprüfer bleibt trotzdem stehen -- sie gilt jedem
+# künftigen Begleiter, nicht diesem einen.
 
 typst --version
 echo "=== typstage $VERSION ==="
