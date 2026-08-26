@@ -1121,7 +1121,7 @@
     // Eigenschaft darin, und sie haengt am Rumpf des Dokuments. Beides mit
     // Grund. Am Sprite selbst risse `clearAnims` sie beim naechsten Auftritt
     // mit weg. Und ein eigener Zeitgeber -- ein Zaehler in `beat` etwa -- waere
-    // fuer `pruef.ruhig()` unsichtbar: ein Prueflauf misse dann mitten im Zug
+    // fuer `pruef.ruhig()` unsichtbar: ein Prueflauf maesse dann mitten im Zug
     // und haette zwei Laeufe, die sich nie einig sind. So wartet er auf den
     // Zug wie auf jede andere Bewegung, und `--tempo` greift ohne Zutun.
     var a = document.body.animate([{ offset: 0 }, { offset: 1 }],
