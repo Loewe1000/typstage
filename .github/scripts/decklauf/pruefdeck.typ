@@ -170,3 +170,45 @@ Dritter Schritt.
 
 == Danach
 #align(center, morph(<verschachtelt>, text(size: 2em)[$x^2$]))
+
+= Zeichnen
+
+== Eine Zeichnung in Stufen
+// `aufbau`: eine Zeichnung, die in vier Stufen entsteht. Sie steht hier aus
+// schlichten Rechtecken und nicht aus CeTZ oder lilaq -- geprueft wird das
+// Paket und nicht ein fremdes Zeichenpaket, und ein Prueflauf, der dafuer
+// etwas aus dem Netz holen muesste, prueft an dem Tag nichts, an dem das Netz
+// fehlt. Wie `aufbau` sich zu CeTZ und lilaq verhaelt, halten die Beispiele
+// der Handbuecher fest; hier steht, was die Laufzeit damit macht.
+//
+// Drei Dinge haengen daran.
+//
+// Erstens: auf jedem Schritt dieser Folie ist genau *eine* Stufe gezeichnet,
+// nie zwei und nie null. Der Lauf sieht das an `sichtbar`. Gemessen, indem die
+// letzte Stufe einen geschlossenen statt eines offenen Bereichs bekam: die
+// Reihe dieser Folie ging auf ihrem letzten Schritt von 1/0 auf 0/0.
+//
+// Zweitens: was noch nicht dran ist, steht als Luft da und nicht als Tinte.
+// Im Browser gibt es dafuer keine Zahl -- Alpha 0 ist gezeichnet wie jede
+// andere Farbe --, aber `satz` haelt es fest. Gemessen, indem `durchsichtig`
+// seinen Wert unveraendert zurueckgab: `satz` fiel um.
+//
+// Drittens: der Schrittzaehler laeuft in beiden Ausgaben gleich. Das sagt die
+// Zusicherung unter der Zeichnung, und `pruefe-decks.js` uebersetzt das Deck
+// eigens ein zweites Mal auf Papier, weil sie sonst nur im Browser gefragt
+// wuerde -- und der Papierzweig von `aufbau` ist ein anderer.
+//
+// Wie die abtretende Stufe geht, statt *dass* sie geht, misst der Lauf eigens:
+// siehe `haltProbe` in `pruefe-decks.js`.
+#aufbau(ab => box(width: 300pt, height: 90pt, {
+  place(bottom + left, line(length: 100%))
+  place(bottom + left, dx: 10%, rect(width: 16%, height: 30pt, fill: ab(2, red)))
+  place(bottom + left, dx: 40%, rect(width: 16%, height: 60pt, fill: ab(3, green)))
+  place(bottom + left, dx: 70%, rect(width: 16%, height: 88pt, fill: ab(4, blue)))
+}), schritte: 4)
+
+#context assert(info().step.total == 4, message:
+  "Prüfdeck: die Folie mit aufbau() zählt " + str(info().step.total)
+  + " Schritte statt 4. Der Schrittzeiger zählt aufbau() falsch -- und diese "
+  + "Zahl muss in beiden Ausgaben dieselbe sein, sonst zeigt das Handout eine "
+  + "andere Fußzeile als der Vortrag.")
