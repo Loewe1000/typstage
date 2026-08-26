@@ -1143,13 +1143,21 @@ hier nicht gibt.
   auf einmal ist die einzige Anordnung, die genau das Bild ergibt, das
   dastünde, wenn man die Zeichnung einmal setzte.
 
-  Der Preis dafür ist der Übergang, denn zwei fast gleiche Bilder, die
-  einander ablösen, blenden gegeneinander. Vorwärts ist das gelöst: die
-  abtretende Stufe bleibt stehen, bis die neue vollständig da ist, und geht
-  dann ohne Bewegung. Rückwärts überlagern sich Ausblenden und Einblenden für
-  einen Augenblick, und die Tinte, die beide teilen, sinkt dabei kurz auf drei
-  Viertel. Sichtbar ist das nur beim Zurückblättern und nur, solange die
-  Überblendung läuft.
+  Der Preis dafür wäre der Übergang, denn zwei fast gleiche Bilder, die
+  einander ablösen, blenden gegeneinander. In beide Richtungen ist das gelöst,
+  und in beiden auf dieselbe Weise: die Stufe, die ohnehin dasteht, rührt sich
+  nicht. Vorwärts bleibt die abtretende Stufe stehen, bis die neue vollständig
+  da ist, und geht dann ohne Bewegung. Rückwärts kommt die *kleinere* Stufe
+  herein und liegt vollständig unter der größeren, die noch abtritt: sie hat
+  nichts zu blenden, sie ist einfach da. Was verschwindet, ist allein die
+  Tinte, die die größere mehr hat.
+
+  Nachgemessen an drei gestapelten Flächen -- die Bewegung angehalten, Bild
+  für Bild abgelichtet und die Tinte am Bildpunkt gemessen: rückwärts sank
+  die Tinte, die zwei Stufen teilen, auf *0,7522* und steht jetzt in beide
+  Richtungen bei *1,0000*. Von Hand mit `enter: "draw"` gestapelt war die
+  Senke tiefer, nämlich 0,4348, weil die Feder rückwärts über Tinte fuhr, die
+  ohnehin lag; auch das ist damit weg.
 ]
 
 #warning[
@@ -1346,6 +1354,11 @@ der abtretenden Stufe, die absichtlich stehenbleibt, bis die neue vollständig
 da ist -- die Feder führe über Tinte, die schon liegt, und zu sehen wäre
 nichts. Das Gegenteil dessen, was `draw` verspricht.
 
+Rückwärts ist es dieselbe Vergeblichkeit von der anderen Seite. Dort steht die
+hereinkommende Stufe sofort da, unter der, die noch abtritt, und eine Feder
+liefe gar nicht erst los. Das Verbot gilt also nicht nur der einen Richtung; es
+gilt beiden.
+
 Wer eine Zeichnung wirklich Strich für Strich entstehen lassen will, gibt die
 Striche als eigene Stücke hin und lässt jedes sich selbst zeichnen; wer ein
 Diagramm in Stufen wachsen lassen will, lässt es bei seiner Blende.
@@ -1449,19 +1462,25 @@ gehen; hier gibt es nur einen Weg, und ein Tupel legt mehrere Größen darauf.
   [Bewegung, mit der die Szene selbst auftritt (Vorgabe `"fade"`).],
   [`still`],
   [Was auf Papier steht, wenn nicht der letzte Halt.],
+  [`steady`],
+  [Was die Nachmessung der Bilder bedeutet: `auto` meldet, `false` nimmt die
+   Szene aus der Prüfung, `true` besteht darauf. Siehe gleich.],
 )
 
 `duration` ist die Dauer des *Wegs*, nicht die der Blende, mit der die Szene
 auftritt -- dieselbe Trennung, die `morph` mit seinem `duration` zieht. Beides
 unter einen Namen zu legen zöge dieselbe Bewegung sichtbar auseinander.
 
-Anders als `build` misst `scene` seine Bilder nicht. Die Stufen einer
-`build`-Zeichnung liegen deckungsgleich, weil ein Stück, das noch nicht dran
-ist, als Luft dasteht; die Bilder einer Szene sind Zeichnungen zu verschiedenen
-Werten und dürfen ohne Weiteres verschieden groß ausfallen. Deshalb steht eine
-Szene in einem Kasten fester Größe, und jedes Bild wird darauf beschnitten. Wer
-`width` und `height` weglässt, bekommt die Vorgabe; wer sie zu klein wählt,
-sieht es sofort.
+Anders als `build` legt `scene` seine Bilder nicht übereinander. Die Stufen
+einer `build`-Zeichnung liegen deckungsgleich, weil ein Stück, das noch nicht
+dran ist, als Luft dasteht; die Bilder einer Szene sind Zeichnungen zu
+verschiedenen Werten und dürfen ohne Weiteres verschieden groß ausfallen.
+Deshalb steht eine Szene in einem Kasten fester Größe, und jedes Bild wird
+darauf beschnitten. Wer `width` und `height` weglässt, bekommt die Vorgabe; wer
+sie zu klein wählt, sieht es sofort.
+
+Nachgemessen werden die Bilder trotzdem, und wozu, steht im Kasten gleich
+darunter.
 
 #warning[
   *Der Kasten steht still, die Tinte darin nicht von selbst.* Eine
@@ -1469,13 +1488,27 @@ sieht es sofort.
   weiter nach links als bei $x = 3$, ist die Leinwand dort breiter, und das
   Achsenkreuz sitzt an einer anderen Stelle im Kasten -- beim Blättern
   wandert dann das ganze Bild, obwohl sich nur ein Punkt bewegen sollte.
-  Gemessen an der Szene dieses Abschnitts: 28 Bilder, *15 verschiedene Lagen*
-  der Tinte im Kasten.
+  Nachgemessen an einer Parabel mit Tangente, vier Halte und acht
+  Zwischenbilder je Strecke: 28 Bilder, *19 verschiedene Lagen* der Tinte im
+  Kasten.
 
-  Das kann das Paket nicht abnehmen. `build` kann es, weil es die Stufen misst
-  und ein Stück, das noch nicht dran ist, seinen Platz behält; hier gibt es
-  kein gemeinsames Stück, dessen Platz zu behalten wäre, und vom
-  Koordinatensystem der Zeichnung weiß `scene` nichts.
+  *Geradebiegen kann das Paket das nicht. Bemerken schon.* Jede Szene misst
+  ihre Bilder nach, und weichen die Maße voneinander ab, sagt sie es mit
+  Zahlen, statt den Vortragenden vor der Klasse damit zu überraschen:
+
+  #show-code(```
+  error: assertion failed: typstage: 1 scene draws frames of different sizes. …
+    slide 4, from step 1: 28 frames in 19 different sizes, up to 28.35pt apart across and 53.86pt down
+  ```)
+
+  Woran das Geradebiegen scheitert, in einem Satz: `measure` antwortet mit
+  einer Größe und nie damit, *wo* die Tinte darin liegt -- es gibt also keinen
+  Versatz zu rechnen und nichts zu verschieben. `build` kann es, weil dort ein
+  Stück, das noch nicht dran ist, als Luft dasteht und seinen Platz behält;
+  hier gibt es kein gemeinsames Stück, dessen Platz zu behalten wäre, und vom
+  Koordinatensystem der Zeichnung weiß `scene` nichts. Alle Bilder auf das
+  größte Maß aufzupolstern hülfe nicht: der Kasten stünde dann still, die
+  Leinwand darin läge trotzdem jedes Mal anders.
 
   Der Ausweg liegt in der Zeichnung: ihr eine feste Ausdehnung geben und das,
   was sich bewegt, darin halten. In CeTZ ist das ein `rect` mit durchsichtigem
@@ -1495,8 +1528,26 @@ sieht es sofort.
   Damit steht die Breite fest. Was trotzdem hinausreicht -- eine Tangente etwa,
   die über den Rand hinausläuft --, muss gekappt werden, sonst zieht sie die
   Leinwand doch wieder auf: dieselbe Szene mit Rahmen und gekappter Tangente
-  kam auf 7 Lagen statt 15.
+  kam auf 7 Lagen statt 19, und die Breite stand auf den Punkt still.
+
+  *Wenn die Bilder verschieden groß sein sollen*, sagt man das:
+  `steady: false`. Ein Rechteck, das wächst, eine Zahl, die hochzählt -- dort
+  ist der Unterschied die Sache selbst, und die Szene wird gar nicht erst
+  gemessen. Umgekehrt besteht `steady: true` darauf, dass sie stillsteht, und
+  bricht an Ort und Stelle ab statt am Ende des Decks. Was mit den Befunden
+  geschieht, entscheidet `drift` an der Präsentation; siehe "drift".
 ]
+
+Wer sich festlegen will, schreibt `steady: true`. Dann bricht die Szene an Ort
+und Stelle ab, statt am Ende des Decks in einer Liste zu stehen:
+
+// check: folie pre=cetz bricht=this_scene_draws_its
+#show-code[```typ
+#scene(x => cetz.canvas({
+  import cetz.draw: *
+  line((0, 0), (x, 0.25 * x * x))             // zieht die Leinwand mit
+}), stops: (-3, 3), steady: true)             // Fehler beim Übersetzen
+```]
 
 Auf Papier steht der letzte Halt, wie bei `alternatives` -- eine Seite zeigt
 alle Schritte auf einmal, und das ist der Zustand, in dem die Szene die Folie
@@ -1548,6 +1599,19 @@ sie nichts: dort steht ein einziges Standbild.
   rohe. Und die Übersetzungszeit ist immer die volle: acht Zwischenbilder je
   Strecke sind acht Layouts, ob sie sich später wegkomprimieren oder nicht.
 ]
+
+*Und was das Nachmessen kostet.* Es ist ein weiteres Layout je Bild, und ein
+Bild ist ein ganzes Layout -- die Rechnung verdoppelt sich also, allerdings nur
+für die Bilder und nur im Browserzweig. Gemessen an derselben Szene aus 28
+Bildern, fünfzehn Läufe, die schnellste Zeit: *434 ms ohne, 536 ms mit* -- rund
+100 ms für die Szene, 3,6 ms je Bild. `steady: false` gibt sie einer einzelnen
+Szene zurück, `drift: "none"` allen.
+
+Warum die Prüfung trotzdem an ist, wo `overflow` es nicht ist: sie zahlt nur,
+wer `scene` benutzt, und `overflow` misst jeden Rumpf jedes Decks und kostet das
+1,2- bis 1,5-Fache der ganzen Übersetzung. Und was sie findet, ist beim
+Schreiben unsichtbar -- jedes Bild für sich sieht richtig aus, und erst das
+Blättern zeigt die wandernde Zeichnung.
 
 #info[
   Woher die Idee kommt: `scene` ist manims `ValueTracker` zusammen mit
@@ -3693,6 +3757,69 @@ Gemessen über die sechs Beispieldecks: in der HTML kostet der Lauf merklich
 mehr Zeit, je nach Deck und Verrechnung des Prozessstarts zwischen dem 1,2- und
 dem 1,5-Fachen; auf Papier kostet er wenig, ein paar Millisekunden je Deck.
 Über alle sechs Decks gelaufen meldet er nichts -- keines von ihnen läuft über.
+
+=== drift -- der Melder für wandernde Szenen
+
+`overflow` fragt, ob eine Folie in ihren Platz geht. `drift` fragt etwas
+anderes, das man ebenso wenig Folie für Folie prüfen kann: steht eine Szene
+beim Blättern still?
+
+Eine Zeichnung ist so groß wie ihr Inhalt, eine CeTZ-Leinwand vor allem. Ändert
+sich der Inhalt über die Halte einer `scene`, ist jedes Bild anders groß, und
+die Zeichnung sitzt in ihrem Kasten jedes Mal woanders -- beim Blättern wandert
+das ganze Bild, obwohl sich nur ein Punkt bewegen sollte. Jede Szene misst
+deshalb ihre Bilder nach, und `drift` sagt, was mit den Funden geschieht.
+
+/ `"error"`: das ganze Deck wird gebaut, und dann bricht es mit *allen* Szenen
+  auf einmal ab. Der Vorgabewert.
+/ `"record"`: es baut durch und legt je Fund einen abfragbaren Datensatz ab.
+/ `"none"`: es wird gar nicht erst gemessen.
+
+#show-code(```typ
+#show: presentation.with(drift: "record")
+```)
+
+Die Meldung nennt Folie, Schritt und die Zahlen (hier gekürzt):
+
+#show-code(```
+error: assertion failed: typstage: 1 scene draws frames of different sizes. …
+  slide 4, from step 1: 28 frames in 19 different sizes, up to 28.35pt apart across and 53.86pt down
+```)
+
+Die Datensätze holt man wie beim Überlauf, und dafür muss das Deck auf
+`drift: "record"` stehen:
+
+#show-code(```sh
+typst eval --target html --features html --in deck.typ \
+  'query(<typstage-drift>).map(e => e.value)'
+```)
+
+#show-code(```json
+[{"slide":4,"step":1,"frames":28,"sizes":19,"width":28.35,"height":53.86}]
+```)
+
+*Warum dieser Melder an ist und `overflow` nicht.* Er kostet nur, wer `scene`
+benutzt: gemessen an einer Szene aus 28 CeTZ-Bildern 434 ms ohne und 536 ms
+mit, also rund 100 ms für diese eine Szene. `overflow` dagegen misst jeden
+Rumpf jedes Decks. Und was er findet, ist beim Schreiben unsichtbar -- jedes
+Bild für sich sieht richtig aus, und erst das Blättern zeigt die wandernde
+Zeichnung. Gemessen wird nur im Browserzweig; auf Papier steht ein einziges
+Standbild, und ein Standbild wandert nicht.
+
+#info[
+  *Was der Melder nicht kann, und woran es liegt.* Er sieht den Fall, er behebt
+  ihn nicht. `measure` antwortet mit einer Größe und nie damit, *wo* die Tinte
+  darin liegt -- es gibt also keinen Versatz zu rechnen und nichts zu
+  verschieben.
+
+  *Was er übersieht.* Gemessen wird die Zeichnung selbst, ohne Breitenbezug.
+  Was sich auf `100%` setzt, misst dann für jedes Bild dasselbe und fällt aus
+  der Prüfung -- zu Recht, denn so ein Bild hat seinen festen Rahmen schon.
+
+  *Was er meldet, wo nichts wandert.* Eine Zeichnung, die nur nach rechts und
+  nach unten wächst, bewegt ihre Tinte nicht, misst sich aber trotzdem
+  verschieden. Genau dafür steht `steady: false` an der Szene.
+]
 
 === Folien ohne Titel
 

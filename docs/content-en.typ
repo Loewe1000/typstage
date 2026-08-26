@@ -767,12 +767,20 @@ not there.
   stand on every stage. One stage at a time is the only arrangement that yields
   the picture that would stand there if the drawing were set once.
 
-  The price is the crossing, since two nearly identical pictures relieving each
-  other fade against one another. Forwards that is solved: the stage stepping
-  down stays until the new one has fully arrived, and then goes without motion.
-  Backwards the fading out and the fading in overlap for a moment, and the ink
-  the two share drops to three quarters while they do. It shows only on paging
-  back, and only while the crossing runs.
+  The price would be the crossing, since two nearly identical pictures
+  relieving each other fade against one another. It is solved in both
+  directions, and in both the same way: the stage that is already standing
+  does not stir. Forwards the stage stepping down stays until the new one has
+  fully arrived, and then goes without motion. Backwards the *smaller* stage
+  comes in and lies entirely underneath the larger one that is still leaving:
+  it has nothing to fade, it is simply there. What disappears is only the ink
+  the larger one has over and above it.
+
+  Measured on three stacked areas -- the motion held still, photographed frame
+  by frame and the ink read off the pixels: paging back, the ink two stages
+  share sank to *0.7522* and now stands at *1.0000* in both directions.
+  Stacked by hand with `enter: "draw"` the dip was deeper, 0.4348, because the
+  pen travelled back over ink that was already down; that is gone with it.
 ]
 
 #warning[
@@ -958,6 +966,10 @@ the stage stepping down, which deliberately stays until the new one has fully
 arrived -- the pen would travel over ink that is already down, and nothing
 would be seen. The opposite of what `draw` promises.
 
+Paging back it is the same futility mirrored. There the arriving stage is
+simply set, underneath the one still leaving, and no pen would run at all. The
+refusal is therefore not about one direction; it holds for both.
+
 To have a drawing really come into being stroke by stroke, hand the strokes
 over as pieces of their own and let each draw itself; to have a diagram grow in
 stages, leave it with its fade.
@@ -1055,30 +1067,49 @@ one way, and a tuple puts several values on it.
   [`duration`], [how long one pull from stop to stop takes, in milliseconds],
   [`enter`], [motion the scene itself arrives with (default `"fade"`)],
   [`still`], [what stands on paper, if not the last stop],
+  [`steady`],
+  [What measuring the frames is for: `auto` reports, `false` takes the scene
+   out of the check, `true` insists on it. See below.],
 )
 
 `duration` is the duration of the *journey*, not of the fade the scene arrives
 with -- the same separation `morph` draws with its `duration`. Putting both
 under one name pulls the same motion visibly apart.
 
-Unlike `build`, `scene` does not measure its frames. The stages of an `build`
-drawing lie exactly on top of one another, because a piece not yet due stands
-there as air; the frames of a scene are drawings of different values and may
-legitimately come out different sizes. So a scene stands in a box of a fixed
-size and every frame is clipped to it.
+Unlike `build`, `scene` does not lay its frames on top of one another. The
+stages of a `build` drawing lie exactly on top of each other, because a piece
+not yet due stands there as air; the frames of a scene are drawings of
+different values and may legitimately come out different sizes. So a scene
+stands in a box of a fixed size and every frame is clipped to it.
+
+They are measured all the same, and what for is in the box just below.
 
 #warning[
   *The box stands still, the ink inside it does not do so by itself.* A CeTZ
   canvas grows with its content. If the tangent at $x = -3$ reaches further
   left than the one at $x = 3$, the canvas is wider there, and the axis cross
   sits at a different place in the box -- so paging moves the whole picture
-  although only one point was meant to move. Measured on the scene of this
-  section: 28 frames, *15 different placements* of the ink in the box.
+  although only one point was meant to move. Measured on a parabola with a
+  tangent, four stops and eight frames per stretch: 28 frames, *19 different
+  placements* of the ink in the box.
 
-  The package cannot take this off your hands. `build` can, because it
-  measures its stages and a piece not yet due keeps its room; here there is no
-  shared piece whose room could be kept, and `scene` knows nothing of the
-  drawing's coordinate system.
+  *Putting it right is beyond the package. Noticing it is not.* Every scene
+  measures its frames, and where the sizes differ it says so with numbers,
+  rather than leaving the speaker to find out in front of the class:
+
+  #show-code(```
+  error: assertion failed: typstage: 1 scene draws frames of different sizes. …
+    slide 4, from step 1: 28 frames in 19 different sizes, up to 28.35pt apart across and 53.86pt down
+  ```)
+
+  Why putting it right fails, in one sentence: `measure` answers with a size
+  and never with *where* the ink lies inside it -- so there is no offset to
+  compute and nothing to shift. `build` can do it, because there a piece not
+  yet due stands as air and keeps its room; here there is no shared piece
+  whose room could be kept, and `scene` knows nothing of the drawing's
+  coordinate system. Padding every frame out to the largest size would not
+  help either: the box would stand still, the canvas inside it would still lie
+  somewhere else each time.
 
   The way out lies in the drawing: give it a fixed extent and keep what moves
   inside it. In CeTZ that is a `rect` with a transparent stroke -- the same air
@@ -1098,8 +1129,26 @@ size and every frame is clipped to it.
   That pins the width. Whatever still reaches beyond it -- a tangent running
   off the edge, say -- has to be cut off, or it pulls the canvas open again:
   the same scene with a frame and a cut-off tangent came to 7 placements
-  instead of 15.
+  instead of 19, and its width stood still to the point.
+
+  *Where the frames are meant to differ*, say so: `steady: false`. A rectangle
+  that grows, a number that counts up -- there the difference is the subject
+  itself, and the scene is not measured at all. The other way round,
+  `steady: true` insists that it stands still and stops on the spot rather
+  than at the end of the deck. What happens with the findings is decided by
+  `drift` on the presentation; see "drift".
 ]
+
+To commit to it, write `steady: true`. The scene then stops on the spot rather
+than standing in a list at the end of the deck:
+
+// check: folie pre=cetz bricht=this_scene_draws_its
+#show-code[```typ
+#scene(x => cetz.canvas({
+  import cetz.draw: *
+  line((0, 0), (x, 0.25 * x * x))             // pulls the canvas along
+}), stops: (-3, 3), steady: true)             // error at compile time
+```]
 
 On paper the last stop is set, as with `alternatives` -- a page shows every
 step at once, and that is the state in which the scene leaves the slide.
@@ -1150,6 +1199,19 @@ there.
   frames per stretch are eight layouts, whether they compress away later or
   not.
 ]
+
+*And what the measuring costs.* It is one more layout per frame, and a frame is
+a whole layout, so the bill doubles -- for the frames only, and only in the
+browser branch. Measured on the same scene of 28 frames, fifteen runs, fastest
+time: *434 ms without, 536 ms with* -- about 100 ms for the scene, 3.6 ms per
+frame. `steady: false` gives it back for one scene, `drift: "none"` for all of
+them.
+
+Why the check is on where `overflow` is not: only decks that use `scene` pay
+for it, while `overflow` measures every body of every deck and costs 1.2 to 1.5
+times the whole compilation. And what it finds is invisible while writing --
+every frame on its own looks right, and only paging shows the drawing
+travelling.
 
 #info[
   Where the idea comes from: `scene` is manim's `ValueTracker` together with
@@ -2690,6 +2752,69 @@ Measured over the six example decks: in HTML the pass costs noticeably more
 time, between 1.2 and 1.5 times depending on the deck and on how the process
 start is accounted for; on paper it costs a little, a few milliseconds per
 deck. Run over all six decks it reports nothing -- none of them overruns.
+
+=== drift: the check for scenes that travel
+
+`overflow` asks whether a slide fits its room. `drift` asks something else that
+one likewise cannot check slide by slide: does a scene stand still while the
+talk pages through it?
+
+A drawing is as large as what it holds, a CeTZ canvas above all. Change the
+content across the stops of a `scene` and every frame comes out a different
+size, so the drawing sits somewhere else inside its box each time -- paging
+moves the whole picture although only one point was meant to move. Every scene
+therefore measures its frames, and `drift` says what happens with the findings.
+
+/ `"error"`: the whole deck is built, and it then stops with *every* scene at
+  once. The default.
+/ `"record"`: it carries on and files a queryable record per finding.
+/ `"none"`: nothing is measured at all.
+
+#show-code(```typ
+#show: presentation.with(drift: "record")
+```)
+
+The message names the slide, the step and the numbers (shortened here):
+
+#show-code(```
+error: assertion failed: typstage: 1 scene draws frames of different sizes. …
+  slide 4, from step 1: 28 frames in 19 different sizes, up to 28.35pt apart across and 53.86pt down
+```)
+
+The records are read as with the overflow check, and for that the deck has to
+be on `drift: "record"`:
+
+#show-code(```sh
+typst eval --target html --features html --in deck.typ \
+  'query(<typstage-drift>).map(e => e.value)'
+```)
+
+#show-code(```json
+[{"slide":4,"step":1,"frames":28,"sizes":19,"width":28.35,"height":53.86}]
+```)
+
+*Why this check is on where `overflow` is not.* Only decks that use `scene` pay
+for it: measured on a scene of 28 CeTZ frames, 434 ms without and 536 ms with,
+so about 100 ms for that one scene. `overflow` measures every body of every
+deck. And what this one finds is invisible while writing -- every frame on its
+own looks right, and only paging shows the drawing travelling. Only the browser
+branch measures; on paper a single still image stands there, and a still image
+does not travel.
+
+#info[
+  *What the check cannot do, and why.* It sees the case, it does not fix it.
+  `measure` answers with a size and never with *where* the ink lies inside it
+  -- so there is no offset to compute and nothing to shift.
+
+  *What it misses.* The drawing itself is measured, without a width to reckon
+  against. Anything setting itself to `100%` then measures the same for every
+  frame and drops out of the check -- rightly so, since such a picture already
+  has its fixed frame.
+
+  *What it reports where nothing travels.* A drawing that only grows to the
+  right and downwards does not move its ink, yet still measures differently.
+  That is exactly what `steady: false` on the scene is for.
+]
 
 == Labels: reaching every shape the package builds
 
