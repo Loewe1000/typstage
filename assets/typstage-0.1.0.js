@@ -459,7 +459,9 @@
     // ohne Bewegung: `fadeOut` faehrt von 1 nach 1 und setzt am Ende 0.
     //
     // Als Eintritt ist es dasselbe wie "none", und das ist kein Zufall: wer
-    // wartet, statt zu gehen, kommt auch, ohne zu kommen.
+    // wartet, statt zu gehen, kommt auch, ohne zu kommen. Rueckwaerts wird
+    // genau das gebraucht: dort kommt die Stufe herein, die vorwaerts
+    // gewartet hat, und sie kommt am besten, ohne zu kommen -- siehe `goto`.
     "hold":       [{ opacity: 1 }, { opacity: 1 }],
     // Sich selbst zeichnen. Was hier steht, ist nur die Haelfte davon: die
     // Blende, unter der die Feder laeuft. Fuer Text und gefuellte Formen ist
@@ -661,7 +663,13 @@
     clearAnims(el);
     // "none" means no effect. Animating from 1 to 1 would not merely be
     // pointless: played backwards it would keep the element visible.
-    if (name === "none") { el.style.opacity = "1"; return; }
+    //
+    // "hold" laeuft hier mit, und zwar aus demselben Grund, aus dem es als
+    // Abgang ein Warten ist: wer wartet, statt zu gehen, kommt auch, ohne zu
+    // kommen. `goto` ruft es beim Zurueckblaettern fuer die Stufe, die
+    // hereinkommt -- sie liegt vollstaendig unter der, die noch abtritt, und
+    // waere waehrend ihres ganzen Auftritts ohnehin verdeckt.
+    if (name === "none" || name === "hold") { el.style.opacity = "1"; return; }
     // Die Feder faehrt unter der Blende. Beides zugleich und beide gleich
     // lang: die Striche zeichnen sich, alles ohne Kontur blendet auf.
     if (name === "draw") feder(el, dur, delay, false, takt(el));
@@ -696,8 +704,10 @@
     // gibt einem Abgang drei Viertel der Dauer und dem, was hereinkommt, die
     // ganze; die abtretende Stufe ginge sonst, wenn die neue erst bei drei
     // Vierteln steht, und das Bild saenke fuer den Rest des Wegs doch noch
-    // ab. Rueckwaerts wird "hold" nie gefragt: dort spielt `goto` den
-    // Eintritt rueckwaerts, und der heisst anders.
+    // ab. Als *Abgang* wird "hold" rueckwaerts nie gefragt: dort spielt
+    // `goto` den Eintritt rueckwaerts, und der heisst anders. Gefragt wird es
+    // rueckwaerts als Eintritt, fuer die Stufe, die hereinkommt -- siehe
+    // `fadeIn`.
     if (name === "hold") dur = dur / 0.75;
     // Rueckwaerts faehrt die Feder heraus. Das ist der Rueckweg des Auftritts
     // -- `goto` ruft beim Zurueckblaettern `fadeOut` mit dem *enter*-Namen --
@@ -2845,8 +2855,20 @@
         // Straight to full is the entrance. Straight to muted only happens on
         // a jump that skipped the whole range, and then the point has no
         // arrival to play: it simply is there, quietly.
-        if (wird === 2) fadeIn(el, erbt(el, "enter") || "fade-up", d, delay);
-        else fadeTo(el, 0, DIM, d);
+        //
+        // Rueckwaerts ist der Auftritt eines Wartenden das Spiegelbild des
+        // Wartens selbst. Vorwaerts bleibt die abtretende Stufe stehen, bis
+        // die neue da ist, und die geteilte Tinte steht die ganze Zeit voll
+        // da. Rueckwaerts kommt die *kleinere* Stufe herein, und sie liegt
+        // vollstaendig unter der groesseren, die noch abtritt: sie hat nichts
+        // zu blenden, sie ist einfach da, und was verschwindet, ist allein
+        // die Tinte, die die groessere mehr hat. Blendete sie stattdessen
+        // auf, blendeten wieder zwei fast gleiche Bilder gegeneinander --
+        // gemessen sank die geteilte Tinte dabei auf 0,7522.
+        if (wird === 2) {
+          fadeIn(el, back && erbt(el, "exit") === "hold"
+                     ? "hold" : (erbt(el, "enter") || "fade-up"), d, delay);
+        } else fadeTo(el, 0, DIM, d);
       } else if (wird === 0) {
         var von = war === 1 ? DIM : 1;
         if (back) fadeOut(el, erbt(el, "enter") || "fade-up", d, von);

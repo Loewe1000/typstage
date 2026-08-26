@@ -488,12 +488,20 @@
 // ist die einzige Anordnung, die genau das Bild ergibt, das dastünde, wenn man
 // die Zeichnung einmal setzte.
 //
-// Der Preis dafür ist der Übergang: zwei fast gleiche Bilder, die einander
+// Der Preis dafür wäre der Übergang: zwei fast gleiche Bilder, die einander
 // ablösen, blenden sich gegenseitig aus. Dagegen steht `exit: "hold"` in der
 // Laufzeit -- die abtretende Stufe bleibt stehen, bis die neue da ist, und
-// geht dann ohne Bewegung. Vorwärts ist der Übergang damit sauber; rückwärts
-// überlagern sich Ausblenden und Einblenden für einen Augenblick, und die
-// geteilte Tinte sinkt kurz auf drei Viertel. Das Handbuch sagt es.
+// geht dann ohne Bewegung.
+//
+// Rückwärts gilt dasselbe spiegelverkehrt, und die Laufzeit weiß, in welche
+// Richtung geblättert wird (`back` in `goto`). Dort kommt die *kleinere*
+// Stufe herein und liegt vollständig unter der größeren, die noch abtritt:
+// sie hat nichts zu blenden, sie ist einfach da. Was verschwindet, ist allein
+// die Tinte, die die größere mehr hat. Gemessen an drei gestapelten Flächen,
+// Bild für Bild angehalten und abgelichtet: die geteilte Tinte sank vorher
+// auf 0,7522 und steht jetzt in beide Richtungen bei 1,0000. Mit
+// `enter: "draw"` von Hand gestapelt war die Senke tiefer -- 0,4348 --, weil
+// die Feder rückwärts über Tinte fuhr, die schon lag; auch das ist damit weg.
 
 /// A drawing or a diagram that comes into being step by step.
 ///
@@ -562,14 +570,19 @@
   // Zeichnung noch einmal -- auch die Striche, die schon auf der Stufe davor
   // standen. Und sie täte es über der abtretenden Stufe, die absichtlich
   // stehenbleibt (`exit: "hold"`): die Tinte läge längst da, die Feder führe
-  // unsichtbar darüber. Das Gegenteil dessen, was `draw` verspricht, also
-  // lieber ein Wort als ein stummes Nichts.
+  // unsichtbar darüber. Rückwärts ist es dieselbe Vergeblichkeit von der
+  // anderen Seite -- dort steht die hereinkommende Stufe sofort da, unter der
+  // abtretenden, und eine Feder liefe gar nicht erst los. Das Gegenteil
+  // dessen, was `draw` verspricht, also lieber ein Wort als ein stummes
+  // Nichts.
   assert(enter != "draw", message:
     "typstage: enter: \"draw\" is at odds with what this function does. Every "
     + "stage is the *whole* drawing, and it would arrive on top of the "
     + "previous one, which stays put until the new one is there -- the pen "
-    + "would travel over ink that is already down. To have the strokes drawn "
-    + "one after another, hand them over one at a time: "
+    + "would travel over ink that is already down. Paging back it is the same "
+    + "futility mirrored: there the arriving stage is simply set, underneath "
+    + "the one still leaving, and no pen runs at all. To have the strokes "
+    + "drawn one after another, hand them over one at a time: "
     + "stagger(enter: \"draw\", stride: 1, axes, curve). For a drawing that "
     + "grows in stages, leave the fade as it is.")
   let takt = kurve(easing, "build")
