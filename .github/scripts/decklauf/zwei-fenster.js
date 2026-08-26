@@ -182,6 +182,26 @@ const stand = `(function () {
     }
     console.log("Pfeil: Halle S" + nach.h.auf + " [" + nach.h.punkte + "] · Sprecher S" + nach.s.auf);
 
+    // Rueckwaerts nimmt zurueck, und zwar in beiden Fenstern. Ohne das ist eine
+    // Gruppe nach einem Durchgang aufgebraucht: jeder Pfeil vorwaerts deckt
+    // auf, und wer zurueckblaettert, findet keine Ziffern mehr zur Auswahl.
+    await sprecher.taste("ArrowLeft");
+    await schlaf(1100);
+    const zurueck = await beide();
+    if (zurueck.h.punkte.includes("probe1:1.0")) {
+      sagt("zurueck", "der zuletzt genannte Punkt steht in der Halle noch: " + zurueck.h.punkte);
+    }
+    if (!zurueck.s.punkte.includes("probe1:0.3")) {
+      sagt("zurueck", "der zurueckgenommene Punkt steht im Sprecherfenster nicht wieder "
+        + "blass zur Auswahl: " + zurueck.s.punkte);
+    }
+    if (zurueck.h.schritt !== zurueck.s.schritt) {
+      sagt("zurueck", "Halle steht auf Schritt " + zurueck.h.schritt
+        + ", Sprecher auf " + zurueck.s.schritt);
+    }
+    console.log("Zurueck: Halle S" + zurueck.h.auf + " [" + zurueck.h.punkte
+      + "] · Sprecher [" + zurueck.s.punkte + "]");
+
     await sprecher.ende();
   } catch (e) {
     sagt("lauf", e.message);

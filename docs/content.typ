@@ -664,6 +664,10 @@ es, statt still nichts zu tun.
   Punkt; beides mischt sich frei. Erst wenn die Gruppe voll ist, führt der
   Pfeil weiter.
 
+  Rückwärts nimmt zurück: ein Schritt zurück gibt den zuletzt genannten Punkt
+  wieder frei, und wer die Folie nach hinten verlässt, findet die Gruppe beim
+  Wiederkommen unberührt vor. Sonst wäre sie nach einem Durchgang aufgebraucht.
+
   Die Ziffern wirken nur, solange eine adaptive Gruppe auf der Folie steht.
   In der Sprecheransicht steht jeder noch offene Punkt blass da, mit seiner
   Ziffer auf dem Aufzählungspunkt; im Saal ist er unsichtbar. Ein zweites Mal

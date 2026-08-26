@@ -406,6 +406,10 @@ than quietly doing nothing.
   pressing a digit gives that point; and the two mix freely. Only once the
   group is full does the arrow carry on.
 
+  Going back takes back: one step back frees the point named last, and leaving
+  the slide backwards leaves the group untouched for the next visit. Otherwise
+  it would be used up after a single pass.
+
   The digits work only while an adaptive group stands on the slide. In the
   speaker view every point still open stands there pale, with its digit on the
   bullet; in the hall it is invisible. Pressed a second time a digit does

@@ -2468,6 +2468,9 @@
     sprecherStand();
     tinteStand();
     mark();
+    // Before the badges are painted: which points count as named can change
+    // with the step, and the badges follow from that.
+    adRueck();
     // Last, because `ruhe` above has just written an opacity onto every
     // element: a point still waiting to be called out would otherwise be
     // invisible to the speaker as well, and there is nothing to choose from
@@ -2920,6 +2923,10 @@
         .map(function (nr) { return g.reihen[nr][0].dataset.adPlatz; })
         .sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); });
       g.aus = (STEPS.length + 2) + "-";
+      // Auf welcher Folie die Gruppe steht. Gebraucht, um beim
+      // Zurueckblaettern zu wissen, ob man vor ihr, in ihr oder hinter ihr ist.
+      var erst = g.reihen[Object.keys(g.reihen)[0]][0];
+      g.folie = SLIDES.findIndex(function (sec) { return sec.contains(erst); });
     });
     // Nothing has been called out yet, so every point stands aside. Without
     // this the first point would simply appear on its own step, which is the
@@ -2959,6 +2966,12 @@
         var offen = g.folge.indexOf(+nr) < 0;
         g.reihen[nr].forEach(function (el, i) {
           if (offen) {
+            // Erst die laufende Ueberblendung abbrechen. Ein Punkt, der eben
+            // zurueckgenommen wurde, blendet gerade aus, und ihr Abschluss
+            // setzt die Deckkraft danach auf 0 -- gemessen stand genau der
+            // zuletzt zurueckgenommene Punkt unsichtbar da, waehrend seine
+            // Ziffer schon wieder zur Auswahl einlud.
+            clearAnims(el);
             el.style.opacity = "0.3";
             el.style.visibility = "visible";
           } else {
@@ -3027,8 +3040,44 @@
     // das Sprecherfenster von 5 auf 4, und die Fernsteuerung hinkte fortan
     // einen Schritt hinterher, waehrend die Halle richtig stand.
     stumm++;
-    try { adStellen(d.gruppe, true); } finally { stumm--; }
+    adFrisch = d.gruppe;
+    try { adStellen(d.gruppe, true); } finally { stumm--; adFrisch = null; }
   });
+
+  // Backwards takes reveals back, and that is not a nicety: every forward key
+  // reveals a point, so without this a group is used up after one pass and
+  // offers nothing on the way back -- measured, after four steps back and
+  // forward the numbers were gone and every point stood.
+  //
+  // Before the slide means none, on it means as many as the current step
+  // carries, past it means all: the deck reads the same going back as it did
+  // going forward.
+  // Welche Gruppe gerade eine Zuordnung von drüben bekommen hat. Die
+  // Zuordnung reist vor dem Schritt, und ohne diese Ausnahme naehme
+  // `adRueck` sie sofort wieder zurueck -- gemessen kam in der Halle nichts
+  // mehr an, obwohl beide Nachrichten ankamen.
+  var adFrisch = null;
+
+  function adRueck() {
+    if (!STEPS[current]) return;
+    var si = STEPS[current].slide, schritt = STEPS[current].step;
+    Object.keys(AD).forEach(function (name) {
+      var g = AD[name];
+      if (name === adFrisch) return;
+      var erlaubt;
+      if (g.folie < 0 || si < g.folie) { erlaubt = 0; }
+      else if (si > g.folie) { erlaubt = g.folge.length; }
+      else {
+        erlaubt = g.plaetze.filter(function (pl) {
+          return parseInt(pl, 10) <= schritt;
+        }).length;
+      }
+      if (g.folge.length > erlaubt) {
+        g.folge.length = erlaubt;
+        adStellen(name, false);
+      }
+    });
+  }
 
   // A forward key on a slide whose group still has unnamed points takes the
   // next one in written order. That makes an adaptive group a superset of a
