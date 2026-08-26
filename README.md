@@ -10,7 +10,7 @@ typst compile deck.typ deck.pdf                                  # slides and ha
 
 ![A slide of a typstage deck in the browser, halfway through its reveals](assets/slide.png)
 
-**Try it without installing anything:** [eight example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos: a tour of the package itself, how GPS finds you, why the four margins of a book are unequal, a school lesson on completing the square, a night of rolling deployments, and Simpson's paradox. Two more show GeoGebra: one where the slides drive the applet, one where a hand drives it from the speaker window.
+**Try it without installing anything:** [nine example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos: a tour of the package itself, how GPS finds you, why the four margins of a book are unequal, a school lesson on completing the square, a night of rolling deployments, Simpson's paradox, and the one number that decides whether a door slams or sticks. Two more show GeoGebra: one where the slides drive the applet, one where a hand drives it from the speaker window.
 
 ## Typst sets, the browser moves
 
@@ -361,9 +361,10 @@ else, no Node, no bundler.
 - **The slides are SVG outlines, not text.** Glyphs go into the file as paths,
   so nothing in the browser is selectable, searchable or reflowable, screen
   readers see nothing, and the file grows with the deck. Measured: the little
-  deck above weighs 211 kB, the eight example decks between 0.48 and 2.1 MB,
-  and the largest of them holds 127 SVG trees with 5581 glyph references across
-  23 slides. In exchange no font has to load and the layout cannot drift.
+  deck above weighs 211 kB, the nine example decks between 0.52 and 3.3 MB,
+  and the largest of them holds 143 SVG trees with 5083 glyph references across
+  15 slides -- it is the one that pulls a drawing from stop to stop, and every
+  frame in between is a tree of its own. In exchange no font has to load and the layout cannot drift.
 - **`#pause` is read at the top level of a slide body only.** Inside a grid
   cell, a table or a figure it is not seen, so reach for `anim` there.
 - **GeoGebra is not in the box.** A typeset applet is an empty frame that
@@ -439,8 +440,8 @@ exists still compiles.
 
 ### The decks are driven in a browser
 
-Compiling proves nothing about motion. A second run loads the eight example
-decks and a ninth check deck into a real browser, pages through every step
+Compiling proves nothing about motion. A second run loads the nine example
+decks and a tenth check deck into a real browser, pages through every step
 forward and backward, and holds the numbers against a written record:
 
 ```bash
@@ -484,10 +485,10 @@ how many elements are marked as drawn and as dimmed on every step, the
 number of ghosts a magic move produces, re entry through the hash, the speaker
 view, the ground colour of every slide and the runtime's own error list.
 
-The seventh deck, `.github/scripts/decklauf/pruefdeck.typ`, exists because the
-six examples never use `after: "dimmed"`, `stagger(dim: true)`, `invert`,
+The tenth deck, `.github/scripts/decklauf/pruefdeck.typ`, exists because the
+nine examples never use `after: "dimmed"`, `stagger(dim: true)`, `invert`,
 `info()` or `fit`. Counted in their sources: zero times each. The dim lookup was
-deliberately broken and nothing in the six moved. The check deck is not under
+deliberately broken and nothing in the nine moved. The check deck is not under
 `examples/`, so it stays off the website and the published decks keep their
 pages unchanged. Beside it, `ueberlauf.typ` is a deck that has to *fail* to
 compile, so that the overflow check is caught when it stops finding anything.
