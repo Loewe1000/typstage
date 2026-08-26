@@ -184,6 +184,27 @@
   "in-out-back": "cubic-bezier(.68,-.6,.32,1.6)",
 )
 
+/// Die Wirkungen, unter denen ein Element kommt und geht.
+///
+/// Dieselbe Liste, die `EFFECT` in der Laufzeit führt. Sie steht hier ein
+/// zweites Mal, damit ein Name, den es nicht gibt, schon beim Übersetzen
+/// auffällt und nicht erst als stille Blende im Vortrag. Wer eine Wirkung
+/// hinzufügt, fügt sie an beiden Stellen hinzu; das Prüfdeck fährt jede.
+#let wirkungen = ("fade", "fade-up", "fade-down", "fade-left", "fade-right",
+                  "scale", "scale-down", "blur", "rise", "none", "hold", "draw")
+
+/// Complain about an effect name the package does not know.
+///
+/// The runtime used to fall back to `fade` without a word. A typo then looked
+/// like a working deck that simply moved differently than intended -- and
+/// nobody finds that in a talk. `easing:` has answered this way since it was
+/// born; now `enter:` and `exit:` do too.
+#let wirkung-pruefen(name, feld, wo) = if name != none and name != auto {
+  assert(type(name) == str and name in wirkungen, message:
+    "typstage: " + wo + "(" + feld + ": " + repr(name) + ") -- the package "
+    + "does not know that effect. The names are: " + wirkungen.join(", ") + ".")
+}
+
 /// The curve behind a name, or an error.
 ///
 /// `auto` gives back `none`: only a departure from the default gets an
@@ -912,6 +933,12 @@
 
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
            width: auto, dim-freiwillig: false) = {
+  // Der eine Trichter, durch den jeder Auftritt und jeder Abgang muss --
+  // `anim`, `stagger`, `alternatives`, `cue`, `build`, `scene`, `flipbook`,
+  // `embed`, `video`, `tiles`. Deshalb steht die Prüfung hier und nicht
+  // zehnmal daneben.
+  wirkung-pruefen(extra.at("enter", default: none), "enter", kind)
+  wirkung-pruefen(extra.at("exit", default: none), "exit", kind)
   // The `box` has to sit around the *whole* construction, not inside it:
   // `layout()` is block-level, so an inline element that only chooses a `box`
   // further in would still break the line it sits in.

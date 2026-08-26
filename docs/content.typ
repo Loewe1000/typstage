@@ -737,10 +737,22 @@ der Platz, den sie einnehmen, ist in beiden Zielen derselbe.
   [`"draw"`], [zeichnet sich selbst -- siehe "Ein Pfad, der sich selbst
                zeichnet"],
   [`"none"`], [ohne Bewegung -- der Inhalt ist schlicht da],
+  [`"hold"`], [kein Abgang, sondern ein Warten: das Stück bleibt stehen, bis
+               das nächste da ist. Als `enter` dasselbe wie `"none"`],
 )
 
 Die Himmelsrichtung im Namen ist die Bewegungsrichtung, nicht die Herkunft:
 `"fade-right"` läuft nach rechts und kommt daher von links.
+
+*Ein Name, den es nicht gibt, ist ein Fehler beim Übersetzen*, genau wie bei
+`easing`. Die Laufzeit fiel früher wortlos auf `"fade"` zurück; ein Vertipper
+sah danach aus wie ein Deck, das sich eben anders bewegt als gedacht -- und das
+findet niemand mitten im Vortrag.
+
+// check: folie bricht=the_package_does_not_know_that_effect
+#show-code[```typ
+#anim(enter: "fade-upp")[Vertippt.]   // Fehler beim Übersetzen
+```]
 
 `enter` wirkt in beide Richtungen. Beim Zurückblättern läuft derselbe Effekt
 rückwärts und nimmt den Auftritt zurück -- ein Element, das von unten

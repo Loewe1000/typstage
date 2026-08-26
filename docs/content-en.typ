@@ -456,17 +456,23 @@ than quietly doing nothing.
   [`"rise"`], [from below and slightly smaller, the loudest of them],
   [`"draw"`], [it draws itself -- see "A path that draws itself"],
   [`"none"`], [it is simply there],
+  [`"hold"`], [not an exit but a wait: the piece stays until the next one is
+               there. As an `enter` it is the same as `"none"`],
 )
 
 `duration` is in milliseconds and `auto` takes the presentation's. `delay`
 holds the start back, which is what makes two elements on the same step arrive
 one after the other.
 
-#warning[
-  An unknown name does not stop the build. It quietly becomes a cross-fade, so
-  a typo in `enter: "fdae-up"` is only noticed by the motion being duller than
-  it was meant to be.
-]
+*A name the package does not know is an error at compile time*, exactly as it
+is for `easing`. The runtime used to fall back to `"fade"` without a word, and
+a typo then looked like a deck that simply moved differently than intended --
+which nobody finds in the middle of a talk.
+
+// check: folie bricht=the_package_does_not_know_that_effect
+#show-code[```typ
+#anim(enter: "fdae-up")[A typo.]   // error at compile time
+```]
 
 === The curve
 
