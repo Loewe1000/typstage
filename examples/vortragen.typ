@@ -55,14 +55,13 @@
 // Punkte doppelt. Sonst übermalte die zuletzt gesetzte Schicht die erste, und
 // zwar unabhängig davon, in welcher Reihenfolge aufgedeckt wird.
 
-#let karte-breite = 404pt
-#let karte-hoehe = 274pt
-
-// Der Zeichenraum ist 430 × 300 groß; die Karte auf der Folie ist es nicht.
-// Ein Faktor statt umgerechneter Zahlen: die Koordinaten bleiben so ablesbar,
-// und die Karte lässt sich an einem Ort größer oder kleiner machen.
-#let m = 0.94
+// Der Zeichenraum ist 430 × 300 groß. Ein Faktor statt umgerechneter Zahlen:
+// die Koordinaten unten bleiben ablesbar, und die Karte lässt sich an einer
+// einzigen Stelle größer oder kleiner machen.
+#let m = 1.0
 #let px(v) = v * m * 1pt
+#let karte-breite = px(430)
+#let karte-hoehe = px(300)
 
 // Eine Straße als blasses Band, nicht als Strich: eine Karte zeigt Gassen, und
 // die Toten stehen an ihren Fronten.
@@ -72,7 +71,7 @@
 
 // Ein Punkt, an seiner Mitte angegeben. `place` setzt die linke obere Ecke, der
 // Radius muss also abgezogen werden.
-#let punkt(x, y, r: 2.5pt, fill: tot) = place(
+#let punkt(x, y, r: 2.7pt, fill: tot) = place(
   top + left, dx: px(x) - r, dy: px(y) - r,
   circle(radius: r, fill: fill, stroke: none))
 
@@ -125,8 +124,7 @@
   strasse(150, 42, 150, 272)
   strasse(300, 42, 300, 272)
   strasse(375, 42, 375, 252)
-  beschriftung(42, 126, [BROAD STREET])
-  beschriftung(154, 264, [CAMBRIDGE ST])
+  beschriftung(42, 128, [BROAD STREET])
 
   // Schicht 1 bis 5. Sie stehen hier in der geschriebenen Folge, aber welche
   // wann erscheint, entscheidet die Ziffer. Die Reihenfolge im Quelltext legt
@@ -134,8 +132,14 @@
   cue-layer("karte", 1, tote.map(((x, y)) => punkt(x, y)).join())
   cue-layer("karte", 2, {
     pumpe(215, 150)
-    beschriftung(224, 158, fill: wasser.darken(10%), size: 8.5pt,
-                 [the Broad Street pump])
+    // Die Beschriftung steht weit unter der Straße statt neben der Pumpe: neben
+    // ihr liegen die Toten, und ein Wort über ihnen nähme der Karte ihre
+    // Aussage. Der Strich beginnt erst unterhalb der Häuserreihe, sonst liefe
+    // er durch einen Punkt.
+    place(top + left, dx: px(215), dy: px(168), line(
+      length: px(44), angle: 90deg, stroke: 0.8pt + wasser))
+    beschriftung(174, 214, fill: wasser.darken(10%), size: 8.5pt,
+                 [Broad Street pump])
   })
   cue-layer("karte", 3, {
     pumpe(75, 70, r: 5pt, fill: leise)
@@ -260,30 +264,32 @@
   the other three have run out.
 ]
 
+// Jeder Punkt und jede Frage genau eine Zeile lang, und beide Spalten im
+// selben Abstand: dann stehen sie auf gleicher Höhe, ohne verkoppelt zu sein.
 #side-by-side(
-  split: (1fr, 1.15fr),
+  split: (1fr, 1.05fr),
   align: horizon,
-  cue("grund", spacing: 1.1em)[
-    - Bad air off the drains and the graveyard.
-    - Something they ate. A bad batch, one shop.
-    - Poverty. The poorest streets always suffer worst.
-    - The water. All of them drink from the same pump.
+  cue("grund", spacing: 1.25em)[
+    - Bad air off the drains.
+    - Something they ate.
+    - Poverty. The poorest suffer worst.
+    - The water from the pump.
   ],
   // Zu jedem Punkt eine Rückfrage, die mit ihm erscheint. Sie hängt an
   // derselben Nummer und reist deshalb mit, ohne verdrahtet zu werden -- wer
   // die Punkte umsortierte, sortierte die Fragen mit.
   {
     let frage(nr, body) = cue-layer("grund", nr, block(
-      width: 100%, inset: (left: 12pt, y: 7pt),
+      width: 100%, inset: (left: 12pt, y: 5pt),
       stroke: (left: 2.5pt + wasser),
       text(style: "italic", body),
     ))
     stack(
-      spacing: 12pt,
-      frage(1, [Then why does it stop at the parish line? Air does not.]),
-      frage(2, [Then why one street rather than one shop?]),
-      frage(3, [Then why the workhouse, poorest building on the map?]),
-      frage(4, [Then the pump has to explain everyone who *lived*.]),
+      spacing: 11pt,
+      frage(1, [Then why does it stop at the parish line?]),
+      frage(2, [Then why a street and not a shop's customers?]),
+      frage(3, [Then why the workhouse, poorest of all?]),
+      frage(4, [Then the pump must explain who *lived*.]),
     )
   },
 )
@@ -311,12 +317,15 @@
 // sie niemand genannt hat -- deshalb springt nichts, egal in welcher
 // Reihenfolge aufgedeckt wird.
 #let zahl(gross, klein) = block(
-  width: 100%, inset: (x: 12pt, y: 10pt), radius: 6pt, fill: t.surface,
-  stroke: 1pt + t.border,
+  // Feste Höhe, damit die drei Kacheln eine Kante bilden. Ohne sie ist jede so
+  // hoch wie ihr Text, und welche zuerst genannt wird, entschiede das Bild.
+  width: 100%, height: 116pt, inset: (x: 12pt, y: 10pt), radius: 6pt,
+  fill: t.surface, stroke: 1pt + t.border,
   {
-    text(size: 1.5em, weight: 700, fill: tot, gross)
+    text(size: 1.25em, weight: 700, fill: tot, gross)
     linebreak()
-    text(size: 0.8em, fill: leise, klein)
+    v(0.15em)
+    text(size: 0.78em, fill: leise, klein)
   },
 )
 
@@ -328,10 +337,10 @@
     drank from the street.
   ]),
   cue-layer("bruch", 2, zahl[535 inmates, 5 dead][
-    A well and a pump of its own inside the walls. The poorest, the most
-    crowded, and almost untouched.
+    Its own well and pump inside the walls. The poorest people on the map,
+    and almost untouched.
   ]),
-  cue-layer("bruch", 3, zahl[2 miles away, 1 dead][
+  cue-layer("bruch", 3, zahl[2 miles off, 1 dead][
     A cart brought her a bottle of Broad Street water every week. She liked
     the taste of it.
   ]),
@@ -441,6 +450,12 @@
   },
 ))
 
+#align(center, text(size: 0.72em, fill: leise)[
+  new attacks per day, 31 August to 10 September 1854
+])
+
+#v(0.4em)
+
 #anim(at: 2, enter: "fade-up")[
   The dashed line is the handle. By then the street had lost three quarters of
   its people to flight, and the attacks had been falling for five days.
@@ -477,13 +492,13 @@
 
 #anim(at: 2, enter: "fade-right", zeile(
   farbe: tot,
-  [*Southwark & Vauxhall* — draws from the Thames inside London],
+  [*Southwark & Vauxhall* — Thames water from inside London],
   [315], [deaths per 10,000 houses],
 ))
 #v(0.3em)
 #anim(at: 3, enter: "fade-right", zeile(
   farbe: wasser,
-  [*Lambeth* — intake moved above the tideway in 1852],
+  [*Lambeth* — same water, taken upriver since 1852],
   [37], [deaths per 10,000 houses],
 ))
 #v(0.3em)
@@ -517,6 +532,8 @@
 ]
 
 #pause
+
+#v(0.9em)
 
 #align(center, text(fill: leise, size: 0.95em)[
   Cholera itself was not seen until 1884, thirty years after the handle came
