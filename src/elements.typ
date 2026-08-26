@@ -1,8 +1,8 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (adaptiv-gruppen, fit-meldung, html-output, im-deck, im-fit, name-of,
-                        offenes-ende, pin-index, pin-marker, selector,
-                        step-cursor, track)
+#import "internal.typ": (adaptiv-gruppen, durchsichtig, fit-meldung, html-output,
+                        im-deck, im-fit, name-of, offenes-ende, pin-index,
+                        pin-marker, selector, step-cursor, track)
 
 /// What `anim` does once its arguments have been checked.
 ///
@@ -432,4 +432,145 @@
       enter: enter, duration: duration, delay: i * stagger,
     )
   }
+}
+
+
+// ── Eine Zeichnung, die wächst ───────────────────────────────────────────────
+//
+// Eine cetz-Zeichnung oder ein lilaq-Diagramm ist ein Stück, nicht viele:
+// Typst reicht den fertigen Satz heraus, und was darin eine Linie und was eine
+// Datenreihe war, ist von außen nicht mehr zu greifen. Ein `anim` um ein Stück
+// der Zeichnung gibt es also nicht.
+//
+// Was es gibt, ist die Zeichnung selbst, so oft man sie haben will. `aufbau`
+// ruft sie einmal je Schritt und legt die Fassungen übereinander: auf Schicht
+// k steht die Zeichnung so, wie sie nach k Schritten aussieht. Sichtbar ist
+// immer genau eine Schicht.
+//
+// Zwei Fragen entscheiden, ob das trägt, und beide sind nachgemessen.
+//
+// *Springt das Bild?* Nein, weil kein Stück je wirklich fehlt: was noch nicht
+// dran ist, steht als Luft da (siehe `durchsichtig` in `internal.typ`). Alle
+// Schichten messen deshalb auf die Stelle genau gleich, und der Block, in dem
+// sie liegen, hat ohnehin eine feste Größe.
+//
+// *Warum eine Schicht und nicht alle übereinander?* Weil sich gemalte Tinte
+// addiert. Drei Schichten desselben lilaq-Diagramms gegen eines: 3.7 Prozent
+// der Bildpunkte weichen um mehr als 8 von 255 ab, die größte Abweichung 99 --
+// Achsen, Beschriftung und der halbdurchsichtige Kasten der Legende werden
+// dreimal gemalt und dadurch fetter. Mit disjunkten Schichten, in denen nur
+// das eigene Stück steht, ist es nicht besser: dieselbe Messung ergab 3.5
+// Prozent und eine größte Abweichung von 243, denn die Achsen gehören zu
+// keinem Stück und stehen deshalb auf jeder Schicht. Eine Schicht auf einmal
+// ist die einzige Anordnung, die genau das Bild ergibt, das dastünde, wenn man
+// die Zeichnung einmal setzte.
+//
+// Der Preis dafür ist der Übergang: zwei fast gleiche Bilder, die einander
+// ablösen, blenden sich gegenseitig aus. Dagegen steht `exit: "hold"` in der
+// Laufzeit -- die abtretende Schicht bleibt stehen, bis die neue da ist, und
+// geht dann ohne Bewegung. Vorwärts ist der Übergang damit sauber; rückwärts
+// überlagern sich Ausblenden und Einblenden für einen Augenblick, und die
+// geteilte Tinte sinkt kurz auf drei Viertel. Das Handbuch sagt es.
+
+/// Eine Zeichnung oder ein Diagramm, das schrittweise entsteht.
+///
+/// `zeichnen` wird einmal je Schritt gerufen und bekommt eine Frage gereicht.
+/// Sie heißt hier `ab`, weil sie genau das sagt, was `at:` sonst sagt:
+///
+/// - `ab(k, wert)` gibt `wert` zurück, sobald das k-te Stück an der Reihe ist,
+///   und sonst dieselbe Sache aus Luft -- eine Farbe mit Alpha 0, einen Strich
+///   mit durchsichtigem Pinsel, einen Text in `hide`.
+/// - `ab(k)` sagt dasselbe als Wahrheitswert, für alles, was sich nicht
+///   umfärben lässt. In cetz gehört dorthin `hide(…, bounds: true)`.
+///
+/// Was keine Nummer trägt, steht von Anfang an da.
+///
+/// ```typ
+/// #aufbau(ab => cetz.canvas({
+///   import cetz.draw: *
+///   line((0,0), (4,0))                        // steht von Anfang an
+///   line((4,0), (4,3), stroke: ab(2, black))  // ab Schritt 2
+///   content((2,3.4), ab(3, [Hypotenuse]))     // ab Schritt 3
+/// }), schritte: 3)
+/// ```
+///
+/// `schritte` ist die Zahl der Stufen und damit die Zahl der Schritte, die die
+/// Zeichnung auf der Folie belegt. Sie wird gesagt und nicht geraten: was
+/// `zeichnen` mit seiner Frage anstellt, sieht von außen niemand.
+///
+/// `start` ist `auto`: die Zeichnung fängt auf dem nächsten freien Schritt an
+/// und schiebt den Zähler um `schritte` weiter, so wie `stagger` und
+/// `alternatives` das tun. Eine Zahl setzt den ersten Schritt selbst.
+///
+/// Auf Papier wird nur die letzte Stufe gesetzt, im Block derselben Größe:
+/// eine Seite zeigt alle Schritte auf einmal, und übereinandergelegte Stufen
+/// gäben Doppeldruck. Der Zähler läuft dort trotzdem mit, damit
+/// `info().step.total` in beiden Ausgaben dieselbe Zahl nennt.
+///
+/// Unter `prefers-reduced-motion: reduce` ändert sich nichts: die Stufen
+/// blenden, sie wandern nicht, und was hier wegfiele, wäre die Bewegung, die
+/// es nicht gibt.
+#let aufbau(zeichnen, schritte: 2, start: auto, enter: "fade", duration: auto) = {
+  assert(type(zeichnen) == function, message:
+    "typstage: aufbau() nimmt als erstes eine Funktion, die die Zeichnung "
+    + "malt, und keine fertige Zeichnung. Sie wird einmal je Schritt gerufen "
+    + "und bekommt dabei die Frage ab(k) gereicht.")
+  assert(type(schritte) == int and schritte >= 1, message:
+    "typstage: aufbau(schritte: …) ist die Zahl der Stufen und zählt ab 1. "
+    + "Eine 0 hieße eine Zeichnung ohne eine einzige Stufe.")
+  assert(start == auto or (type(start) == int and start >= 1), message:
+    "typstage: aufbau(start: …) zählt ab 1, nicht ab 0. Auf Schritt 0 stünde "
+    + "die erste Stufe nie.")
+  layout(available => context {
+    // Wie bei `alternatives`: die Prüfung steht hier und nicht in `track`,
+    // weil der Papierzweig weiter unten über ein `return` hinausgeht und ein
+    // `return` alles fallen lässt, was vorher zusammengefügt wurde.
+    assert(im-fit.get() == 0, message: fit-meldung("aufbau"))
+    // Die Frage, die eine Schicht ihrem Zeichner reicht. Ein Argument heißt
+    // fragen, zwei heißen einfärben; das spart dem Deck zwei Namen für
+    // dieselbe Auskunft.
+    let frage(k) = (nr, ..wert) => {
+      assert(type(nr) == int and nr >= 1 and nr <= schritte, message:
+        "typstage: ab(" + repr(nr) + ") -- diese Zeichnung hat " + str(schritte)
+        + " Stufe" + (if schritte == 1 { "" } else { "n" }) + ", die Nummer "
+        + "liegt also außerhalb. Ein Stück hinter der letzten Stufe käme nie.")
+      assert(wert.named().len() == 0 and wert.pos().len() <= 1, message:
+        "typstage: ab() nimmt die Nummer der Stufe und höchstens eine Sache, "
+        + "die auf ihr erscheinen soll.")
+      if wert.pos().len() == 0 { return k >= nr }
+      if k >= nr { wert.pos().first() } else { durchsichtig(wert.pos().first()) }
+    }
+    let stufen = range(1, schritte + 1).map(k => zeichnen(frage(k)))
+    // Zweimal gemessen, die größere zählt: dieselbe Falle wie in `track` und
+    // in `alternatives`. Ein `height: 100%` in einer Stufe fiele ohne
+    // Höhenbezug auf 0pt zusammen, und eine Messung allein gegen die Höhe
+    // schnitte ab, was übersteht.
+    let frei = stufen.map(s => measure(s, width: available.width))
+    let gedeckelt = stufen.map(s => measure(s, width: available.width,
+                                            height: available.height))
+    let breite = calc.max(..frei.map(m => m.width), ..gedeckelt.map(m => m.width))
+    let hoehe = calc.max(..frei.map(m => m.height), ..gedeckelt.map(m => m.height))
+    let erster = if start == auto { step-cursor.get().first() + 1 } else { start }
+    if not html-output.get() {
+      // Nur die letzte Stufe, und der Zähler läuft trotzdem. Genau wie
+      // `alternatives`: auf Papier steht die Zeichnung fertig da.
+      return {
+        if im-deck() {
+          step-cursor.update(c => calc.max(c, erster + schritte - 1))
+        }
+        block(width: breite, height: hoehe, place(top + left, stufen.last()))
+      }
+    }
+    let letzte = schritte - 1
+    block(width: breite, height: hoehe, {
+      for (i, s) in stufen.enumerate() {
+        // Jede Stufe hält genau ihren Schritt, die letzte den Rest der Folie.
+        // Eine Stufe, die bliebe, läge unter der nächsten und würde ein
+        // zweites Mal gemalt.
+        let bereich = if i == letzte { str(erster + i) + "-" } else { str(erster + i) }
+        place(top + left, anim-kern(s, at: bereich, enter: enter,
+                                    exit: "hold", duration: duration))
+      }
+    })
+  })
 }
