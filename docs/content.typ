@@ -1299,10 +1299,10 @@ Zwei Applets auf einer Folie brauchen Namen, und dann brauchen die Befehle
 sie als das, was sie ist:
 
 #show-code[```typ
-geogebra(<links>, height: 200pt)
-geogebra(<rechts>, height: 200pt)
-ggb-run("A=(0,0)", target: <links>)
-ggb-run("B=(1,1)", target: "rechts")
+#geogebra(<links>, height: 200pt)
+#geogebra(<rechts>, height: 200pt)
+#ggb-run("A=(0,0)", target: <links>)
+#ggb-run("B=(1,1)", target: "rechts")
 ```]
 
 Fehlt die Angabe bei mehreren Applets, wird nicht geraten. Der Bau bricht ab
@@ -1323,10 +1323,11 @@ fehlgeschlagener Bau.
 `evalCommand` weiter. Die Reihenfolge zählt: was gebraucht wird, muss vorher
 entstanden sein.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-run(at: "1-",
-        "k: x^2+y^2=4", "t=Slider(0,6.283,0.01)",
-        "P=(2cos(t),2sin(t))", "s=Segment((0,0),P)")
+#ggb-run(at: "1-",
+         "k: x^2+y^2=4", "t=Slider(0,6.283,0.01)",
+         "P=(2cos(t),2sin(t))", "s=Segment((0,0),P)")
 ```]
 
 #warning[
@@ -1347,9 +1348,10 @@ die Farbe gleich auf `"1-"` festzulegen: beim Neuaufbau vergäbe GeoGebra sonst
 die nächste Farbe seiner Palette, und die Folie sähe nach dem Zurückblättern
 anders aus.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-run("a=1", "f(x)=a*x^2", at: "1-")
-ggb-style("f", at: "1-", color: dark, thickness: 3)
+#ggb-run("a=1", "f(x)=a*x^2", at: "1-")
+#ggb-style("f", at: "1-", color: dark, thickness: 3)
 ```]
 
 #info[
@@ -1365,11 +1367,12 @@ ggb-style("f", at: "1-", color: dark, thickness: 3)
 `ggb-hide` beliebig viele Objektnamen. Üblich ist, alles zu Beginn aufzubauen
 und erst sichtbar zu machen, wenn es an der Reihe ist:
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-hide("P", "s", "t", at: "1-")
-ggb-show("P", "s", at: 2)
-ggb-set((a: 3), at: 2)
-ggb-set((a: -2, b: 0.5), at: 3)
+#ggb-hide("P", "s", "t", at: "1-")
+#ggb-show("P", "s", at: 2)
+#ggb-set((a: 3), at: 2)
+#ggb-set((a: -2, b: 0.5), at: 3)
 ```]
 
 === Aussehen
@@ -1399,10 +1402,11 @@ sind einzeln zu haben; was nicht genannt wird, bleibt, wie es ist.
 Dass `color` eine Typst-Farbe nimmt, ist der Punkt daran: die Konstruktion
 trägt die Farben der Folien statt GeoGebras Palette.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-style("P", at: 2, color: accent, point-size: 6)
-ggb-style("s", at: 2, color: dark, thickness: 3)
-ggb-style("d", at: 3, color: accent, filling: 0.18, thickness: 4)
+#ggb-style("P", at: 2, color: accent, point-size: 6)
+#ggb-style("s", at: 2, color: dark, thickness: 3)
+#ggb-style("d", at: 3, color: accent, filling: 0.18, thickness: 4)
 ```]
 
 === Ausschnitt
@@ -1410,9 +1414,10 @@ ggb-style("d", at: 3, color: accent, filling: 0.18, thickness: 4)
 `ggb-view` setzt den sichtbaren Bereich sowie Gitter und Achsen. `x` und `y`
 wirken nur zusammen -- beide sind Paare aus kleinstem und größtem Wert.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-view(at: 2, x: (-3, 3), y: (-3, 3), grid: false)
-ggb-view(at: 3, axes: false)
+#ggb-view(at: 2, x: (-3, 3), y: (-3, 3), grid: false)
+#ggb-view(at: 3, axes: false)
 ```]
 
 Das Applet nimmt die Maße des Kastens an, in dem es steht, und behält sie über
@@ -1431,8 +1436,9 @@ Kreis umläuft, oder einen Schieberegler, der einen Zusammenhang vorführt.
 `trace` schaltet die Spur der genannten Objekte ein, `speed` regelt das Tempo,
 `playing: false` hält an.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-animate("t", at: 3, speed: 1.2, trace: ("P",))
+#ggb-animate("t", at: 3, speed: 1.2, trace: ("P",))
 ```]
 
 `ggb-tween` geht einmal von A nach B und bleibt dort. Der Browser zählt den
@@ -1442,9 +1448,10 @@ sich die Konstruktion selbst. `from` gibt den Anfangswert, wenn er nicht der
 gerade geltende sein soll, `duration` die Dauer in Millisekunden, `easing` den
 Verlauf (`"ease-in-out"` oder `"linear"`).
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-run("t_1=0", "s=Segment(A,(4*t_1,0))", at: "1-")
-ggb-tween("t_1", at: 2, to: 1, duration: 700)
+#ggb-run("t_1=0", "s=Segment(A,(4*t_1,0))", at: "1-")
+#ggb-tween("t_1", at: 2, to: 1, duration: 700)
 ```]
 
 #warning[
@@ -1481,6 +1488,7 @@ lebenden Applet, anklickbar im PDF.
 Besser ist eine eigene Zeichnung an seiner Stelle. `fallback` nimmt beliebigen
 Inhalt -- ein Bild, eine Tabelle, und vor allem eine Zeichnung mit CeTZ:
 
+// check: folie pre=cetz
 #show-example(
   rendered: {
     import "../src/lib.typ": geogebra
@@ -1519,8 +1527,8 @@ bestimmt diese Farbe; `auto` nimmt das Papierweiß der Präsentation, was auf
 einer getönten Folie zu ändern ist.
 
 #show-code[```typ
-geogebra(height: 240pt, background: rgb("#f4f1ea"))
-geogebra(height: 240pt, seamless: false)   // mit GeoGebras eigenem Rahmen
+#geogebra(height: 240pt, background: rgb("#f4f1ea"))
+#geogebra(height: 240pt, seamless: false)   // mit GeoGebras eigenem Rahmen
 ```]
 
 #warning[
@@ -1547,8 +1555,8 @@ das eine ist eine untergeordnete Beschriftung, das andere ein Nachgedanke.
 ]
 
 #show-code[```typ
-geogebra(height: 240pt, font-size: 22)      // größere Achsenzahlen
-geogebra(height: 240pt, pan: true)          // Ausschnitt von Hand
+#geogebra(height: 240pt, font-size: 22)      // größere Achsenzahlen
+#geogebra(height: 240pt, pan: true)          // Ausschnitt von Hand
 ```]
 
 `grid` und `axes` lassen GeoGebras Vorgabe stehen, solange sie `auto` sind,

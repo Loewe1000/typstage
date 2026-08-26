@@ -766,10 +766,10 @@ Two applets on one slide need names, and then the commands need `target`. The
 name may be a string or a label, and Typst colours it as what it is:
 
 #show-code[```typ
-geogebra(<left>, height: 200pt)
-geogebra(<right>, height: 200pt)
-ggb-run("A=(0,0)", target: <left>)
-ggb-run("B=(1,1)", target: "right")
+#geogebra(<left>, height: 200pt)
+#geogebra(<right>, height: 200pt)
+#ggb-run("A=(0,0)", target: <left>)
+#ggb-run("B=(1,1)", target: "right")
 ```]
 
 Where the argument is missing and there is more than one applet, nothing is
@@ -788,10 +788,11 @@ silence is far harder to notice than a failed build.
 `ggb-run` takes any number of GeoGebra commands and hands them to `evalCommand`
 one at a time. The order counts: whatever is needed has to exist first.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-run(at: "1-",
-        "k: x^2+y^2=4", "t=Slider(0,6.283,0.01)",
-        "P=(2cos(t),2sin(t))", "s=Segment((0,0),P)")
+#ggb-run(at: "1-",
+         "k: x^2+y^2=4", "t=Slider(0,6.283,0.01)",
+         "P=(2cos(t),2sin(t))", "s=Segment((0,0),P)")
 ```]
 
 #warning[
@@ -810,9 +811,10 @@ be repeatable. For the same reason it is worth fixing the colour on `"1-"`
 straight away: on a rebuild GeoGebra would otherwise hand out the next colour
 of its palette, and the slide would look different after paging back.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-run("a=1", "f(x)=a*x^2", at: "1-")
-ggb-style("f", at: "1-", color: dark, thickness: 3)
+#ggb-run("a=1", "f(x)=a*x^2", at: "1-")
+#ggb-style("f", at: "1-", color: dark, thickness: 3)
 ```]
 
 #info[
@@ -828,11 +830,12 @@ ggb-style("f", at: "1-", color: dark, thickness: 3)
 any number of object names. The usual way is to build everything up at the
 start and only make it visible when its turn comes:
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-hide("P", "s", "t", at: "1-")
-ggb-show("P", "s", at: 2)
-ggb-set((a: 3), at: 2)
-ggb-set((a: -2, b: 0.5), at: 3)
+#ggb-hide("P", "s", "t", at: "1-")
+#ggb-show("P", "s", at: 2)
+#ggb-set((a: 3), at: 2)
+#ggb-set((a: -2, b: 0.5), at: 3)
 ```]
 
 === Appearance
@@ -862,10 +865,11 @@ setting is available on its own; what is not named stays as it is.
 That `color` takes a Typst colour is the point of it: the construction carries
 the colours of the slides instead of GeoGebra's palette.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-style("P", at: 2, color: accent, point-size: 6)
-ggb-style("s", at: 2, color: dark, thickness: 3)
-ggb-style("d", at: 3, color: accent, filling: 0.18, thickness: 4)
+#ggb-style("P", at: 2, color: accent, point-size: 6)
+#ggb-style("s", at: 2, color: dark, thickness: 3)
+#ggb-style("d", at: 3, color: accent, filling: 0.18, thickness: 4)
 ```]
 
 #warning[
@@ -881,9 +885,10 @@ ggb-style("d", at: 3, color: accent, filling: 0.18, thickness: 4)
 `ggb-view` sets the visible range as well as the grid and the axes. `x` and `y`
 only take effect together, both being pairs of smallest and largest value.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-view(at: 2, x: (-3, 3), y: (-3, 3), grid: false)
-ggb-view(at: 3, axes: false)
+#ggb-view(at: 2, x: (-3, 3), y: (-3, 3), grid: false)
+#ggb-view(at: 3, axes: false)
 ```]
 
 #warning[
@@ -909,8 +914,9 @@ end until the slide is left, which is right for a point going round a circle or
 a slider demonstrating a relationship. `trace` switches on the trace of the
 named objects, `speed` sets the pace, `playing: false` stops it.
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-animate("t", at: 3, speed: 1.2, trace: ("P",))
+#ggb-animate("t", at: 3, speed: 1.2, trace: ("P",))
 ```]
 
 `ggb-tween` goes once from A to B and stays there. The browser counts the value
@@ -920,9 +926,10 @@ itself. `from` gives the starting value where it should not be the one
 currently in force, `duration` the time in milliseconds, `easing` the shape of
 it (`"ease-in-out"` or `"linear"`).
 
+// check: folie drin=applet
 #show-code[```typ
-ggb-run("t_1=0", "s=Segment(A,(4*t_1,0))", at: "1-")
-ggb-tween("t_1", at: 2, to: 1, duration: 700)
+#ggb-run("t_1=0", "s=Segment(A,(4*t_1,0))", at: "1-")
+#ggb-tween("t_1", at: 2, to: 1, duration: 700)
 ```]
 
 #warning[
@@ -959,6 +966,7 @@ it, clickable in the PDF.
 Better is a drawing of your own in its place. `fallback` takes any content, an
 image, a table, and above all a drawing with CeTZ:
 
+// check: folie pre=cetz
 #show-example(
   rendered: {
     import "../src/lib.typ": geogebra
@@ -1005,8 +1013,8 @@ colour; `auto` takes the presentation's paper white, which is worth changing on
 a tinted slide.
 
 #show-code[```typ
-geogebra(height: 240pt, background: rgb("#f4f1ea"))
-geogebra(height: 240pt, seamless: false)   // with GeoGebra's own frame
+#geogebra(height: 240pt, background: rgb("#f4f1ea"))
+#geogebra(height: 240pt, seamless: false)   // with GeoGebra's own frame
 ```]
 
 #tip[
@@ -1039,8 +1047,8 @@ axis numbers are then 0.71 as tall as the slide's body text; at 16 they are
 ]
 
 #show-code[```typ
-geogebra(height: 240pt, font-size: 22)      // larger axis numbers
-geogebra(height: 240pt, pan: true)          // viewport by hand
+#geogebra(height: 240pt, font-size: 22)      // larger axis numbers
+#geogebra(height: 240pt, pan: true)          // viewport by hand
 ```]
 
 `grid` and `axes` leave GeoGebra's own default alone as long as they are

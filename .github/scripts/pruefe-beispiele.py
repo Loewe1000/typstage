@@ -52,6 +52,12 @@
 #     check: aus=<grund>          nicht übersetzen, Grund erscheint im Bericht
 #     ziel=bundle                 mit --format bundle statt --format html
 #     pre=<name>                  benannten Vorspann davorsetzen (siehe VORSPANN)
+#     drin=<name>                 benannten Vorspann *in die Folie* setzen, hinter
+#                                 die Überschrift (siehe IN_DER_FOLIE). Für einen
+#                                 Block, der etwas braucht, das auf derselben
+#                                 Folie stehen muss -- `ggb-run` etwa findet sein
+#                                 Applet nur dort. Ein `pre=` stünde vor der
+#                                 ersten Überschrift und gehörte zu keiner Folie.
 #     davor                       den vorigen ```typ-Block desselben Handbuchs
 #                                 davorsetzen (für Beispiele, die auf einem
 #                                 `#let` aus dem Absatz darüber aufbauen)
@@ -102,6 +108,16 @@ VORSPANN = {
     "#let meine-tabelle = table(columns: 2, [Jahr], [Wert], [2024], [7])\n"
     "#let my-table = meine-tabelle\n"
   ),
+  # Zeichnungen im Handbuch entstehen mit CeTZ. Das Paket ist keine Abhängigkeit
+  # von typstage -- deshalb steht der Import hier und nicht im Listing.
+  "cetz": '#import "@preview/cetz:0.4.2"\n',
+}
+
+# Dasselbe, aber im Rumpf der Folie statt davor. Ein Applet muss auf der Folie
+# stehen, auf der seine Befehle stehen; vor der ersten Überschrift gehörte es zu
+# keiner Folie, und `ggb-run` fände es nicht.
+IN_DER_FOLIE = {
+  "applet": "#geogebra(height: 120pt)\n",
 }
 
 # Ein 1x1-Pixel-PNG. `image()` liest die Datei beim Übersetzen, ein leerer
@@ -187,8 +203,9 @@ def bloecke(pfad):
 
 def regie_lesen(text):
   """Eine Prüfzeile in ein Wörterbuch übersetzen."""
-  r = {"art": None, "aus": None, "ziel": "html", "pre": [], "davor": False,
-       "dateien": [], "fehlt": [], "weil": None, "bricht": None}
+  r = {"art": None, "aus": None, "ziel": "html", "pre": [], "drin": [],
+       "davor": False, "dateien": [], "fehlt": [], "weil": None,
+       "bricht": None}
   for wort in (text or "").split():
     if wort in ("ganz", "dokument", "folgen", "folie", "argument"):
       r["art"] = wort
@@ -200,6 +217,8 @@ def regie_lesen(text):
       r["ziel"] = wort[5:]
     elif wort.startswith("pre="):
       r["pre"] += wort[4:].split(",")
+    elif wort.startswith("drin="):
+      r["drin"] += wort[5:].split(",")
     elif wort.startswith("dateien="):
       r["dateien"] += wort[8:].split(",")
     elif wort.startswith("fehlt="):
@@ -223,7 +242,7 @@ def art_raten(rumpf):
   return "folie"
 
 
-def huelle(art, rumpf, vorspann):
+def huelle(art, rumpf, vorspann, in_der_folie=""):
   if art == "ganz":
     return rumpf
   kopf = IMPORT + vorspann
@@ -243,8 +262,8 @@ def huelle(art, rumpf, vorspann):
     return kopf + "#presentation(\n" + ohne + ",\n)\n"
   kopf += "#show: presentation.with()\n"
   if art == "folgen":
-    return kopf + rumpf
-  return kopf + "== Beispiel\n" + rumpf
+    return kopf + in_der_folie + rumpf
+  return kopf + "== Beispiel\n" + in_der_folie + rumpf
 
 
 def uebersetzen(quelle, ziel, dateien, paketpfad=None):
@@ -280,6 +299,11 @@ def pruefen(auftrag):
     return {"ort": ort, "stand": "aus", "grund": regie["aus"]}
   art = regie["art"] or art_raten(block["rumpf"])
   vorspann = "".join(VORSPANN[n] for n in regie["pre"])
+  in_der_folie = "".join(IN_DER_FOLIE[n] for n in regie["drin"])
+  if in_der_folie and art in ("ganz", "dokument", "argument"):
+    return {"ort": ort, "stand": "fehler", "art": art,
+            "meldung": "`drin=` gibt es nur für einen Block, um den eine Folie "
+                       "gelegt wird -- also für `folie` und `folgen`"}
   if regie["davor"]:
     if voriger is None:
       return {"ort": ort, "stand": "fehler", "art": art,
@@ -306,8 +330,8 @@ def pruefen(auftrag):
   # monatelang unerreichbar geblieben, weil niemand sie je ausgelöst hat.
   if regie["bricht"]:
     geklappt, meldung = uebersetzen(
-      huelle(art, dedent(zeilen), vorspann), regie["ziel"], regie["dateien"],
-      paketpfad)
+      huelle(art, dedent(zeilen), vorspann, in_der_folie), regie["ziel"],
+      regie["dateien"], paketpfad)
     if geklappt:
       return {"ort": ort, "stand": "fehler", "art": art,
               "meldung": "sollte an „%s\" abbrechen, übersetzt aber"
@@ -323,15 +347,16 @@ def pruefen(auftrag):
   # Erst der Rest ohne die Zeilen, die fehlschlagen sollen: der muss übersetzen.
   rest = "\n".join(z for i, z in enumerate(zeilen, 1) if i not in regie["fehlt"])
   geklappt, meldung = uebersetzen(
-    huelle(art, rest, vorspann), regie["ziel"], regie["dateien"], paketpfad)
+    huelle(art, rest, vorspann, in_der_folie), regie["ziel"], regie["dateien"],
+    paketpfad)
   if not geklappt:
     return {"ort": ort, "stand": "fehler", "art": art, "meldung": meldung}
 
   # Dann jede einzelne dieser Zeilen für sich: die muss fehlschlagen.
   for n in regie["fehlt"]:
     geklappt, meldung = uebersetzen(
-      huelle(art, zeilen[n - 1], vorspann), regie["ziel"], regie["dateien"],
-      paketpfad)
+      huelle(art, zeilen[n - 1], vorspann, in_der_folie), regie["ziel"],
+      regie["dateien"], paketpfad)
     if geklappt:
       return {
         "ort": ort, "stand": "fehler", "art": art,
