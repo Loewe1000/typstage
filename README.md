@@ -138,6 +138,14 @@ Twelve slide transitions (`fade`, `slide`, `push`, `cover`, `uncover`, `zoom`,
 single slide, each of them a true reversal when you page backwards. Entrances
 (`enter:`) work the same way: paging back takes the entrance away again.
 
+Eleven entrances, one of which is not a fade: `enter: "draw"` traces every
+stroked path of an element, so a circuit or a pair of axes comes into being
+line by line. Text keeps to the fade -- Typst sets glyphs as filled shapes with
+no outline to travel along -- and an element on which nothing can be traced
+says so instead of quietly fading. `easing:` names the curve an element moves
+on, from the Web Animations API plus a handful of named ones; an unknown name
+is an error, not a silent default.
+
 ## Themes
 
 ```typ
