@@ -598,6 +598,73 @@ statt einer Folge.
 ]
 ```]
 
+== Aufdecken in der Reihenfolge, in der es genannt wird
+
+Manche Stichpunkte haben keine Ordnung. Was ein Graph zeigt, was an einem
+Versuch auffällt, welche Rechenwege es gibt -- die Klasse nennt das in
+beliebiger Folge, und ein Deck, das sie in seiner Folge aufdeckt, zwingt die
+Lehrkraft, entweder zu warten oder umzusortieren.
+
+`adaptiv` dreht das um: die Ziffern `1` bis `9` decken auf, was gerade genannt
+wurde.
+
+// check: folie
+#show-code[```typ
+#adaptiv("ablesen", start: 2)[
+  - positive und negative Werte
+  - tiefster und höchster Wert
+  - Abnahme und Zunahme
+]
+```]
+
+Die Gruppe braucht einen Namen, weil sich etwas anderes auf sie beziehen kann.
+Sie verbraucht so viele Schritte, wie sie Punkte hat, und die Reihenfolge ändert
+daran nichts -- Fortschritt, `info().step.total`, die Überlaufprüfung und das
+Handout bleiben also unberührt.
+
+Beim Setzen behält die Liste ihre Leserichtung: ein noch ungenannter Punkt hält
+seinen Platz frei, damit nichts springt, wenn er später dazukommt.
+
+=== Was mit dem Punkt zugleich erscheint
+
+Ein Stichpunkt steht selten allein. `adaptiv-schicht` hängt etwas an denselben
+Schritt -- eine Zeichenschicht, ein Bild, einen Satz daneben:
+
+// check: folie davor
+#show-code[```typ
+#adaptiv-schicht("ablesen", 1, [dazu das Passende])
+```]
+
+Verknüpft wird dabei nichts: Punkt und Schicht teilen sich einen Schritt, und
+wer den Schritt vertauscht, bewegt beide. Man kann an einen Punkt hängen, so
+viel man will.
+
+Die Gruppe muss im Quelltext *vor* ihren Schichten stehen -- eine Schicht liest
+nach, welchen Schritt ihr Punkt bekommen hat. Steht sie davor, sagt das Paket
+es, statt still nichts zu tun.
+
+#tip[
+  Für eine CeTZ-Zeichnung, die mit den Punkten wächst, zeichnet man das
+  Gerüst einmal und jede Schicht als eigene, vollständige Zeichnung, in der
+  alles andere über `cetz.draw.hide(rest, bounds: true)` unsichtbar, aber für
+  den Ausschnitt maßgebend bleibt. Dann liegen alle Schichten deckungsgleich
+  übereinander und der Graph steht still, egal in welcher Reihenfolge er
+  wächst -- gemessen an einem Achsenkreuz mit drei Beschriftungsschichten:
+  jede Teilmenge misst 347,9 pt #sym.times 329,71 pt.
+
+  Eine Schicht trägt dabei *nur ihren eigenen Beitrag*, kein Gitter und keine
+  Grundkurve. Sonst übermalt die zuletzt gesetzte Schicht die erste, und zwar
+  unabhängig davon, in welcher Reihenfolge aufgedeckt wird.
+]
+
+#info[
+  Die Ziffern wirken nur, solange eine adaptive Gruppe auf der Folie steht.
+  In der Sprecheransicht steht jeder noch offene Punkt blass da, mit seiner
+  Ziffer auf dem Aufzählungspunkt; im Saal ist er unsichtbar. Ein zweites Mal
+  gedrückt tut eine Ziffer nichts -- einen Punkt zurückzunehmen ist das, wofür
+  das Zurückblättern da ist.
+]
+
 == Ein einzelnes Stück auf einem eigenen Schritt
 
 `anim` blendet beliebigen Inhalt auf bestimmten Schritten ein. Das ist das

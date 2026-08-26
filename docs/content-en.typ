@@ -342,6 +342,71 @@ slide has a further step after it, because then the walk has moved on from it
 too. And `stride: 0`, which puts every point on one step, makes them all dim
 together on the next.
 
+== Revealing in the order it is called out
+
+Some points have no order. What a graph shows, what stands out in an
+experiment, which ways there are to work something out -- a class names those
+in whatever order they come, and a deck that reveals them in *its* order makes
+the teacher either wait or reshuffle.
+
+`adaptiv` turns that round: the digits `1` to `9` reveal whatever was just
+named.
+
+// check: folie
+#show-code[```typ
+#adaptiv("readings", start: 2)[
+  - positive and negative values
+  - lowest and highest value
+  - falling and rising
+]
+```]
+
+The group takes a name, because something else can point at it. It owns as many
+steps as it has points, and the order changes nothing about that -- the
+progress bar, `info().step.total`, the overflow check and the handout are all
+untouched.
+
+Set, the list keeps its reading order: a point not yet named holds its place, so
+nothing jumps when it arrives later.
+
+=== What appears together with a point
+
+A point rarely stands alone. `adaptiv-schicht` hangs something on the same step
+-- a drawing layer, a picture, a sentence beside it:
+
+// check: folie davor
+#show-code[```typ
+#adaptiv-schicht("readings", 1, [and what goes with it])
+```]
+
+Nothing is linked to do that: the point and the layer share a step, and
+swapping the step moves both. You can hang as much on a point as you like.
+
+The group has to stand *before* its layers in the source -- a layer looks up
+which step its point was given. Standing after them, the package says so rather
+than quietly doing nothing.
+
+#tip[
+  For a CeTZ drawing that grows with the points, draw the scaffolding once and
+  every layer as its own complete drawing, with everything else made invisible
+  through `cetz.draw.hide(rest, bounds: true)` but still counting towards the
+  bounds. All layers then lie exactly on top of each other and the graph holds
+  still, in whatever order it grows -- measured on a pair of axes with three
+  label layers, every subset comes to
+  347.9 pt #sym.times 329.71 pt.
+
+  A layer carries *only its own contribution*, no grid and no base curve.
+  Otherwise the layer set last paints over the first, and that regardless of
+  the order things are revealed in.
+]
+
+#info[
+  The digits work only while an adaptive group stands on the slide. In the
+  speaker view every point still open stands there pale, with its digit on the
+  bullet; in the hall it is invisible. Pressed a second time a digit does
+  nothing -- taking a point back is what paging backwards is for.
+]
+
 == One piece on a step of its own
 
 `anim` wraps exactly what should appear and says when:
