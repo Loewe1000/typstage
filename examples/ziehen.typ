@@ -49,16 +49,16 @@
 // Decks unterscheiden sich nur darin, welche davon sie ziehen.
 
 #let ZEIT = 12.0    // gezeigte Sekunden
-#let SX = 0.62      // eine Sekunde in Einheiten der Leinwand
-#let SY = 2.1       // die Höhe, auf der die Tür zu ist
+#let SX = 0.50      // eine Sekunde in Einheiten der Leinwand
+#let SY = 2.35      // die Höhe, auf der die Tür zu ist
 
 // Der Kasten, der die Leinwand aufhält. Ohne ihn wüchse sie mit ihrem Inhalt,
 // und beim Ziehen wanderte das ganze Bild, statt dass sich die Kurve bewegte;
 // das Handbuch beschreibt den Fall unter "Eine Zeichnung, die sich bewegt".
 // Was darüber hinausreicht, wird gekappt -- ein Überschwinger, der oben
 // hinausliefe, zöge die Leinwand ebenso auf wie ein fehlender Rahmen.
-#let RAHMEN = ((-1.0, -1.05), (8.4, 4.6))
-#let KAPP-OBEN = 4.35
+#let RAHMEN = ((-0.85, -1.05), (6.85, 4.6))
+#let KAPP-OBEN = 4.30
 #let KAPP-UNTEN = -0.45
 
 /// Der Ort der Tür zur Zeit `t`, als Anteil des Wegs von auf bis zu.
@@ -104,16 +104,16 @@
 /// Die Sprungantwort, gezeichnet. `laeufer` setzt einen Punkt auf die Kurve --
 /// das ist die einzige Stelle, an der dieses Deck die Uhr statt der Taste
 /// entscheiden lässt.
-#let antwort(w, z, merkmal: none, laeufer: none) = cetz.canvas(length: 1.45cm, {
+#let antwort(w, z, merkmal: none, laeufer: none) = cetz.canvas(length: 1.787cm, {
   import cetz.draw: *
 
   rect(..RAHMEN, stroke: rgb(0, 0, 0, 0))
 
   line((0, KAPP-UNTEN), (0, KAPP-OBEN), stroke: 0.7pt + riss)
-  line((0, 0), (7.9, 0), stroke: 0.7pt + riss)
-  line((0, SY), (7.9, SY), stroke: (paint: ruhe, thickness: 0.8pt, dash: "dashed"))
-  content((0.14, SY + 0.08), text(size: 8pt, fill: ruhe)[shut], anchor: "south-west")
-  content((7.9, -0.12), text(size: 8pt, fill: leise)[12 s], anchor: "north-east")
+  line((0, 0), (6.45, 0), stroke: 0.7pt + riss)
+  line((0, SY), (6.45, SY), stroke: (paint: ruhe, thickness: 0.8pt, dash: "dashed"))
+  content((0.12, SY + 0.08), text(size: 8pt, fill: ruhe)[shut], anchor: "south-west")
+  content((6.45, -0.12), text(size: 8pt, fill: leise)[12 s], anchor: "north-east")
 
   line(..range(STUETZEN + 1).map(i => punkt(w, z, ZEIT * i / STUETZEN)),
        stroke: 1.6pt + zug)
@@ -126,19 +126,19 @@
 
   // Die Skala, auf der ζ steht. Sie ist die eigentliche Auskunft der Szene:
   // was hier wandert, ist der Wert, den die Taste zieht.
-  let skala(x) = (0.35 + x / 2.0 * 3.1, -0.72)
+  let skala(x) = (0.3 + x / 2.0 * 2.6, -0.72)
   line(skala(0.0), skala(2.0), stroke: 1.0pt + riss)
   for m in (0.0, 1.0, 2.0) {
     line((skala(m).at(0), -0.86), (skala(m).at(0), -0.58), stroke: 1.0pt + riss)
   }
-  content((0.2, -0.72), text(size: 9pt, fill: leise)[$zeta$], anchor: "east")
+  content((0.15, -0.72), text(size: 9pt, fill: leise)[$zeta$], anchor: "east")
   content(skala(1.0), text(size: 7.5pt, fill: leise)[1], anchor: "north")
   circle(skala(calc.min(2.0, z)), radius: 0.13, fill: zug, stroke: none)
 
   // Die Ablesung. In einem Kasten fester Breite, damit eine Ziffer mehr nichts
   // verschiebt -- innerhalb des Rahmens ist das Kosmetik, am Rand wäre es der
   // Unterschied zwischen stehen und wandern.
-  content((7.9, 4.4), box(width: 3.8cm, align(right, text(size: 11pt, fill: leise, {
+  content((6.45, 4.4), box(width: 4.8cm, align(right, text(size: 11pt, fill: leise, {
     if merkmal != none [#merkmal #h(0.8em)]
     text(fill: zug)[$zeta = #zwei(z)$]
   }))), anchor: "north-east")
@@ -152,7 +152,7 @@
 // bei −3,73, und sie soll im Bild stehen und nicht am Rand kleben. Daraus fällt
 // die Einheit, und aus ihr der Rahmen -- nicht umgekehrt.
 #let E = 1.91                                  // eine Einheit der komplexen Ebene
-#let RAHMEN2 = ((-7.75, -2.61), (0.9, 2.61))
+#let RAHMEN2 = ((-7.75, -3.215), (0.9, 3.215))
 
 #let wurzeln(z) = cetz.canvas(length: 1.59cm, {
   import cetz.draw: *
@@ -160,9 +160,9 @@
   rect(..RAHMEN2, stroke: rgb(0, 0, 0, 0))
 
   line((-7.3, 0), (0.7, 0), stroke: 0.7pt + riss)
-  line((0, -2.25), (0, 2.25), stroke: 0.7pt + riss)
+  line((0, -2.55), (0, 2.55), stroke: 0.7pt + riss)
   content((0.7, -0.1), text(size: 8pt, fill: leise)[Re], anchor: "north-east")
-  content((0.12, 2.25), text(size: 8pt, fill: leise)[Im], anchor: "north-west")
+  content((0.12, 2.55), text(size: 8pt, fill: leise)[Im], anchor: "north-west")
   for m in (1, 2, 3) {
     line((-m * E, -0.12), (-m * E, 0.12), stroke: 0.7pt + riss)
     content((-m * E, -0.16), text(size: 7.5pt, fill: leise)[$-#m$], anchor: "north")
@@ -171,8 +171,12 @@
   // Der Kreis, auf dem das Paar wandert, solange es eines ist: sein Radius ist
   // die Eigenfrequenz, und der Regler dreht nur den Winkel. Deshalb ist bei
   // ζ = 1 Schluss -- weiter links auf dem Kreis gibt es nichts mehr.
-  arc((0, E), start: 90deg, stop: 270deg, radius: E, anchor: "start",
-      stroke: (paint: ruhe, thickness: 0.8pt, dash: "dashed"))
+  // Als Streckenzug und nicht als `arc`: welche der beiden Hälften cetz aus
+  // einem Winkelpaar macht, muss man nachschlagen -- aus Punkten liest man es.
+  line(..range(41).map(i => {
+    let a = (90deg + i * 4.5deg)
+    (E * calc.cos(a), E * calc.sin(a))
+  }), stroke: (paint: ruhe, thickness: 0.8pt, dash: "dashed"))
 
   let punkte = if z < 1.0 {
     let d = calc.sqrt(1.0 - z * z)
@@ -189,7 +193,7 @@
     circle(pk, radius: 0.17, fill: zug, stroke: none)
   }
 
-  content((-7.6, 2.55), box(width: 3.0cm,
+  content((-7.6, 3.15), box(width: 3.0cm,
     text(size: 11pt, fill: zug)[$zeta = #zwei(z)$]), anchor: "north-west")
 })
 
@@ -209,23 +213,23 @@
     1.0 + (if calc.rem(i, 2) == 0 { 0.0 } else if calc.rem(i, 4) == 1 { 0.24 } else { -0.24 }),
   ))
   line((0, 1.0), ..zacken, (3.0, 1.0), stroke: 1.1pt + t.strong)
-  content((1.7, 1.7), text(size: 10pt, fill: t.strong)[$k$], anchor: "south")
+  content((1.7, 1.62), text(size: 14pt, fill: t.strong)[$k$], anchor: "south")
 
   // Das Öl: es schließt gar nichts. Es entscheidet nur, wie schnell.
   line((0, -0.3), (1.1, -0.3), stroke: 1.1pt + zug)
   rect((1.1, -0.72), (2.0, 0.12), stroke: 1.1pt + zug)
   line((1.55, -0.3), (3.0, -0.3), stroke: 1.1pt + zug)
   line((1.55, -0.62), (1.55, 0.02), stroke: 2.2pt + zug)
-  content((1.55, -0.95), text(size: 10pt, fill: zug)[$c$], anchor: "north")
+  content((1.55, -0.9), text(size: 14pt, fill: zug)[$c$], anchor: "north")
 
   rect((3.0, -0.75), (3.9, 1.45), fill: t.surface, stroke: 1.2pt + riss)
-  content((3.45, 0.35), text(size: 10pt, fill: leise)[$m$])
+  content((3.45, 0.35), text(size: 14pt, fill: leise)[$m$])
 })
 
 // Die rechte Spalte einer Szenenfolie steht in einem Kasten fester Höhe: die
 // Schichten kommen nacheinander und bleiben stehen, und ohne festes Maß rückte
 // die ganze Spalte bei jedem Halt nach.
-#let neben(body) = box(width: 100%, height: 252pt, body)
+#let neben(body) = box(width: 100%, height: 290pt, body)
 
 /// Eine Zeile, wie sie zu einem Halt gehört: der Wert vorn, der Satz dahinter.
 /// Vier davon müssen nebeneinander in den Kasten passen, denn eine Schicht
@@ -327,7 +331,7 @@
     stops: (0.15, 0.4, 1.0, 2.0),
     tween: 6,
     width: 390pt,
-    height: 236pt,
+    height: 290pt,
   ),
   neben[
     #scene-layer("settle", 1)[
@@ -379,21 +383,20 @@ and the ratio is between the oil, the spring, and what has to be moved.
 
 Write the motion down and the whole question collapses into one square root:
 
-#statement(size: 1.7em, color: t.strong, above: 0.7em, below: 0.6em)[
+#statement(size: 1.5em, color: t.strong, above: 0.5em, below: 0.5em)[
   $ s = omega (-zeta plus.minus sqrt(zeta^2 - 1)) $
 ]
 
-#stagger(
+#text(size: 0.88em, stagger(
   start: 2,
-  spacing: 0.7em,
-  [#text(fill: t.strong)[Under one.] What is beneath the root is negative, so
-   the two roots are a complex pair. A complex pair is an oscillation, and an
-   oscillation is a door that comes back.],
-  [#text(fill: t.strong)[Exactly one.] The root is zero and the pair is a
-   single number, twice. There is nothing left to oscillate with.],
-  [#text(fill: t.strong)[Above one.] Two ordinary real roots, moving apart.
-   Nothing swings, and the slower of the two is now in charge.],
-)
+  spacing: 0.6em,
+  [#text(fill: t.strong)[Under one.] What is under the root is negative, the
+   roots are a complex pair — and a complex pair is a door that comes back.],
+  [#text(fill: t.strong)[Exactly one.] The root is zero and the pair is one
+   number, twice. Nothing is left to oscillate with.],
+  [#text(fill: t.strong)[Above one.] Two real roots, moving apart, and the
+   slower of them is now in charge.],
+))
 
 #v(0.5em)
 
@@ -419,7 +422,7 @@ Write the motion down and the whole question collapses into one square root:
     stops: (0.0, 0.4, 1.0, 2.0),
     tween: 6,
     width: 390pt,
-    height: 236pt,
+    height: 290pt,
   ),
   neben[
     #scene-layer("roots", 1)[
@@ -501,7 +504,7 @@ Write the motion down and the whole question collapses into one square root:
     stops: ((1.0, 1.0), (4.0, 1.0), (4.0, 2.0)),
     tween: 6,
     width: 390pt,
-    height: 236pt,
+    height: 290pt,
   ),
   neben[
     #scene-layer("both", 1)[
@@ -548,18 +551,18 @@ Write the motion down and the whole question collapses into one square root:
     fps: 20,
     at: "3-",
     width: 390pt,
-    height: 236pt,
+    height: 290pt,
   ),
-  neben(stagger(
+  neben(text(size: 0.88em, stagger(
     start: 1,
-    spacing: 0.9em,
+    spacing: 0.8em,
     [Every picture so far has been a claim about time in which time was an
      axis, and the axis held still while you read it.],
-    [Nothing on those slides moved until somebody pressed a key. That is what
-     a scene is: the value is yours, and the drawing waits for you.],
-    [This one does not wait. Twenty-four frames, set by Typst, played by the
-     browser on its own clock, starting the moment it is uncovered.],
-  )),
+    [That is what a scene is: the value is yours, and the drawing waits for
+     the key.],
+    [This one does not wait. Twenty-four frames, on the browser's own clock,
+     from the moment it is uncovered.],
+  ))),
 )
 
 == What to set it to
@@ -575,16 +578,16 @@ Write the motion down and the whole question collapses into one square root:
     turn and about ninety seconds of your afternoon.
   ],
   [
-    #stagger(
+    #text(size: 0.92em, stagger(
       start: 2,
-      spacing: 0.8em,
+      spacing: 0.7em,
       [The same number is on the spec sheet of every car suspension, where the
        answer is nearer $0.3$ — a car that never overshoots feels dead.],
       [It is in the arm of every camera crane, where the answer is nearer $1$,
        because a picture that comes back is a picture nobody can use.],
       [And it is in the fade that just carried this slide in. Somebody chose
        it, and the choice was this one.],
-    )
+    ))
   ],
 )
 
