@@ -81,8 +81,15 @@
   // give the same page count and the same text before and after, and a
   // sample with `align(center)` before a pause still centers unchanged.
   let out = runs.first()
+  // Der Zähler steht am Folienanfang auf null, der erste Abschnitt aber steht
+  // unverfolgt schon auf Schritt eins. Ohne diese Anhebung bekäme die erste
+  // Pause denselben Schritt wie er. `max` und keine feste Zuweisung: steht vor
+  // der Pause ein `stagger`, eine adaptive Gruppe oder eine Zeichnung, hat der
+  // Zähler längst weiter gezählt, und die Pause reiht sich dahinter ein statt
+  // mittenhinein.
+  out += step-cursor.update(c => calc.max(c, 1))
   for (i, run) in runs.slice(1).enumerate() {
-    out += anim(block(width: 100%, run), at: i + 2)
+    out += anim(block(width: 100%, run), at: auto)
   }
   out
 }

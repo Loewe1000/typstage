@@ -52,10 +52,11 @@
   "Browser keine Zahl. Nach einem Typst-Wechsel darf er neu gesetzt werden,",
   "aber nur nachdem jemand nachgesehen hat, was sich geändert hat.",
   "",
-  "Geteilt wird ein Wert erst, wenn eine Abweichung belegt ist -- nicht",
+  "Geteilt wird ein Wert erst, wenn eine Abweichung belegt ist -- nie",
   "vorsorglich. Derzeit steht nur theme-night/sprecher fuer beide Systeme da.",
-  "Fuer pruefdeck/satz und satzBytes gilt wieder nur darwin: die Folie mit der",
-  "Zeichnung hat den Satz geaendert, und die alten linux-Werte waeren falsch",
+  "Fuer pruefdeck/satz und satzBytes gilt wieder nur darwin: erst hat die Folie",
+  "mit der Zeichnung den Satz geaendert, dann die Pause hinter dem anim ihren",
+  "eigenen Schritt bekommen. Die alten linux-Werte waeren zweimal falsch",
   "stehengeblieben. Der naechste CI-Lauf meldet die neuen und nennt sie.",
   "",
   "Dieser Absatz stand einmal von Hand in soll.json und war nach dem ersten",
@@ -739,7 +740,7 @@
   },
   "pruefdeck": {
    "folien": 20,
-   "schritte": 37,
+   "schritte": 38,
    "elemente": 27,
    "flieger": 6,
    "fliegerRueck": 6,
@@ -798,6 +799,7 @@
     "10/4·0/0",
     "10/4·0/0",
     "10/4·0/0",
+    "12/4·2/0",
     "13/4·3/0",
     "14/4·1/0",
     "14/4·0/0",
@@ -815,6 +817,7 @@
     "15/4·0/0",
     "15/4·1/0",
     "15/4·3/0",
+    "14/4·2/0",
     "12/4·0/0",
     "12/4·0/0",
     "12/4·0/0",
@@ -849,7 +852,7 @@
    "halt": "1>1·0>1·1/4",
    "masz": "4 Stufen · 1 Maß",
    "satz": {
-    "darwin": "a2c0fcb1a5bbff0e"
+    "darwin": "d29632e9d185a063"
    },
    "satzBytes": {
     "darwin": 863863

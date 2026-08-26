@@ -320,7 +320,11 @@
     teile.filter(c => c.func() in (list.item, enum.item))
   } else { () }
   let stuecke = if punkte.len() > 0 { punkte.map(p => p.body) } else { gegeben }
-  let ab = if start == auto { step-cursor.get().first() } else { start }
+  // `+ 1` wie bei `stagger`, `alternatives` und `aufbau`: der Zähler steht auf
+  // dem zuletzt vergebenen Schritt, der erste eigene ist der danach. Ohne das
+  // beginnt eine Gruppe am Kopf der Folie bei null und teilt sich ihren ersten
+  // Punkt mit dem, was dort ohnehin schon steht.
+  let ab = if start == auto { step-cursor.get().first() + 1 } else { start }
   // Recorded so that `adaptiv-schicht` finds the steps again.
   adaptiv-gruppen.update(g => g + ((name): (start: ab, anzahl: stuecke.len())))
   for (i, b) in stuecke.enumerate() {

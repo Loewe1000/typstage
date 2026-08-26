@@ -151,7 +151,13 @@ Ein dritter.
 // einander nicht ins Gehege kommen -- und vor allem, dass eine Ziffer den
 // folienlokalen Schritt und nicht den Deckschritt meint: mit der Verwechslung
 // sprang eine Ziffer hier auf die erste Folie des Decks.
-#adaptiv("zweite", start: 1)[
+//
+// `start` steht hier mit Absicht NICHT da: die Gruppe ist das erste verfolgte
+// Element ihrer Folie, `auto` muss also dieselbe 1 ergeben, die vorher
+// ausgeschrieben stand. Rechnet `adaptiv` den Zaehlerstand ohne `+ 1`, faengt
+// sie bei null an und die ganze Reihe rutscht -- die einzige Stelle im Lauf,
+// die den auto-Zweig ueberhaupt betritt.
+#adaptiv("zweite")[
   - anderer erster Punkt
   - anderer zweiter Punkt
 ]
@@ -192,9 +198,10 @@ Dritter Schritt.
 // bekam: ohne den `anim` bewegte sich in `sichtbar` keine Zahl, mit ihm ging
 // der letzte Schritt dieser Folie von 2/0 auf 1/0.
 //
-// Ein `anim` und kein `#pause`: `#pause` nummeriert seine Schritte fuer sich
-// (`at: i + 2` in `apply-pauses`) und stuende hier auf Schritt 2, mitten in
-// der Zeichnung, statt hinter ihr.
+// Ein `anim` und kein `#pause`, obwohl beides ginge: `#pause` faengt seinen
+// Abschnitt in einem Block ein, und der Lauf soll hier das nackte verfolgte
+// Element sehen. Dass eine Pause hinter der Zeichnung inzwischen richtig
+// zaehlt, haelt die Folie mit dem verschachtelten `morph` fest.
 //
 // Zweitens: was noch nicht dran ist, steht als Luft da und nicht als Tinte.
 // Ob eine Farbe Alpha 0 traegt, hat im Browser keine Zahl -- gezeichnet wird

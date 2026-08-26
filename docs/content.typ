@@ -1070,18 +1070,6 @@ hier nicht gibt.
   keine gute Idee.
 ]
 
-#warning[
-  Nach einer Zeichnung gehört `anim` und nicht `#pause`. `#pause` nummeriert
-  seine Schritte für sich: die erste Pause einer Folie ist immer Schritt 2, die
-  zweite Schritt 3, ganz gleich, wie viele Schritte darüber schon vergeben
-  sind. Hinter einer vierstufigen Zeichnung landet der Text nach `#pause`
-  deshalb auf Schritt 2, mitten in der Zeichnung, statt hinter ihr -- gemessen,
-  der Abschnitt bekam `at: "2-"` statt `at: "5-"`. `#anim[…]` fragt dagegen den
-  Schrittzeiger und schließt an. Dasselbe gilt für `#pause` hinter `stagger`
-  oder `alternatives`; bei einer Zeichnung fällt es nur häufiger an, weil sie
-  gleich mehrere Schritte belegt.
-]
-
 == Drei Stolpersteine
 
 *Nur Einblendungen zählen.* Der Zeiger zählt `anim`, `stagger`, `alternatives`
