@@ -38,11 +38,9 @@
   "Browser keine Zahl. Nach einem Typst-Wechsel darf er neu gesetzt werden,",
   "aber nur nachdem jemand nachgesehen hat, was sich geändert hat.",
   "",
-  "Das Pruefdeck ist um eine adaptive Gruppe gewachsen; die linux-Werte von satz",
-  "",
-  "Die linux-Werte stammen aus dem CI-Lauf, der sie gemeldet hat, nachdem das",
-  "Pruefdeck um eine adaptive Gruppe gewachsen war. Der Lauf meldete dort alle",
-  "sieben Decks als ok und nannte nur diese beiden Felder als nicht verglichen."
+  "Das Pruefdeck hat eine zweite adaptive Gruppe bekommen; die linux-Werte von",
+  "satz und satzBytes gehoerten zum Stand davor und sind entfernt. Der naechste",
+  "CI-Lauf nennt die neuen."
  ],
  "decks": {
   "tour": {
@@ -632,9 +630,9 @@
    "fehler": []
   },
   "pruefdeck": {
-   "folien": 15,
-   "schritte": 26,
-   "elemente": 16,
+   "folien": 16,
+   "schritte": 28,
+   "elemente": 18,
    "flieger": 2,
    "fliegerRueck": 2,
    "hash": 8,
@@ -655,6 +653,7 @@
     "#0f1319",
     "#0f1319",
     "#0c2733",
+    "#0f1319",
     "#0f1319"
    ],
    "sichtbar": [
@@ -683,9 +682,13 @@
     "10/4·0/0",
     "10/4·0/0",
     "10/4·0/0",
+    "10/4·0/0",
+    "10/4·0/0",
     "10/4·0/0"
    ],
    "sichtbarRueck": [
+    "10/4·0/0",
+    "10/4·0/0",
     "10/4·0/0",
     "10/4·0/0",
     "10/4·0/0",
@@ -714,12 +717,10 @@
    ],
    "fehler": [],
    "satz": {
-    "darwin": "ab308e9c86036597",
-    "linux": "32a21adbb85e76eb"
+    "darwin": "94b0f9e90beddbb9"
    },
    "satzBytes": {
-    "darwin": 644853,
-    "linux": 585084
+    "darwin": 696812
    }
   }
  }

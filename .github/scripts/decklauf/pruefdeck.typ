@@ -145,3 +145,13 @@ Ein dritter.
 #adaptiv-schicht("probe", 1, [Beiwerk zum ersten])
 #adaptiv-schicht("probe", 2, [Beiwerk zum zweiten])
 #adaptiv-schicht("probe", 3, [Beiwerk zum dritten])
+
+== Zweite adaptive Gruppe
+// Eine zweite Gruppe auf einer eigenen Folie. Sie belegt, dass Gruppen
+// einander nicht ins Gehege kommen -- und vor allem, dass eine Ziffer den
+// folienlokalen Schritt und nicht den Deckschritt meint: mit der Verwechslung
+// sprang eine Ziffer hier auf die erste Folie des Decks.
+#adaptiv("zweite", start: 1)[
+  - anderer erster Punkt
+  - anderer zweiter Punkt
+]

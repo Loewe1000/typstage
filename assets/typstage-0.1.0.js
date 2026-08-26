@@ -3026,8 +3026,16 @@
     // And go there. Naming a point and then having to press onwards would be
     // two moves for one thought; the step is the one the point just took, so
     // the count and the progress bar say the same as before.
-    var platz = parseInt(g.plaetze[g.folge.length - 1], 10) - 1;
-    goto(platz, false);
+    //
+    // `data-at` counts steps *within the slide*, `goto` takes the index over
+    // the whole deck. Confusing the two was measured to jump to slide one on
+    // any deck with more than a single slide -- and a one-slide test deck
+    // cannot tell the difference, because there the two numbers agree.
+    var lokal = parseInt(g.plaetze[g.folge.length - 1], 10);
+    var si = STEPS[current].slide;
+    for (var k = 0; k < STEPS.length; k++) {
+      if (STEPS[k].slide === si && STEPS[k].step === lokal) { goto(k, false); break; }
+    }
     return true;
   }
 
