@@ -393,7 +393,7 @@ werden soll.
   [`alternatives(…)`],
   [Mehrere Fassungen derselben Sache an derselben Stelle, jede die vorige
    ersetzend.],
-  [`aufbau(…)`],
+  [`build(…)`],
   [Eine Zeichnung oder ein Diagramm, das in Stufen entsteht -- eine CeTZ-Linie,
    eine lilaq-Datenreihe, eine Beschriftung nach der anderen.],
   [`scene(…)`],
@@ -612,12 +612,12 @@ Versuch auffällt, welche Rechenwege es gibt -- die Klasse nennt das in
 beliebiger Folge, und ein Deck, das sie in seiner Folge aufdeckt, zwingt die
 Lehrkraft, entweder zu warten oder umzusortieren.
 
-`adaptiv` dreht das um: die Ziffern `1` bis `9` decken auf, was gerade genannt
+`cue` dreht das um: die Ziffern `1` bis `9` decken auf, was gerade genannt
 wurde.
 
 // check: folie
 #show-code[```typ
-#adaptiv("ablesen", start: 2)[
+#cue("ablesen", start: 2)[
   - positive und negative Werte
   - tiefster und höchster Wert
   - Abnahme und Zunahme
@@ -634,12 +634,12 @@ seinen Platz frei, damit nichts springt, wenn er später dazukommt.
 
 === Was mit dem Punkt zugleich erscheint
 
-Ein Stichpunkt steht selten allein. `adaptiv-schicht` hängt etwas an denselben
+Ein Stichpunkt steht selten allein. `cue-layer` hängt etwas an denselben
 Schritt -- eine Zeichenschicht, ein Bild, einen Satz daneben:
 
 // check: folie davor
 #show-code[```typ
-#adaptiv-schicht("ablesen", 1, [dazu das Passende])
+#cue-layer("ablesen", 1, [dazu das Passende])
 ```]
 
 Verknüpft wird dabei nichts: Punkt und Schicht teilen sich einen Schritt, und
@@ -664,7 +664,7 @@ es, statt still nichts zu tun.
   unabhängig davon, in welcher Reihenfolge aufgedeckt wird.
 
   Soll die Zeichnung dagegen in der geschriebenen Reihenfolge wachsen, nimmt
-  man `aufbau` -- siehe "Eine Zeichnung, die wächst". Dort trägt jede Stufe die
+  man `build` -- siehe "Eine Zeichnung, die wächst". Dort trägt jede Stufe die
   *ganze* Zeichnung, und die Frage nach dem Übermalen stellt sich nicht.
 ]
 
@@ -972,7 +972,7 @@ reicht den fertigen Satz heraus; was darin eine Linie und was eine Datenreihe
 war, ist von außen nicht mehr zu greifen. Ein `anim` um eine einzelne Linie
 gibt es deshalb nicht.
 
-Was es gibt, ist die Zeichnung selbst -- so oft man sie haben will. `aufbau`
+Was es gibt, ist die Zeichnung selbst -- so oft man sie haben will. `build`
 ruft sie einmal je Schritt und legt die Fassungen deckungsgleich übereinander:
 auf Stufe #box[$k$] steht die Zeichnung so, wie sie nach #box[$k$] Schritten
 aussieht. Zu sehen ist immer genau eine.
@@ -983,29 +983,29 @@ Sie heißt `ab`, weil sie dasselbe sagt wie `at:` sonst:
 #show-example(
   rendered: {
     import "../src/lib.typ": *
-    aufbau(ab => box(width: 260pt, height: 58pt, {
+    build(from => box(width: 260pt, height: 58pt, {
       place(bottom + left, line(length: 100%))
       place(bottom + left, line(angle: -90deg, length: 52pt))
-      place(bottom + left, dx: 22%, rect(width: 12%, height: 22pt, fill: ab(2, accent)))
-      place(bottom + left, dx: 44%, rect(width: 12%, height: 36pt, fill: ab(3, accent)))
-      place(bottom + left, dx: 66%, rect(width: 12%, height: 50pt, fill: ab(4, accent)))
-    }), schritte: 4)
+      place(bottom + left, dx: 22%, rect(width: 12%, height: 22pt, fill: from(2, accent)))
+      place(bottom + left, dx: 44%, rect(width: 12%, height: 36pt, fill: from(3, accent)))
+      place(bottom + left, dx: 66%, rect(width: 12%, height: 50pt, fill: from(4, accent)))
+    }), steps: 4)
   },
   source: ```typ
-  #aufbau(ab => box(width: 260pt, height: 58pt, {
+  #build(from => box(width: 260pt, height: 58pt, {
     place(bottom + left, line(length: 100%))
     place(bottom + left, line(angle: -90deg, length: 52pt))
-    place(bottom + left, dx: 22%, rect(width: 12%, height: 22pt, fill: ab(2, accent)))
-    place(bottom + left, dx: 44%, rect(width: 12%, height: 36pt, fill: ab(3, accent)))
-    place(bottom + left, dx: 66%, rect(width: 12%, height: 50pt, fill: ab(4, accent)))
-  }), schritte: 4)
+    place(bottom + left, dx: 22%, rect(width: 12%, height: 22pt, fill: from(2, accent)))
+    place(bottom + left, dx: 44%, rect(width: 12%, height: 36pt, fill: from(3, accent)))
+    place(bottom + left, dx: 66%, rect(width: 12%, height: 50pt, fill: from(4, accent)))
+  }), steps: 4)
   ```,
   width: 13cm,
 )
 
-`ab(2, accent)` gibt die Farbe zurück, sobald das zweite Stück an der Reihe
+`from(2, accent)` gibt die Farbe zurück, sobald das zweite Stück an der Reihe
 ist, und sonst dieselbe Farbe mit Alpha 0. Das Achsenkreuz trägt keine Nummer
-und steht deshalb von Anfang an da. `schritte: 4` sagt, wie viele Stufen es
+und steht deshalb von Anfang an da. `steps: 4` sagt, wie viele Stufen es
 gibt; geraten wird das nicht, denn was der Zeichner mit seiner Frage anstellt,
 sieht von außen niemand.
 
@@ -1051,7 +1051,7 @@ Deshalb Alpha 0. `ab` macht daraus, was zu machen ist:
 )
 
 Was `ab` nicht umfärben kann, bekommt die Frage mit einem einzigen Argument:
-`ab(3)` ist wahr, sobald das dritte Stück an der Reihe ist. In CeTZ gehört
+`from(3)` ist wahr, sobald das dritte Stück an der Reihe ist. In CeTZ gehört
 dorthin `hide(…, bounds: true)`, das ein ganzes Stück verschwinden lässt und
 sein Maß behält.
 
@@ -1061,15 +1061,15 @@ Mit `#import "@preview/cetz:0.5.2"` daneben:
 
 // check: folie pre=cetz
 #show-code[```typ
-#aufbau(ab => cetz.canvas({
+#build(from => cetz.canvas({
   import cetz.draw: *
   line((0,0), (4,0))                          // steht von Anfang an
-  line((4,0), (4,3), stroke: ab(2, black))    // ab Schritt 2
-  line((4,3), (0,0), stroke: ab(3, 1.4pt + red))
-  content((2.2, 1.8), ab(4, [$c$]))
-  if ab(4) { circle((4,0), radius: 0.18) }
+  line((4,0), (4,3), stroke: from(2, black))    // ab Schritt 2
+  line((4,3), (0,0), stroke: from(3, 1.4pt + red))
+  content((2.2, 1.8), from(4, [$c$]))
+  if from(4) { circle((4,0), radius: 0.18) }
   else { hide(circle((4,0), radius: 0.18), bounds: true) }
-}), schritte: 4)
+}), steps: 4)
 ```]
 
 === Ein lilaq-Diagramm
@@ -1081,12 +1081,12 @@ Legende, während seine Kurve noch fehlt:
 
 // check: folie pre=lilaq
 #show-code[```typ
-#aufbau(ab => lq.diagram(
+#build(from => lq.diagram(
   width: 7cm, height: 4.5cm,
   legend: (position: top + left),
-  lq.plot(x, messung, color: ab(1, red), label: ab(1, [gemessen])),
-  lq.plot(x, modell, color: ab(2, blue), label: ab(2, [Modell])),
-), schritte: 2)
+  lq.plot(x, messung, color: from(1, red), label: from(1, [gemessen])),
+  lq.plot(x, modell, color: from(2, blue), label: from(2, [Modell])),
+), steps: 2)
 ```]
 
 Weil die Reihe als Luft in den Daten stehen bleibt, rechnet lilaq seine Achsen
@@ -1100,7 +1100,7 @@ bekäme mit ihr eine neue Achsenteilung.
   columns: (auto, 1fr),
   stroke: 0.5pt + luma(180),
   table.header([*Argument*], [*Wirkung*]),
-  [`schritte`], [Zahl der Stufen und damit der Schritte (Vorgabe 2)],
+  [`steps`], [Zahl der Stufen und damit der Schritte (Vorgabe 2)],
   [`start`], [erster Schritt; `auto` schließt an den Zeiger an],
   [`enter`], [Bewegung beim Erscheinen einer Stufe (Vorgabe `"fade"`);
               `"draw"` ist hier ein Fehler, siehe den nächsten Abschnitt],
@@ -1112,7 +1112,7 @@ Auf Papier wird nur die letzte Stufe gesetzt, im Block derselben Größe: eine
 Seite zeigt alle Schritte auf einmal, und übereinandergelegte Stufen gäben
 Doppeldruck. Gemessen an einem Deck mit einer CeTZ-Zeichnung und einem
 lilaq-Diagramm: die Seiten sind Bildpunkt für Bildpunkt dieselben wie die eines
-Decks, das die Zeichnung schlicht hinschreibt. `aufbau` kostet auf dem Papier
+Decks, das die Zeichnung schlicht hinschreibt. `build` kostet auf dem Papier
 nichts.
 
 Unter "Bewegung reduzieren" ändert sich ebenfalls nichts. Die Stufen blenden,
@@ -1324,7 +1324,7 @@ versuchen:
 
 // check: folie pre=zeichnung bricht=is_at_odds_with_what_this_function_does
 #show-code[```typ
-#aufbau(zeichner, enter: "draw")   // Fehler beim Übersetzen
+#build(zeichner, enter: "draw")   // Fehler beim Übersetzen
 ```]
 
 Jede Stufe einer Zeichnung aus dem vorigen Abschnitt ist die *ganze* Zeichnung.
@@ -1339,7 +1339,7 @@ Striche als eigene Stücke hin und lässt jedes sich selbst zeichnen; wer ein
 Diagramm in Stufen wachsen lassen will, lässt es bei seiner Blende.
 == Eine Zeichnung, die sich bewegt
 
-`aufbau` lässt eine Zeichnung wachsen: Stück für Stück kommt etwas hinzu.
+`build` lässt eine Zeichnung wachsen: Stück für Stück kommt etwas hinzu.
 `scene` ist die andere Hälfte derselben Idee. Hier kommt nichts hinzu -- hier
 ändert sich eine *Größe*, und das Bild hängt daran.
 
@@ -1391,7 +1391,7 @@ wiederfindet, bekommt die Szene einen Namen.
 #scene-layer("ableitung", 4, enter: "scale")[$f'(x) = 1/2 x$]
 ```]
 
-Das ist wortgleich zu `adaptiv-schicht` und aus demselben Grund: die Kopplung
+Das ist wortgleich zu `cue-layer` und aus demselben Grund: die Kopplung
 fällt aus dem gemeinsamen Schritt heraus. Wer einen Halt verschiebt,
 verschiebt alles mit, was daran hängt, und nirgends steht eine Zahl doppelt.
 Die Szene muss dabei im Quelltext *vor* ihren Schichten stehen; steht sie
@@ -1443,8 +1443,8 @@ gehen; hier gibt es nur einen Weg, und ein Tupel legt mehrere Größen darauf.
 auftritt -- dieselbe Trennung, die `morph` mit seinem `duration` zieht. Beides
 unter einen Namen zu legen zöge dieselbe Bewegung sichtbar auseinander.
 
-Anders als `aufbau` misst `scene` seine Bilder nicht. Die Stufen einer
-`aufbau`-Zeichnung liegen deckungsgleich, weil ein Stück, das noch nicht dran
+Anders als `build` misst `scene` seine Bilder nicht. Die Stufen einer
+`build`-Zeichnung liegen deckungsgleich, weil ein Stück, das noch nicht dran
 ist, als Luft dasteht; die Bilder einer Szene sind Zeichnungen zu verschiedenen
 Werten und dürfen ohne Weiteres verschieden groß ausfallen. Deshalb steht eine
 Szene in einem Kasten fester Größe, und jedes Bild wird darauf beschnitten. Wer
@@ -1460,7 +1460,7 @@ sieht es sofort.
   Gemessen an der Szene dieses Abschnitts: 28 Bilder, *15 verschiedene Lagen*
   der Tinte im Kasten.
 
-  Das kann das Paket nicht abnehmen. `aufbau` kann es, weil es die Stufen misst
+  Das kann das Paket nicht abnehmen. `build` kann es, weil es die Stufen misst
   und ein Stück, das noch nicht dran ist, seinen Platz behält; hier gibt es
   kein gemeinsames Stück, dessen Platz zu behalten wäre, und vom
   Koordinatensystem der Zeichnung weiß `scene` nichts.
@@ -3560,7 +3560,7 @@ ausdrücklich an, dann rechnet das `fit` damit.
   lief unten aus der Folie.
 
   `fit` bricht deshalb ab, mit Namen und Rat, für `pause`, `anim`, `stagger`,
-  `alternatives`, `morph`, `tiles`, `video`, `embed`, `flipbook`, `aufbau`
+  `alternatives`, `morph`, `tiles`, `video`, `embed`, `flipbook`, `build`
   und `scene` -- in
   beiden Ausgaben und auch dann, wenn das `fit` in einem anderen `fit` steckt.
   Der Ausweg ist, das `fit` *innerhalb* der Einblendung zu setzen statt darum

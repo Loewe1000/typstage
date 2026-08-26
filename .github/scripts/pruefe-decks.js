@@ -184,7 +184,7 @@ const SOLL_HINWEIS = [
   "gleichen, sonst spielt der Einstieg den Lauf falsch nach.",
   "",
   "halt steht nur beim Prüfdeck und beschreibt den Schrittwechsel einer",
-  "Zeichnung aus aufbau(): <Deckkraft der abtretenden Stufe> · <die der",
+  "Zeichnung aus build(): <Deckkraft der abtretenden Stufe> · <die der",
   "ankommenden> · <danach gezeichnete Stufen>/<Stufen der Folie>. Die",
   "abtretende Stufe wartet, statt zu gehen, deshalb steht dort 1>1 und nicht",
   "1>0. Ginge sie auf dem gewöhnlichen Weg, blendeten zwei fast gleiche Bilder",
@@ -214,7 +214,7 @@ const SOLL_HINWEIS = [
   "sonst schrieben Chrome und Firefox dieselbe Kurve verschieden auf.",
   "",
   "masz steht ebenfalls nur beim Prüfdeck und sagt, wie viele verschiedene",
-  "Maße die Stufen einer aufbau-Zeichnung melden. Es muss genau eines sein:",
+  "Maße die Stufen einer build-Zeichnung melden. Es muss genau eines sein:",
   "alle Stufen liegen deckungsgleich, weil ein Stück, das noch nicht dran ist,",
   "als Luft dasteht und seinen Platz behält. Wird daraus mehr als eines,",
   "springt die Zeichnung bei jedem Schritt.",
@@ -363,7 +363,7 @@ function ueberlaufProbe() {
 }
 
 // Und dasselbe Deck noch einmal auf Papier. Der Browser sieht nur den
-// HTML-Zweig, und `aufbau` hat einen zweiten: dort wird nur die letzte Stufe
+// HTML-Zweig, und `build` hat einen zweiten: dort wird nur die letzte Stufe
 // gesetzt, und der Schrittzähler muss trotzdem so weit laufen wie im Browser.
 // Die Zusicherung dazu steht im Prüfdeck selbst; hier wird sie nur gefragt.
 // Ohne diesen Aufruf bliebe der ganze Papierzweig ungeprüft -- gemessen, indem
@@ -560,7 +560,7 @@ const DURCHLAUF = `(async function () {
 // ── Wie eine Stufe abtritt ──────────────────────────────────────────────────
 //
 // Der Durchlauf oben misst die Ruhezustände: auf jedem Schritt ist genau eine
-// Stufe von `aufbau` gezeichnet. Was er nicht sieht, ist der Weg dazwischen,
+// Stufe von `build` gezeichnet. Was er nicht sieht, ist der Weg dazwischen,
 // und genau dort steckt die Absicht: die abtretende Stufe geht nicht, sie
 // wartet, bis die neue vollständig dasteht (`exit: "hold"`).
 //
@@ -599,7 +599,7 @@ const HALTPROBE = `(async function () {
   await p.ruhig(4000);
   var an = stufen.filter(function (e) { return e.dataset.on === "1"; }).length;
   // Und das Mass: alle Stufen einer Zeichnung muessen deckungsgleich liegen.
-  // Das ist die eigentliche Zusage von aufbau -- ein Stueck, das noch nicht
+  // Das ist die eigentliche Zusage von build -- ein Stueck, das noch nicht
   // dran ist, steht als Luft da und behaelt seinen Platz. Fiele der Platz weg,
   // laege die Stufe, die es hat, anders als die, die es noch nicht hat, und
   // die Zeichnung spraenge bei jedem Schritt.
@@ -1043,15 +1043,15 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
         + "Strecke, und zu sehen ist das erst bei dem einen Sprung, der genau "
         + "dorthin geht.");
 
-    // Wie eine Stufe von `aufbau` abtritt. Nur im Prüfdeck: nur dort steht eine.
+    // Wie eine Stufe von `build` abtritt. Nur im Prüfdeck: nur dort steht eine.
     if (d.satz) {
       const h = JSON.parse(await b.ev(HALTPROBE));
       if (h.fehlt !== undefined) {
-        z.maengel.push("keine zwei aufbau-Stufen im Prüfdeck gefunden ("
+        z.maengel.push("keine zwei build-Stufen im Prüfdeck gefunden ("
           + h.fehlt + "). Entweder ist die Folie weg oder data-exit=\"hold\" "
           + "steht nicht mehr an ihren Stufen.");
       } else if (!h.raus || !h.rein) {
-        z.maengel.push("beim Schrittwechsel lief an einer aufbau-Stufe keine "
+        z.maengel.push("beim Schrittwechsel lief an einer build-Stufe keine "
           + "Animation: abtretend " + JSON.stringify(h.raus)
           + ", ankommend " + JSON.stringify(h.rein));
       } else {
@@ -1063,13 +1063,13 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
         z.masz = h.stufen + " Stufen · " + h.masze.length
                + (h.masze.length === 1 ? " Maß" : " Maße");
         if (h.masze.length !== 1) {
-          z.maengel.push("die Stufen einer aufbau-Zeichnung liegen nicht "
+          z.maengel.push("die Stufen einer build-Zeichnung liegen nicht "
             + "deckungsgleich: " + h.masze.join(" | ") + ". Ein Stück, das "
             + "noch nicht dran ist, hat seinen Platz nicht behalten -- die "
             + "Zeichnung springt dann bei jedem Schritt.");
         }
         if (Math.round(h.raus.dauer) !== Math.round(h.rein.dauer)) {
-          z.maengel.push("die abtretende aufbau-Stufe wartet "
+          z.maengel.push("die abtretende build-Stufe wartet "
             + Math.round(h.raus.dauer) + "ms, die ankommende braucht "
             + Math.round(h.rein.dauer) + "ms. Sie muss so lange warten, wie "
             + "die neue braucht, sonst sinkt das Bild zum Schluss doch noch ab.");

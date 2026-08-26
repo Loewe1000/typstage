@@ -137,14 +137,14 @@ Ein dritter.
 // `sichtbar` auf diesen Schritten null gedimmte und null gezeichnete Elemente
 // meldet -- faellt der Wächter aus, der sie beiseitestellt, kaemen sie von
 // selbst und die Reihe wuerde umfallen.
-#adaptiv("probe", start: 2)[
+#cue("probe", start: 2)[
   - erster Punkt
   - zweiter Punkt
   - dritter Punkt
 ]
-#adaptiv-schicht("probe", 1, [Beiwerk zum ersten])
-#adaptiv-schicht("probe", 2, [Beiwerk zum zweiten])
-#adaptiv-schicht("probe", 3, [Beiwerk zum dritten])
+#cue-layer("probe", 1, [Beiwerk zum ersten])
+#cue-layer("probe", 2, [Beiwerk zum zweiten])
+#cue-layer("probe", 3, [Beiwerk zum dritten])
 
 == Zweite adaptive Gruppe
 // Eine zweite Gruppe auf einer eigenen Folie. Sie belegt, dass Gruppen
@@ -154,10 +154,10 @@ Ein dritter.
 //
 // `start` steht hier mit Absicht NICHT da: die Gruppe ist das erste verfolgte
 // Element ihrer Folie, `auto` muss also dieselbe 1 ergeben, die vorher
-// ausgeschrieben stand. Rechnet `adaptiv` den Zaehlerstand ohne `+ 1`, faengt
+// ausgeschrieben stand. Rechnet `cue` den Zaehlerstand ohne `+ 1`, faengt
 // sie bei null an und die ganze Reihe rutscht -- die einzige Stelle im Lauf,
 // die den auto-Zweig ueberhaupt betritt.
-#adaptiv("zweite")[
+#cue("zweite")[
   - anderer erster Punkt
   - anderer zweiter Punkt
 ]
@@ -180,11 +180,11 @@ Dritter Schritt.
 = Zeichnen
 
 == Eine Zeichnung in Stufen
-// `aufbau`: eine Zeichnung, die in vier Stufen entsteht. Sie steht hier aus
+// `build`: eine Zeichnung, die in vier Stufen entsteht. Sie steht hier aus
 // schlichten Rechtecken und nicht aus CeTZ oder lilaq -- geprueft wird das
 // Paket und nicht ein fremdes Zeichenpaket, und ein Prueflauf, der dafuer
 // etwas aus dem Netz holen muesste, prueft an dem Tag nichts, an dem das Netz
-// fehlt. Wie `aufbau` sich zu CeTZ und lilaq verhaelt, halten die Beispiele
+// fehlt. Wie `build` sich zu CeTZ und lilaq verhaelt, halten die Beispiele
 // der Handbuecher fest; hier steht, was die Laufzeit damit macht.
 //
 // Drei Dinge haengen daran.
@@ -219,25 +219,25 @@ Dritter Schritt.
 // Drittens: der Schrittzaehler laeuft in beiden Ausgaben gleich. Das sagt die
 // Zusicherung unter der Zeichnung, und `pruefe-decks.js` uebersetzt das Deck
 // eigens ein zweites Mal auf Papier, weil sie sonst nur im Browser gefragt
-// wuerde -- und der Papierzweig von `aufbau` ist ein anderer.
+// wuerde -- und der Papierzweig von `build` ist ein anderer.
 //
 // Wie die abtretende Stufe geht, statt *dass* sie geht, misst der Lauf eigens:
 // siehe `haltProbe` in `pruefe-decks.js`.
-#aufbau(ab => stack(dir: ltr, spacing: 8pt,
+#build(from => stack(dir: ltr, spacing: 8pt,
   // Der Grund: steht auf jeder Stufe, weil er keine Nummer traegt.
   rect(width: 44pt, height: 44pt, stroke: 0.6pt),
-  rect(width: 44pt, height: 44pt, fill: ab(2, red), stroke: ab(2, 0.6pt + black)),
-  rect(width: 44pt, height: 44pt, fill: ab(3, green), stroke: ab(3, 0.6pt + black)),
+  rect(width: 44pt, height: 44pt, fill: from(2, red), stroke: from(2, 0.6pt + black)),
+  rect(width: 44pt, height: 44pt, fill: from(3, green), stroke: from(3, 0.6pt + black)),
   // Ein Stueck aus Inhalt statt aus Farbe. Daran haengt die Breite des Stapels
   // und damit das Mass aller vier Stufen.
-  ab(4, box(width: 80pt, height: 44pt, align(center + horizon)[Beschriftung])),
-), schritte: 4)
+  from(4, box(width: 80pt, height: 44pt, align(center + horizon)[Beschriftung])),
+), steps: 4)
 
 #anim[Ein Schritt nach der Zeichnung.]
 
 #context assert(info().step.total == 5, message:
-  "Prüfdeck: die Folie mit aufbau() zählt " + str(info().step.total)
-  + " Schritte statt 5. Der Schrittzeiger zählt aufbau() falsch -- und diese "
+  "Prüfdeck: die Folie mit build() zählt " + str(info().step.total)
+  + " Schritte statt 5. Der Schrittzeiger zählt build() falsch -- und diese "
   + "Zahl muss in beiden Ausgaben dieselbe sein, sonst zeigt das Handout eine "
   + "andere Fußzeile als der Vortrag.")
 
@@ -288,7 +288,7 @@ Dritter Schritt.
 == Eine Szene mit vier Halten
 // `scene`: eine Zeichnung als Funktion eines Werts, mit vier Halten und acht
 // Zwischenbildern je Strecke -- 4 + 3·8 = 28 Bilder. Aus schlichten Rechtecken
-// und nicht aus CeTZ, aus demselben Grund wie bei `aufbau` daneben: geprüft
+// und nicht aus CeTZ, aus demselben Grund wie bei `build` daneben: geprüft
 // wird dieses Paket und nicht ein fremdes Zeichenpaket.
 //
 // Vier Dinge hängen daran, und `szeneProbe` in `pruefe-decks.js` fragt sie.
@@ -309,7 +309,7 @@ Dritter Schritt.
 // Viertens: dass ein Sprung stellt, statt zu ziehen. Nach `goto(…, true)` darf
 // keine Bewegung laufen und das Bild muss am Ziel stehen.
 //
-// Der `anim` darunter ist derselbe Wächter wie bei `aufbau`: ohne einen
+// Der `anim` darunter ist derselbe Wächter wie bei `build`: ohne einen
 // Schritt *nach* der Szene fiele es nicht auf, wenn sie zu wenige verbrauchte
 // -- ihr letzter Halt wäre dann zugleich der letzte Schritt der Folie.
 #scene("wanderung", x => box(width: 240pt, height: 60pt,

@@ -125,15 +125,14 @@
     // Paket gibt: setzen, ohne zu zeichnen.
     hide(wert)
   } else if t == gradient or repr(t) == "tiling" {
-    panic("typstage: ein Verlauf oder eine Kachelung lässt sich nicht zu Luft "
-      + "machen -- beide haben keine Deckkraft, an der sich drehen ließe. Gib "
-      + "dem Stück eine Farbe, oder frag mit ab(k) nach und lass es weg; in "
-      + "cetz behält hide(…, bounds: true) dabei das Maß.")
+    panic("typstage: a gradient or a tiling cannot be turned into air -- "
+      + "neither has an opacity to turn down. Give the piece a colour, or ask "
+      + "with from(k) and leave it out; in cetz, hide(…, bounds: true) keeps "
+      + "the measure while you do.")
   } else {
-    panic("typstage: ab() macht Farben, Striche, Wörterbücher und Inhalt "
-      + "unsichtbar, nicht " + str(t) + ". Was kein Pinsel und kein Inhalt "
-      + "ist, trägt keine Tinte, und was keine Tinte trägt, muss auch nicht "
-      + "verschwinden.")
+    panic("typstage: from() makes colours, strokes, dictionaries and content "
+      + "invisible, not " + str(t) + ". What is neither a brush nor content "
+      + "carries no ink, and what carries no ink need not disappear either.")
   }
 }
 
@@ -290,11 +289,11 @@
 /// its name with one on the slide before it, or the flight there is lost.
 /// The adaptive groups of a slide: name -> (start, count).
 ///
-/// `adaptiv` records which steps its points were given; `adaptiv-schicht`
+/// `cue` records which steps its points were given; `cue-layer`
 /// looks it up so that it shares one. The coupling then falls out of the
 /// shared step -- swapping the step moves the point and everything tied to it
 /// at once, and nothing has to be linked by name.
-#let adaptiv-gruppen = state("typstage-adaptiv", (:))
+#let cue-gruppen = state("typstage-cue", (:))
 
 /// Die Szenen einer Folie: Name -> (start, stops).
 ///
@@ -413,6 +412,18 @@
 /// writing to it in the same place is circular and never settles; a counter is
 /// built for exactly this and converges.
 #let step-cursor = counter("typstage-step")
+
+/// Den Zeiger auf den Schritt rücken, den ein Element mit `at: auto` bekommt.
+///
+/// `max(…, 2)` und nicht schlicht `+ 1`: Schritt eins gehört dem, was beim
+/// Betreten der Folie ohnehin dasteht. Wer `auto` schreibt, will *erscheinen* --
+/// und wer erscheinen will, kann nicht schon da sein. Ohne die Untergrenze fiel
+/// ein `anim` am Kopf einer Folie mit dem statischen Inhalt zusammen und tat
+/// nichts; dasselbe traf die erste Pause, die sich ihren Schritt mit dem Absatz
+/// über ihr teilte.
+///
+/// Nur `auto` ist betroffen. Wer seinen Schritt ausschreibt, bekommt ihn.
+#let schritt-vorruecken() = step-cursor.update(c => calc.max(c + 1, 2))
 
 /// Which slide we are on. Only used to scope things that a companion package
 /// looks up across the whole document. A query sees every slide at once and
@@ -944,7 +955,7 @@
   // only moves where its update stands in the document. Left in the `let` it
   // would join into the value instead of reaching the page.
   let zaehlen = if im-deck() {
-    if at == auto { step-cursor.step() }
+    if at == auto { schritt-vorruecken() }
     else if kind == "anim" {
       step-cursor.update(c => calc.max(c, max-step(selector(at))))
     }

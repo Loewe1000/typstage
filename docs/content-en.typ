@@ -238,7 +238,7 @@ which one is right depends on how finely the slide needs to be steered.
   [`alternatives(…)`],
   [Several versions of the same thing in the same place, each replacing the
    one before.],
-  [`aufbau(…)`],
+  [`build(…)`],
   [A drawing or a diagram that comes into being in stages -- one CeTZ line,
    one lilaq data series, one label after another.],
   [`scene(…)`],
@@ -356,12 +356,12 @@ experiment, which ways there are to work something out -- a class names those
 in whatever order they come, and a deck that reveals them in *its* order makes
 the teacher either wait or reshuffle.
 
-`adaptiv` turns that round: the digits `1` to `9` reveal whatever was just
+`cue` turns that round: the digits `1` to `9` reveal whatever was just
 named.
 
 // check: folie
 #show-code[```typ
-#adaptiv("readings", start: 2)[
+#cue("readings", start: 2)[
   - positive and negative values
   - lowest and highest value
   - falling and rising
@@ -378,12 +378,12 @@ nothing jumps when it arrives later.
 
 === What appears together with a point
 
-A point rarely stands alone. `adaptiv-schicht` hangs something on the same step
+A point rarely stands alone. `cue-layer` hangs something on the same step
 -- a drawing layer, a picture, a sentence beside it:
 
 // check: folie davor
 #show-code[```typ
-#adaptiv-schicht("readings", 1, [and what goes with it])
+#cue-layer("readings", 1, [and what goes with it])
 ```]
 
 Nothing is linked to do that: the point and the layer share a step, and
@@ -406,7 +406,7 @@ than quietly doing nothing.
   Otherwise the layer set last paints over the first, and that regardless of
   the order things are revealed in.
 
-  Where the drawing is to grow in the order it was written instead, `aufbau`
+  Where the drawing is to grow in the order it was written instead, `build`
   is the tool -- see "A drawing that grows". There every stage carries the
   *whole* drawing, and the question of painting over does not arise.
 ]
@@ -648,7 +648,7 @@ the finished setting, and what was a line and what was a data series in it
 cannot be reached from outside any more. So there is no `anim` around a single
 line of a drawing.
 
-What there is, is the drawing itself -- as often as you want it. `aufbau` calls
+What there is, is the drawing itself -- as often as you want it. `build` calls
 it once per step and lays the versions exactly on top of one another: on stage
 #box[$k$] the drawing stands as it looks after #box[$k$] steps. Exactly one of
 them is on show.
@@ -658,22 +658,22 @@ called `ab` -- "from" -- because it says what `at:` says elsewhere:
 
 // check: folie pre=cetz
 #show-code[```typ
-#aufbau(ab => cetz.canvas({
+#build(from => cetz.canvas({
   import cetz.draw: *
   line((0,0), (4,0))                          // there from the start
-  line((4,0), (4,3), stroke: ab(2, black))    // from step 2
-  line((4,3), (0,0), stroke: ab(3, 1.4pt + red))
-  content((2.2, 1.8), ab(4, [$c$]))
-  if ab(4) { circle((4,0), radius: 0.18) }
+  line((4,0), (4,3), stroke: from(2, black))    // from step 2
+  line((4,3), (0,0), stroke: from(3, 1.4pt + red))
+  content((2.2, 1.8), from(4, [$c$]))
+  if from(4) { circle((4,0), radius: 0.18) }
   else { hide(circle((4,0), radius: 0.18), bounds: true) }
-}), schritte: 4)
+}), steps: 4)
 ```]
 
-`ab(2, black)` gives the colour back once the second piece is due, and
+`from(2, black)` gives the colour back once the second piece is due, and
 otherwise the same colour with alpha 0. The base line carries no number and
-therefore stands there from the start. `schritte: 4` says how many stages there
+therefore stands there from the start. `steps: 4` says how many stages there
 are; that is not guessed, because what the drawing function does with its
-question nobody can see from outside. And `ab(4)` with a single argument is the
+question nobody can see from outside. And `from(4)` with a single argument is the
 same question as a boolean, for everything that cannot be recoloured -- in CeTZ
 that is where `hide(…, bounds: true)` belongs.
 
@@ -716,12 +716,12 @@ legend while its curve is still missing:
 
 // check: folie pre=lilaq
 #show-code[```typ
-#aufbau(ab => lq.diagram(
+#build(from => lq.diagram(
   width: 7cm, height: 4.5cm,
   legend: (position: top + left),
-  lq.plot(x, measured, color: ab(1, red), label: ab(1, [measured])),
-  lq.plot(x, model, color: ab(2, blue), label: ab(2, [model])),
-), schritte: 2)
+  lq.plot(x, measured, color: from(1, red), label: from(1, [measured])),
+  lq.plot(x, model, color: from(2, blue), label: from(2, [model])),
+), steps: 2)
 ```]
 
 Because the series stays in the data as air, lilaq reckons its axes over both:
@@ -734,7 +734,7 @@ second arrives. Leaving the series out would bring a new tick division with it.
   columns: (auto, 1fr),
   stroke: 0.5pt + luma(180),
   table.header([*Argument*], [*Effect*]),
-  [`schritte`], [number of stages, and hence of steps (default 2)],
+  [`steps`], [number of stages, and hence of steps (default 2)],
   [`start`], [first step; `auto` follows on from the cursor],
   [`enter`], [motion a stage arrives with (default `"fade"`); `"draw"` is an
               error here, see the next section],
@@ -745,7 +745,7 @@ second arrives. Leaving the series out would bring a new tick division with it.
 On paper only the last stage is set, in a block of the same size: a page shows
 every step at once, and stacked stages would be overprint. Measured on a deck
 with a CeTZ drawing and a lilaq diagram, the pages come out pixel for pixel the
-same as those of a deck that simply writes the drawing down. On paper `aufbau`
+same as those of a deck that simply writes the drawing down. On paper `build`
 costs nothing. Under "reduce motion" nothing changes either: the stages fade,
 they do not travel, and what the setting would take away is a motion that is
 not there.
@@ -942,7 +942,7 @@ trying:
 
 // check: folie pre=zeichnung bricht=is_at_odds_with_what_this_function_does
 #show-code[```typ
-#aufbau(painter, enter: "draw")   // an error at compile time
+#build(painter, enter: "draw")   // an error at compile time
 ```]
 
 Every stage of a drawing from the previous section is the *whole* drawing. A
@@ -957,7 +957,7 @@ over as pieces of their own and let each draw itself; to have a diagram grow in
 stages, leave it with its fade.
 == A drawing that moves
 
-`aufbau` lets a drawing grow: piece by piece something is added. `scene` is the
+`build` lets a drawing grow: piece by piece something is added. `scene` is the
 other half of the same idea. Here nothing is added -- here a *value* changes,
 and the picture hangs on it.
 
@@ -1009,7 +1009,7 @@ gets a name.
 #scene-layer("derivative", 4, enter: "scale")[$f'(x) = 1/2 x$]
 ```]
 
-This is word for word `adaptiv-schicht`, and for the same reason: the coupling
+This is word for word `cue-layer`, and for the same reason: the coupling
 falls out of the shared step. Move a stop and everything hanging on it moves
 along, and nowhere does a number stand twice. The scene has to stand *before*
 its layers in the source; standing after them, the package says so.
@@ -1055,7 +1055,7 @@ one way, and a tuple puts several values on it.
 with -- the same separation `morph` draws with its `duration`. Putting both
 under one name pulls the same motion visibly apart.
 
-Unlike `aufbau`, `scene` does not measure its frames. The stages of an `aufbau`
+Unlike `build`, `scene` does not measure its frames. The stages of an `build`
 drawing lie exactly on top of one another, because a piece not yet due stands
 there as air; the frames of a scene are drawings of different values and may
 legitimately come out different sizes. So a scene stands in a box of a fixed
@@ -1069,7 +1069,7 @@ size and every frame is clipped to it.
   although only one point was meant to move. Measured on the scene of this
   section: 28 frames, *15 different placements* of the ink in the box.
 
-  The package cannot take this off your hands. `aufbau` can, because it
+  The package cannot take this off your hands. `build` can, because it
   measures its stages and a piece not yet due keeps its room; here there is no
   shared piece whose room could be kept, and `scene` knows nothing of the
   drawing's coordinate system.
@@ -2571,7 +2571,7 @@ scaling: a `card` around a bare `block(height: 1fr)` behaves the same. Give
 
   `fit` therefore stops with a message that names the thing, for `pause`,
   `anim`, `stagger`, `alternatives`, `morph`, `tiles`, `video`, `embed`,
-  `flipbook`, `aufbau` and `scene` -- in both outputs, and also when the fit
+  `flipbook`, `build` and `scene` -- in both outputs, and also when the fit
   sits inside another fit.
   The way round it is to put the fit *inside* the reveal rather than around it:
 

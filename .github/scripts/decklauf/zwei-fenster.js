@@ -6,7 +6,7 @@
 // tut -- aber nichts, was zwischen beiden passiert. Drei Fehler sind genau
 // durch diese Lücke gekommen:
 //
-//   1. Die Zuordnung einer adaptiven Gruppe reiste nicht mit. Im
+//   1. Die Zuordnung einer cue-Gruppe reiste nicht mit. Im
 //      Sprecherfenster stand alles richtig, in der Halle erschien nichts.
 //   2. `adSprecher` setzte die Deckkraft eines genannten Punktes auf "",
 //      und ein leerer Wert fällt auf die Stilvorlage zurück, wo ein Element
@@ -95,7 +95,7 @@ const szeneBild = `(function () {
     const sprecher = await kommt;
     await schlaf(1500);
 
-    // Bis zur ersten adaptiven Gruppe blättern. Sie steht nicht auf der
+    // Bis zur ersten cue-Gruppe blättern. Sie steht nicht auf der
     // ersten Folie -- gerade das ist der Punkt.
     const zurGruppe = `(function () {
       var st = window.typstage.steps;
@@ -108,7 +108,7 @@ const szeneBild = `(function () {
       return -1;
     })()`;
     const k = await sprecher.ev(zurGruppe);
-    if (k < 0) { sagt("aufbau", "keine adaptive Gruppe im Prüfdeck gefunden"); }
+    if (k < 0) { sagt("cue", "keine cue-Gruppe im Prüfdeck gefunden"); }
     await schlaf(900);
 
     const beide = async () => ({

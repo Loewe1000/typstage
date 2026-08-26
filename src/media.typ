@@ -2,7 +2,8 @@
 // place on paper.
 
 #import "internal.typ": (track, bridge-jobs, fit-verbot, html-output, im-deck,
-                         name-of, step-cursor, slide-counter)
+                         name-of, schritt-vorruecken,
+                         step-cursor, slide-counter)
 #import "config.typ": doc-word
 
 /// The box that stands in for a moving element in the PDF.
@@ -139,7 +140,7 @@
   // The step counting of `track` does not run on paper, so the one case that
   // consumes a step is done here: `info().step.total` has to report the same
   // number in both outputs.
-  if at == auto and im-deck() { step-cursor.step() }
+  if at == auto and im-deck() { schritt-vorruecken() }
   fallback-box(fallback, if link != none { link } else { url }, width, height,
                if label == auto { doc-word("embedded") } else { label })
 } else {
@@ -180,7 +181,7 @@
   // On paper a single frame has to do. `still` picks which one.
   // The step counting of `track` does not run here, so the one case that
   // consumes a step is done by hand, as in `embed`.
-  if at == auto and im-deck() { step-cursor.step() }
+  if at == auto and im-deck() { schritt-vorruecken() }
   block(width: width, height: height,
         if still == auto { render(0.0) } else { still })
 } else {
