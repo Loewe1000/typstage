@@ -415,8 +415,8 @@
     "rise":       [{ opacity: 0, transform: "translateY(26px) scale(.96)" }, { opacity: 1, transform: "none" }],
     "none":       [{ opacity: 1 }, { opacity: 1 }],
     // Kein Abgang, sondern ein Warten. `aufbau` legt eine Zeichnung in
-    // Schichten uebereinander, eine je Schritt, und laesst immer nur eine
-    // sehen. Ginge die abtretende Schicht auf dem gewohnten Weg, blendeten
+    // Stufen uebereinander, eine je Schritt, und laesst immer nur eine
+    // sehen. Ginge die abtretende Stufe auf dem gewohnten Weg, blendeten
     // zwei fast gleiche Bilder gegeneinander, und die Tinte, die beide
     // teilen, saenke waehrenddessen auf zwei Drittel -- das ganze Bild
     // blinkt. Also bleibt sie stehen, bis die neue da ist, und geht danach
@@ -480,7 +480,7 @@
     if (name === "none") { el.style.opacity = "0"; return; }
     // Ein Warten dauert so lange wie der Eintritt, den es abwartet. `goto`
     // gibt einem Abgang drei Viertel der Dauer und dem, was hereinkommt, die
-    // ganze; die abtretende Schicht ginge sonst, wenn die neue erst bei drei
+    // ganze; die abtretende Stufe ginge sonst, wenn die neue erst bei drei
     // Vierteln steht, und das Bild saenke fuer den Rest des Wegs doch noch
     // ab. Rueckwaerts wird "hold" nie gefragt: dort spielt `goto` den
     // Eintritt rueckwaerts, und der heisst anders.

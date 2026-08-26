@@ -443,31 +443,31 @@
 // der Zeichnung gibt es also nicht.
 //
 // Was es gibt, ist die Zeichnung selbst, so oft man sie haben will. `aufbau`
-// ruft sie einmal je Schritt und legt die Fassungen übereinander: auf Schicht
+// ruft sie einmal je Schritt und legt die Fassungen übereinander: auf Stufe
 // k steht die Zeichnung so, wie sie nach k Schritten aussieht. Sichtbar ist
-// immer genau eine Schicht.
+// immer genau eine Stufe.
 //
 // Zwei Fragen entscheiden, ob das trägt, und beide sind nachgemessen.
 //
 // *Springt das Bild?* Nein, weil kein Stück je wirklich fehlt: was noch nicht
 // dran ist, steht als Luft da (siehe `durchsichtig` in `internal.typ`). Alle
-// Schichten messen deshalb auf die Stelle genau gleich, und der Block, in dem
+// Stufen messen deshalb auf die Stelle genau gleich, und der Block, in dem
 // sie liegen, hat ohnehin eine feste Größe.
 //
-// *Warum eine Schicht und nicht alle übereinander?* Weil sich gemalte Tinte
-// addiert. Drei Schichten desselben lilaq-Diagramms gegen eines: 3.7 Prozent
+// *Warum eine Stufe und nicht alle übereinander?* Weil sich gemalte Tinte
+// addiert. Drei Stufen desselben lilaq-Diagramms gegen eines: 3.7 Prozent
 // der Bildpunkte weichen um mehr als 8 von 255 ab, die größte Abweichung 99 --
 // Achsen, Beschriftung und der halbdurchsichtige Kasten der Legende werden
-// dreimal gemalt und dadurch fetter. Mit disjunkten Schichten, in denen nur
+// dreimal gemalt und dadurch fetter. Mit disjunkten Stufen, in denen nur
 // das eigene Stück steht, ist es nicht besser: dieselbe Messung ergab 3.5
 // Prozent und eine größte Abweichung von 243, denn die Achsen gehören zu
-// keinem Stück und stehen deshalb auf jeder Schicht. Eine Schicht auf einmal
+// keinem Stück und stehen deshalb auf jeder Stufe. Eine Stufe auf einmal
 // ist die einzige Anordnung, die genau das Bild ergibt, das dastünde, wenn man
 // die Zeichnung einmal setzte.
 //
 // Der Preis dafür ist der Übergang: zwei fast gleiche Bilder, die einander
 // ablösen, blenden sich gegenseitig aus. Dagegen steht `exit: "hold"` in der
-// Laufzeit -- die abtretende Schicht bleibt stehen, bis die neue da ist, und
+// Laufzeit -- die abtretende Stufe bleibt stehen, bis die neue da ist, und
 // geht dann ohne Bewegung. Vorwärts ist der Übergang damit sauber; rückwärts
 // überlagern sich Ausblenden und Einblenden für einen Augenblick, und die
 // geteilte Tinte sinkt kurz auf drei Viertel. Das Handbuch sagt es.
@@ -539,7 +539,7 @@
     // weil der Papierzweig weiter unten über ein `return` hinausgeht und ein
     // `return` alles fallen lässt, was vorher zusammengefügt wurde.
     assert(im-fit.get() == 0, message: fit-meldung("aufbau"))
-    // Die Frage, die eine Schicht ihrem Zeichner reicht. Ein Argument heißt
+    // Die Frage, die eine Stufe ihrem Zeichner reicht. Ein Argument heißt
     // fragen, zwei heißen einfärben; das spart dem Deck zwei Namen für
     // dieselbe Auskunft.
     let frage(k) = (nr, ..wert) => {
