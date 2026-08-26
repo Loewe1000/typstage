@@ -23,10 +23,12 @@
 //
 // The five were measured, not chosen by eye, and `accent` is the hard one. It
 // has to hold on the paper *and* on the ink, because an inverted slide puts
-// the ink behind it. Searched over the green corner of sRGB, the best any
-// colour reaches on both grounds at once is about 3.9 to 1; this one measures
-// 4.05 and 3.75, and the slide "Two grounds, one accent" prints both numbers
-// rather than repeating them.
+// the ink behind it, and no colour can be far from both at once. The ceiling
+// is exactly the square root of the contrast between the two grounds: here
+// paper against ink measures 15.16, so nothing reaches past 3.89 on both, and
+// only a colour sitting halfway between them gets there. This accent measures
+// 4.05 and 3.75; the slide "Two grounds, one accent" prints both numbers
+// rather than repeating them from here.
 #let p = (
   paper: rgb("#f5f3ee"),
   ink: rgb("#1b1e1c"),
