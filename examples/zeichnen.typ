@@ -10,9 +10,9 @@
 // Two ways of drawing, each on what it is made for. The diagrams grow in
 // stages (`build`), because a lilaq diagram is 64 stroked paths -- grid,
 // ticks, frame, marks -- and a pen would set off along all of them at once.
-// The geometry is drawn with a pen (`enter: "draw"`), because it is four long
-// lines an eye can follow. The manual counts out which drawing packages hand
-// out outlines that can be traced at all.
+// The geometry is drawn with a pen (`enter: "draw"`), because it is six long
+// strokes over three steps and an eye can follow every one of them. The manual
+// counts out which drawing packages hand out outlines that can be traced.
 //
 // This deck needs two foreign packages. `examples/geogebra.typ` already pulls
 // cetz, so nothing in the build changes; both resolve from the package cache
@@ -277,18 +277,28 @@ A pendulum keeps time. Something about it must decide how fast.
 
   // Stage 4: the same weight, split along the string and across it. Only the
   // part across it moves anything; the rest the string simply holds.
-  line(bob, quer, stroke: from(4, 1.6pt + messung),
-       mark: from(4, (end: ">", fill: messung, stroke: messung)))
-  line(bob, laengs, stroke: from(4, 0.9pt + hilfs),
-       mark: from(4, (end: ">", fill: hilfs, stroke: hilfs)))
-  line(quer, unten,
-       stroke: from(4, (paint: hilfs, thickness: 0.6pt, dash: "dashed")))
-  line(laengs, unten,
-       stroke: from(4, (paint: hilfs, thickness: 0.6pt, dash: "dashed")))
-  content((-0.05, -3.28), from(4, text(fill: messung, size: 0.8em,
-                                      $m g sin theta$)))
-  content((2.74, -3.72), from(4, text(fill: hilfs, size: 0.8em,
-                                      $m g cos theta$)))
+  //
+  // Asked with one argument instead of two. `from(4, ...)` would have to be
+  // written eight times here -- twice per arrow, once per dashed line, once
+  // per label -- to say the one thing `from(4)` says once. The single-argument
+  // form answers yes or no, and in CeTZ the answer goes to
+  // `hide(…, bounds: true)`, which takes a whole group out of the picture and
+  // keeps its measure, so all four stages still measure alike. It is also the
+  // only form for what cannot be recoloured at all, a gradient for instance.
+  let zerlegung = {
+    line(bob, quer, stroke: 1.6pt + messung,
+         mark: (end: ">", fill: messung, stroke: messung))
+    line(bob, laengs, stroke: 0.9pt + hilfs,
+         mark: (end: ">", fill: hilfs, stroke: hilfs))
+    line(quer, unten,
+         stroke: (paint: hilfs, thickness: 0.6pt, dash: "dashed"))
+    line(laengs, unten,
+         stroke: (paint: hilfs, thickness: 0.6pt, dash: "dashed"))
+    content((-0.05, -3.28),
+            text(fill: messung, size: 0.8em, $m g sin theta$))
+    content((2.74, -3.72), text(fill: hilfs, size: 0.8em, $m g cos theta$))
+  }
+  if from(4) { zerlegung } else { hide(zerlegung, bounds: true) }
 }), steps: 4))
 
 == The three lengths that nearly agree
@@ -302,10 +312,10 @@ A pendulum keeps time. Something about it must decide how fast.
 #anim[At $theta = 40degree$, drawn large: a height, an arc and a tangent.]
 
 // `enter: "draw"` sets a pen on a path and runs it from one end to the other.
-// It is right here and wrong on the diagrams above: this is four long lines an
-// eye can follow, whereas a lilaq diagram hands the pen 64 stroked paths --
-// grid, ticks, frame, marks -- which all set off at once and look like a wipe
-// rather than like a drawing.
+// It is right here and wrong on the diagrams above: six strokes across three
+// steps, whereas a lilaq diagram hands the pen 64 stroked paths -- grid,
+// ticks, frame, marks -- which all set off at once and look like a wipe rather
+// than like a drawing.
 //
 // Every stroked path of one element does set off together, and there is
 // nothing to turn there. An order is therefore said rather than inherited:
@@ -366,7 +376,8 @@ A pendulum keeps time. Something about it must decide how fast.
 
 #anim(at: 5, align(center, text(fill: hilfs)[
   $sin theta < theta < tan theta$, always. At $10degree$: $0.1736$, $0.1745$,
-  $0.1763$. At $5degree$ they agree to one part in eight hundred.
+  $0.1763$. At $5degree$ the sine is within one part in eight hundred of the
+  angle -- and it is the sine the force is made of.
 ]))
 
 == From the triangle to the beat
