@@ -8,9 +8,10 @@
 // Fall, für den `scene` da ist: das Deck schreibt die Funktion von der Zahl
 // auf das Bild und sagt, an welchen Werten der Vortrag hält.
 //
-// Dieselbe Zeichenfunktion trägt alle drei Szenen -- einmal an ζ allein,
-// einmal an einem Paar aus Feder und Öl, einmal als Daumenkino mit einem
-// Läufer darauf. Die Wurzelortskurve ist die vierte Ansicht derselben Zahl.
+// Eine einzige Zeichenfunktion trägt fast alles: die Szene an ζ, die Szene an
+// einem Paar aus Feder und Öl, und das Daumenkino, das denselben Kurvenzug
+// bekommt und einen Läufer darauf. Nur die Wurzelortskurve ist eine eigene,
+// und sie ist die zweite Ansicht derselben Zahl.
 
 #import "@preview/cetz:0.4.2"
 #import "@schule/typstage:0.1.0": *
@@ -43,10 +44,10 @@
 
 // ── Die Zeichnung ───────────────────────────────────────────────────────────
 //
-// Die Sprungantwort eines Feder-Masse-Dämpfers: wo steht die Tür zur Zeit `t`,
-// wenn sie zur Zeit 0 losgelassen wird? Zwei Größen bestimmen sie, die
-// Eigenfrequenz `w` und der Dämpfungsgrad `z`, und die drei Szenen dieses
-// Decks unterscheiden sich nur darin, welche davon sie ziehen.
+// Die Sprungantwort eines Feder-Masse-Dämpfers: wo steht die Tür zur Zeit `tt`,
+// wenn sie bei null losgelassen wird? Zwei Größen bestimmen sie, die
+// Eigenfrequenz `w` und der Dämpfungsgrad `z` -- und die Szenen dieses Decks
+// unterscheiden sich nur darin, welche davon sie ziehen.
 
 #let ZEIT = 12.0    // gezeigte Sekunden
 #let SX = 0.50      // eine Sekunde in Einheiten der Leinwand
@@ -335,16 +336,16 @@
   ),
   neben[
     #scene-layer("settle", 1)[
-      #halt[0.15][Barely any oil. It reaches the frame early, then comes back
-        four times.]
+      #halt[0.15][Barely any oil. It touches the frame after a second and a
+        half, then three times more.]
     ]
     #scene-layer("settle", 2)[
-      #halt[0.40][One small overshoot — and at the latch before any calmer
-        setting.]
+      #halt[0.40][A quarter of the way past, once — and at the latch before
+        any calmer setting.]
     ]
     #scene-layer("settle", 3)[
-      #halt[1.00][It arrives and stops. Nothing to come back from, and no
-        waiting.]
+      #halt[1.00][No overshoot at all, and it is the first setting with none.
+        Watch where it ends up.]
     ]
     #scene-layer("settle", 4)[
       #halt[2.00][Thick oil. Nothing overshoots, and nothing quite arrives
@@ -409,9 +410,10 @@ Write the motion down and the whole question collapses into one square root:
 
 #v(0.5em)
 
-// Dieselbe Größe, dieselbe Art zu ziehen, ein anderes Bild. Dass beide Szenen
-// dieselben vier Zahlen als Halte tragen könnten, ist der Grund, warum `stops`
-// die Werte selbst nennt: hier stehen sie zweimal und meinen dasselbe.
+// Dieselbe Größe, ein anderes Bild -- und drei der vier Halte sind wörtlich
+// dieselben Zahlen wie eine Folie zuvor. Genau dafür nennt `stops` die Werte
+// selbst und nicht 0 bis 1: 0,4 heißt hier, was es dort hieß, und man sieht
+// es dem Quelltext an, ohne die Szenen nebeneinanderzulegen.
 #side-by-side(
   split: (392pt, 1fr),
   gutter: 22pt,
@@ -445,11 +447,12 @@ Write the motion down and the whole question collapses into one square root:
 
 = What the knob costs
 
-== Critical is not the fastest
+== Critical never quite arrives
 
 #speaker-note[
-  The word "critical" does the damage here. People hear it as "best" and it
-  only ever meant "the boundary".
+  The word "critical" does the damage. People hear it as "best", and it only
+  ever meant "the boundary". Point back at the ζ = 1 curve if anyone doubts
+  that it never touches the line.
 ]
 
 #v(1fr)
@@ -460,21 +463,22 @@ Write the motion down and the whole question collapses into one square root:
   equal: true,
   card(title: [What $zeta = 1$ buys])[
     The overshoot goes to zero, and it is the first setting at which it does.
-    One number, one promise, and the promise is about coming back — not about
+    One number, one promise — and the promise is about coming back, not about
     getting there.
   ],
   card(title: [What it does not])[
-    At $zeta = 0.7$ the door overshoots by five per cent and is finished
-    sooner than at $zeta = 1$. At $zeta = 0.4$ it overshoots by a quarter and
-    touches the latch sooner still.
+    At $zeta = 1$ the door never actually touches the frame; it only ever
+    approaches it. Every setting that arrives in finite time overshoots — by
+    five per cent at $zeta = 0.7$, by a quarter at $zeta = 0.4$.
   ],
 )
 
 #v(0.6em)
 
-#anim(at: 2, enter: "fade-up", callout(title: [So the question is about the room])[
-  Everything between $0.6$ and $1$ is a defensible door. Which one you want
-  depends on whether anybody is trying to sleep on the other side of the wall.
+#anim(at: 2, enter: "fade-up", callout(title: [Which is why doors are set under one])[
+  A door has to latch, so it has to arrive, so it has to overshoot a little.
+  How little depends on whether anybody is trying to sleep on the other side
+  of the wall.
 ])
 
 #v(1fr)
@@ -574,8 +578,9 @@ Write the motion down and the whole question collapses into one square root:
   gutter: 24pt,
   align: horizon,
   callout(title: [The whole talk])[
-    Below one it argues. Above one it dawdles. The screw is worth a quarter
-    turn and about ninety seconds of your afternoon.
+    Too far below one and it argues. At one and above it dawdles, and never
+    quite shuts. The screw is worth a quarter turn and ninety seconds of your
+    afternoon.
   ],
   [
     #text(size: 0.92em, stagger(
