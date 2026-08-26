@@ -270,7 +270,7 @@ const SOLL_HINWEIS = [
 ];
 
 // ── Welche Decks ────────────────────────────────────────────────────────────
-// Die acht Beispiele plus das Prüfdeck. Letzteres steht nicht unter
+// Die neun Beispiele plus das Prüfdeck. Letzteres steht nicht unter
 // `examples/`, weil es nicht auf die Website gehört; es wird hier übersetzt.
 // Es deckt ab, was die anderen nicht anfassen. Nachgezählt in ihren Quellen:
 // `after: "dimmed"` 0x, `stagger(dim: true)` 0x, `invert` 0x, `info()` 0x,
@@ -285,7 +285,7 @@ const SOLL_HINWEIS = [
 // ergeben beide Decks mit und ohne erreichbares GeoGebra dieselben Zahlen.
 const BEISPIELE = ["tour", "theme-default", "theme-editorial", "theme-lesson",
                    "theme-night", "theme-plain", "geogebra",
-                   "geogebra-sprecher"];
+                   "geogebra-sprecher", "anziehen"];
 
 // Decks mit einem Applet darin. Sie werden mit abgeklemmtem GeoGebra gefahren,
 // siehe `ohneGeoGebra`.
