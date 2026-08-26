@@ -33,7 +33,29 @@ async function starte(binaer) {
   }
   if (!ziel) { kind.kill(); throw new Error("Chrome meldete sich nicht auf " + port); }
 
-  const ws = new WebSocket(ziel.webSocketDebuggerUrl);
+  const verbindung = await verbinde(ziel.webSocketDebuggerUrl, kind, profil);
+  // Ein zweites Fenster, das das Deck selbst geöffnet hat (Taste `n`). Es
+  // taucht in `/json` als weitere Seite auf; mehr braucht es nicht, um die
+  // Fernsteuerung wirklich zu prüfen -- mit nur einem Fenster kann kein Test
+  // sehen, ob eine Zuordnung auch drüben ankommt.
+  verbindung.zweites = async function (frist) {
+    const bekannt = ziel.webSocketDebuggerUrl;
+    for (let i = 0; i < (frist || 60); i++) {
+      await schlaf(250);
+      try {
+        const liste = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
+        const z = liste.find(x => x.type === "page" && x.webSocketDebuggerUrl
+                                  && x.webSocketDebuggerUrl !== bekannt);
+        if (z) return await verbinde(z.webSocketDebuggerUrl, null, null);
+      } catch (e) { /* noch nicht da */ }
+    }
+    throw new Error("kein zweites Fenster erschienen");
+  };
+  return verbindung;
+}
+
+async function verbinde(wsUrl, kind, profil) {
+  const ws = new WebSocket(wsUrl);
   await new Promise((r, j) => {
     ws.addEventListener("open", r); ws.addEventListener("error", j);
   });
@@ -59,8 +81,13 @@ async function starte(binaer) {
     name: "chrome", ruf, ev,
     navigiere: (url) => ruf("Page.navigate", { url }),
     bild: async () => (await ruf("Page.captureScreenshot", { format: "png" })).result.data,
+    taste: (k) => ruf("Input.dispatchKeyEvent", {
+      type: "keyDown", key: k, text: k.length === 1 ? k : undefined,
+      windowsVirtualKeyCode: k.length === 1 ? k.charCodeAt(0) : undefined
+    }).then(() => ruf("Input.dispatchKeyEvent", { type: "keyUp", key: k })),
     ende: async () => {
       try { ws.close(); } catch (e) {}
+      if (!kind) return;
       await schlaf(200); kind.kill();
       try { fs.rmSync(profil, { recursive: true, force: true }); } catch (e) {}
     }

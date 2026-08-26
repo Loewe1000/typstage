@@ -68,6 +68,12 @@ jobs:
       - name: Decks durchfahren
         run: node .github/scripts/pruefe-decks.js --bericht bericht.json
 
+      # Zwei echte Fenster. Der Lauf darüber prüft alles, was ein Fenster für
+      # sich tut; drei Fehler der Fernsteuerung sind genau durch diese Lücke
+      # gekommen, weil sie erst zwischen zwei Fenstern sichtbar werden.
+      - name: Die Fernsteuerung mit zwei Fenstern
+        run: node .github/scripts/decklauf/zwei-fenster.js
+
       - name: Bericht aufheben
         if: always()
         uses: actions/upload-artifact@v4

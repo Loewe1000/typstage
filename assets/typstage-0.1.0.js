@@ -2958,8 +2958,19 @@
       Object.keys(g.reihen).forEach(function (nr) {
         var offen = g.folge.indexOf(+nr) < 0;
         g.reihen[nr].forEach(function (el, i) {
-          el.style.opacity = offen ? "0.3" : "";
-          el.style.visibility = offen ? "visible" : "";
+          if (offen) {
+            el.style.opacity = "0.3";
+            el.style.visibility = "visible";
+          } else {
+            // Nicht auf "" zuruecksetzen: `ruhe` hat die Deckkraft eben als
+            // Inline-Stil gesetzt, und ein leerer Wert faellt auf die
+            // Stilvorlage zurueck, wo ein Element unsichtbar ist. Gemessen:
+            // ein genannter Punkt verschwand, sobald der naechste genannt
+            // wurde. Also dieselbe Entscheidung noch einmal treffen.
+            var z = zustand(el, STEPS[current] ? STEPS[current].step : 1);
+            el.style.opacity = z === 2 ? "1" : (z === 1 ? String(DIM) : "0");
+            el.style.visibility = "";
+          }
           // One badge per point, on the first member. The layer that travels
           // with it needs no second number.
           // Beside the point, not inside it. A badge inside inherits the
@@ -3003,6 +3014,22 @@
     });
   }
 
+  // The other window's assignment. Sent whenever a digit is pressed, so both
+  // windows agree on which point took which step -- the reveal itself then
+  // falls out of the ordinary step machinery.
+  horch("adaptiv", function (d) {
+    var g = AD[d.gruppe];
+    if (!g || !d.folge) return;
+    g.folge = d.folge.slice();
+    // Neu zeichnen, aber stumm. Ein gewoehnliches `goto` meldet den eigenen
+    // Schritt zurueck, und das ist hier der *alte* -- die Zuordnung kommt vor
+    // dem Schritt an. Gemessen: die Halle meldete 4 zurueck, `fernGoto` zog
+    // das Sprecherfenster von 5 auf 4, und die Fernsteuerung hinkte fortan
+    // einen Schritt hinterher, waehrend die Halle richtig stand.
+    stumm++;
+    try { adStellen(d.gruppe, true); } finally { stumm--; }
+  });
+
   // Which groups are on the slide the deck is standing on.
   function adHier() {
     var sec = SLIDES[STEPS[current].slide];
@@ -3023,6 +3050,12 @@
     if (g.folge.indexOf(ziffer) >= 0) return false;
     g.folge.push(ziffer);
     adStellen(namen[0], false);
+    // Und in das andere Fenster. Ohne das kennt die Halle die Zuordnung nicht:
+    // sie geht auf den Schritt, den der Sprecher meldet, hat dort aber jeden
+    // Punkt beiseitegestellt und zeigt nichts. Gemessen -- in der Halle blieb
+    // jeder Punkt auf dem Ausweichbereich, waehrend im Sprecherfenster alles
+    // richtig stand.
+    sende("adaptiv", { gruppe: namen[0], folge: g.folge.slice() });
     // And go there. Naming a point and then having to press onwards would be
     // two moves for one thought; the step is the one the point just took, so
     // the count and the progress bar say the same as before.
