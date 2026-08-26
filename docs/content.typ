@@ -658,6 +658,12 @@ es, statt still nichts zu tun.
 ]
 
 #info[
+  Der Pfeil nach rechts deckt den nächsten *noch ungenannten* Punkt auf, in
+  der geschriebenen Reihenfolge. Wer nur blättert, bekommt damit genau das
+  Verhalten einer gestaffelten Liste; wer eine Ziffer drückt, bekommt diesen
+  Punkt; beides mischt sich frei. Erst wenn die Gruppe voll ist, führt der
+  Pfeil weiter.
+
   Die Ziffern wirken nur, solange eine adaptive Gruppe auf der Folie steht.
   In der Sprecheransicht steht jeder noch offene Punkt blass da, mit seiner
   Ziffer auf dem Aufzählungspunkt; im Saal ist er unsichtbar. Ein zweites Mal

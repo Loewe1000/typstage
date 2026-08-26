@@ -401,6 +401,11 @@ than quietly doing nothing.
 ]
 
 #info[
+  The forward arrow reveals the next point *not yet named*, in the order it is
+  written. Paging alone therefore behaves exactly like a staggered list;
+  pressing a digit gives that point; and the two mix freely. Only once the
+  group is full does the arrow carry on.
+
   The digits work only while an adaptive group stands on the slide. In the
   speaker view every point still open stands there pale, with its digit on the
   bullet; in the hall it is invisible. Pressed a second time a digit does

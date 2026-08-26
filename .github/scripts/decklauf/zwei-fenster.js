@@ -103,7 +103,11 @@ const stand = `(function () {
     }
 
     // Der Kern: eine Ziffer im Sprecherfenster.
-    const folge = ["2", "1"];
+    // Mit einer Luecke: erst die 3, dann muss der Pfeil die 1 nehmen. Waehlte
+    // man 2 und 1, waere "der naechste offene" und "der naechste der Zaehlung"
+    // dieselbe Antwort, und eine Verwechslung der beiden bliebe unsichtbar --
+    // gemessen, genau so ist sie beim ersten Anlauf durchgerutscht.
+    const folge = ["3"];
     let erwartet = [];
     for (const z of folge) {
       await sprecher.taste(z);
@@ -148,6 +152,36 @@ const stand = `(function () {
       console.log("Ziffer " + z + ": Halle S" + a.h.auf + " [" + a.h.punkte
         + "] · Sprecher S" + a.s.auf);
     }
+    // Und der Pfeil nimmt den naechsten *ungenannten*, nicht den naechsten der
+    // Zaehlung. Nach den Ziffern 2 und 1 ist das die 3 -- eine Prueffolge, die
+    // eine Verwechslung von "offen" mit "der naechste" sofort zeigt.
+    await sprecher.taste("ArrowRight");
+    await schlaf(900);
+    const nach = await beide();
+    if (!nach.h.punkte.includes("probe1:1.0")) {
+      sagt("pfeil", "der Pfeil nahm nicht den naechsten offenen Punkt (1): " + nach.h.punkte);
+    }
+    if (nach.h.punkte.includes("probe2:1.0")) {
+      sagt("pfeil", "der Pfeil nahm den naechsten der Zaehlung (2) statt den naechsten offenen (1)");
+    }
+    if (nach.h.schritt !== nach.s.schritt) {
+      sagt("pfeil", "Halle steht auf Schritt " + nach.h.schritt + ", Sprecher auf " + nach.s.schritt);
+    }
+    // Und das frueher Genannte steht in beiden Fenstern noch. Das ist die
+    // Pruefung, an der der zweite der drei Fehler haengt: ein genannter Punkt
+    // verschwand, sobald der naechste kam, und zwar nur in der
+    // Sprecheransicht. Ohne einen zweiten Aufdeckvorgang mit Blick zurueck
+    // bleibt er unsichtbar.
+    for (const nr of ["1", "3"]) {
+      if (!nach.h.punkte.includes("probe" + nr + ":1.0")) {
+        sagt("pfeil", "Punkt " + nr + " ging in der Halle wieder verloren: " + nach.h.punkte);
+      }
+      if (!nach.s.punkte.includes("probe" + nr + ":1.0")) {
+        sagt("pfeil", "Punkt " + nr + " ging im Sprecherfenster wieder verloren: " + nach.s.punkte);
+      }
+    }
+    console.log("Pfeil: Halle S" + nach.h.auf + " [" + nach.h.punkte + "] · Sprecher S" + nach.s.auf);
+
     await sprecher.ende();
   } catch (e) {
     sagt("lauf", e.message);

@@ -3030,6 +3030,27 @@
     try { adStellen(d.gruppe, true); } finally { stumm--; }
   });
 
+  // A forward key on a slide whose group still has unnamed points takes the
+  // next one in written order. That makes an adaptive group a superset of a
+  // staggered list rather than a mode beside it: press only arrows and you get
+  // the order as written, press a digit and you get that point, and the two
+  // mix freely. Without it three keypresses in a row did nothing visible --
+  // measured -- which reads as broken even though it was correct.
+  function adPfeil() {
+    var namen = adHier();
+    if (!namen.length) return false;
+    var g = AD[namen[0]];
+    var offen = Object.keys(g.reihen).map(Number)
+      .filter(function (n) { return g.folge.indexOf(n) < 0; })
+      .sort(function (a, b) { return a - b; });
+    if (!offen.length) return false;
+    // Nur vorwärts. Wer über den Hash oder `End` hinter die Gruppe gesprungen
+    // ist, soll mit dem Pfeil nicht rückwärts in sie hineinfallen.
+    var platz = parseInt(g.plaetze[g.folge.length], 10);
+    if (!(platz >= STEPS[current].step)) return false;
+    return adTaste(offen[0]);
+  }
+
   // Which groups are on the slide the deck is standing on.
   function adHier() {
     var sec = SLIDES[STEPS[current].slide];
@@ -3075,7 +3096,10 @@
   addEventListener("keydown", function (e) {
     if (tippt(e)) return;
     if (/^[1-9]$/.test(e.key) && adTaste(+e.key)) { e.preventDefault(); return; }
-    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { goto(current + 1); e.preventDefault(); }
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+      if (!adPfeil()) goto(current + 1);
+      e.preventDefault();
+    }
     else if (e.key === "ArrowLeft" || e.key === "PageUp") { goto(current - 1); e.preventDefault(); }
     else if (e.key === "Home") goto(0, true);
     else if (e.key === "End") goto(STEPS.length - 1, true);
