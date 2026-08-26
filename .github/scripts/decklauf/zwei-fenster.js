@@ -97,6 +97,21 @@ const stand = `(function () {
       s: JSON.parse(await sprecher.ev(stand))
     });
 
+    // Die Ziffern gehoeren auf die Buehne, nicht in die Vorschau: dort stehen
+    // sie neben Punkten, die noch niemand genannt hat, und waehlen kann man in
+    // einem Standbild ohnehin nicht. Sie sind Geschwister ihrer Punkte und
+    // werden deshalb mitgeklont, wenn man sie nicht abraeumt.
+    const ziffern = JSON.parse(await sprecher.ev(`JSON.stringify({
+      buehne: (document.querySelector('#ts-stage') || document).querySelectorAll('.ts-ad-nr').length,
+      vorschau: document.querySelector('.ts-mini')
+        ? document.querySelector('.ts-mini').querySelectorAll('.ts-ad-nr').length : -1
+    })`));
+    if (ziffern.buehne < 1) sagt("ziffern", "auf der Buehne steht keine Ziffer zur Auswahl");
+    if (ziffern.vorschau > 0) {
+      sagt("ziffern", "in der Vorschau stehen " + ziffern.vorschau + " Ziffern, dort gehoert keine hin");
+    }
+    console.log("Ziffern: Buehne " + ziffern.buehne + " · Vorschau " + ziffern.vorschau);
+
     let vorher = await beide();
     if (vorher.h.punkte.split(" ").some(x => !x.endsWith(":0.0"))) {
       sagt("start", "in der Halle steht ein Punkt, bevor eine Ziffer gedrückt wurde: " + vorher.h.punkte);

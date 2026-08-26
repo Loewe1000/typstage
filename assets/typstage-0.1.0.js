@@ -1822,6 +1822,11 @@
       // cloned video would play sound a second time. Neither belongs in a
       // still image.
       k.querySelectorAll("iframe,video,audio").forEach(function (x) { x.remove(); });
+      // Und die Ziffern einer adaptiven Gruppe. Sie stehen als Geschwister
+      // neben ihren Punkten und werden deshalb mitgeklont -- in der Vorschau
+      // schweben sie dann ohne den Text, zu dem sie gehoeren. Waehlen kann man
+      // dort ohnehin nicht.
+      k.querySelectorAll(".ts-ad-nr").forEach(function (x) { x.remove(); });
       k.querySelectorAll(".ts-el").forEach(function (el, i) {
         el.removeAttribute("data-hold");
         // The preview answers "what stands there after the next keypress",
