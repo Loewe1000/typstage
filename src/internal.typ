@@ -326,6 +326,35 @@
 
 #let morph-index = state("typstage-morphs", ())
 
+// ── Die Kamera ───────────────────────────────────────────────────────────────
+//
+// Eine Kamerafahrt schreibt nichts auf die Folie. Sie ist eine Anweisung, und
+// sie geht denselben Weg wie ein Auftrag an eine Einbettung: als Eintrag in
+// eine Liste, die am Ende der Folie als JSON danebensteht. Ein verfolgtes
+// Element waere sie nicht -- ein Sprite, das nichts zeigt, haette einen Platz
+// zu halten, den es nicht braucht.
+
+/// Die Fahrten einer Folie, in der Reihenfolge ihres Aufschreibens.
+///
+/// Zurueckgesetzt je Folie, wie `sprites` und `bridge-jobs`.
+#let kamera-liste = state("typstage-kamera", ())
+
+/// Jede Fahrt des ganzen Decks, samt Folie und Zielname.
+///
+/// Fuer dieselbe spaete Frage, die auch den Morphs gestellt wird: zeigt jede
+/// Kamera auf ein `pin`, das es auf ihrer Folie wirklich gibt? Frueher laesst
+/// sich das nicht fragen. Ein `camera` darf vor seinem Ziel stehen -- eine
+/// Folie liest sich von oben nach unten, die Fahrt gehoert oft an den Anfang
+/// --, und was auf einer Folie steht, ist erst gesetzt, wenn sie gesetzt ist.
+#let kamera-index = state("typstage-kameras", ())
+
+/// Jedes `pin` des ganzen Decks: Folie und Name.
+///
+/// Der Gegenpart zu `kamera-index`. Ein Pin traegt seinen Namen sonst nirgends
+/// mit sich -- `pin-marker` rechnet ihn zu einer Zahl und vergisst ihn --, und
+/// eine Kamera, die ins Leere zielt, faende erst im Browser jemand.
+#let pin-index-buch = state("typstage-pinnamen", ())
+
 /// Every element that asked to rest dimmed: its slide and the last step of
 /// its range. Checked at the end for the same reason the morphs are.
 ///

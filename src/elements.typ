@@ -1,10 +1,10 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (cue-gruppen, durchsichtig, fit-meldung,
-                        fit-verbot, html-output, im-deck, im-fit, kurve,
-                        name-of, offenes-ende, pin-index, pin-marker,
-                        selector, step-cursor, szene-gruppen, track,
-                        will-fuellen)
+#import "internal.typ": (cue-gruppen, deck-info, durchsichtig, fit-meldung,
+                        fit-verbot, html-output, im-deck, im-fit, kamera-index,
+                        kamera-liste, kurve, max-step, name-of, offenes-ende,
+                        pin-index, pin-index-buch, pin-marker, selector,
+                        step-cursor, szene-gruppen, track, will-fuellen)
 
 /// What `anim` does once its arguments have been checked.
 ///
@@ -243,7 +243,141 @@
 /// back to shape matching without complaint.
 ///
 /// The name is a string or a label.
-#let pin(name, body) = box(fill: pin-marker(pin-index(name-of(name))), body)
+#let pin(name, body) = {
+  let n = name-of(name)
+  // Der Name wird eingetragen, bevor er zur Zahl wird. `pin-marker` rechnet
+  // ihn zu einem Farbwert und vergisst ihn dabei; ohne dieses Buch koennte am
+  // Dokumentende niemand mehr sagen, welche Namen es auf welcher Folie gibt --
+  // und eine Kamera, die auf einen Tippfehler zielt, faende erst im Browser
+  // jemand. Die Eintragung zeichnet nichts und misst nichts, sie darf also
+  // auch mitten in einer Formel stehen.
+  context if im-deck() {
+    // Erst ausrechnen, dann eintragen. Innerhalb der Funktion, die `update`
+    // bekommt, ist kein Kontext mehr bekannt -- sie laeuft, wenn jemand den
+    // Zustand liest, und nicht hier.
+    let wo = deck-info.get().nr
+    pin-index-buch.update(a => a + ((slide: wo, name: n),))
+  }
+  box(fill: pin-marker(pin-index(n)), body)
+}
+
+// ── Die Kamera ───────────────────────────────────────────────────────────────
+//
+// Typst gibt zur Uebersetzungszeit keine Geometrie heraus: `here().position()`
+// liefert in der HTML-Ausgabe ueberall (0, 0), und genau deshalb arbeitet
+// dieses Paket ueberhaupt mit Rechtecken in Signalfarbe. Die Laufzeit dagegen
+// *muss* diese Rechtecke kennen -- sie legt ihre Sprites darueber. Eine Kamera
+// kann sich daran anhaengen: sie zielt auf ein `pin`, schlaegt dessen Rechteck
+// im Bild nach und rechnet sich aus, wohin sie zu fahren hat. Das Deck nennt
+// einen Namen, keine Koordinate.
+//
+// Gefahren wird nicht die Folie, sondern ihre beiden Ebenen: der Hintergrund
+// und die Sprite-Ebene darueber. Beide sind derselbe Kasten, beide bekommen
+// dieselbe Verschiebung, also bleiben sie deckungsgleich -- und die Rechnung
+// in `stelle()` bleibt unberuehrt, weil sie in Verhaeltnissen misst und eine
+// gleichmaessige Streckung Verhaeltnisse nicht antastet. Die Folienzier, die
+// Tinte und die Uebersicht liegen in eigenen Ebenen ueber der Buehne und
+// fahren nicht mit; das ist keine Ruecksicht, sondern faellt aus dem Aufbau,
+// den sie ohnehin schon haben.
+
+/// Move in on one detail of the slide, and back out again.
+///
+/// ```typ
+/// #pin(<detail>, card[The measuring head])
+/// …
+/// #camera(<detail>)
+/// ```
+///
+/// The camera aims at a `pin`, and at nothing else. That is the package's
+/// word for a named piece of a slide, its marker is exactly the rectangle the
+/// runtime already measures, and it sits wherever content sits: around a
+/// card, around a cell of a table, around one subterm of a formula. Nothing
+/// has to be given in coordinates, and nothing has to be counted.
+///
+/// `at` is a step selector, as everywhere else, and the slide is seen through
+/// the camera for exactly as long as it is active. That answers the way back
+/// out with the notation that is already there: `at: "3"` moves in on step
+/// three and back out on step four, `at: "3-5"` holds the crop across three
+/// steps, `at: 3` keeps it to the end of the slide.
+///
+/// `auto`, the default, is the next free step *closed*: in on it, out on the
+/// one after -- and never step one, because step one is the slide as it is
+/// entered, and a camera there would mean nobody ever saw the slide whole. That differs from `anim`, where `auto` runs to the end of the
+/// slide, and it differs on purpose. An entrance has no natural end -- what
+/// has appeared stays. A camera move has one: one always comes back out, and
+/// coming back out is a keypress like any other, so it is counted like one
+/// and shows up in `info().step.total`.
+///
+/// `margin` is how much of the slide stays around the detail, measured in the
+/// unzoomed slide. The camera fits the detail plus that margin into the
+/// frame; the smaller of the two directions decides, so the whole of it is
+/// seen.
+///
+/// A detail that is already as large as the slide gives nothing to travel to,
+/// and then the camera stays where it is.
+///
+/// Two pins of the same name on one slide are framed together, and the camera
+/// shows the box around both.
+///
+/// If two camera moves are active on the same step, the later one in the
+/// source wins.
+///
+/// On paper there is no camera. The slide is set whole, exactly as it would
+/// be without one -- but the steps are counted there too, so the handout's
+/// footer names the same number as the talk.
+///
+/// Under `prefers-reduced-motion: reduce` the camera jumps to the crop
+/// instead of travelling to it. The package's rule everywhere else too: what
+/// stays is the destination, what goes is the travel.
+#let camera(target, at: auto, margin: 16pt, duration: 700, easing: auto) = {
+  let name = name-of(target)
+  assert(type(margin) == length, message:
+    "typstage: camera(margin: …) is a length -- how much of the slide stays "
+    + "around the detail. Not " + str(type(margin)) + ".")
+  assert(type(duration) == int and duration > 0, message:
+    "typstage: camera(duration: …) is the time of the move in milliseconds "
+    + "and wants a number above zero. A move of no length is a jump, and a "
+    + "jump is what reduced motion asks for, not what a deck writes.")
+  let takt = kurve(easing, "camera")
+  context {
+    assert(im-fit.get() == 0, message: fit-meldung("camera"))
+    // Der naechste freie Schritt, aber nie der erste. Schritt 1 ist die Folie,
+    // wie sie betreten wird; eine Fahrt darauf hiesse, dass niemand die Folie
+    // je ganz gesehen hat. Dieselbe Ueberlegung, aus der `anim` bei zwei
+    // beginnt. Wer es trotzdem will, schreibt `at: "1"` hin.
+    let sel = if at == auto {
+      str(calc.max(step-cursor.get().first() + 1, 2))
+    } else { selector(at) }
+    // Der Rueckweg ist ein Schritt. Ein geschlossener Bereich braucht darum
+    // einen Schritt *hinter* sich, auf dem die Folie wieder ganz dasteht --
+    // und der Zeiger muss ihn kennen, sonst zaehlt das Handout einen weniger
+    // als der Vortrag. Ein offener Bereich hat keinen Rueckweg: dort nimmt der
+    // Folienwechsel die Kamera heraus.
+    let letzter = max-step(sel) + (if offenes-ende(sel) { 0 } else { 1 })
+    if im-deck() { step-cursor.update(c => calc.max(c, letzter)) }
+    // Erst ausrechnen, dann eintragen: in der Funktion, die `update` bekommt,
+    // ist kein Kontext mehr bekannt.
+    let wo = deck-info.get().nr
+    kamera-index.update(a => a + ((slide: wo, name: name),))
+    // Auf Papier bleibt es beim Zaehlen. Es gibt dort keine Kamera, und die
+    // Folie hat vollstaendig und lesbar dazustehen.
+    if html-output.get() {
+      let rand = margin.to-absolute() / 1pt
+      kamera-liste.update(a => a + ((
+        at: sel,
+        // Die Zahl, nicht der Name: `pin-marker` legt genau diese Zahl in die
+        // Ausgabe, und die Laufzeit muesste den Namen sonst ein zweites Mal
+        // durch dieselbe Streuung drehen. Der Name faehrt trotzdem mit --
+        // eine Meldung, die nur eine Zahl nennt, hilft niemandem.
+        pin: pin-index(name),
+        name: name,
+        margin: rand,
+        duration: duration,
+        easing: takt,
+      ),))
+    }
+  }
+}
 
 /// Everything after this appears a step later.
 ///

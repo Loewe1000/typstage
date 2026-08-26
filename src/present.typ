@@ -671,6 +671,7 @@
         sprite-number.update(none)
         sprites.update(())
         bridge-jobs.update(())
+        kamera-liste.update(())
         note-state.update(s.note)
         transition-state.update(s.at("transition", default: none))
         // Only a deck that inverts somewhere writes this per slide. A `card`
@@ -733,6 +734,11 @@
             dim-index.update(a => a + meine-dims)
             html.elem("script", attrs: (class: "ts-bridge", type: "application/json"),
                       json.encode(bridge-jobs.get()))
+            // Die Fahrten dieser Folie. Ein eigenes Skript und nicht das
+            // daneben: eine Kamerafahrt geht keine Bruecke, und ein Deck ohne
+            // Kamera schreibt hier `[]` -- vier Zeichen, die niemand merkt.
+            html.elem("script", attrs: (class: "ts-camera", type: "application/json"),
+                      json.encode(kamera-liste.get()))
           }
         })
       })
@@ -783,6 +789,24 @@
           + " starts after step one, but the slide before carries a morph of "
           + "the same name. The flight between them would be lost without a "
           + "word. Either drop the `at:` here, or rename one of the two.")
+      }
+    }
+
+    // Und dieselbe spaete Frage an die Kameras: zielt jede auf ein `pin`, das
+    // es auf ihrer Folie wirklich gibt? Frueher laesst sie sich nicht stellen.
+    // Eine Fahrt darf vor ihrem Ziel stehen -- oft gehoert sie an den Kopf der
+    // Folie --, und was auf einer Folie steht, ist erst gesetzt, wenn sie
+    // gesetzt ist. Ohne die Frage faende ein Tippfehler im Namen erst im
+    // Browser jemand, und dort als eine Kamera, die schlicht stehenbleibt.
+    context {
+      let pins = pin-index-buch.get()
+      for k in kamera-index.get() {
+        assert(pins.any(p => p.slide == k.slide and p.name == k.name), message:
+          "typstage: camera(" + k.name + ") on slide " + str(k.slide)
+          + " finds no pin of that name on its own slide. A camera aims at a "
+          + "pin() and looks its rectangle up while the talk runs, so the "
+          + "name has to stand on the same slide: #pin(<" + k.name + ">, …). "
+          + "A pin on the slide before is a different piece of paper.")
       }
     }
 
