@@ -57,7 +57,34 @@
   var HINT = document.getElementById("ts-hint");
   var SLIDES = [].slice.call(document.querySelectorAll(".ts-slide"));
   var CFG = JSON.parse(document.getElementById("ts-cfg").textContent);
-  var EASE = "cubic-bezier(.4,0,.2,1)";
+  // Die eine Kurve, die dieses Paket faehrt -- als vier Zahlen, nicht als
+  // Zeichenkette. Die Zeichenkette geht an die Web Animations API, die Zahlen
+  // an `kurve()`: eine Szene laeuft nicht als Animation, sondern als Folge
+  // fertiger Bilder, und wer das Bild waehlt, muss die Kurve selbst rechnen
+  // koennen. Zwei Schreibweisen derselben Kurve waeren zwei Stellen, an denen
+  // sie auseinanderlaufen kann.
+  var EASE_P = [0.4, 0, 0.2, 1];
+  var EASE = "cubic-bezier(" + EASE_P.join(",") + ")";
+
+  // Der y-Wert der Kurve zur Zeit `u`, beide von 0 bis 1. Halbierungsverfahren
+  // statt Newton: ein Bildindex ist ganzzahlig, da traegt die letzte
+  // Nachkommastelle nichts, und ein Verfahren ohne Ableitung kann nicht
+  // davonlaufen.
+  function kurve(u) {
+    if (!(u > 0)) return 0;
+    if (u >= 1) return 1;
+    var x1 = EASE_P[0], y1 = EASE_P[1], x2 = EASE_P[2], y2 = EASE_P[3];
+    function b(t, p1, p2) {
+      var m = 1 - t;
+      return 3 * m * m * t * p1 + 3 * m * t * t * p2 + t * t * t;
+    }
+    var lo = 0, hi = 1, t = u;
+    for (var i = 0; i < 24; i++) {
+      if (b(t, x1, x2) < u) lo = t; else hi = t;
+      t = (lo + hi) / 2;
+    }
+    return b(t, y1, y2);
+  }
   var SPRECHERBOX = document.getElementById("ts-speaker");
   var INK = document.getElementById("ts-ink");
 
@@ -143,7 +170,16 @@
     function schau(at) {
       String(at || "").replace(/\d+/g, function (z) { n = Math.max(n, +z); });
     }
-    f.querySelectorAll(".ts-el").forEach(function (el) { schau(el.dataset.at); });
+    f.querySelectorAll(".ts-el").forEach(function (el) {
+      schau(el.dataset.at);
+      // Eine Szene ist der eine Fall, in dem der Selektor nicht alles sagt.
+      // Sie steht von ihrem ersten Halt an durchgehend da -- ihr Selektor ist
+      // also offen und nennt nur, ab wann --, aber sie *verbraucht* einen
+      // Schritt je weiterem Halt. Ohne diese Zeile waere eine Folie, auf der
+      // nichts als eine Szene steht, einen Schritt lang, und die Szene kaeme
+      // nie ueber ihren ersten Halt hinaus.
+      if (el.dataset.halte) schau(+el.dataset.ab + +el.dataset.halte - 1);
+    });
     var s = f.querySelector("script.ts-bridge");
     if (s) JSON.parse(s.textContent).forEach(function (j) { schau(j.at); });
     f.dataset.steps = n;
@@ -1024,7 +1060,94 @@
   function mediaOff(i) {
     SLIDES[i].querySelectorAll("video").forEach(function (v) { v.pause(); });
     ticking = ticking.filter(function (t) { return !SLIDES[i].contains(t.el); });
+    // Ein Zug, den niemand mehr sieht, laeuft nicht weiter. Wo die Szene beim
+    // Abbruch stehenbleibt, ist gleich: der Rueckweg auf diese Folie ist ein
+    // Folienwechsel und stellt sie ohnehin.
+    SLIDES[i].querySelectorAll(".ts-szene").forEach(szeneAus);
   }
+
+  // ── Szene ─────────────────────────────────────────────────────────────────
+  //
+  // Dieselben Bilder wie beim Daumenkino, derselbe Stapel im Markup -- nur
+  // schaltet hier nicht die Uhr weiter, sondern der Tastendruck. Das Deck hat
+  // Typst eine Reihe von Bildern setzen lassen, in der Halt k auf Bild
+  // k * (tween + 1) liegt; ein Schritt zieht den Bildzeiger von einem Halt zum
+  // naechsten und faehrt dabei dieselbe Kurve wie ein `anim` daneben.
+  //
+  // Warum der Takt eine echte Web-Animation ist und an `document.body` haengt,
+  // steht bei `szeneZiehen`.
+  var ZUEGE = [];
+
+  // Welcher Halt auf einem Schritt gilt, und welches Bild dazu gehoert.
+  function szeneHalt(el, schritt) {
+    var halte = +el.dataset.halte || 1, ab = +el.dataset.ab || 1;
+    return Math.max(0, Math.min(halte - 1, schritt - ab));
+  }
+  function szeneRahmen(el, schritt) {
+    return szeneHalt(el, schritt) * ((+el.dataset.tween || 0) + 1);
+  }
+
+  function szeneBild(el, i) {
+    var k = el.querySelectorAll(".ts-frame");
+    if (!k.length) return;
+    i = Math.max(0, Math.min(k.length - 1, i));
+    if (el.tsBild === i) return;
+    el.tsBild = i;
+    for (var j = 0; j < k.length; j++) {
+      if (j === i) k[j].dataset.on = "1"; else delete k[j].dataset.on;
+    }
+  }
+
+  function szeneAus(el) {
+    if (!el.tsZug) return;
+    try { el.tsZug.cancel(); } catch (e) {}
+    el.tsZug = null;
+  }
+
+  // Die Szene an den Halt ziehen, der auf diesem Schritt gilt.
+  //
+  // `sofort` heisst stellen statt ziehen: beim Betreten einer Folie und bei
+  // einem Sprung in den Vortrag hinein gibt es keinen Weg, den jemand gesehen
+  // haette, und die Szene hat am Ziel zu stehen. Dasselbe gilt unter
+  // "Bewegung reduzieren" -- was dort wegfaellt, ist genau der Weg, und die
+  // Halte selbst sind kein Weg, sondern der Inhalt.
+  function szeneZiehen(el, schritt, sofort) {
+    var bis = szeneRahmen(el, schritt);
+    var von = el.tsBild == null ? bis : el.tsBild;
+    szeneAus(el);
+    if (sofort || wenigerBewegung() || von === bis) { szeneBild(el, bis); return; }
+    var d = +el.dataset.zug || CFG.duration;
+    // Der Takt ist eine gewoehnliche Web-Animation ohne eine einzige
+    // Eigenschaft darin, und sie haengt am Rumpf des Dokuments. Beides mit
+    // Grund. Am Sprite selbst risse `clearAnims` sie beim naechsten Auftritt
+    // mit weg. Und ein eigener Zeitgeber -- ein Zaehler in `beat` etwa -- waere
+    // fuer `pruef.ruhig()` unsichtbar: ein Prueflauf misse dann mitten im Zug
+    // und haette zwei Laeufe, die sich nie einig sind. So wartet er auf den
+    // Zug wie auf jede andere Bewegung, und `--tempo` greift ohne Zutun.
+    var a = document.body.animate([{ offset: 0 }, { offset: 1 }],
+                                  { duration: d, easing: "linear" });
+    el.tsZug = a;
+    ZUEGE.push({ el: el, a: a, von: von, bis: bis,
+                 d: a.effect.getTiming().duration || d });
+  }
+
+  // Die laufenden Zuege, ein Bild weiter. Steht im Takt des Daumenkinos, weil
+  // beide dasselbe tun: aus einer Zeit ein Bild machen.
+  function szenenTakt() {
+    for (var z = ZUEGE.length - 1; z >= 0; z--) {
+      var g = ZUEGE[z];
+      if (g.el.tsZug !== g.a) { ZUEGE.splice(z, 1); continue; }
+      var lz = g.a.currentTime;
+      var u = (lz == null || !(g.d > 0)) ? 1 : Math.min(1, lz / g.d);
+      szeneBild(g.el, Math.round(g.von + (g.bis - g.von) * kurve(u)));
+      if (u >= 1) { g.el.tsZug = null; ZUEGE.splice(z, 1); }
+    }
+  }
+
+  // Vor dem ersten `goto`: jede Szene steht auf ihrem ersten Halt. Ohne das
+  // traegt keines ihrer Bilder `data-on`, und eine Szene auf einer nie
+  // betretenen Folie waere in der Sprechervorschau ein leerer Kasten.
+  document.querySelectorAll(".ts-szene").forEach(function (el) { szeneBild(el, 0); });
   // `null` is the wall clock, a number is a pinned time in milliseconds. A
   // flipbook otherwise shows whatever frame the machine happened to reach, and
   // two runs of the same deck never agree on it.
@@ -1091,6 +1214,7 @@
         if (j === i) kinder[j].dataset.on = "1"; else delete kinder[j].dataset.on;
       }
     }
+    szenenTakt();
     requestAnimationFrame(beat);
   }
   requestAnimationFrame(beat);
@@ -1897,6 +2021,17 @@
       // schweben sie dann ohne den Text, zu dem sie gehoeren. Waehlen kann man
       // dort ohnehin nicht.
       k.querySelectorAll(".ts-ad-nr").forEach(function (x) { x.remove(); });
+      // Und die Szenen auf den Halt, der nach dem naechsten Tastendruck gilt.
+      // Der Klon traegt das Bild, das gerade im Vortrag steht; gefragt ist
+      // aber, was dann dasteht. Ohne das zeigte die Vorschau eine Szene, die
+      // sich nie bewegt.
+      k.querySelectorAll(".ts-szene").forEach(function (el) {
+        var i = szeneRahmen(el, schritt);
+        var f = el.querySelectorAll(".ts-frame");
+        for (var j = 0; j < f.length; j++) {
+          if (j === i) f[j].dataset.on = "1"; else delete f[j].dataset.on;
+        }
+      });
       k.querySelectorAll(".ts-el").forEach(function (el, i) {
         el.removeAttribute("data-hold");
         // The preview answers "what stands there after the next keypress",
@@ -2529,6 +2664,13 @@
       } else {
         fadeTo(el, DIM, 1, d);
       }
+    });
+
+    // Die Szenen dieser Folie an den Halt ziehen, der auf diesem Schritt gilt.
+    // Nach den Sprites, weil `ruhe` dort gerade die Deckkraft gesetzt hat und
+    // eine Szene, die noch gar nicht da ist, nichts zu ziehen hat.
+    SLIDES[dst.slide].querySelectorAll(".ts-szene").forEach(function (el) {
+      szeneZiehen(el, dst.step, instant || changed);
     });
 
     mediaOn(dst.slide);

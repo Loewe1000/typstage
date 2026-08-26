@@ -1,8 +1,9 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (adaptiv-gruppen, durchsichtig, fit-meldung, html-output,
-                        im-deck, im-fit, name-of, offenes-ende, pin-index,
-                        pin-marker, selector, step-cursor, track, will-fuellen)
+#import "internal.typ": (adaptiv-gruppen, durchsichtig, fit-meldung, fit-verbot,
+                        html-output, im-deck, im-fit, name-of, offenes-ende,
+                        pin-index, pin-marker, selector, step-cursor,
+                        szene-gruppen, track, will-fuellen)
 
 /// What `anim` does once its arguments have been checked.
 ///
@@ -607,4 +608,242 @@
       }
     })
   })
+}
+
+
+// ── Eine Zeichnung, die sich bewegt ──────────────────────────────────────────
+//
+// `aufbau` darüber legt Stufen übereinander: die Zeichnung wächst, Stück für
+// Stück, und was noch nicht dran ist, steht als Luft da. `szene` ist die
+// andere Hälfte derselben Idee. Hier kommt nichts hinzu -- hier ändert sich
+// eine *Größe*, und das Bild hängt daran.
+//
+// Das ist der ValueTracker aus manim, ins Schrittmodell eines Vortrags
+// übersetzt, und die Übersetzung dreht ihn um. Dort ändert sich die Zahl zur
+// Laufzeit und das Bild folgt ihr; hier zeichnet Typst zur Übersetzungszeit,
+// und eine Zahl kann nur an Schritten wechseln. Also sagt das Deck, an welchen
+// Werten der Vortrag hält, Typst rendert jeden Halt und die Bilder dazwischen,
+// und ein Tastendruck zieht das Bild von Halt zu Halt.
+//
+// Dass `halt` die Werte selbst nennt und nicht 0 bis 1, ist der ganze
+// Unterschied zu `flipbook` und der Grund, warum `szene` den Tracker ablöst:
+// `x => tangente-an(f, x)` mit `halt: (-3, 0, 1.5, 3)` steht da, wo in manim
+// vier `tracker.animate.set_value(…)` stünden, und die Zahlen sind dieselben.
+//
+// Was der Übersetzung verlorengeht: in manim können sich mehrere Tracker
+// unabhängig voneinander bewegen. Hier bewegt sich alles gemeinsam von Halt zu
+// Halt -- ein Tupel als Haltwert gibt mehrere Größen zugleich, aber sie teilen
+// sich den Weg. Das Handbuch sagt es.
+//
+// Der Preis steht ebenfalls im Handbuch, und zwar zweimal: roh und gepackt.
+// Jedes Bild ist ein echtes Typst-Layout und liegt als eigener SVG-Baum in der
+// Datei. Die rohe Zahl allein gibt ein falsches Bild, weil die Bäume einander
+// so ähnlich sind, dass gzip fast alles davon wegnimmt.
+
+/// Ein Halt, so wie ihn `szene` versteht -- und was er nicht sein darf.
+///
+/// Zwischen zwei Halten wird gerechnet: `a + (b - a) * u`. Was das nicht
+/// aushält, wird hier abgewiesen, einmal beim Aufschreiben und nicht bei jedem
+/// der vielleicht dreißig Bilder. Ein Text oder ein Stück Inhalt lässt sich
+/// nicht halbieren, und ein Halt, der es versuchte, bräche mitten im Rendern
+/// mit einer Meldung, in der `szene` nicht vorkäme.
+#let szene-messbar = (int, float, length, angle, ratio, relative)
+
+/// Der Wert an der Stelle `u` zwischen zwei Halten, komponentenweise.
+#let szene-zwischen(a, b, u) = if type(a) == array {
+  range(a.len()).map(i => szene-zwischen(a.at(i), b.at(i), u))
+} else { a + (b - a) * u }
+
+/// Eine Zeichnung als Funktion eines Werts, mit Halten für den Vortrag.
+///
+/// ```typ
+/// #szene(
+///   x => tangente-an(f, x),
+///   halt: (-3, 0, 1.5, 3),   // vier Halte, drei Schritte
+///   tween: 8,                // Zwischenbilder je Strecke
+/// )
+/// ```
+///
+/// `halt` sind die Werte selbst, nicht 0 bis 1. Die Szene verbraucht
+/// `halt.len() - 1` Schritte: der erste Halt steht da, sobald die Szene
+/// erscheint, jeder weitere kostet einen Tastendruck.
+///
+/// Ein Halt darf ein Tupel sein, dann bekommt der Zeichner ebenso viele
+/// Argumente: `(a, b) => …` mit `halt: ((1, 1), (1, 3), (2, 3))`.
+///
+/// `tween` ist die Zahl der Bilder *zwischen* zwei Halten. Mit `tween: 0`
+/// springt die Szene von Halt zu Halt, ohne etwas dazwischen zu zeigen.
+///
+/// `duration` ist die Zeit, die ein Zug von Halt zu Halt braucht, nicht die
+/// des Auftritts -- dieselbe Trennung wie bei `morph`, und aus demselben
+/// Grund: das eine ist ein Weg, das andere eine Blende.
+///
+/// Die Szene steht in einem Kasten fester Größe, und jedes Bild wird darauf
+/// beschnitten. Anders als bei `aufbau` misst das Paket die Bilder nicht: sie
+/// sind Zeichnungen zu verschiedenen Werten und dürfen ohne Weiteres
+/// verschieden groß ausfallen. Ein gemeinsamer Rahmen ist die einzige
+/// Anordnung, in der die Zeichnung dabei nicht springt.
+///
+/// Auf Papier steht der letzte Halt, wie bei `alternatives`; `still`
+/// überschreibt das. Der Schrittzeiger läuft dort trotzdem, damit
+/// `info().step.total` in beiden Ausgaben dieselbe Zahl nennt.
+///
+/// Unter `prefers-reduced-motion: reduce` fallen die Zwischenbilder weg: die
+/// Szene springt von Halt zu Halt. Das ist die Regel des Pakets an jeder
+/// anderen Stelle auch -- was bleibt, ist das Ziel, was geht, ist der Weg.
+#let szene(
+  ..teile,
+  halt: (),
+  tween: 8,
+  start: auto,
+  width: 100%,
+  height: 190pt,
+  duration: auto,
+  enter: "fade",
+  still: auto,
+) = {
+  // `..teile` schluckte sonst jedes benannte Argument wortlos: ein Tippfehler
+  // in `tween:` ließe die Szene auf der Vorgabe laufen und sagte nichts.
+  assert(teile.named().len() == 0, message:
+    "typstage: szene() kennt " + teile.named().keys().join(", ")
+    + " nicht. Es nimmt halt, tween, start, width, height, duration, enter "
+    + "und still.")
+  let gegeben = teile.pos()
+  assert(gegeben.len() in (1, 2), message:
+    "typstage: szene() nimmt die Funktion, die das Bild malt, und davor "
+    + "wahlweise einen Namen, unter dem szene-schicht() sie wiederfindet.")
+  let name = if gegeben.len() == 2 { name-of(gegeben.first()) } else { none }
+  let zeichnen = gegeben.last()
+  assert(type(zeichnen) == function, message:
+    "typstage: szene() nimmt als Zeichner eine Funktion vom Wert auf das Bild "
+    + "und keine fertige Zeichnung. Sie wird für jeden Halt und jedes "
+    + "Zwischenbild einmal gerufen.")
+  assert(type(halt) == array and halt.len() >= 2, message:
+    "typstage: szene(halt: …) sind die Werte, an denen der Vortrag hält, und "
+    + "es braucht mindestens zwei davon. Mit einem einzigen bewegt sich "
+    + "nichts, und dafür genügt anim().")
+  assert(type(tween) == int and tween >= 0, message:
+    "typstage: szene(tween: …) ist die Zahl der Zwischenbilder je Strecke und "
+    + "zählt ab 0. Mit 0 springt die Szene von Halt zu Halt.")
+  assert(start == auto or (type(start) == int and start >= 1), message:
+    "typstage: szene(start: …) zählt ab 1, nicht ab 0. Auf Schritt 0 stünde "
+    + "der erste Halt nie.")
+  // Jeder Halt einmal angesehen, bevor irgendein Bild entsteht. Sonst bräche
+  // die Rechnung `a + (b - a) * u` irgendwo im dreißigsten Zwischenbild, mit
+  // einer Meldung, in der weder `szene` noch `halt` vorkäme.
+  let breit = type(halt.first()) == array
+  let wieviele(n) = if n == 1 { "eine Größe" } else { str(n) + " Größen" }
+  for (i, w) in halt.enumerate() {
+    let stellen = if type(w) == array { w } else { (w,) }
+    assert(breit == (type(w) == array)
+             and stellen.len() == (if breit { halt.first().len() } else { 1 }),
+      message:
+      "typstage: szene(halt: …) -- Halt " + str(i + 1) + " nennt "
+      + wieviele(stellen.len()) + ", der erste "
+      + wieviele(if breit { halt.first().len() } else { 1 })
+      + ". Zwischen zwei Halten wird Größe für Größe gerechnet, sie müssen "
+      + "also überall gleich viele sein.")
+    for g in stellen {
+      assert(type(g) in szene-messbar, message:
+        "typstage: szene(halt: …) -- Halt " + str(i + 1) + " trägt "
+        + str(type(g)) + ". Zwischen zwei Halten wird gerechnet, also geht "
+        + "dort nur, was sich teilen lässt: eine Zahl, eine Länge, ein "
+        + "Winkel, ein Anteil. Was sich nicht teilen lässt, gehört an den "
+        + "Zeichner, nicht an den Halt.")
+    }
+  }
+
+  // Die Bilder. Halt k liegt auf Bild k * (tween + 1); dazwischen liegen die
+  // `tween` Zwischenbilder der Strecke, gleichmäßig über den *Wert* verteilt.
+  // Die Kurve, mit der ein Zug darüberfährt, sitzt in der Laufzeit und nicht
+  // hier: sonst wäre sie in die Datei gebacken und ein anderer Rhythmus hieße
+  // neu übersetzen.
+  let werte = ()
+  for k in range(halt.len() - 1) {
+    let a = halt.at(k)
+    let b = halt.at(k + 1)
+    for j in range(tween + 1) {
+      werte.push(szene-zwischen(a, b, j / (tween + 1)))
+    }
+  }
+  werte.push(halt.last())
+  let male(w) = if breit { zeichnen(..w) } else { zeichnen(w) }
+
+  // Wie bei `flipbook` und `embed`: auf Papier kommt das hier nie bei `track`
+  // an, die Fit-Prüfung kann also nicht dort stehen bleiben.
+  fit-verbot("szene")
+  context {
+    // Der erste Halt steht da, sobald die Szene erscheint -- er kostet keinen
+    // eigenen Schritt, wie bei `morph` und anders als bei `anim`. Steht die
+    // Szene am Kopf ihrer Folie, ist das Schritt 1. Erst die weiteren Halte
+    // kosten je einen.
+    let erster = if start == auto {
+      calc.max(1, step-cursor.get().first())
+    } else { start }
+    // Halt k steht auf Schritt `erster + k`. Der erste kostet nichts -- er
+    // steht schon da --, jeder weitere einen Tastendruck; zusammen sind das
+    // `halt.len() - 1` Schritte.
+    let letzter = erster + halt.len() - 1
+    if im-deck() { step-cursor.update(c => calc.max(c, letzter)) }
+    // Eingetragen, damit `szene-schicht` die Schritte wiederfindet.
+    if name != none {
+      szene-gruppen.update(g => g + ((name): (start: erster, halte: halt.len())))
+    }
+    if not html-output.get() {
+      // Auf Papier ein Standbild, und zwar der letzte Halt: eine Seite zeigt
+      // alle Schritte auf einmal, und das ist der Zustand, in dem die Szene
+      // die Folie verlässt. Genau wie `alternatives`.
+      block(width: width, height: height,
+            if still == auto { male(halt.last()) } else { still })
+    } else {
+      track(
+        "szene",
+        box(width: width, height: height, clip: true, male(halt.first())),
+        at: str(erster) + "-",
+        extra: (
+          halte: halt.len(), tween: tween, ab: erster, enter: enter,
+          // `zug`, nicht `duration`: das ist die Dauer des *Wegs* von Halt zu
+          // Halt, nicht die der Blende, mit der die Szene auftritt. Dieselbe
+          // Trennung, die `morph` mit `fly` zieht, und aus demselben Grund --
+          // beide unter einem Namen laufen zu lassen zieht dieselbe Bewegung
+          // sichtbar auseinander.
+          zug: if duration == auto { none } else { duration },
+        ),
+        raw-frames: werte.map(w => box(
+          width: width, height: height, clip: true, male(w),
+        )),
+      )
+    }
+  }
+}
+
+/// Etwas, das zu einem bestimmten Halt einer Szene gehört.
+///
+/// Ein Satz daneben, eine Formel, eine zweite Zeichnung: es teilt sich den
+/// Schritt mit seinem Halt und wandert deshalb mit ihm, ohne verdrahtet zu
+/// werden.
+///
+/// ```typ
+/// #szene("ableitung", x => tangente-an(f, x), halt: (-3, 0, 3))
+///
+/// #szene-schicht("ableitung", 2)[Im Scheitel ist die Steigung null.]
+/// ```
+///
+/// Die Szene muss im Quelltext *vor* ihren Schichten stehen, denn eine Schicht
+/// schlägt nach, auf welchem Schritt ihr Halt liegt. Steht sie dahinter, sagt
+/// das Paket es, statt still nichts zu tun.
+///
+/// Eine Schicht bleibt vom Halt an bis zum Ende der Folie stehen, wie
+/// `adaptiv-schicht`: was zu einem Halt gesagt ist, gilt danach weiter.
+#let szene-schicht(name, nr, body, enter: "fade") = context {
+  let g = szene-gruppen.get()
+  assert(name in g, message:
+    "typstage: szene-schicht(\"" + name + "\") findet keine Szene dieses "
+    + "Namens. Eine szene() muss im Quelltext vor ihren Schichten stehen, "
+    + "denn eine Schicht schlägt nach, auf welchem Schritt ihr Halt liegt.")
+  let e = g.at(name)
+  assert(type(nr) == int and nr >= 1 and nr <= e.halte, message:
+    "typstage: szene-schicht(\"" + name + "\", " + str(nr) + ") -- diese "
+    + "Szene hat " + str(e.halte) + " Halte, die Nummer liegt also außerhalb.")
+  anim-kern(body, at: str(e.start + nr - 1) + "-", enter: enter)
 }

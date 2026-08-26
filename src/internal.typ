@@ -230,6 +230,14 @@
 /// at once, and nothing has to be linked by name.
 #let adaptiv-gruppen = state("typstage-adaptiv", (:))
 
+/// Die Szenen einer Folie: Name -> (start, halte).
+///
+/// Dasselbe Buch wie nebenan, aus demselben Grund. `szene` traegt ein, auf
+/// welchem Schritt welcher Halt steht; `szene-schicht` schlaegt nach und legt
+/// sich auf denselben. Wer einen Halt verschiebt, verschiebt alles mit, was
+/// daran haengt, ohne dass irgendwo eine Zahl doppelt stuende.
+#let szene-gruppen = state("typstage-szenen", (:))
+
 #let morph-index = state("typstage-morphs", ())
 
 /// Every element that asked to rest dimmed: its slide and the last step of
