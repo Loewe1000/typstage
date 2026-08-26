@@ -424,14 +424,176 @@
     //
     // Als Eintritt ist es dasselbe wie "none", und das ist kein Zufall: wer
     // wartet, statt zu gehen, kommt auch, ohne zu kommen.
-    "hold":       [{ opacity: 1 }, { opacity: 1 }]
+    "hold":       [{ opacity: 1 }, { opacity: 1 }],
+    // Sich selbst zeichnen. Was hier steht, ist nur die Haelfte davon: die
+    // Blende, unter der die Feder laeuft. Fuer Text und gefuellte Formen ist
+    // sie das Ganze -- die haben keine Kontur, die sich abfahren liesse --,
+    // und unter "Bewegung reduzieren" bleibt sie fuer alle uebrig. Die andere
+    // Haelfte macht `feder()` in `fadeIn` und `fadeOut`.
+    "draw":       [{ opacity: 0 }, { opacity: 1 }]
   };
+
+  // ── Ein Pfad, der sich selbst zeichnet ────────────────────────────────────
+  //
+  // `enter: "draw"`, manims `Create`. Ein gestrichener Pfad traegt seine
+  // Laenge in sich: `stroke-dasharray` teilt ihn in einen Strich von genau
+  // dieser Laenge und eine Luecke ebenso lang, und `stroke-dashoffset`
+  // schiebt den Strich hinein. Bei vollem Versatz ist nichts da, bei null
+  // alles -- dazwischen faehrt eine Feder den Pfad ab.
+  //
+  // Fuer Text geht das nicht, und zwar grundsaetzlich: Typst setzt Glyphen
+  // als gefuellte Umrisse ohne Kontur, `stroke-width` ist dort 0, und einen
+  // gefuellten Umriss kann man nicht entlangfahren. Text bleibt darum bei der
+  // Blende, und `draw` ist beides zugleich: die Striche zeichnen sich, alles
+  // uebrige blendet auf, wie es das ohne `draw` auch taete.
+  //
+  // Genau daraus folgt, was unter "Bewegung reduzieren" geschieht -- naemlich
+  // nichts Besonderes. Die Regel des Pakets lautet: Deckkraft bleibt, Weg
+  // faellt weg. Das Zeichnen *ist* der Weg; nimmt man ihn heraus, bleibt die
+  // Blende stehen, die ohnehin darunter lag. `feder()` haelt dann still, und
+  // das Element blendet auf wie jedes andere.
+  //
+  // Alle Pfade fahren *zugleich* los, und daran gibt es nichts zu drehen. Die
+  // Reihenfolge im SVG ist die Malreihenfolge von Typst und keine, die das
+  // Deck gewaehlt haette -- sie waere dieselbe Anmassung, die `pairs()` beim
+  // Zuordnen nach Nachbarschaft ablehnt. Wer eine Reihenfolge will, sagt sie:
+  // `stagger(enter: "draw", stride: 1, achse, kurve, tangente)` gibt jedem
+  // Stueck seinen Schritt. Nacheinander machte ausserdem `duration` zu einer
+  // Zahl, die niemand mehr lesen kann: sieben Striche zu 900ms sind 6,3
+  // Sekunden.
+
+  // Wie viele Pfade der Vortrag abgefahren hat, seit er geladen wurde.
+  // Gezaehlt, wo sie entstehen, und nicht spaeter am DOM abgelesen: dieselbe
+  // Lehre wie bei `FLUG`. Ein laufender Zaehler kann nicht zum falschen
+  // Zeitpunkt gefragt werden.
+  var FEDER = 0;
+
+  // Steht der Knoten in einer Werkstatt statt auf der Folie? Was in `defs`,
+  // `symbol`, `clipPath`, `mask` oder `pattern` liegt, wird nicht gezeichnet,
+  // sondern anderswo benutzt -- ein Glyphenumriss etwa, den ein `use` an
+  // dreissig Stellen holt. Wer daran drehte, drehte an allen dreissig.
+  //
+  // Von Hand die Kette hinauf und nicht mit `closest`: ein Typwaehler trifft
+  // im SVG-Namensraum nur bei genauer Gross- und Kleinschreibung, und
+  // `clipPath` gegen `clippath` ist ein Fehler, den niemand sieht.
+  function inWerkstatt(n, el) {
+    for (var p = n.parentNode; p && p !== el; p = p.parentNode) {
+      var t = p.tagName;
+      if (t === "defs" || t === "symbol" || t === "clipPath"
+          || t === "mask" || t === "pattern") return true;
+    }
+    return false;
+  }
+
+  // Die Pfade eines Elements, die sich abfahren lassen, mit ihrer Laenge.
+  function abfahrbar(el) {
+    var aus = [];
+    el.querySelectorAll("path").forEach(function (n) {
+      if (strichBreite(n) <= 0) return;      // gefuellter Umriss, keine Kontur
+      if (inWerkstatt(n, el)) return;
+      // Ein Pfad, der schon gestrichelt ist, traegt sein Muster in demselben
+      // Attribut. Es zu ueberschreiben hiesse, die Strichelung fuer die Dauer
+      // der Zeichnung zu tilgen -- eine gestrichelte Hilfslinie waere
+      // waehrend ihres Auftritts durchgezogen. Also blendet sie lieber.
+      var muster = n.getAttribute("stroke-dasharray");
+      if (!muster) {
+        try { muster = getComputedStyle(n).strokeDasharray; } catch (e) { muster = ""; }
+      }
+      if (muster && muster !== "none") return;
+      var laenge = 0;
+      try { laenge = n.getTotalLength(); } catch (e) { laenge = 0; }
+      if (!(laenge > 0)) return;
+      aus.push({ node: n, laenge: laenge });
+    });
+    return aus;
+  }
+
+  // Was `feder` an den Pfaden hinterlassen hat, wieder wegnehmen.
+  //
+  // Die Feder sitzt eine Ebene unter dem Element, `getAnimations()` fragt aber
+  // nur das Element selbst. Ohne dies bliebe ein unterbrochener Strich auf
+  // halber Strecke stehen -- bei einem Sprung auf einen Schritt etwa, der den
+  // Auftritt gar nicht spielt.
+  function federWeg(el) {
+    if (!el.dataset.feder) return;
+    delete el.dataset.feder;
+    el.querySelectorAll("[data-ts-feder]").forEach(function (n) {
+      n.getAnimations().forEach(function (a) { try { a.cancel(); } catch (e) {} });
+      n.style.strokeDasharray = "";
+      n.style.strokeDashoffset = "";
+      n.removeAttribute("data-ts-feder");
+    });
+  }
+
+  // Ein Element ohne einen einzigen abfahrbaren Pfad. Es blendet dann -- aber
+  // nicht stillschweigend: wer `draw` schreibt, will eine Zeichnung sehen und
+  // nicht eine Blende, die zufaellig gleich aussieht.
+  //
+  // Zur Uebersetzungszeit ist diese Meldung nicht zu haben. Typst gibt das SVG
+  // erst beim Export heraus, und im Dokument gibt es keine Frage, die "hat
+  // dieser Inhalt eine Kontur" beantwortete -- es ist derselbe blinde Fleck,
+  // wegen dessen das Paket ueberhaupt mit Signalfarb-Rechtecken arbeitet.
+  // Erst hier steht der Pfad da und laesst sich zaehlen.
+  //
+  // Einmal je Element und nicht einmal je Schritt: wer sechsmal durch das Deck
+  // blaettert, braucht die Klage nicht sechsmal. Sie geht ueber `console.warn`
+  // und landet damit in derselben Liste, die der Prueflauf ausliest.
+  function federKlage(el) {
+    if (el.dataset.federKlage) return;
+    el.dataset.federKlage = "1";
+    var f = el.closest(".ts-slide");
+    var nr = f ? SLIDES.indexOf(f) + 1 : 0;
+    console.warn("typstage: enter: \"draw\" auf Folie " + nr + " (Element "
+      + (el.dataset.n || "?") + ") findet keinen gestrichenen Pfad zum "
+      + "Abfahren. Gezeichnet wird eine Kontur, und Text hat keine: Typst "
+      + "setzt Glyphen als gefuellte Umrisse. Das Element blendet stattdessen "
+      + "auf. Fuer eine Zeichnung ist draw richtig, fuer Text die Blende.");
+  }
+
+  // Die Feder ansetzen. `zurueck` heisst, sie faehrt den Pfad wieder heraus --
+  // der Rueckweg des Auftritts, den `goto` beim Zurueckblaettern spielt.
+  function feder(el, dur, delay, zurueck, kurve) {
+    var pfade = abfahrbar(el);
+    if (!pfade.length) { federKlage(el); return; }
+    // Unter "Bewegung reduzieren" bleibt es bei der Blende, die ohnehin
+    // daneben laeuft. Geklagt wird trotzdem: die Meldung gilt dem Deck und
+    // nicht dieser Maschine, und wer die Einstellung anhat, soll dieselbe
+    // Auskunft bekommen wie alle anderen.
+    if (wenigerBewegung()) return;
+    FEDER += pfade.length;
+    el.dataset.feder = "1";
+    pfade.forEach(function (p) {
+      // Ein Zipfel Zugabe: `getTotalLength` misst die Geometrie, ein runder
+      // Abschluss steht darueber hinaus. Ohne ihn bliebe am fertigen Strich
+      // ein Haerchen offen.
+      var d = p.laenge + 1;
+      p.node.setAttribute("data-ts-feder", "1");
+      p.node.style.strokeDasharray = d + " " + d;
+      p.node.style.strokeDashoffset = zurueck ? d : 0;
+      var a = p.node.animate(
+        [{ strokeDashoffset: zurueck ? 0 : d },
+         { strokeDashoffset: zurueck ? d : 0 }],
+        { duration: dur, delay: delay, easing: kurve, fill: "both" });
+      // Am Ende steht der Pfad wieder da, wie Typst ihn geschrieben hat.
+      // Sichtbar waere der Unterschied nicht -- ein Strich ueber die ganze
+      // Laenge sieht aus wie kein Strichmuster --, aber die Vorschau der
+      // Sprecheransicht klont diesen Knoten, und was sie klont, soll das
+      // Original sein.
+      a.onfinish = function () {
+        p.node.style.strokeDasharray = "";
+        p.node.style.strokeDashoffset = "";
+        p.node.removeAttribute("data-ts-feder");
+        try { a.cancel(); } catch (e) {}
+      };
+    });
+  }
 
   // An animation with `fill: both` pins its end value even long after it is
   // done. Whoever sets the state anew has to clear it first, otherwise it
   // wins against the value that was set.
   function clearAnims(el) {
     el.getAnimations().forEach(function (a) { try { a.cancel(); } catch (e) {} });
+    federWeg(el);
   }
 
   // Die Kurve, auf der ein Element sich bewegt.
@@ -464,6 +626,9 @@
     // "none" means no effect. Animating from 1 to 1 would not merely be
     // pointless: played backwards it would keep the element visible.
     if (name === "none") { el.style.opacity = "1"; return; }
+    // Die Feder faehrt unter der Blende. Beides zugleich und beide gleich
+    // lang: die Striche zeichnen sich, alles ohne Kontur blendet auf.
+    if (name === "draw") feder(el, dur, delay, false, takt(el));
     var f = effekt(name);
     el.style.opacity = "";
     var a = el.animate([f[0], f[1]],
@@ -498,6 +663,10 @@
     // ab. Rueckwaerts wird "hold" nie gefragt: dort spielt `goto` den
     // Eintritt rueckwaerts, und der heisst anders.
     if (name === "hold") dur = dur / 0.75;
+    // Rueckwaerts faehrt die Feder heraus. Das ist der Rueckweg des Auftritts
+    // -- `goto` ruft beim Zurueckblaettern `fadeOut` mit dem *enter*-Namen --
+    // und ebenso ein `exit: "draw"`, wenn ein Element seinen Bereich verlaesst.
+    if (name === "draw") feder(el, dur, 0, true, takt(el));
     var f = effekt(name);
     var ab = f[1];
     // Leaving out of the dimmed state starts where the element stands. Taken
@@ -3428,6 +3597,15 @@
           folieGedimmt: st
             ? SLIDES[st.slide].querySelectorAll('.ts-el[data-dim="1"]').length : 0,
           flieger: FLUG,
+          // Wie viele Pfade sich seit dem Laden selbst gezeichnet haben. Ein
+          // laufender Zaehler, aus demselben Grund wie `flieger`: am DOM
+          // abgelesen waere die Zahl davon abhaengig, wann jemand fragt.
+          feder: FEDER,
+          // Und die Gegenprobe im Ruhezustand: kein Pfad darf noch eine Feder
+          // tragen. Bleibt eine stehen, ist ein Strich auf halber Strecke
+          // eingefroren -- sichtbar waere das erst bei dem einen Deck, das den
+          // Sprung genau dorthin macht.
+          federOffen: document.querySelectorAll("[data-ts-feder]").length,
           fehler: FEHLER.length
         };
       },
