@@ -1,8 +1,10 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (adaptiv-gruppen, fit-meldung, html-output, im-deck, im-fit, name-of,
-                        offenes-ende, pin-index, pin-marker, selector,
-                        step-cursor, track)
+#import "internal.typ": (cue-gruppen, durchsichtig, fit-meldung,
+                        fit-verbot, html-output, im-deck, im-fit, kurve,
+                        name-of, offenes-ende, pin-index, pin-marker,
+                        selector, step-cursor, szene-gruppen, track,
+                        will-fuellen)
 
 /// What `anim` does once its arguments have been checked.
 ///
@@ -15,7 +17,7 @@
 /// end with the slide, and the late check leaves them alone. The flag rides in
 /// the sprite record rather than in `extra`, which becomes markup attributes.
 #let anim-kern(body, at: auto, enter: "fade-up", exit: "fade",
-               after: "hidden", duration: auto, delay: 0,
+               after: "hidden", duration: auto, delay: 0, easing: none,
                dim-freiwillig: false, ad: none, ad-nr: none) = track(
   "anim", body, at: at, dim-freiwillig: dim-freiwillig, extra: (
     // Membership in an adaptive group. `none` never travels into the markup,
@@ -23,6 +25,10 @@
     ad: ad, "ad-nr": ad-nr,
     enter: enter, exit: exit, delay: delay,
     duration: if duration == auto { none } else { duration },
+    // Die fertige Kurve, nicht ihr Name: aufgelöst hat sie `kurve()` schon,
+    // und `none` schreibt kein Attribut. Ein Deck ohne `easing:` sieht danach
+    // aus wie eines von gestern, Byte für Byte.
+    easing: easing,
     // Only the departure from the default travels into the markup. `hidden`
     // is what every sprite has always done after its range, and writing it
     // out would put a new attribute on every element of every deck.
@@ -65,6 +71,12 @@
 /// loses its travel, so `enter` and `exit` become a plain cross-fade of the
 /// same length. `after: "dimmed"` is unaffected: it changes opacity and
 /// nothing else. See the manual.
+///
+/// `easing` is the curve the element moves on -- for the entrance, the
+/// departure and the dimming alike. `auto` is the package's own curve;
+/// `"out-back"` overshoots and swings back, `"linear"` arrives at an even
+/// pace. A name that does not exist is an error at compile time and not a
+/// silent default.
 #let anim(
   body,
   at: auto,
@@ -73,6 +85,7 @@
   after: "hidden",
   duration: auto,
   delay: 0,
+  easing: auto,
 ) = {
   assert(after in ("hidden", "dimmed"), message:
     "typstage: anim(after: ...) is \"hidden\" or \"dimmed\", not \""
@@ -83,7 +96,7 @@
     + "after for the element to rest in. Write `at: \"3\"` for that one step "
     + "or `at: \"2-3\"` for a range.")
   anim-kern(body, at: at, enter: enter, exit: exit, after: after,
-            duration: duration, delay: delay)
+            duration: duration, delay: delay, easing: kurve(easing, "anim"))
 }
 
 /// Magic move: the same `name` on two slides, and the thing flies across.
@@ -148,6 +161,7 @@
   align: top + left,
   enter: "fade",
   duration: auto,
+  easing: auto,
   inline: false,
 ) = {
   // `..variants` would otherwise swallow any named argument without a word: a
@@ -156,7 +170,7 @@
   assert(variants.named().len() == 0,
          message: "typstage: alternatives() does not know "
                 + variants.named().keys().join(", ")
-                + ". It takes start, align, enter, duration and inline.")
+                + ". It takes start, align, enter, duration, easing and inline.")
   let items = variants.pos()
   assert(items.len() > 0,
          message: "typstage: alternatives() wants at least one version")
@@ -203,7 +217,8 @@
         // Exactly this step for all but the last, which stays: `"3"` is that
         // one step, `"3-"` is from there on.
         let at = if i == last { str(first + i) + "-" } else { str(first + i) }
-        place(align, anim(v, at: at, enter: enter, duration: duration))
+        place(align, anim(v, at: at, enter: enter, duration: duration,
+                          easing: easing))
       }
     })
   }))
@@ -287,7 +302,7 @@
 /// point.
 ///
 /// ```typ
-/// #adaptiv("ablesen", start: 2)[
+/// #cue("ablesen", start: 2)[
 ///   - positive und negative Werte
 ///   - tiefster und höchster Wert
 ///   - Abnahme und Zunahme
@@ -301,16 +316,16 @@
 ///
 /// Set, the list keeps its reading order: a point not yet named holds its
 /// place, so nothing jumps when it arrives later.
-#let adaptiv(name, ..items, start: auto, spacing: 0.65em) = context {
+#let cue(name, ..items, start: auto, spacing: 0.65em) = context {
   assert(type(name) == str and name != "", message:
-    "typstage: adaptiv() wants a name as its first argument, so that "
-    + "adaptiv-schicht() can point at the same group.")
+    "typstage: cue() wants a name as its first argument, so that "
+    + "cue-layer() can point at the same group.")
   assert(items.named().len() == 0, message:
-    "typstage: adaptiv() does not know "
+    "typstage: cue() does not know "
     + items.named().keys().join(", ") + ". It takes start and spacing.")
-  assert(im-fit.get() == 0, message: fit-meldung("adaptiv"))
+  assert(im-fit.get() == 0, message: fit-meldung("cue"))
   let gegeben = items.pos()
-  assert(gegeben.len() > 0, message: "typstage: adaptiv() wants something to reveal")
+  assert(gegeben.len() > 0, message: "typstage: cue() wants something to reveal")
   // A single piece can be a list: then its items are the points. The same
   // unwrapping as in `stagger` -- a body is rarely the list itself, usually a
   // sequence in which it stands beside whitespace.
@@ -320,9 +335,13 @@
     teile.filter(c => c.func() in (list.item, enum.item))
   } else { () }
   let stuecke = if punkte.len() > 0 { punkte.map(p => p.body) } else { gegeben }
-  let ab = if start == auto { step-cursor.get().first() } else { start }
-  // Recorded so that `adaptiv-schicht` finds the steps again.
-  adaptiv-gruppen.update(g => g + ((name): (start: ab, anzahl: stuecke.len())))
+  // `+ 1` wie bei `stagger`, `alternatives` und `build`: der Zähler steht auf
+  // dem zuletzt vergebenen Schritt, der erste eigene ist der danach. Ohne das
+  // beginnt eine Gruppe am Kopf der Folie bei null und teilt sich ihren ersten
+  // Punkt mit dem, was dort ohnehin schon steht.
+  let ab = if start == auto { step-cursor.get().first() + 1 } else { start }
+  // Recorded so that `cue-layer` finds the steps again.
+  cue-gruppen.update(g => g + ((name): (start: ab, anzahl: stuecke.len())))
   for (i, b) in stuecke.enumerate() {
     if i > 0 { v(spacing, weak: true) }
     block(anim-kern(
@@ -337,24 +356,24 @@
 /// its point and therefore travels with it, without having to be linked.
 ///
 /// ```typ
-/// #adaptiv-schicht("ablesen", 1, schicht-vorzeichen)
+/// #cue-layer("ablesen", 1, schicht-vorzeichen)
 /// ```
 ///
 /// The group has to stand *before* its layers in the source, because a layer
 /// looks up which step its point was given. Standing after them, the package
 /// says so rather than quietly doing nothing.
-#let adaptiv-schicht(name, nr, body, enter: "fade") = context {
-  let g = adaptiv-gruppen.get()
+#let cue-layer(name, number, body, enter: "fade") = context {
+  let g = cue-gruppen.get()
   assert(name in g, message:
-    "typstage: adaptiv-schicht(\"" + name + "\") finds no group of that name. "
-    + "An adaptiv() group has to stand before its layers in the source, "
+    "typstage: cue-layer(\"" + name + "\") finds no group of that name. "
+    + "A cue() group has to stand before its layers in the source, "
     + "because a layer looks up which step its point was given.")
   let e = g.at(name)
-  assert(nr >= 1 and nr <= e.anzahl, message:
-    "typstage: adaptiv-schicht(\"" + name + "\", " + str(nr) + ") -- that "
+  assert(number >= 1 and number <= e.anzahl, message:
+    "typstage: cue-layer(\"" + name + "\", " + str(number) + ") -- that "
     + "group has " + str(e.anzahl) + " point"
     + (if e.anzahl == 1 { "" } else { "s" }) + ", so the number is out of range.")
-  anim-kern(body, at: str(e.start + nr - 1) + "-", ad: name, ad-nr: nr,
+  anim-kern(body, at: str(e.start + number - 1) + "-", ad: name, ad-nr: number,
             enter: enter)
 }
 
@@ -364,6 +383,7 @@
   stride: 1,
   enter: "fade-up",
   duration: auto,
+  easing: auto,
   stagger: 60,
   spacing: 0.65em,
   dim: false,
@@ -378,8 +398,8 @@
   assert(items.named().len() == 0,
          message: "typstage: stagger() does not know "
                 + items.named().keys().join(", ")
-                + ". It takes start, stride, enter, duration, stagger, "
-                + "spacing and dim.")
+                + ". It takes start, stride, enter, duration, easing, "
+                + "stagger, spacing and dim.")
   let gegeben = items.pos()
   assert(gegeben.len() > 0, message: "typstage: stagger() wants something to stagger")
 
@@ -397,13 +417,16 @@
   // count either way.
   let bereich(n) = if dim { str(n) } else { str(n) + "-" }
   let ruhe = if dim { "dimmed" } else { "hidden" }
+  // Einmal geprüft und einmal aufgelöst, nicht je Punkt: die Meldung nennt
+  // sonst dieselbe Kurve so oft, wie die Liste Punkte hat.
+  let takt = kurve(easing, "stagger")
 
   if punkte.len() == 0 {
     // No list: the pieces in order, each as its own block.
     for (i, b) in gegeben.enumerate() {
       block(anim-kern(b, at: bereich(start + i * stride), after: ruhe,
                       dim-freiwillig: dim, enter: enter, duration: duration,
-                      delay: i * stagger))
+                      easing: takt, delay: i * stagger))
     }
     return
   }
@@ -429,7 +452,442 @@
         marks.at(i), p.body,
       ),
       at: bereich(start + i * stride), after: ruhe, dim-freiwillig: dim,
-      enter: enter, duration: duration, delay: i * stagger,
+      enter: enter, duration: duration, easing: takt, delay: i * stagger,
     )
   }
+}
+
+
+// ── Eine Zeichnung, die wächst ───────────────────────────────────────────────
+//
+// Eine cetz-Zeichnung oder ein lilaq-Diagramm ist ein Stück, nicht viele:
+// Typst reicht den fertigen Satz heraus, und was darin eine Linie und was eine
+// Datenreihe war, ist von außen nicht mehr zu greifen. Ein `anim` um ein Stück
+// der Zeichnung gibt es also nicht.
+//
+// Was es gibt, ist die Zeichnung selbst, so oft man sie haben will. `build`
+// ruft sie einmal je Schritt und legt die Fassungen übereinander: auf Stufe
+// k steht die Zeichnung so, wie sie nach k Schritten aussieht. Sichtbar ist
+// immer genau eine Stufe.
+//
+// Zwei Fragen entscheiden, ob das trägt, und beide sind nachgemessen.
+//
+// *Springt das Bild?* Nein, weil kein Stück je wirklich fehlt: was noch nicht
+// dran ist, steht als Luft da (siehe `durchsichtig` in `internal.typ`). Alle
+// Stufen messen deshalb auf die Stelle genau gleich, und der Block, in dem
+// sie liegen, hat ohnehin eine feste Größe.
+//
+// *Warum eine Stufe und nicht alle übereinander?* Weil sich gemalte Tinte
+// addiert. Drei Stufen desselben lilaq-Diagramms gegen eines: 3.7 Prozent
+// der Bildpunkte weichen um mehr als 8 von 255 ab, die größte Abweichung 99 --
+// Achsen, Beschriftung und der halbdurchsichtige Kasten der Legende werden
+// dreimal gemalt und dadurch fetter. Mit disjunkten Stufen, in denen nur
+// das eigene Stück steht, ist es nicht besser: dieselbe Messung ergab 3.5
+// Prozent und eine größte Abweichung von 243, denn die Achsen gehören zu
+// keinem Stück und stehen deshalb auf jeder Stufe. Eine Stufe auf einmal
+// ist die einzige Anordnung, die genau das Bild ergibt, das dastünde, wenn man
+// die Zeichnung einmal setzte.
+//
+// Der Preis dafür ist der Übergang: zwei fast gleiche Bilder, die einander
+// ablösen, blenden sich gegenseitig aus. Dagegen steht `exit: "hold"` in der
+// Laufzeit -- die abtretende Stufe bleibt stehen, bis die neue da ist, und
+// geht dann ohne Bewegung. Vorwärts ist der Übergang damit sauber; rückwärts
+// überlagern sich Ausblenden und Einblenden für einen Augenblick, und die
+// geteilte Tinte sinkt kurz auf drei Viertel. Das Handbuch sagt es.
+
+/// A drawing or a diagram that comes into being step by step.
+///
+/// A CeTZ canvas and a lilaq diagram are one piece, not many: Typst hands out
+/// the finished setting, and what was a line and what was a data series in it
+/// cannot be reached from outside any more. So there is no `anim` around a
+/// part of a drawing. What there is, is the drawing itself, as often as one
+/// wants it.
+///
+/// `draw` is called once per step and is handed a question. It is called
+/// `ab` here -- "from" -- because it says exactly what `at:` says elsewhere.
+///
+/// - `from(k, value)` gives `value` back once the k-th piece is due, and
+///   otherwise the same thing made of air: a colour with alpha 0, a stroke
+///   with a transparent brush, a text in `hide`. The piece is therefore never
+///   really missing, and every stage measures the same to the point.
+/// - `from(k)` says the same as a boolean, for everything that cannot be
+///   recoloured. In CeTZ that is where `hide(…, bounds: true)` belongs.
+///
+/// Whatever carries no number stands there from the start.
+///
+/// ```typ
+/// #build(from => cetz.canvas({
+///   import cetz.draw: *
+///   line((0,0), (4,0))                        // there from the start
+///   line((4,0), (4,3), stroke: from(2, black))  // from step 2
+///   content((2,3.4), from(3, [hypotenuse]))     // from step 3
+/// }), steps: 3)
+/// ```
+///
+/// `steps` is the number of stages and hence the number of steps the
+/// drawing takes on the slide. It is said and not guessed: what `draw`
+/// does with its question is nobody's business from outside.
+///
+/// `start` is `auto`: the drawing begins on the next free step and pushes the
+/// cursor along by `steps`, the way `stagger` and `alternatives` do. A
+/// number sets the first step itself.
+///
+/// Exactly one stage is drawn at a time, and that is not a saving but the only
+/// arrangement that yields the picture that would stand there if the drawing
+/// were set once. Ink adds up: three layers of the same lilaq diagram against
+/// one, and 3.7 percent of the pixels differ by more than 8 of 255, the
+/// largest deviation 99 -- axes, labels and the half-transparent box of the
+/// legend get painted three times and grow fatter by it.
+///
+/// On paper only the last stage is set, in a block of the same size: a page
+/// shows every step at once, and stacked stages would be overprint. The
+/// cursor still runs there, so that `info().step.total` names the same number
+/// in both outputs.
+///
+/// Under `prefers-reduced-motion: reduce` nothing changes: the stages fade,
+/// they do not travel, and what would fall away is a motion that is not there.
+#let build(draw, steps: 2, start: auto, enter: "fade", duration: auto,
+           easing: auto) = {
+  assert(type(draw) == function, message:
+    "typstage: build() wants a function that paints the drawing as its first "
+    + "argument, not a finished drawing. It is called once per stage and is "
+    + "handed the question from(k) while it paints.")
+  assert(type(steps) == int and steps >= 1, message:
+    "typstage: build(steps: …) is the number of stages and counts from 1. "
+    + "A 0 would mean a drawing without a single stage.")
+  assert(start == auto or (type(start) == int and start >= 1), message:
+    "typstage: build(start: …) counts from 1, not from 0. On step 0 the first "
+    + "stage would never stand there.")
+  // Eine Stufe, die sich selbst zeichnete, zeichnete jedes Mal die ganze
+  // Zeichnung noch einmal -- auch die Striche, die schon auf der Stufe davor
+  // standen. Und sie täte es über der abtretenden Stufe, die absichtlich
+  // stehenbleibt (`exit: "hold"`): die Tinte läge längst da, die Feder führe
+  // unsichtbar darüber. Das Gegenteil dessen, was `draw` verspricht, also
+  // lieber ein Wort als ein stummes Nichts.
+  assert(enter != "draw", message:
+    "typstage: enter: \"draw\" is at odds with what this function does. Every "
+    + "stage is the *whole* drawing, and it would arrive on top of the "
+    + "previous one, which stays put until the new one is there -- the pen "
+    + "would travel over ink that is already down. To have the strokes drawn "
+    + "one after another, hand them over one at a time: "
+    + "stagger(enter: \"draw\", stride: 1, axes, curve). For a drawing that "
+    + "grows in stages, leave the fade as it is.")
+  let takt = kurve(easing, "build")
+  layout(available => context {
+    // Wie bei `alternatives`: die Prüfung steht hier und nicht in `track`,
+    // weil der Papierzweig weiter unten über ein `return` hinausgeht und ein
+    // `return` alles fallen lässt, was vorher zusammengefügt wurde.
+    assert(im-fit.get() == 0, message: fit-meldung("build"))
+    // Die Frage, die eine Stufe ihrem Zeichner reicht. Ein Argument heißt
+    // fragen, zwei heißen einfärben; das spart dem Deck zwei Namen für
+    // dieselbe Auskunft.
+    let frage(k) = (nr, ..wert) => {
+      assert(type(nr) == int and nr >= 1 and nr <= steps, message:
+        "typstage: from(" + repr(nr) + ") -- this drawing has " + str(steps)
+        + " stage" + (if steps == 1 { "" } else { "s" }) + ", so the number "
+        + "lies outside it. A piece behind the last stage would never come.")
+      assert(wert.named().len() == 0 and wert.pos().len() <= 1, message:
+        "typstage: from() takes the number of the stage and at most one thing "
+        + "that is to appear on it.")
+      if wert.pos().len() == 0 { return k >= nr }
+      if k >= nr { wert.pos().first() } else { durchsichtig(wert.pos().first()) }
+    }
+    let stufen = range(1, steps + 1).map(k => draw(frage(k)))
+    // Zweimal gemessen, die größere zählt: dieselbe Falle wie in `track` und
+    // in `alternatives`. Ein `height: 100%` in einer Stufe fiele ohne
+    // Höhenbezug auf 0pt zusammen, und eine Messung allein gegen die Höhe
+    // schnitte ab, was übersteht.
+    let frei = stufen.map(s => measure(s, width: available.width))
+    let gedeckelt = stufen.map(s => measure(s, width: available.width,
+                                            height: available.height))
+    // Was sich selbst mittig setzt, misst sich trotzdem so schmal wie seine
+    // Tinte -- `measure(align(center, x), width: 400pt)` gibt die Breite von
+    // `x` zurück und nicht 400pt. Ein Block von dieser Breite nähme dem `align`
+    // genau den Platz weg, in dem es zentrieren wollte, und die Zeichnung
+    // stünde links, obwohl im Quelltext `center` steht. `track` kennt diese
+    // Falle und weicht ihr mit `will-fuellen` aus; hier muss dasselbe gelten,
+    // sonst verhielte sich `build(align(center, …))` anders als
+    // `anim(align(center, …))`. Gemessen: die Stufen lagen bei 3,80 Prozent
+    // der Bühne statt bei 44,61.
+    let fuellt = stufen.any(will-fuellen)
+    let breite = if fuellt { available.width } else {
+      calc.max(..frei.map(m => m.width), ..gedeckelt.map(m => m.width))
+    }
+    let hoehe = calc.max(..frei.map(m => m.height), ..gedeckelt.map(m => m.height))
+    let erster = if start == auto { step-cursor.get().first() + 1 } else { start }
+    if not html-output.get() {
+      // Nur die letzte Stufe, und der Zähler läuft trotzdem. Genau wie
+      // `alternatives`: auf Papier steht die Zeichnung fertig da.
+      return {
+        if im-deck() {
+          step-cursor.update(c => calc.max(c, erster + steps - 1))
+        }
+        // Ohne `place`, anders als im Zweig darunter: hier steht nur eine
+        // Stufe, es ist also nichts zu stapeln, und `place` nähme einem
+        // `align` in der Stufe den Platz, in dem es ausrichten wollte.
+        // Gemessen an `place(top + left, align(center, rect))` in einem Block
+        // voller Breite: die Tinte lag bei x = 39 statt bei x = 312.
+        block(width: breite, height: hoehe, stufen.last())
+      }
+    }
+    let letzte = steps - 1
+    block(width: breite, height: hoehe, {
+      for (i, s) in stufen.enumerate() {
+        // Jede Stufe hält genau ihren Schritt, die letzte den Rest der Folie.
+        // Eine Stufe, die bliebe, läge unter der nächsten und würde ein
+        // zweites Mal gemalt.
+        let bereich = if i == letzte { str(erster + i) + "-" } else { str(erster + i) }
+        place(top + left, anim-kern(s, at: bereich, enter: enter,
+                                    exit: "hold", duration: duration,
+                                    easing: takt))
+      }
+    })
+  })
+}
+
+
+// ── Eine Zeichnung, die sich bewegt ──────────────────────────────────────────
+//
+// `build` darüber legt Stufen übereinander: die Zeichnung wächst, Stück für
+// Stück, und was noch nicht dran ist, steht als Luft da. `scene` ist die
+// andere Hälfte derselben Idee. Hier kommt nichts hinzu -- hier ändert sich
+// eine *Größe*, und das Bild hängt daran.
+//
+// Das ist der ValueTracker aus manim, ins Schrittmodell eines Vortrags
+// übersetzt, und die Übersetzung dreht ihn um. Dort ändert sich die Zahl zur
+// Laufzeit und das Bild folgt ihr; hier zeichnet Typst zur Übersetzungszeit,
+// und eine Zahl kann nur an Schritten wechseln. Also sagt das Deck, an welchen
+// Werten der Vortrag hält, Typst rendert jeden Halt und die Bilder dazwischen,
+// und ein Tastendruck zieht das Bild von Halt zu Halt.
+//
+// Dass `stops` die Werte selbst nennt und nicht 0 bis 1, ist der ganze
+// Unterschied zu `flipbook` und der Grund, warum `scene` den Tracker ablöst:
+// `x => tangent-at(f, x)` mit `stops: (-3, 0, 1.5, 3)` steht da, wo in manim
+// vier `tracker.animate.set_value(…)` stünden, und die Zahlen sind dieselben.
+//
+// Was der Übersetzung verlorengeht: in manim können sich mehrere Tracker
+// unabhängig voneinander bewegen. Hier bewegt sich alles gemeinsam von Halt zu
+// Halt -- ein Tupel als Haltwert gibt mehrere Größen zugleich, aber sie teilen
+// sich den Weg. Das Handbuch sagt es.
+//
+// Der Preis steht ebenfalls im Handbuch, und zwar zweimal: roh und gepackt.
+// Jedes Bild ist ein echtes Typst-Layout und liegt als eigener SVG-Baum in der
+// Datei. Die rohe Zahl allein gibt ein falsches Bild, weil die Bäume einander
+// so ähnlich sind, dass gzip fast alles davon wegnimmt.
+
+/// Ein Halt, so wie ihn `scene` versteht -- und was er nicht sein darf.
+///
+/// Zwischen zwei Halten wird gerechnet: `a + (b - a) * u`. Was das nicht
+/// aushält, wird hier abgewiesen, einmal beim Aufschreiben und nicht bei jedem
+/// der vielleicht dreißig Bilder. Ein Text oder ein Stück Inhalt lässt sich
+/// nicht halbieren, und ein Halt, der es versuchte, bräche mitten im Rendern
+/// mit einer Meldung, in der `scene` nicht vorkäme.
+#let szene-messbar = (int, float, length, angle, ratio, relative)
+
+/// Der Wert an der Stelle `u` zwischen zwei Halten, komponentenweise.
+#let szene-zwischen(a, b, u) = if type(a) == array {
+  range(a.len()).map(i => szene-zwischen(a.at(i), b.at(i), u))
+} else { a + (b - a) * u }
+
+/// A drawing as a function of a value, with stops for the talk.
+///
+/// ```typ
+/// #scene(
+///   x => tangent-at(f, x),
+///   stops: (-3, 0, 1.5, 3),   // four stops, three steps
+///   tween: 8,                 // frames between two stops
+/// )
+/// ```
+///
+/// This is manim's `ValueTracker` turned around. There a number changes while
+/// the film runs and the picture follows it; here Typst draws at compile time
+/// and a number can only change at a step. So the deck writes a function from
+/// a value to a picture and says at which values the talk stops. Typst renders
+/// every stop and the frames in between, and a keypress pulls the picture from
+/// one stop to the next.
+///
+/// `stops` are the values themselves, not 0.0 to 1.0 -- that is the whole
+/// difference to `flipbook`. The scene takes `stops.len() - 1` steps: the
+/// first stop is there as soon as the scene appears, every further one costs a
+/// keypress.
+///
+/// A stop may be a tuple, and then the drawing function takes that many
+/// arguments: `(a, b) => …` with `stops: ((1, 1), (1, 3), (2, 3))`. What is
+/// lost against manim is that there several trackers may move independently;
+/// here everything travels from stop to stop together.
+///
+/// `tween` is the number of frames *between* two stops. With `tween: 0` the
+/// scene jumps from stop to stop and shows nothing in between.
+///
+/// `duration` is the time one pull from stop to stop takes, not the time of
+/// the entrance -- the same separation `morph` draws, and for the same reason:
+/// one is a journey, the other a fade.
+///
+/// The scene stands in a box of a fixed size and every frame is clipped to it.
+/// Unlike `build` the package does not measure the frames: they are drawings
+/// of different values and may legitimately come out different sizes. One
+/// shared frame is the only arrangement in which the drawing does not jump.
+///
+/// On paper the last stop is set, as with `alternatives`; `still` overrides
+/// that. The step cursor still runs there, so `info().step.total` names the
+/// same number in both outputs.
+///
+/// Under `prefers-reduced-motion: reduce` the frames in between fall away and
+/// the scene jumps from stop to stop. That is the package's rule everywhere
+/// else too: what stays is the destination, what goes is the travel.
+#let scene(
+  ..parts,
+  stops: (),
+  tween: 8,
+  start: auto,
+  width: 100%,
+  height: 190pt,
+  duration: auto,
+  enter: "fade",
+  still: auto,
+) = {
+  // `..parts` would otherwise swallow any named argument without a word: a
+  // typo in `tween:` would leave the scene on the default and say nothing.
+  assert(parts.named().len() == 0, message:
+    "typstage: scene() does not know " + parts.named().keys().join(", ")
+    + ". It takes stops, tween, start, width, height, duration, enter and "
+    + "still.")
+  let gegeben = parts.pos()
+  assert(gegeben.len() in (1, 2), message:
+    "typstage: scene() takes the function that draws the picture, and before "
+    + "it, optionally, a name under which scene-layer() finds it again.")
+  let name = if gegeben.len() == 2 { name-of(gegeben.first()) } else { none }
+  let zeichnen = gegeben.last()
+  assert(type(zeichnen) == function, message:
+    "typstage: scene() takes a function from a value to the picture as its "
+    + "drawer, not a finished drawing. It is called once for every stop and "
+    + "every frame in between.")
+  assert(type(stops) == array and stops.len() >= 2, message:
+    "typstage: scene(stops: …) are the values at which the talk stops, and it "
+    + "wants at least two of them. With a single one nothing moves, and anim() "
+    + "is enough for that.")
+  assert(type(tween) == int and tween >= 0, message:
+    "typstage: scene(tween: …) is the number of frames between two stops and "
+    + "counts from 0. With 0 the scene jumps from stop to stop.")
+  assert(start == auto or (type(start) == int and start >= 1), message:
+    "typstage: scene(start: …) counts from 1, not 0. On step 0 the first stop "
+    + "would never stand.")
+  // Jeder Halt einmal angesehen, bevor irgendein Bild entsteht. Sonst bräche
+  // die Rechnung `a + (b - a) * u` irgendwo im dreißigsten Zwischenbild, mit
+  // einer Meldung, in der weder `scene` noch `stops` vorkäme.
+  let breit = type(stops.first()) == array
+  let wieviele(n) = if n == 1 { "one value" } else { str(n) + " values" }
+  for (i, w) in stops.enumerate() {
+    let stellen = if type(w) == array { w } else { (w,) }
+    assert(breit == (type(w) == array)
+             and stellen.len() == (if breit { stops.first().len() } else { 1 }),
+      message:
+      "typstage: scene(stops: …) -- stop " + str(i + 1) + " names "
+      + wieviele(stellen.len()) + ", the first one "
+      + wieviele(if breit { stops.first().len() } else { 1 })
+      + ". Between two stops the arithmetic runs value by value, so there "
+      + "have to be equally many of them everywhere.")
+    for g in stellen {
+      assert(type(g) in szene-messbar, message:
+        "typstage: scene(stops: …) -- stop " + str(i + 1) + " carries "
+        + str(type(g)) + ". Between two stops there is arithmetic, so only "
+        + "what can be halved belongs there: a number, a length, an angle, a "
+        + "ratio. What cannot be halved belongs in the drawer, not in the "
+        + "stop.")
+    }
+  }
+
+  // Die Bilder. Halt k liegt auf Bild k * (tween + 1); dazwischen liegen die
+  // `tween` Zwischenbilder der Strecke, gleichmäßig über den *Wert* verteilt.
+  // Die Kurve, mit der ein Zug darüberfährt, sitzt in der Laufzeit und nicht
+  // hier: sonst wäre sie in die Datei gebacken und ein anderer Rhythmus hieße
+  // neu übersetzen.
+  let werte = ()
+  for k in range(stops.len() - 1) {
+    let a = stops.at(k)
+    let b = stops.at(k + 1)
+    for j in range(tween + 1) {
+      werte.push(szene-zwischen(a, b, j / (tween + 1)))
+    }
+  }
+  werte.push(stops.last())
+  let male(w) = if breit { zeichnen(..w) } else { zeichnen(w) }
+
+  // Wie bei `flipbook` und `embed`: auf Papier kommt das hier nie bei `track`
+  // an, die Fit-Prüfung kann also nicht dort stehen bleiben.
+  fit-verbot("scene")
+  context {
+    // Der erste Halt steht da, sobald die Szene erscheint -- er kostet keinen
+    // eigenen Schritt, wie bei `morph` und anders als bei `anim`. Steht die
+    // Szene am Kopf ihrer Folie, ist das Schritt 1. Erst die weiteren Halte
+    // kosten je einen.
+    let erster = if start == auto {
+      calc.max(1, step-cursor.get().first())
+    } else { start }
+    // Halt k steht auf Schritt `erster + k`. Der erste kostet nichts -- er
+    // steht schon da --, jeder weitere einen Tastendruck; zusammen sind das
+    // `stops.len() - 1` Schritte.
+    let letzter = erster + stops.len() - 1
+    if im-deck() { step-cursor.update(c => calc.max(c, letzter)) }
+    // Eingetragen, damit `scene-layer` die Schritte wiederfindet.
+    if name != none {
+      szene-gruppen.update(g => g + ((name): (start: erster, stops: stops.len())))
+    }
+    if not html-output.get() {
+      // Auf Papier ein Standbild, und zwar der letzte Halt: eine Seite zeigt
+      // alle Schritte auf einmal, und das ist der Zustand, in dem die Szene
+      // die Folie verlässt. Genau wie `alternatives`.
+      block(width: width, height: height,
+            if still == auto { male(stops.last()) } else { still })
+    } else {
+      track(
+        "scene",
+        box(width: width, height: height, clip: true, male(stops.first())),
+        at: str(erster) + "-",
+        extra: (
+          stops: stops.len(), tween: tween, from: erster, enter: enter,
+          // `pull`, nicht `duration`: das ist die Dauer des *Wegs* von Halt zu
+          // Halt, nicht die der Blende, mit der die Szene auftritt. Dieselbe
+          // Trennung, die `morph` mit `fly` zieht, und aus demselben Grund --
+          // beide unter einem Namen laufen zu lassen zieht dieselbe Bewegung
+          // sichtbar auseinander.
+          pull: if duration == auto { none } else { duration },
+        ),
+        raw-frames: werte.map(w => box(
+          width: width, height: height, clip: true, male(w),
+        )),
+      )
+    }
+  }
+}
+
+/// Something that belongs to one particular stop of a scene.
+///
+/// A sentence beside it, a formula, a second drawing: it shares the step with
+/// its stop and therefore travels with it, without having to be linked.
+///
+/// ```typ
+/// #scene("derivative", x => tangent-at(f, x), stops: (-3, 0, 3))
+///
+/// #scene-layer("derivative", 2)[At the vertex the slope is zero.]
+/// ```
+///
+/// The scene has to stand *before* its layers in the source, because a layer
+/// looks up which step its stop was given. Standing after them, the package
+/// says so rather than quietly doing nothing.
+///
+/// A layer stays from its stop to the end of the slide, as `cue-layer`
+/// does: what was said at a stop goes on holding afterwards.
+#let scene-layer(name, nr, body, enter: "fade") = context {
+  let g = szene-gruppen.get()
+  assert(name in g, message:
+    "typstage: scene-layer(\"" + name + "\") finds no scene of that name. A "
+    + "scene() has to stand before its layers in the source, because a layer "
+    + "looks up which step its stop was given.")
+  let e = g.at(name)
+  assert(type(nr) == int and nr >= 1 and nr <= e.stops, message:
+    "typstage: scene-layer(\"" + name + "\", " + str(nr) + ") -- that scene "
+    + "has " + str(e.stops) + " stop" + (if e.stops == 1 { "" } else { "s" })
+    + ", so the number is out of range.")
+  anim-kern(body, at: str(e.start + nr - 1) + "-", enter: enter)
 }

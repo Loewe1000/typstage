@@ -20,6 +20,7 @@ Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
 + *Eine Folie Schritt für Schritt aufdecken* -- `pause`, `stagger`, `anim` und
   der Schrittzeiger
 + *Etwas vorführen statt behaupten* -- Applet, Video, Daumenkino
++ *GeoGebra* -- Konstruktionen, die den Schritten der Folie folgen
 + *Eine Rechnung entwickeln* -- Magic Move über mehrere Folien
 + *Aus einer Quelle drei Ausgaben* -- Präsentation, Foliensatz, Handout
 + *Das eigene Aussehen* -- Themes, Farben, Leinwand, Bausteine
@@ -186,8 +187,8 @@ weiterblättert.
 der Stift, und ein Klick auf einen eingebetteten Rahmen landet stattdessen im
 Vortragsfenster: dieselbe Stelle, dieselbe Geste, in der Größe, die das andere
 Fenster gerade hat. Wo das eingebettete Dokument sich selbst spiegeln kann, wie
-ein GeoGebra-Applet über `typstage-geogebra`, bedient man das lebende vor sich
-und die Kopie auf der Leinwand zieht nach.
+ein GeoGebra-Applet es tut, bedient man das lebende vor sich und die Kopie auf
+der Leinwand zieht nach.
 
 === Ein Rahmen, der den Fokus hat
 
@@ -371,7 +372,7 @@ Druck weiter.
 
 == Welches Mittel wofür
 
-Vier Bausteine decken so gut wie alles ab. Sie lassen sich auf einer Folie
+Sechs Bausteine decken so gut wie alles ab. Sie lassen sich auf einer Folie
 mischen; welcher der richtige ist, hängt daran, wie fein die Folie gesteuert
 werden soll.
 
@@ -392,6 +393,12 @@ werden soll.
   [`alternatives(…)`],
   [Mehrere Fassungen derselben Sache an derselben Stelle, jede die vorige
    ersetzend.],
+  [`build(…)`],
+  [Eine Zeichnung oder ein Diagramm, das in Stufen entsteht -- eine CeTZ-Linie,
+   eine lilaq-Datenreihe, eine Beschriftung nach der anderen.],
+  [`scene(…)`],
+  [Eine Zeichnung, die von einem Wert abhängt, und die Werte, an denen der
+   Vortrag hält. Für alles, was sich *bewegt*, statt dazuzukommen.],
 )
 
 Dazu kommt `tiles` für ein Kachelraster, das sich von selbst staffelt (Kapitel
@@ -605,12 +612,12 @@ Versuch auffällt, welche Rechenwege es gibt -- die Klasse nennt das in
 beliebiger Folge, und ein Deck, das sie in seiner Folge aufdeckt, zwingt die
 Lehrkraft, entweder zu warten oder umzusortieren.
 
-`adaptiv` dreht das um: die Ziffern `1` bis `9` decken auf, was gerade genannt
+`cue` dreht das um: die Ziffern `1` bis `9` decken auf, was gerade genannt
 wurde.
 
 // check: folie
 #show-code[```typ
-#adaptiv("ablesen", start: 2)[
+#cue("ablesen", start: 2)[
   - positive und negative Werte
   - tiefster und höchster Wert
   - Abnahme und Zunahme
@@ -627,12 +634,12 @@ seinen Platz frei, damit nichts springt, wenn er später dazukommt.
 
 === Was mit dem Punkt zugleich erscheint
 
-Ein Stichpunkt steht selten allein. `adaptiv-schicht` hängt etwas an denselben
+Ein Stichpunkt steht selten allein. `cue-layer` hängt etwas an denselben
 Schritt -- eine Zeichenschicht, ein Bild, einen Satz daneben:
 
 // check: folie davor
 #show-code[```typ
-#adaptiv-schicht("ablesen", 1, [dazu das Passende])
+#cue-layer("ablesen", 1, [dazu das Passende])
 ```]
 
 Verknüpft wird dabei nichts: Punkt und Schicht teilen sich einen Schritt, und
@@ -655,6 +662,10 @@ es, statt still nichts zu tun.
   Eine Schicht trägt dabei *nur ihren eigenen Beitrag*, kein Gitter und keine
   Grundkurve. Sonst übermalt die zuletzt gesetzte Schicht die erste, und zwar
   unabhängig davon, in welcher Reihenfolge aufgedeckt wird.
+
+  Soll die Zeichnung dagegen in der geschriebenen Reihenfolge wachsen, nimmt
+  man `build` -- siehe "Eine Zeichnung, die wächst". Dort trägt jede Stufe die
+  *ganze* Zeichnung, und die Frage nach dem Übermalen stellt sich nicht.
 ]
 
 #info[
@@ -723,11 +734,25 @@ der Platz, den sie einnehmen, ist in beiden Zielen derselbe.
   [`"scale-down"`], [schrumpft zusammen],
   [`"blur"`], [schärft sich ein],
   [`"rise"`], [steigt von unten auf und wächst dabei ein wenig],
+  [`"draw"`], [zeichnet sich selbst -- siehe "Ein Pfad, der sich selbst
+               zeichnet"],
   [`"none"`], [ohne Bewegung -- der Inhalt ist schlicht da],
+  [`"hold"`], [kein Abgang, sondern ein Warten: das Stück bleibt stehen, bis
+               das nächste da ist. Als `enter` dasselbe wie `"none"`],
 )
 
 Die Himmelsrichtung im Namen ist die Bewegungsrichtung, nicht die Herkunft:
 `"fade-right"` läuft nach rechts und kommt daher von links.
+
+*Ein Name, den es nicht gibt, ist ein Fehler beim Übersetzen*, genau wie bei
+`easing`. Die Laufzeit fiel früher wortlos auf `"fade"` zurück; ein Vertipper
+sah danach aus wie ein Deck, das sich eben anders bewegt als gedacht -- und das
+findet niemand mitten im Vortrag.
+
+// check: folie bricht=the_package_does_not_know_that_effect
+#show-code[```typ
+#anim(enter: "fade-upp")[Vertippt.]   // Fehler beim Übersetzen
+```]
 
 `enter` wirkt in beide Richtungen. Beim Zurückblättern läuft derselbe Effekt
 rückwärts und nimmt den Auftritt zurück -- ein Element, das von unten
@@ -744,6 +769,76 @@ Selektor ein Ende hat.
 (`duration:` auf `presentation`, 520). `delay` ist 0. Beide sind Zahlen in
 Millisekunden und gelten für den Auftritt; beim Zurückblättern entfällt die
 Verzögerung, damit der Rückweg nicht zäh wird.
+
+=== Die Kurve
+
+Alles, was dieses Paket bewegt, läuft auf derselben Kurve: langsam los, zügig
+durch, weich aus. `easing` gibt sie einem einzelnen Element aus der Hand -- ein
+Ergebnis darf über sein Ziel hinausschießen und zurückschwingen, ein Stapel
+Stichpunkte darf gleichmäßig ankommen.
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim(ergebnis, enter: "rise", easing: "out-back")
+#stagger(stride: 0, stagger: 60, easing: "out-quad")[
+  - erst dies
+  - dann das
+]
+```]
+
+Sie steht überall dort, wo auch `duration` steht: bei `anim`, `stagger`,
+`alternatives` und der Zeichnung in Stufen. Und sie gilt für alles, was das
+Element selbst tut -- den Auftritt, den Abgang und das Dimmen. Nicht für den
+Folienwechsel, der gehört der Folie und nicht dem Element; und nicht für den
+Flug eines Magic Move, der zwei Enden hat und dessen Kurve nicht auf einer
+Seite entschieden werden kann.
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Name*], [*Kurve*]),
+  [`"standard"`], [die Kurve dieses Pakets, ausgeschrieben -- dasselbe wie
+                   keine Angabe],
+  [`"linear"`], [gleichmäßig, ohne Anlauf und ohne Ausklang],
+  [`"ease"`, `"ease-in"`, `"ease-out"`, `"ease-in-out"`],
+  [die vier, die die Web Animations API von sich aus kennt],
+  [`"in-quad"`, `"out-quad"`, `"in-out-quad"`], [sachte],
+  [`"in-cubic"`, `"out-cubic"`, `"in-out-cubic"`], [deutlicher],
+  [`"in-expo"`, `"out-expo"`, `"in-out-expo"`], [scharf -- fast alles geschieht
+   an einem Ende],
+  [`"in-back"`, `"out-back"`, `"in-out-back"`], [holt aus und schwingt über],
+)
+
+`in` heißt langsam los, `out` heißt weich aus. Für einen Auftritt ist fast
+immer `out` das Richtige: das Auge sieht dem Ende zu und nicht dem Anfang.
+
+*Ein Name, den es nicht gibt, ist ein Fehler beim Übersetzen* und keine stille
+Vorgabe. Wer sich vertippt, bekäme sonst die Hauskurve zurück und suchte lange,
+warum sein Rückschwung nicht schwingt. Die Meldung zählt auf, was zur Wahl
+steht.
+
+// check: folie pre=zeichnung bricht=the_package_does_not_know_that_curve
+#show-code[```typ
+#anim(ergebnis, easing: "out-bounce")   // Fehler beim Übersetzen
+```]
+
+*Die drei `back`-Kurven gehen über ihr Ziel hinaus*, und das ist ihr Zweck. Auf
+einem Weg ist das der Rückschwung; auf der Deckkraft schneidet der Browser ab,
+was über 1 hinausreicht, ein `easing: "out-back"` auf einem schlichten `"fade"`
+ist deshalb nur ein schnelleres `"fade"`. Es lohnt sich zusammen mit einem
+Effekt, der wandert: `"rise"`, `"scale"`, `"fade-up"`.
+
+Federn und Sprünge -- `elastic`, `bounce` -- gibt es nicht. Sie sind keine
+kubischen Bézierkurven, und die Web Animations API kennt nur solche; sie ließen
+sich nur als Bildfolge nachbauen.
+
+#info[
+  Ohne `easing` ändert sich an einem Deck kein Byte. Der Name wird beim
+  Übersetzen zu einer fertigen Kurve aufgelöst und nur dann ins Markup
+  geschrieben, wenn er von der Vorgabe abweicht -- sonst trüge jedes Element
+  jedes Decks ein neues Attribut. Nachgemessen an den acht Beispielen dieses
+  Pakets, HTML wie PDF: dieselben Bytes wie vorher.
+]
 
 === Der gedimmte Ruhezustand
 
@@ -882,6 +977,592 @@ in demselben Kasten, sodass die Seite die Abstände der Folie behält.
   des Kastens, und der Wechsel wird ruhig.
 ]
 
+== Eine Zeichnung, die wächst
+
+Eine CeTZ-Zeichnung und ein lilaq-Diagramm sind *ein* Stück, nicht viele. Typst
+reicht den fertigen Satz heraus; was darin eine Linie und was eine Datenreihe
+war, ist von außen nicht mehr zu greifen. Ein `anim` um eine einzelne Linie
+gibt es deshalb nicht.
+
+Was es gibt, ist die Zeichnung selbst -- so oft man sie haben will. `build`
+ruft sie einmal je Schritt und legt die Fassungen deckungsgleich übereinander:
+auf Stufe #box[$k$] steht die Zeichnung so, wie sie nach #box[$k$] Schritten
+aussieht. Zu sehen ist immer genau eine.
+
+Welches Stück wann dazukommt, sagt die Frage, die jede Stufe gereicht bekommt.
+Sie heißt `ab`, weil sie dasselbe sagt wie `at:` sonst:
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": *
+    build(from => box(width: 260pt, height: 58pt, {
+      place(bottom + left, line(length: 100%))
+      place(bottom + left, line(angle: -90deg, length: 52pt))
+      place(bottom + left, dx: 22%, rect(width: 12%, height: 22pt, fill: from(2, accent)))
+      place(bottom + left, dx: 44%, rect(width: 12%, height: 36pt, fill: from(3, accent)))
+      place(bottom + left, dx: 66%, rect(width: 12%, height: 50pt, fill: from(4, accent)))
+    }), steps: 4)
+  },
+  source: ```typ
+  #build(from => box(width: 260pt, height: 58pt, {
+    place(bottom + left, line(length: 100%))
+    place(bottom + left, line(angle: -90deg, length: 52pt))
+    place(bottom + left, dx: 22%, rect(width: 12%, height: 22pt, fill: from(2, accent)))
+    place(bottom + left, dx: 44%, rect(width: 12%, height: 36pt, fill: from(3, accent)))
+    place(bottom + left, dx: 66%, rect(width: 12%, height: 50pt, fill: from(4, accent)))
+  }), steps: 4)
+  ```,
+  width: 13cm,
+)
+
+`from(2, accent)` gibt die Farbe zurück, sobald das zweite Stück an der Reihe
+ist, und sonst dieselbe Farbe mit Alpha 0. Das Achsenkreuz trägt keine Nummer
+und steht deshalb von Anfang an da. `steps: 4` sagt, wie viele Stufen es
+gibt; geraten wird das nicht, denn was der Zeichner mit seiner Frage anstellt,
+sieht von außen niemand.
+
+=== Warum Alpha 0 und nicht weglassen
+
+Weil ein Stück, das fehlt, den Platz mitnimmt, den es hatte. Nachgemessen an
+einer CeTZ-Zeichnung aus drei Linien, deren dritte über die beiden anderen
+hinausragt, und an einem lilaq-Diagramm aus zwei Datenreihen:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Wie versteckt*], [*Was daraus wird*]),
+  [weggelassen],
+  [Der Platz ist weg. CeTZ misst 113 #sym.times 85 statt 198 #sym.times 170;
+   bei lilaq wandert die `viewBox` von 186,58 auf 189,64, weil die Achse ohne
+   die zweite Reihe andere Beschriftungen bekommt. Genau das ist der Sprung,
+   den niemand will.],
+  [`stroke: none`],
+  [Das Maß bleibt, aber Typst schreibt den Pfad ohne jedes Strichattribut
+   heraus -- aus 933 Bytes werden 831. Bei lilaq fallen damit die Marken einer
+   Reihe als Geometrie mit weg, 141 Pfade statt 149.],
+  [Alpha 0],
+  [Das Maß bleibt, der Pfad bleibt vollständig, nur seine Farbe trägt 00:
+   `stroke="#00000000"`, 935 Bytes gegen 933. Bei lilaq stehen alle 149 Pfade,
+   und die `viewBox` steht auf die Stelle genau.],
+)
+
+Deshalb Alpha 0. `ab` macht daraus, was zu machen ist:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Was hineingeht*], [*Was herauskommt*]),
+  [eine Farbe], [dieselbe Farbe mit Alpha 0],
+  [ein Strich], [derselbe Strich mit durchsichtigem Pinsel; Dicke, Strichelung
+                 und Enden bleiben, denn daran hängt das Maß],
+  [ein Wörterbuch], [dasselbe Wörterbuch, in dem nur die Farben und Striche zu
+                     Luft geworden sind],
+  [Inhalt], [`hide(…)` -- gesetzt, aber nicht gezeichnet],
+  [ein Verlauf], [nichts. Ein `gradient` hat keine Deckkraft, an der sich
+                  drehen ließe; das Paket sagt es, statt es zu versuchen],
+)
+
+Was `ab` nicht umfärben kann, bekommt die Frage mit einem einzigen Argument:
+`from(3)` ist wahr, sobald das dritte Stück an der Reihe ist. In CeTZ gehört
+dorthin `hide(…, bounds: true)`, das ein ganzes Stück verschwinden lässt und
+sein Maß behält.
+
+=== Eine CeTZ-Zeichnung
+
+Mit `#import "@preview/cetz:0.5.2"` daneben:
+
+// check: folie pre=cetz
+#show-code[```typ
+#build(from => cetz.canvas({
+  import cetz.draw: *
+  line((0,0), (4,0))                          // steht von Anfang an
+  line((4,0), (4,3), stroke: from(2, black))    // ab Schritt 2
+  line((4,3), (0,0), stroke: from(3, 1.4pt + red))
+  content((2.2, 1.8), from(4, [$c$]))
+  if from(4) { circle((4,0), radius: 0.18) }
+  else { hide(circle((4,0), radius: 0.18), bounds: true) }
+}), steps: 4)
+```]
+
+=== Ein lilaq-Diagramm
+
+Mit `#import "@preview/lilaq:0.6.0" as lq` daneben. Eine Datenreihe wird an
+zwei Stellen zu Luft: an ihrer Farbe und an ihrer Beschriftung in der Legende.
+Die zweite ist leicht zu vergessen -- der Eintrag steht sonst schon in der
+Legende, während seine Kurve noch fehlt:
+
+// check: folie pre=lilaq
+#show-code[```typ
+#build(from => lq.diagram(
+  width: 7cm, height: 4.5cm,
+  legend: (position: top + left),
+  lq.plot(x, messung, color: from(1, red), label: from(1, [gemessen])),
+  lq.plot(x, modell, color: from(2, blue), label: from(2, [Modell])),
+), steps: 2)
+```]
+
+Weil die Reihe als Luft in den Daten stehen bleibt, rechnet lilaq seine Achsen
+über beide -- die Skala steht von Anfang an fest, und die erste Kurve springt
+nicht, wenn die zweite dazukommt. Wer die Reihe statt dessen weglassen würde,
+bekäme mit ihr eine neue Achsenteilung.
+
+=== Die Argumente
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Argument*], [*Wirkung*]),
+  [`steps`], [Zahl der Stufen und damit der Schritte (Vorgabe 2)],
+  [`start`], [erster Schritt; `auto` schließt an den Zeiger an],
+  [`enter`], [Bewegung beim Erscheinen einer Stufe (Vorgabe `"fade"`);
+              `"draw"` ist hier ein Fehler, siehe den nächsten Abschnitt],
+  [`duration`], [Dauer in Millisekunden],
+  [`easing`], [Kurve der Bewegung, siehe "Die Kurve"],
+)
+
+Auf Papier wird nur die letzte Stufe gesetzt, im Block derselben Größe: eine
+Seite zeigt alle Schritte auf einmal, und übereinandergelegte Stufen gäben
+Doppeldruck. Gemessen an einem Deck mit einer CeTZ-Zeichnung und einem
+lilaq-Diagramm: die Seiten sind Bildpunkt für Bildpunkt dieselben wie die eines
+Decks, das die Zeichnung schlicht hinschreibt. `build` kostet auf dem Papier
+nichts.
+
+Unter "Bewegung reduzieren" ändert sich ebenfalls nichts. Die Stufen blenden,
+sie wandern nicht, und was die Einstellung wegnähme, wäre eine Bewegung, die es
+hier nicht gibt.
+
+#info[
+  Warum immer nur *eine* Stufe zu sehen ist: weil sich gemalte Tinte addiert.
+  Drei Stufen desselben lilaq-Diagramms übereinander, gegen dasselbe Diagramm
+  einmal gesetzt -- 3,7 Prozent der Bildpunkte weichen um mehr als 8 von 255
+  ab, die größte Abweichung 99. Achsen, Beschriftung und der halbdurchsichtige
+  Kasten der Legende werden dreimal gemalt und werden dadurch fetter. Mit
+  Stufen, die nur ihr eigenes Stück tragen, ist es nicht besser: dieselbe
+  Messung ergibt 3,5 Prozent und eine größte Abweichung von 243, denn die
+  Achsen gehören zu keinem Stück und stünden dann auf jeder Stufe. Eine Stufe
+  auf einmal ist die einzige Anordnung, die genau das Bild ergibt, das
+  dastünde, wenn man die Zeichnung einmal setzte.
+
+  Der Preis dafür ist der Übergang, denn zwei fast gleiche Bilder, die
+  einander ablösen, blenden gegeneinander. Vorwärts ist das gelöst: die
+  abtretende Stufe bleibt stehen, bis die neue vollständig da ist, und geht
+  dann ohne Bewegung. Rückwärts überlagern sich Ausblenden und Einblenden für
+  einen Augenblick, und die Tinte, die beide teilen, sinkt dabei kurz auf drei
+  Viertel. Sichtbar ist das nur beim Zurückblättern und nur, solange die
+  Überblendung läuft.
+]
+
+#warning[
+  Jede Stufe wird wirklich gesetzt. Vier Stufen heißen vier Layouts und vier
+  SVG-Bäume in der Datei -- bei einer aufwendigen Zeichnung wächst beides
+  ebenso schnell wie beim Daumenkino. Eine Zeichnung in zwanzig Stufen ist
+  keine gute Idee.
+]
+
+== Ein Pfad, der sich selbst zeichnet
+
+`enter: "draw"` lässt einen Strich *entstehen*, statt ihn einzublenden: die
+Feder setzt an und fährt den Pfad ab, von seinem Anfang bis zu seinem Ende.
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim(schaltbild, enter: "draw", duration: 900)
+#stagger(enter: "draw", stride: 1, achse, kurve, tangente)
+```]
+
+Das Mittel dahinter ist alt und schlicht. Ein gestrichener Pfad im SVG trägt
+seine Länge in sich; `stroke-dasharray` teilt ihn in einen Strich von genau
+dieser Länge und eine Lücke ebenso lang, und `stroke-dashoffset` schiebt den
+Strich hinein. Bei vollem Versatz ist nichts da, bei null alles -- dazwischen
+fährt eine Feder den Pfad ab.
+
+`duration` gilt wie überall, aber eine Zeichnung will mehr Zeit als ein
+Stichpunkt. 900 ist ein brauchbarer Anfang; die Vorgabe der Präsentation (520)
+ist für drei lange Linien knapp.
+
+=== Was sich abfahren lässt und was nicht
+
+*Text nicht.* Typst setzt Glyphen als gefüllte Umrisse ohne Kontur -- ein "a"
+ist eine Fläche und keine Linie, und eine Fläche hat keine Länge, an der
+entlang etwas zu fahren wäre. Dasselbe gilt für alles Gefüllte: eine
+Pfeilspitze, ein ausgefüllter Punkt, die Fläche einer Karte.
+
+Deshalb ist `draw` zweierlei zugleich. *Die Striche zeichnen sich, alles übrige
+blendet auf* -- so, wie es das ohne `draw` auch täte, und genau so lange. Die
+Beschriftung einer Zeichnung kommt also, während die Linien entstehen, und
+steht mit ihnen zusammen fertig da.
+
+Ein Element, an dem sich *gar nichts* abfahren lässt, blendet vollständig --
+aber nicht stillschweigend. Die Laufzeit sagt es in der Konsole des Browsers,
+einmal je Element:
+
+#show-code[```
+typstage: enter: "draw" on slide 4 (element 2) finds no stroked path to
+trace. What is drawn is an outline, and text has none: Typst sets glyphs
+as filled shapes. The element fades in instead. draw is for a drawing,
+the fade is for text.
+```]
+
+*Warum erst dort und nicht beim Übersetzen.* Weil Typst das SVG erst beim
+Export herausgibt. Im Dokument gibt es keine Frage, die "hat dieser Inhalt eine
+Kontur" beantwortete -- es ist derselbe blinde Fleck, wegen dessen dieses Paket
+überhaupt mit Rechtecken in Signalfarbe arbeitet und den Browser zurückmelden
+lässt, wo etwas steht. Erst im Browser steht der Pfad da und lässt sich zählen.
+Der Prüflauf des Pakets liest diese Meldung mit aus, damit sie nicht eines
+Tages aufhört zu kommen.
+
+=== Alle zugleich, und wie man sie nacheinander bekommt
+
+Alle gestrichenen Pfade eines Elements fahren *zugleich* los, und daran gibt es
+nichts zu drehen. Die Reihenfolge im SVG ist die Malreihenfolge von Typst und
+keine, die das Deck gewählt hätte; sie zur Erzählreihenfolge zu erklären wäre
+dieselbe Anmaßung, die dieses Paket beim Magic Move ausdrücklich ablehnt, wo
+Zeichen nicht nach Nachbarschaft einander zugeordnet werden. Und `duration`
+wäre keine Zahl mehr, die sich lesen ließe: sieben Striche zu 900 ms
+nacheinander sind 6,3 Sekunden.
+
+Eine Reihenfolge sagt man also, statt sie zu erben. Jedes Stück bekommt seinen
+eigenen Schritt:
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#stagger(enter: "draw", stride: 1, achse, kurve, tangente)
+```]
+
+=== Wo eine Zeichnung stehen muss
+
+*Nicht auf dem ersten Schritt ihrer Folie.* Wer eine Folie betritt, sieht keine
+Auftritte -- beim Folienwechsel stellt die Laufzeit nur den Zustand her, sonst
+liefen der Folienübergang und ein Dutzend Einblendungen gegeneinander. Eine
+Zeichnung auf Schritt eins stünde also einfach da. Sie braucht einen Schritt
+vor sich:
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim[Erst der Satz, der die Zeichnung ankündigt.]
+#anim(schaltbild, enter: "draw", duration: 900)
+```]
+
+Das gilt für jeden Effekt. Bei `draw` fällt es nur besonders auf, weil dort der
+ganze Sinn im Weg steckt.
+
+=== Wer Konturen liefert
+
+Nachgemessen im ausgegebenen SVG, je ein Element mit `enter: "draw"`:
+
+#table(
+  columns: (1fr, auto, auto, auto),
+  stroke: 0.5pt + luma(180),
+  align: (left, right, right, right),
+  table.header([*Gezeichnet mit*], [*Pfade*], [*gestrichen*], [*Glyphen*]),
+  [cetz 0.5.2 -- drei Linien, ein Kreis, eine Beschriftung], [11], [4], [7],
+  [cetz-plot 0.1.4 -- eine Funktion mit Schulbuchachsen], [59], [25], [53],
+  [lilaq 0.6.0 -- zwei Datenreihen], [70], [64], [6],
+  [fletcher 0.5.8 -- drei Knoten, zwei Kanten], [12], [6], [3],
+  [circuiteria 0.2.1 -- zwei Blöcke, eine Leitung], [7], [3], [2],
+  [Typsts eigenes `table` mit `stroke`], [13], [7], [6],
+  [`line`, `rect(stroke: …)`, `circle(stroke: …)`], [3], [3], [0],
+  [nur Text], [14], [0], [18],
+)
+
+Die Regel dahinter ist einfach: *was in Typst einen `stroke` bekommt, wird zu
+einem Pfad mit Kontur und lässt sich abfahren; was eine `fill` bekommt, nicht.*
+Ein Zeichenpaket liefert also genau so viel, wie es strichelt. Die 14 Pfade der
+letzten Zeile sind keine Tinte -- es sind die Messrechtecke und Schnittmasken,
+die das Paket und Typst in jede Ausgabe legen; keiner davon trägt eine Kontur.
+
+Zwei Zahlen verdienen einen zweiten Blick. Bei `lilaq` sind 64 der 70 Pfade
+gestrichen -- Gitter, Teilstriche, Rahmen und Marken gehören dazu --, und alle
+64 fahren zugleich los. Das sieht nicht nach einer Zeichnung aus, die entsteht,
+sondern nach einem Diagramm, das gleichmäßig hereinwischt. Bei `cetz` sind es
+vier, und das ist der Fall, für den `draw` gemacht ist: wenige lange Linien,
+denen ein Auge folgen kann. Für ein Diagramm ist die Zeichnung in Stufen aus
+dem vorigen Abschnitt das bessere Mittel.
+
+*Gestrichelte Linien bleiben bei der Blende.* Eine Strichelung steht in
+demselben Attribut, das die Feder braucht; es zu überschreiben hieße, die
+Strichelung für die Dauer der Zeichnung zu tilgen, und eine gestrichelte
+Hilfslinie käme durchgezogen herein. Sie blendet also auf, während ihre
+durchgezogenen Nachbarn sich zeichnen.
+
+=== In beide Richtungen, und was an den Rändern gilt
+
+#table(
+  columns: (auto, 1fr),
+  inset: 6pt,
+  stroke: (x, y) => if y == 0 { (bottom: 0.6pt) } else { (bottom: 0.3pt + luma(80%)) },
+  table.header([Wo], [Was geschieht]),
+  [Zurückblättern],
+  [Die Feder fährt heraus. `enter` gilt in beide Richtungen wie bei jedem
+   Effekt: was sich gezeichnet hat, zeichnet sich zurück.],
+  [Sprung auf einen Schritt],
+  [Kein Zeichnen. Ein Sprung -- über die Adresse, über die Übersicht, beim
+   Neuladen -- stellt den Endzustand her, und der ist die fertige Zeichnung.],
+  [`exit: "draw"`],
+  [Erlaubt und symmetrisch: ein Element, das seinen Bereich verlässt, nimmt
+   seine Striche zurück, statt zu verblassen.],
+  [Sprecheransicht],
+  [Die Vorschau des nächsten Schritts zeigt den Ruhezustand, also die fertige
+   Zeichnung. Bewegung gibt es dort keine.],
+  [Papier],
+  [Nichts. `enter` erreicht das PDF nie, die Zeichnung steht fertig da.
+   Nachgemessen an den acht Beispielen dieses Pakets: dieselben Bytes wie ohne
+   `draw`.],
+  [Bewegung reduzieren],
+  [Die Feder hält still, die Blende bleibt. Siehe gleich.],
+)
+
+=== Unter "Bewegung reduzieren"
+
+Die Regel dieses Pakets lautet: *Deckkraft bleibt, Ortsveränderung fällt weg.*
+Bei `draw` ist das keine Ausnahme, sondern der Regelfall in seiner reinsten
+Form -- das Zeichnen *ist* der Weg. Nimmt man ihn heraus, bleibt genau die
+Blende stehen, die ohnehin darunter lief, und die Zeichnung erscheint wie jedes
+andere Element auch, in derselben Dauer.
+
+Verloren geht dabei nichts, was das Argument trüge: eine Zeichnung, die
+entsteht, sagt dasselbe wie eine, die dasteht, nur langsamer. Wo das einmal
+nicht stimmt -- wo die Reihenfolge der Striche selbst etwas erklärt --, gehört
+sie zusätzlich in Worte, und die liest auch, wer sie nicht laufen sieht.
+
+Die Meldung über ein Element ohne Kontur kommt trotzdem. Sie gilt dem Deck und
+nicht der Maschine, auf der es gerade läuft; wer die Einstellung anhat, soll
+dieselbe Auskunft bekommen wie alle anderen.
+
+=== Zusammen mit einer Zeichnung in Stufen
+
+Beides zugleich geht nicht, und das Paket sagt es beim Übersetzen statt es zu
+versuchen:
+
+// check: folie pre=zeichnung bricht=is_at_odds_with_what_this_function_does
+#show-code[```typ
+#build(zeichner, enter: "draw")   // Fehler beim Übersetzen
+```]
+
+Jede Stufe einer Zeichnung aus dem vorigen Abschnitt ist die *ganze* Zeichnung.
+Eine Stufe, die sich selbst zeichnete, zöge also bei jedem Schritt sämtliche
+Striche noch einmal nach, auch die, die längst standen. Und sie täte es über
+der abtretenden Stufe, die absichtlich stehenbleibt, bis die neue vollständig
+da ist -- die Feder führe über Tinte, die schon liegt, und zu sehen wäre
+nichts. Das Gegenteil dessen, was `draw` verspricht.
+
+Wer eine Zeichnung wirklich Strich für Strich entstehen lassen will, gibt die
+Striche als eigene Stücke hin und lässt jedes sich selbst zeichnen; wer ein
+Diagramm in Stufen wachsen lassen will, lässt es bei seiner Blende.
+== Eine Zeichnung, die sich bewegt
+
+`build` lässt eine Zeichnung wachsen: Stück für Stück kommt etwas hinzu.
+`scene` ist die andere Hälfte derselben Idee. Hier kommt nichts hinzu -- hier
+ändert sich eine *Größe*, und das Bild hängt daran.
+
+Die Regel in einem Satz: *das Deck schreibt eine Funktion von einem Wert auf
+ein Bild und sagt, an welchen Werten der Vortrag hält. Typst rendert jeden Halt
+und die Bilder dazwischen. Ein Schritt zieht das Bild von Halt zu Halt.*
+
+// check: folie pre=szene
+#show-example(
+  rendered: {
+    import "../src/lib.typ": *
+    scene(x => box(width: 260pt, height: 64pt, {
+      place(bottom + left, line(length: 100%))
+      place(bottom + left, dx: 50%, line(angle: -90deg, length: 100%))
+      place(horizon + left, dx: 50% + x * 8%,
+            circle(radius: 7pt, fill: accent))
+    }), stops: (-3, 0, 1.5, 3), tween: 8, width: 260pt, height: 64pt)
+  },
+  source: ```typ
+  #scene(
+    x => zeichnung-bei(x),
+    stops: (-3, 0, 1.5, 3),   // vier Halte, drei Schritte
+    tween: 8,                 // Bilder zwischen zwei Halten
+  )
+  ```,
+  width: 13cm,
+)
+
+`stops` sind die Werte selbst, nicht `0.0` bis `1.0`. Genau das ist der
+Unterschied zum Daumenkino: dort ist `t` ein Anteil an einer Laufzeit, hier ist
+`x` die Größe, über die geredet wird. Wer die Tangente an der Stelle $-3$, im
+Scheitel und bei $1.5$ zeigen will, schreibt diese drei Zahlen hin.
+
+Die Szene verbraucht `stops.len() - 1` Schritte. Der erste Halt steht da,
+sobald die Szene erscheint -- wie ein `morph` und anders als ein `anim` --,
+jeder weitere kostet einen Tastendruck.
+
+=== Was zu einem Halt gehört
+
+Ein Satz daneben, eine Formel, eine zweite Zeichnung: `scene-layer` legt sich
+auf den Schritt eines bestimmten Halts. Damit die Schicht ihre Szene
+wiederfindet, bekommt die Szene einen Namen.
+
+// check: folie pre=szene
+#show-code[```typ
+#scene("ableitung", x => tangente-an(f, x), stops: (-3, 0, 1.5, 3))
+
+#scene-layer("ableitung", 2)[Im Scheitel ist die Steigung null.]
+#scene-layer("ableitung", 4, enter: "scale")[$f'(x) = 1/2 x$]
+```]
+
+Das ist wortgleich zu `cue-layer` und aus demselben Grund: die Kopplung
+fällt aus dem gemeinsamen Schritt heraus. Wer einen Halt verschiebt,
+verschiebt alles mit, was daran hängt, und nirgends steht eine Zahl doppelt.
+Die Szene muss dabei im Quelltext *vor* ihren Schichten stehen; steht sie
+dahinter, sagt das Paket es.
+
+=== Mehrere Größen zugleich
+
+Ein Halt darf ein Tupel sein. Der Zeichner bekommt dann ebenso viele
+Argumente:
+
+// check: folie pre=szene
+#show-code[```typ
+#scene(
+  (a, b) => rechteck-mit(breite: a, hoehe: b),
+  stops: ((1, 1), (1, 3), (2, 3)),
+  tween: 6,
+)
+```]
+
+Erst wächst die Höhe, dann die Breite. Was dabei nicht geht: zwei Größen, die
+sich *unabhängig* voneinander bewegen. Alles reist gemeinsam von Halt zu Halt.
+In manim, wo diese Idee herkommt, könnten zwei `ValueTracker` getrennte Wege
+gehen; hier gibt es nur einen Weg, und ein Tupel legt mehrere Größen darauf.
+
+=== Die Argumente
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Argument*], [*Wirkung*]),
+  [`stops`],
+  [Die Werte, an denen der Vortrag hält. Mindestens zwei. Eine Zahl, eine
+   Länge, ein Winkel, ein Anteil -- oder ein Tupel davon.],
+  [`tween`],
+  [Bilder *zwischen* zwei Halten (Vorgabe 8). Mit `0` springt die Szene.],
+  [`start`],
+  [Erster Schritt; `auto` nimmt den laufenden.],
+  [`width`, `height`],
+  [Der Kasten, in dem die Szene steht (Vorgabe `100%` und `190pt`).],
+  [`duration`],
+  [Wie lange ein Zug von Halt zu Halt dauert, in Millisekunden.],
+  [`enter`],
+  [Bewegung, mit der die Szene selbst auftritt (Vorgabe `"fade"`).],
+  [`still`],
+  [Was auf Papier steht, wenn nicht der letzte Halt.],
+)
+
+`duration` ist die Dauer des *Wegs*, nicht die der Blende, mit der die Szene
+auftritt -- dieselbe Trennung, die `morph` mit seinem `duration` zieht. Beides
+unter einen Namen zu legen zöge dieselbe Bewegung sichtbar auseinander.
+
+Anders als `build` misst `scene` seine Bilder nicht. Die Stufen einer
+`build`-Zeichnung liegen deckungsgleich, weil ein Stück, das noch nicht dran
+ist, als Luft dasteht; die Bilder einer Szene sind Zeichnungen zu verschiedenen
+Werten und dürfen ohne Weiteres verschieden groß ausfallen. Deshalb steht eine
+Szene in einem Kasten fester Größe, und jedes Bild wird darauf beschnitten. Wer
+`width` und `height` weglässt, bekommt die Vorgabe; wer sie zu klein wählt,
+sieht es sofort.
+
+#warning[
+  *Der Kasten steht still, die Tinte darin nicht von selbst.* Eine
+  CeTZ-Leinwand wächst mit ihrem Inhalt. Reicht die Tangente bei $x = -3$
+  weiter nach links als bei $x = 3$, ist die Leinwand dort breiter, und das
+  Achsenkreuz sitzt an einer anderen Stelle im Kasten -- beim Blättern
+  wandert dann das ganze Bild, obwohl sich nur ein Punkt bewegen sollte.
+  Gemessen an der Szene dieses Abschnitts: 28 Bilder, *15 verschiedene Lagen*
+  der Tinte im Kasten.
+
+  Das kann das Paket nicht abnehmen. `build` kann es, weil es die Stufen misst
+  und ein Stück, das noch nicht dran ist, seinen Platz behält; hier gibt es
+  kein gemeinsames Stück, dessen Platz zu behalten wäre, und vom
+  Koordinatensystem der Zeichnung weiß `scene` nichts.
+
+  Der Ausweg liegt in der Zeichnung: ihr eine feste Ausdehnung geben und das,
+  was sich bewegt, darin halten. In CeTZ ist das ein `rect` mit durchsichtigem
+  Strich, dieselbe Luft, mit der `ab` arbeitet:
+
+  // check: folie pre=cetz
+  ```typ
+  #scene(x => cetz.canvas({
+    import cetz.draw: *
+    // Hält die Leinwand auf, egal wo der Punkt steht.
+    rect((-4.4, -0.8), (4.4, 4.6), stroke: rgb(0, 0, 0, 0))
+    line((-4, 0), (4, 0))
+    circle((x, 0.25 * x * x), radius: 0.1)
+  }), stops: (-3, 0, 3), height: 160pt)
+  ```
+
+  Damit steht die Breite fest. Was trotzdem hinausreicht -- eine Tangente etwa,
+  die über den Rand hinausläuft --, muss gekappt werden, sonst zieht sie die
+  Leinwand doch wieder auf: dieselbe Szene mit Rahmen und gekappter Tangente
+  kam auf 7 Lagen statt 15.
+]
+
+Auf Papier steht der letzte Halt, wie bei `alternatives` -- eine Seite zeigt
+alle Schritte auf einmal, und das ist der Zustand, in dem die Szene die Folie
+verlässt. `still` setzt etwas anderes an seine Stelle. Der Schrittzeiger läuft
+dort trotzdem, damit `info().step.total` in beiden Ausgaben dieselbe Zahl
+nennt.
+
+Unter "Bewegung reduzieren" fallen die Zwischenbilder weg: die Szene springt
+von Halt zu Halt. Das ist die Regel des Pakets an jeder anderen Stelle auch --
+was bleibt, ist das Ziel, was geht, ist der Weg. Siehe "Weniger Bewegung".
+
+=== Was eine Szene kostet
+
+Jedes Bild ist ein echtes Typst-Layout und liegt als eigener SVG-Baum in der
+Datei. Die rohe Zahl allein gibt davon ein falsches Bild, deshalb stehen hier
+beide.
+
+Gemessen an einer CeTZ-Zeichnung, die eine Folie wirklich trüge: Achsen mit
+Marken, eine Parabel aus 61 Stützstellen, Tangente, gestricheltes
+Steigungsdreieck, zwei Beschriftungen. Typst 0.15.1, cetz 0.4.2.
+
+#table(
+  columns: (auto, auto, auto, auto),
+  align: (left, right, right, right),
+  stroke: 0.5pt + luma(180),
+  table.header([*Bilder*], [*Übersetzung*], [*HTML roh*], [*HTML gzip*]),
+  [2], [0,35 s], [238 559 B], [70 275 B],
+  [6], [0,26 s], [302 054 B], [71 591 B],
+  [12], [0,30 s], [397 320 B], [73 427 B],
+  [24], [0,39 s], [587 817 B], [76 949 B],
+  [48], [0,58 s], [968 815 B], [84 032 B],
+  [96], [0,98 s], [1 730 833 B], [97 175 B],
+)
+
+Je zusätzlichem Bild: *15,9 kB roh, 286 B gzip, 8,1 ms Übersetzung.* Die Zeit
+ist an der Steigung zwischen 12 und 96 Bildern abgelesen; die ersten Zeilen der
+Tabelle tragen den Start des Übersetzers mit und sagen für sich genommen wenig.
+
+Über die Leitung geht also rund ein Fünfzigstel dessen, was die rohe Zahl
+befürchten lässt. Die SVG-Bäume einer Szene sind einander so ähnlich, dass gzip
+98 Prozent davon wegnimmt. Eine Szene aus vier Halten und acht Zwischenbildern
+je Strecke -- 28 Bilder -- kostet gegen dieselbe Zeichnung, einmal
+hingeschrieben: 436 kB roh, *9 kB gzip*, 0,21 s Übersetzung. Auf Papier kostet
+sie nichts: dort steht ein einziges Standbild.
+
+#warning[
+  Die gepackte Zahl ist die ehrliche, aber sie gilt nur, solange der Webserver
+  auch packt. Wer die Datei per USB-Stick oder als Anhang weitergibt, trägt die
+  rohe. Und die Übersetzungszeit ist immer die volle: acht Zwischenbilder je
+  Strecke sind acht Layouts, ob sie sich später wegkomprimieren oder nicht.
+]
+
+#info[
+  Woher die Idee kommt: `scene` ist manims `ValueTracker` zusammen mit
+  `always_redraw`, ins Schrittmodell eines Vortrags übersetzt -- und die
+  Übersetzung dreht ihn um. Dort ändert sich eine Zahl, während der Film läuft,
+  und alles, was von ihr abhängt, wird pro Bild neu gezeichnet. Hier zeichnet
+  Typst zur Übersetzungszeit, und eine Zahl kann nur an einem Schritt wechseln.
+  Also werden die Bilder vorher gesetzt, und der Tastendruck fährt darüber.
+
+  Was dabei gewonnen wird: das Bild ist eine Typst-Zeichnung, mit allem, was
+  Typst kann, Formelsatz eingeschlossen, und sie bleibt in jeder Größe scharf.
+  Was verloren geht: die Zwischenbilder sind gezählt und liegen in der Datei,
+  und mehrere Größen können sich nicht unabhängig bewegen.
+]
+
 == Drei Stolpersteine
 
 *Nur Einblendungen zählen.* Der Zeiger zählt `anim`, `stagger`, `alternatives`
@@ -1006,9 +1687,9 @@ Stelle tritt.
 
 == Ein Applet neben den Stichpunkten
 
-Das Begleitpaket `typstage-geogebra` bringt GeoGebra-Applets auf die Folie. Es
-ist ein eigenes Paket, damit eine Präsentation ohne Applets nichts davon
-mitschleppt; alles, was es vom Kern braucht, sind zwei Funktionen.
+`geogebra()` bringt GeoGebra-Applets auf die Folie. Es war einmal ein eigenes
+Paket und geht deshalb bis heute über die Brücke wie jedes fremde
+Begleitpaket -- ein Deck ohne Applet trägt nichts davon mit sich.
 
 Der übliche Aufbau einer solchen Folie: links die Konstruktion, rechts die
 Stichpunkte, und darunter -- außerhalb des Layouts -- die Befehle, die das
@@ -1016,7 +1697,6 @@ Applet aufbauen und Schritt für Schritt weiterbewegen.
 
 #show-code[```typ
 #import "@schule/typstage:0.1.0": *
-#import "@schule/typstage-geogebra:0.1.0": *
 
 #show: presentation.with(theme: themes.lesson)
 
@@ -1060,8 +1740,12 @@ jedem Befehl.
 
 #info[
   Was `geogebra`, `ggb-run`, `ggb-tween` und ihre Geschwister im Einzelnen
-  können, steht im Handbuch von `typstage-geogebra`. Hier geht es nur darum,
-  wie sie sich in den Ablauf einer Folie einfügen.
+  können, steht im Kapitel _GeoGebra_. Hier geht es nur darum, wie sie sich in
+  den Ablauf einer Folie einfügen.
+
+  Und eines gehört gleich hier gesagt: das Applet lädt zur Laufzeit von
+  `geogebra.org` nach. Ohne Netz bleibt der Rahmen leer, und was darin läuft,
+  steht unter GeoGebras Bedingungen.
 ]
 
 == Was auf dem Papier an dieser Stelle steht
@@ -1150,8 +1834,7 @@ ab, den der Browser beim Erreichen des Schritts in den Rahmen zustellt:
 
 Was im Auftrag steht, ist allein Sache des Dokuments auf der anderen Seite:
 `payload` ist ein Wörterbuch und wird ungelesen durchgereicht. Genau darauf
-setzt `typstage-geogebra` auf -- und jedes andere Begleitpaket kann es genauso
-tun.
+setzen die `ggb-`Befehle auf -- und jedes Begleitpaket kann es genauso tun.
 
 #warning[
   *Das Dokument muss sich anmelden.* An einen Rahmen, der sich nie gemeldet
@@ -1221,7 +1904,12 @@ schaltet sie nur weiter.
 `frames` ist die Zahl der Einzelbilder (Vorgabe 24), `fps` das Tempo beim
 Abspielen (Vorgabe 30). `loop` ist an und wiederholt von vorn; `pingpong` läuft
 statt dessen vor und zurück und geht dem `loop` vor. Ist beides aus, bleibt das
-letzte Bild stehen. Auf Papier steht ein einziges: `render(0.0)`, oder was
+letzte Bild stehen.
+
+Die Uhr beginnt, wenn das Daumenkino zu sehen ist, und nicht, wenn seine Folie
+kommt. Ein `flipbook(at: "3-", loop: false)` liegt auf den ersten beiden
+Schritten auf Bild 0 still und fängt beim Aufdecken bei null an; wer
+zurückblättert und es noch einmal aufdeckt, sieht es noch einmal von vorn. Auf Papier steht ein einziges: `render(0.0)`, oder was
 `still` an seine Stelle setzt. Hat der Zuschauer im Betriebssystem
 "Bewegung reduzieren" eingeschaltet, läuft das Daumenkino gar nicht erst los --
 siehe "Weniger Bewegung".
@@ -1229,6 +1917,453 @@ siehe "Weniger Bewegung".
 #warning[
   Jedes Einzelbild wird wirklich gesetzt. 24 Bilder heißen 24 Layouts und 24
   SVG-Bäume in der Datei -- bei aufwendigen Zeichnungen wächst beides schnell.
+]
+
+= GeoGebra
+
+Ziel dieses Kapitels: eine Konstruktion, die den Schritten der Folie folgt. Die
+Konstruktion baut GeoGebra, die Dramaturgie kommt aus den Folien. Auf jedem
+Schritt können Aufträge liegen -- Werte setzen, Objekte zeigen oder verbergen,
+Farben ändern, den Ausschnitt verschieben, eine Bewegung anstoßen.
+
+Das war einmal ein eigenes Paket, `typstage-geogebra`, und der Bauplan von
+damals ist geblieben: alles hier steht auf denselben zwei öffentlichen Teilen,
+die auch ein fremdes Begleitpaket benutzt -- `embed(bridge: …)` meldet einen
+Rahmen als Ziel an, `bridge-job` schickt ihm auf einem Schritt etwas zu. Was in
+den Aufträgen steht, liest der Kern nicht. Ein Deck ohne Applet zahlt deshalb
+nichts dafür: Bootskript und Applet-Dokument entstehen erst, wenn `geogebra()`
+gerufen wird, und ein Deck ohne diesen Ruf ist auf das Byte so groß wie vorher.
+
+#warning[
+  Ein gesetztes Applet lädt zur Laufzeit von `geogebra.org` nach und steht
+  damit unter GeoGebras Bedingungen -- siehe „Wessen Applet das ist" am Ende
+  dieses Kapitels.
+]
+
+== Schnellstart
+
+Ein Applet steht mit `geogebra()` auf der Folie, die Befehle stehen im selben
+Folienrumpf -- dort werden sie eingesammelt. Sie geben selbst nichts aus.
+
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+
+#presentation(
+  slide([Ferngesteuert], {
+    geogebra(app: "classic", perspective: "G", height: 240pt,
+             link: "https://www.geogebra.org/calculator")
+    ggb-run("a=1", "f(x)=a*x^2")
+    ggb-set((a: 3), at: 2)
+  }),
+)
+```]
+
+Die Parabel steht von Anfang an da; auf Schritt 2 wird `a` auf 3 gesetzt und
+sie zieht sich zusammen.
+
+`at` ist bei allen Befehlen ein Schrittwähler wie bei `anim`: `2` heißt „ab
+Schritt zwei“, `"1-2"`, `"2,4"` und `"-2"` heißen, was sie sagen. Vorgabe ist
+`"1-"`, denn die meisten Aufträge richten die Konstruktion beim Betreten der
+Folie ein. Der Applet-Rahmen selbst verbraucht keinen Schritt und schiebt auch
+nichts weiter: die Stichpunkte neben ihm gehören auf Schritt eins, nicht hinter
+seine Aufträge.
+
+#info[
+  Das Applet lebt nur im HTML-Export. Im PDF steht an seiner Stelle, was
+  das Kapitel _Auf Papier_ beschreibt.
+]
+
+== Welches Applet gemeint ist
+
+Im Schnellstart steht bei keinem Befehl ein Name. Mit einem Applet auf der
+Folie gibt es nichts zu wählen, und die Befehle finden es von selbst -- gleich,
+ob sie im Quelltext darüber oder darunter stehen.
+
+Zwei Applets auf einer Folie brauchen Namen, und dann brauchen die Befehle
+`target`. Der Name darf eine Zeichenkette sein oder eine Marke -- Typst färbt
+sie als das, was sie ist:
+
+#show-code[```typ
+#geogebra(<links>, height: 200pt)
+#geogebra(<rechts>, height: 200pt)
+#ggb-run("A=(0,0)", target: <links>)
+#ggb-run("B=(1,1)", target: "rechts")
+```]
+
+Fehlt die Angabe bei mehreren Applets, wird nicht geraten. Der Bau bricht ab
+und nennt, was er gefunden hat:
+
+#show-code[```
+error: panicked with: typstage: 2 applets on this slide
+(links, rechts) — say which one is meant, e.g. target: "links".
+```]
+
+Ebenso, wenn auf der Folie überhaupt kein Applet steht. Ein stillschweigend
+fallengelassener Befehl ist weit schwerer zu bemerken als ein
+fehlgeschlagener Bau.
+
+== Die Konstruktion aufbauen
+
+`ggb-run` nimmt beliebig viele GeoGebra-Befehle und gibt sie einzeln an
+`evalCommand` weiter. Die Reihenfolge zählt: was gebraucht wird, muss vorher
+entstanden sein.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-run(at: "1-",
+         "k: x^2+y^2=4", "t=Slider(0,6.283,0.01)",
+         "P=(2cos(t),2sin(t))", "s=Segment((0,0),P)")
+```]
+
+#warning[
+  GeoGebras Skriptbefehle -- `SetColor`, `SetValue`, `SetVisibleInView` und
+  Verwandte -- nimmt `evalCommand` *nicht* an; in `ggb-run` blieben sie
+  wirkungslos. Dafür gibt es `ggb-set`, `ggb-style`, `ggb-show` und
+  `ggb-hide`: sie greifen zur JavaScript-Schnittstelle, die das kann.
+]
+
+Was GeoGebra ablehnt, verschwindet nicht lautlos: das Applet meldet die
+abgewiesenen Befehle zurück, und die Laufzeit schreibt sie in die Konsole des
+Browsers.
+
+Beim Betreten einer Folie und beim Zurückblättern wird der Lauf von seinem
+Anfang an wiederholt -- das Applet geht dazu in seinen Ausgangszustand zurück.
+Befehle sollten deshalb wiederholbar sein. Aus demselben Grund lohnt es sich,
+die Farbe gleich auf `"1-"` festzulegen: beim Neuaufbau vergäbe GeoGebra sonst
+die nächste Farbe seiner Palette, und die Folie sähe nach dem Zurückblättern
+anders aus.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-run("a=1", "f(x)=a*x^2", at: "1-")
+#ggb-style("f", at: "1-", color: dark, thickness: 3)
+```]
+
+#info[
+  Eine `.ggb`-Datei lässt sich nicht einbetten: Typst kennt keine
+  base64-Kodierung, und ohne sie kommt der Inhalt der Datei nie in die
+  HTML-Datei. Die Konstruktion entsteht deshalb mit `ggb-run` -- oder sie wird
+  über `material` von GeoGebra geladen: `geogebra(material: "abc123xy")`.
+]
+
+== Werte, Aussehen, Ausschnitt
+
+`ggb-set` nimmt ein Wörterbuch aus Objektname und Wert, `ggb-show` und
+`ggb-hide` beliebig viele Objektnamen. Üblich ist, alles zu Beginn aufzubauen
+und erst sichtbar zu machen, wenn es an der Reihe ist:
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-hide("P", "s", "t", at: "1-")
+#ggb-show("P", "s", at: 2)
+#ggb-set((a: 3), at: 2)
+#ggb-set((a: -2, b: 0.5), at: 3)
+```]
+
+=== Aussehen
+
+`ggb-style` nimmt die Objektnamen und dazu, was sich ändern soll. Alle Angaben
+sind einzeln zu haben; was nicht genannt wird, bleibt, wie es ist.
+
+#table(
+  columns: (auto, 1fr),
+  align: (left, left),
+  stroke: 0.4pt + luma(75%),
+  table.header([*Angabe*], [*Wirkung*]),
+  [`color`], [Farbe -- eine Typst-Farbe, keine GeoGebra-Farbe],
+  [`thickness`], [Strichstärke],
+  [`line-style`], [Strichart als Zahl (durchgezogen, gestrichelt, gepunktet …)],
+  [`filling`], [Füllung, 0 bis 1],
+  [`point-size`], [Punktgröße],
+  [`trace`], [Spur an oder aus],
+  [`label`], [Beschriftung sichtbar oder nicht],
+  [`label-mode`], [Art der Beschriftung als Zahl (Name, Wert, Beschriftung …)],
+  [`fixed`], [gegen Verschieben festhalten],
+  [`caption`], [eigene Beschriftung],
+  [`layer`], [Ebene, also was vor was liegt],
+  [`position`], [Ort als `(x, y)`],
+)
+
+Dass `color` eine Typst-Farbe nimmt, ist der Punkt daran: die Konstruktion
+trägt die Farben der Folien statt GeoGebras Palette.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-style("P", at: 2, color: accent, point-size: 6)
+#ggb-style("s", at: 2, color: dark, thickness: 3)
+#ggb-style("d", at: 3, color: accent, filling: 0.18, thickness: 4)
+```]
+
+=== Ausschnitt
+
+`ggb-view` setzt den sichtbaren Bereich sowie Gitter und Achsen. `x` und `y`
+wirken nur zusammen -- beide sind Paare aus kleinstem und größtem Wert.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-view(at: 2, x: (-3, 3), y: (-3, 3), grid: false)
+#ggb-view(at: 3, axes: false)
+```]
+
+Das Applet nimmt die Maße des Kastens an, in dem es steht, und behält sie über
+Schrittwechsel und Fenstergrößen hinweg. Wie viel Welt dabei zu sehen ist,
+hängt also an `width` und `height` der `geogebra`-Zeile: ein breiter Kasten
+zeigt mehr x-Bereich. Wer einen bestimmten Ausschnitt will, sagt ihn mit
+`ggb-view` statt ihn sich aus der Breite zu ergeben.
+
+== Bewegung
+
+Es gibt zwei Arten, etwas in Bewegung zu setzen, und sie tun Verschiedenes.
+
+`ggb-animate` startet GeoGebras eigene Animation. Sie läuft ohne Ende hin und
+her, bis die Folie verlassen wird -- richtig für einen Punkt, der auf einem
+Kreis umläuft, oder einen Schieberegler, der einen Zusammenhang vorführt.
+`trace` schaltet die Spur der genannten Objekte ein, `speed` regelt das Tempo,
+`playing: false` hält an.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-animate("t", at: 3, speed: 1.2, trace: ("P",))
+```]
+
+`ggb-tween` geht einmal von A nach B und bleibt dort. Der Browser zählt den
+Wert Bild für Bild hoch; ein Objekt, das von ihm abhängt, wächst mit -- eine
+Strecke, deren Endpunkt wandert, ein Bogen, dessen Winkel folgt. So zeichnet
+sich die Konstruktion selbst. `from` gibt den Anfangswert, wenn er nicht der
+gerade geltende sein soll, `duration` die Dauer in Millisekunden, `easing` den
+Verlauf (`"ease-in-out"` oder `"linear"`).
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-run("t_1=0", "s=Segment(A,(4*t_1,0))", at: "1-")
+#ggb-tween("t_1", at: 2, to: 1, duration: 700)
+```]
+
+#warning[
+  `ggb-tween` braucht eine Schrittnummer, keinen Bereich: `at: 2`, nicht
+  `at: "2-"`. Sonst bricht der Bau mit „`ggb-tween() needs a step number`“ ab.
+
+  Und ein Tween auf Schritt 1 käme nie als Bewegung an: beim Betreten einer
+  Folie spielt die Laufzeit den Lauf bis zum aktuellen Schritt sofort nach, und
+  Tweens werden dabei auf ihren Zielwert gesetzt statt abgespielt. Schritt 1
+  ist zum Aufbauen da; gezeichnet wird ab Schritt 2.
+]
+
+Ab dem Schritt nach dem Tween sitzt der Wert ohnehin auf seinem Ziel. Wer
+zurückblättert, sieht deshalb die fertige Zeichnung und nicht die Bewegung ein
+zweites Mal.
+
+== Auf Papier
+
+Im PDF gibt es kein Applet. Ohne weitere Angabe bleibt ein beschrifteter
+Platzhalter in der Größe des Rahmens; `link` setzt darunter den Weg zum
+lebenden Applet, anklickbar im PDF.
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": geogebra
+    geogebra(height: 90pt, link: "https://www.geogebra.org/calculator")
+  },
+  source: ```typ
+  #geogebra(height: 90pt, link: "https://www.geogebra.org/calculator")
+  ```,
+  width: 12cm,
+)
+
+Besser ist eine eigene Zeichnung an seiner Stelle. `fallback` nimmt beliebigen
+Inhalt -- ein Bild, eine Tabelle, und vor allem eine Zeichnung mit CeTZ:
+
+// check: folie pre=cetz
+#show-example(
+  rendered: {
+    import "../src/lib.typ": geogebra
+    import "../src/lib.typ": dark
+    import "@preview/cetz:0.5.2"
+    geogebra(height: 120pt, link: "https://www.geogebra.org/calculator",
+      fallback: cetz.canvas(length: 0.8cm, {
+        import cetz.draw: *
+        line((-2.6, 0), (2.6, 0), stroke: luma(70%))
+        line((0, -0.4), (0, 2.6), stroke: luma(70%))
+        line(..range(0, 45).map(i => (-2.2 + i * 0.1, 0.5 * calc.pow(-2.2 + i * 0.1, 2))),
+             stroke: dark + 1.6pt)
+      }))
+  },
+  source: ```typ
+  #geogebra(height: 120pt, link: "https://www.geogebra.org/calculator",
+    fallback: cetz.canvas(length: 0.8cm, {
+      import cetz.draw: *
+      line((-2.6, 0), (2.6, 0), stroke: luma(70%))
+      line((0, -0.4), (0, 2.6), stroke: luma(70%))
+      line(..range(0, 45).map(i => (-2.2 + i * 0.1, 0.5 * calc.pow(-2.2 + i * 0.1, 2))),
+           stroke: dark + 1.6pt)
+    }))
+  ```,
+  width: 12cm,
+)
+
+Beide Angaben wirken nur im PDF; im Browser steht dort das Applet selbst.
+
+== Aussehen des Applets
+
+Vorgabe ist `seamless: true`: das Applet trägt keinen eigenen Rahmen, und
+seine Zeichenfläche bekommt die Farbe der Folie. Es sieht dann nicht mehr wie
+ein Fenster im Fenster aus, sondern wie ein Teil der Folie. `background`
+bestimmt diese Farbe; `auto` nimmt das Papierweiß der Präsentation, was auf
+einer getönten Folie zu ändern ist.
+
+#show-code[```typ
+#geogebra(height: 240pt, background: rgb("#f4f1ea"))
+#geogebra(height: 240pt, seamless: false)   // mit GeoGebras eigenem Rahmen
+```]
+
+#warning[
+  Der Ausschnitt lässt sich mit der Hand nicht verschieben, und das ist die
+  Vorgabe. Wer im Vortrag danebengreift, schöbe sonst die ganze Ebene weg, und
+  die Konstruktion wäre fort -- gemeldet aus dem Gebrauch, nicht ausgedacht.
+  `pan: true` gibt Verschieben und Zoomen zurück, wo sie zur Sache gehören;
+  Punkte und Schieber lassen sich in beiden Fällen ziehen.
+]
+
+`font-size` ist die Schrift des Applets, gezählt in Punkten der Folie -- so wie
+`width` und `height` es tun. Sie wächst deshalb mit der Folie mit, statt auf
+dem Beamer in ihrer physischen Größe stehenzubleiben.
+
+Vorgabe ist 20 und nicht GeoGebras 16. An gerenderten Bildern gemessen sind die
+Achsenzahlen damit 0,71 so hoch wie der Fließtext der Folie, bei 16 nur 0,62 --
+das eine ist eine untergeordnete Beschriftung, das andere ein Nachgedanke.
+
+#warning[
+  GeoGebra rastet die Größe in Stufen ein. Gemessen springt sie zwischen 20 und
+  21: die Achsenzahlen gehen von 0,71 auf 1,12 des Fließtextes und sind dann so
+  groß wie er. Wer einen Zwischenwert setzt, bekommt deshalb nicht unbedingt
+  einen Zwischenschritt.
+]
+
+#show-code[```typ
+#geogebra(height: 240pt, font-size: 22)      // größere Achsenzahlen
+#geogebra(height: 240pt, pan: true)          // Ausschnitt von Hand
+```]
+
+`grid` und `axes` lassen GeoGebras Vorgabe stehen, solange sie `auto` sind,
+und erzwingen sonst das eine oder andere. `perspective: "G"` zeigt nur die
+Grafik-Ansicht, `app` wählt die GeoGebra-App (Vorgabe `"classic"`), `language`
+die Sprache der Oberfläche, `animation-button` blendet GeoGebras Abspielknopf
+ein.
+
+#info[
+  Das Applet wird von `codebase` geladen, ab Werk von `geogebra.org`. Ohne
+  Netz bleibt der Rahmen leer; wer offline vorführt, legt GeoGebras Dateien
+  daneben und zeigt mit `codebase` darauf.
+]
+
+=== Größe
+
+`width` und `height` geben die Größe in den Maßen der Folie -- nicht in
+Bildschirmpunkten.
+
+Für die meisten Einbettungen spannt die Laufzeit den Rahmen in Punkten der
+Folie auf und vergrößert ihn dann mit `zoom`. Ein Applet ist davon ausgenommen
+und bekommt echte Bildschirmpunkte. Der Grund ist gemessen: Safari rechnet
+diesen Zoom bei GeoGebra doppelt ein -- ein Leinwandpuffer von 1400 Punkten bei
+253 Punkten Breite, also Zoom mal Zoom mal Bildschirmdichte. Das Applet
+zeichnete zu klein, und wer die Größe dagegen korrigierte, verschob dafür den
+Trefferpunkt: es zeichnete dann richtig, glaubte sich aber 704 Punkte breit,
+während es 424 breit gezeigt wurde, und ein Punkt ließ sich nur noch greifen,
+wenn man weit rechts daneben klickte.
+
+Dass trotzdem in jedem Fenster derselbe Ausschnitt zu sehen ist, hängt deshalb
+nicht an der Pixelzahl, sondern am Bereich. Den setzt das Applet beim ersten
+Mal aus den Punktmaßen des Kastens, mit GeoGebras 50 Punkten je Einheit; danach
+gilt, was `ggb-view` sagt, und eine Größenänderung lässt den Bereich stehen.
+
+#tip[
+  Zwei Applets nebeneinander stehen am besten in einem `grid`, jedes mit
+  `width: 100%` und eigener Höhe.
+]
+
+== Aus der Sprecheransicht
+
+Das Sprecherfenster von typstage führt von jedem Applet eine eigene Kopie. `m`
+schaltet dort den Zeiger vom Stift auf die Einbettung um, und von da an ist das
+Applet vor dem Vortragenden das lebende: einen Punkt ziehen, einen Schieber
+schieben, den Ausschnitt verschieben -- die Kopie auf der Leinwand zieht nach.
+
+Hinüber geht nur, was eine Hand bewegen kann: ein Punkt als seine Koordinaten,
+ein Schieber als sein Wert. Alles, was daraus folgt, bleibt liegen, denn die
+andere Kopie rechnet es sich selbst aus. Wird etwas angelegt, gelöscht oder
+umbenannt, geht stattdessen die ganze Konstruktion.
+
+#tip[
+  Gemessen: ein Punkt auf einem Halbkreis meldete beim Ziehen vier Zustände je
+  Bild -- den Punkt, beide Strecken und den Winkel. Die drei abhängigen sind
+  nicht nur überflüssig, ihr XML definiert sie drüben neu, und das wischt die
+  Spur weg, die der gezogene Punkt gerade gelegt hatte.
+]
+
+Nur was eine Hand berührt hat, wird gemeldet. Eine Animation, die ohnehin auf
+beiden Seiten läuft, schickt deshalb nichts.
+
+#warning[
+  Ein Schrittwechsel setzt beide Kopien wie bisher aus der Basis zurück und
+  spielt die Jobs der Folie erneut. Eine Änderung von Hand lebt also so lange
+  wie der Schritt. Soll eine Position bleiben, gehört sie mit `ggb-set` ins
+  Deck.
+]
+
+=== Die Tastatur
+
+Wer das Applet anklickt, gibt ihm den Fokus, und von da an landet jede Taste
+darin. Was der Kern dagegen tut, steht unter „Ein Rahmen, der den Fokus hat"
+-- kurz: die Tasten des Vortrags werden aus dem Rahmen zurückgereicht, alles
+übrige bleibt beim Applet. Nachgemessen hat dieses Applet für die Tastatur
+ohnehin keine Verwendung: ohne Werkzeugleiste und ohne Eingabezeile ändert
+keine Taste etwas an der Konstruktion.
+
+#info[
+  Sollte sich das je ändern, etwa mit eingeblendeter Werkzeugleiste, wandert
+  eine mit der Tastatur gemachte Änderung mit: das Fenster, in dem die
+  Spiegelung wach ist, öffnet sich auf eine Taste ebenso wie auf einen Druck.
+]
+
+#tip[
+  Was sich nicht bewegen soll, gehört festgehalten. `ggb-style("A", "B",
+  fixed: true)` nagelt die Punkte fest, die eine Konstruktion nur aufspannen.
+  Sonst greift eine Hand im Vortrag leicht den Falschen: beim Satz des Thales
+  etwa den Durchmesser statt des Punktes auf dem Halbkreis, und der ganze
+  Bogen wandert mit. Gemessen am Beispiel-Deck: mit `fixed` bewegt weder ein
+  Zug an A noch einer am Bogen irgendetwas, und C läuft weiter auf seiner Bahn.
+]
+
+Beim Bauen dafür lohnt ein Unterschied: `Point(k)` ist ein Punkt auf der Bahn,
+den eine Hand nehmen kann; `Point(k, 0.3)` ist auf diesen Parameter festgelegt
+und lässt sich gar nicht ziehen -- `isMoveable` antwortet dort mit falsch. Wo er
+starten soll, sagt `position:`.
+
+`examples/geogebra-sprecher.typ` ist ein Deck genau dazu: Thales mit einem Punkt, der über
+den Halbkreis wandert, und eine Parabel mit zwei Schiebern.
+
+== Wessen Applet das ist
+
+Dieses Paket schickt GeoGebra nicht mit. Es setzt einen Rahmen auf die Folie,
+und was darin läuft, holt der Browser beim Anzeigen von `codebase`, ab Werk
+`https://www.geogebra.org/apps/`.
+
+Daraus folgen drei Dinge, die vor dem Vortrag zu wissen sind:
+
++ *Ohne Netz bleibt der Rahmen leer.* Wer offline vorführt, legt GeoGebras
+  Dateien daneben und zeigt mit `codebase` darauf.
++ *Das Applet steht unter GeoGebras Bedingungen*, nicht unter der MIT-Lizenz
+  dieses Pakets. Die gilt für den Typst- und den Laufzeitcode hier; für
+  GeoGebra gelten GeoGebras eigene Lizenz- und Nutzungsbedingungen, und für
+  eine kommerzielle Verwendung sind sie zu lesen.
++ *Der Browser des Zuschauers spricht mit `geogebra.org`.* Wo das nicht
+  erwünscht ist -- eine Klasse ohne Netz, ein Vortrag hinter einer Firewall,
+  eine Datenschutzauflage --, ist `codebase` die Stelle, an der es sich
+  umlenken lässt.
+
+#info[
+  Auf Papier ist davon nichts übrig: die PDF lädt nichts nach und zeigt, was
+  unter „Auf Papier" beschrieben ist.
 ]
 
 = Eine Rechnung entwickeln
@@ -1526,6 +2661,10 @@ nichts wandert dabei mehr über die Folie.
    `fade-down`, `fade-left`, `fade-right`, `scale`, `scale-down`, `rise` und
    `blur` werden zur schlichten Überblendung. `fade` und `none` bleiben, wie
    sie sind. `duration` und `delay` ändern sich nicht.],
+  [`enter: "draw"`],
+  [Die Feder hält still, die Blende bleibt. Das Zeichnen *ist* der Weg, und
+   was übrig bleibt, wenn man ihn herausnimmt, ist genau die Überblendung, die
+   ohnehin darunter lief.],
   [Folienübergänge],
   [Jede Art außer `none` wird zur Überblendung, in derselben
    `transition-duration`. `none` bleibt der harte Schnitt.],
@@ -1538,6 +2677,10 @@ nichts wandert dabei mehr über die Folie.
    Mit `loop` oder `pingpong` ist es das erste. `still` gilt dabei nicht: das
    Bild fürs Papier ist gesetzter Inhalt und steht gar nicht in der HTML, in
    der nur die Einzelbilder liegen.],
+  [`scene`],
+  [Springt von Halt zu Halt. Die Zwischenbilder liegen weiter in der Datei,
+   aber es wird keines davon gezeigt. Was wegfällt, ist genau der Weg; die
+   Halte selbst sind kein Weg, sondern der Inhalt.],
   [`after: "dimmed"`],
   [Bleibt. Ein Punkt, der zurücktritt, ändert seine Deckkraft und rührt sich
    nicht von der Stelle.],
@@ -1721,6 +2864,8 @@ verschluckt. Was *gesehen* werden soll, gehört auf die Folie.
   [das `poster`, sonst eine graue Fläche],
   [`flipbook`],
   [ein einziges Bild: `still` oder `render(0.0)`],
+  [`scene`],
+  [ein einziges Bild: `still` oder der letzte Halt],
   [`speaker-note`],
   [im Handout bei der Folie, im gewöhnlichen Foliensatz nichts],
   [`transition`, `bridge-job`],
@@ -2427,7 +3572,8 @@ ausdrücklich an, dann rechnet das `fit` damit.
   lief unten aus der Folie.
 
   `fit` bricht deshalb ab, mit Namen und Rat, für `pause`, `anim`, `stagger`,
-  `alternatives`, `morph`, `tiles`, `video`, `embed` und `flipbook` -- in
+  `alternatives`, `morph`, `tiles`, `video`, `embed`, `flipbook`, `build`
+  und `scene` -- in
   beiden Ausgaben und auch dann, wenn das `fit` in einem anderen `fit` steckt.
   Der Ausweg ist, das `fit` *innerhalb* der Einblendung zu setzen statt darum
   herum:
@@ -3101,9 +4247,10 @@ Medien und Brücke, zuletzt die Maße und Farben.
 == Einblenden, Bewegen, Staffeln
 
 // `anim-kern` ist das geprüfte Innere von `anim`. `stagger` benutzt es von
-// innen, `lib.typ` reicht es nicht hinaus.
+// innen, `lib.typ` reicht es nicht hinaus. Dasselbe gilt für die zwei
+// Handlanger von `scene`.
 #show-module(read("../src/elements.typ"), name: "typstage",
-             exclude: ("anim-kern",))
+             exclude: ("anim-kern", "szene-messbar", "szene-zwischen"))
 
 == Layouts
 
@@ -3133,6 +4280,13 @@ Medien und Brücke, zuletzt die Maße und Farben.
 == Die Brücke
 
 #show-module(read("../src/bridge.typ"), name: "typstage")
+
+== GeoGebra
+
+// `resolve-target` und `no-stray-target` gehören zum Innenleben; das
+// Applet-Dokument in `applet.typ` erst recht.
+#show-module(read("../src/geogebra.typ"), name: "typstage",
+             exclude: ("resolve-target", "no-stray-target"))
 
 == Maße, Farben, Laufzeitdateien
 

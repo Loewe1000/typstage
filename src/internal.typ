@@ -62,6 +62,167 @@
   calc.rem(h, 65536)
 }
 
+// ── Luft statt Tinte ─────────────────────────────────────────────────────────
+//
+// Ein Stück einer Zeichnung, das noch nicht an der Reihe ist, darf nicht
+// fehlen. Es muss unsichtbar sein und trotzdem seinen Platz behalten, denn
+// sonst rechnet cetz seinen Rahmen kleiner und lilaq seine Achse anders, und
+// die Zeichnung springt bei jedem Schritt.
+//
+// Nachgemessen an einer cetz-Zeichnung aus drei Linien, deren dritte über die
+// beiden anderen hinausragt, und an einem lilaq-Diagramm aus zwei Reihen:
+//
+//   weggelassen    Der Platz ist weg. cetz misst 113x85 statt 198x170; bei
+//                  lilaq wandert die viewBox von 186.58 auf 189.64, weil die
+//                  Achse ohne die zweite Reihe andere Beschriftungen bekommt.
+//                  Genau das ist der Sprung, den niemand will.
+//   stroke: none   Das Maß bleibt, aber Typst schreibt den Pfad ohne jedes
+//                  Strichattribut heraus, aus 933 Bytes werden 831. Bei lilaq
+//                  fallen damit die Marken der Reihe als Geometrie mit weg,
+//                  141 Pfade statt 149.
+//   Alpha 0        Das Maß bleibt, der Pfad bleibt vollständig, nur seine
+//                  Farbe trägt 00: `stroke="#00000000"`, 935 Bytes gegen 933.
+//                  Bei lilaq stehen alle 149 Pfade und die viewBox auf die
+//                  Stelle genau.
+//
+// Alpha 0 also. Es ist dieselbe Technik, mit der `marker` seine Messfläche in
+// die Ausgabe legt, nur hier auf fremde Zeichenpakete angewandt.
+
+/// Dieselbe Sache aus Luft: sichtbar nicht mehr da, gemessen unverändert.
+///
+/// Was hindurchgeht, geht nur, weil es Maß hält. Eine Farbe verliert ihre
+/// Deckkraft, ein Strich seinen Pinsel und sonst nichts, ein Text geht in
+/// `hide`, ein Wörterbuch reicht die Frage an seine Farben weiter. Alles
+/// andere -- Dicke, Strichelung, Größe -- bleibt stehen, denn daran hängt der
+/// Platz.
+#let durchsichtig(wert) = {
+  let t = type(wert)
+  if wert == none or wert == auto { wert }
+  else if t == color { wert.transparentize(100%) }
+  else if t == stroke {
+    // Jedes Feld einzeln zurückgegeben, nicht nur die Farbe: was ein Strich
+    // nicht nennt, bleibt `auto`, und `auto` holt sich seinen Wert aus dem
+    // Strich, in dem er steht, statt aus dem, der hier gemeint ist. Derselbe
+    // Faltungsfehler, gegen den `fester-strich` weiter unten gebaut ist.
+    stroke(
+      // Ein Pinsel, den es nicht gibt, wird durchsichtiges Schwarz. Welche
+      // Farbe es war, spielt bei Alpha 0 keine Rolle mehr.
+      paint: if wert.paint == auto { rgb(0, 0, 0, 0%) }
+             else { durchsichtig(wert.paint) },
+      thickness: wert.thickness, cap: wert.cap, join: wert.join,
+      dash: wert.dash, miter-limit: wert.miter-limit,
+    )
+  } else if t == dictionary {
+    // Ein Wörterbuch beschreibt einen Strich oder einen Stil. Nur was Farbe
+    // trägt, wird zu Luft; ein `dash: (3pt, 3pt)` ist keine Farbe und würde
+    // unter der Frage zerbrechen.
+    wert.pairs().map(((k, v)) =>
+      (k, if type(v) in (color, stroke, dictionary) { durchsichtig(v) } else { v })
+    ).to-dict()
+  } else if t == array { wert.map(durchsichtig) }
+  else if t == content or t == str {
+    // `hide` ist die Antwort des Pakets auf genau diese Frage, seit es das
+    // Paket gibt: setzen, ohne zu zeichnen.
+    hide(wert)
+  } else if t == gradient or repr(t) == "tiling" {
+    panic("typstage: a gradient or a tiling cannot be turned into air -- "
+      + "neither has an opacity to turn down. Give the piece a colour, or ask "
+      + "with from(k) and leave it out; in cetz, hide(…, bounds: true) keeps "
+      + "the measure while you do.")
+  } else {
+    panic("typstage: from() makes colours, strokes, dictionaries and content "
+      + "invisible, not " + str(t) + ". What is neither a brush nor content "
+      + "carries no ink, and what carries no ink need not disappear either.")
+  }
+}
+
+// ── Die Kurve, auf der ein Element sich bewegt ───────────────────────────────
+//
+// Jede Bewegung des Pakets lief bisher auf derselben Kurve, `cubic-bezier(.4,
+// 0,.2,1)`, und die bleibt die Vorgabe. `easing:` gibt sie einem einzelnen
+// Element aus der Hand: ein Ergebnis darf über sein Ziel hinausschießen und
+// zurückschwingen, ein Stapel Stichpunkte darf gleichmäßig ankommen.
+//
+// Aufgelöst wird der Name hier und nicht in der Laufzeit, und das ist eine
+// Entscheidung mit zwei Enden. Hier steht die Tabelle einmal, statt zweimal --
+// einmal zum Prüfen und einmal zum Nachschlagen --, und ein Name, den es nicht
+// gibt, kommt gar nicht erst im Browser an. Was ins Markup wandert, ist die
+// fertige Kurve.
+//
+// Was hier fehlt, fehlt mit Absicht: Federn und Sprünge (`elastic`, `bounce`)
+// sind keine kubischen Bézierkurven und ließen sich nur als Bildfolge
+// nachbauen. Die Web Animations API kennt sie nicht, also kennt das Paket sie
+// auch nicht.
+
+/// Die benannten Kurven. Name -> was die Web Animations API dafür bekommt.
+#let kurven = (
+  // Die Hauskurve, ausgeschrieben. Wer sie hinschreibt, bekommt genau das,
+  // was ohne `easing:` ohnehin gilt.
+  "standard": "cubic-bezier(.4,0,.2,1)",
+  // Was die Web Animations API von sich aus kennt, wörtlich durchgereicht.
+  "linear": "linear",
+  "ease": "ease",
+  "ease-in": "ease-in",
+  "ease-out": "ease-out",
+  "ease-in-out": "ease-in-out",
+  // Vier Familien, je dreimal: hinein, heraus, und beides. `in` startet
+  // langsam, `out` endet langsam -- und `out` ist fast immer das, was ein
+  // Auftritt will, weil das Auge dem Ende zusieht und nicht dem Anfang.
+  "in-quad": "cubic-bezier(.11,0,.5,0)",
+  "out-quad": "cubic-bezier(.5,1,.89,1)",
+  "in-out-quad": "cubic-bezier(.45,0,.55,1)",
+  "in-cubic": "cubic-bezier(.32,0,.67,0)",
+  "out-cubic": "cubic-bezier(.33,1,.68,1)",
+  "in-out-cubic": "cubic-bezier(.65,0,.35,1)",
+  "in-expo": "cubic-bezier(.7,0,.84,0)",
+  "out-expo": "cubic-bezier(.16,1,.3,1)",
+  "in-out-expo": "cubic-bezier(.87,0,.13,1)",
+  // Die drei, die über ihr Ziel hinausgehen. Ein Kontrollpunkt liegt außerhalb
+  // von 0 bis 1, und genau das ist der Rückschwung.
+  "in-back": "cubic-bezier(.36,0,.66,-.56)",
+  "out-back": "cubic-bezier(.34,1.56,.64,1)",
+  "in-out-back": "cubic-bezier(.68,-.6,.32,1.6)",
+)
+
+/// Die Wirkungen, unter denen ein Element kommt und geht.
+///
+/// Dieselbe Liste, die `EFFECT` in der Laufzeit führt. Sie steht hier ein
+/// zweites Mal, damit ein Name, den es nicht gibt, schon beim Übersetzen
+/// auffällt und nicht erst als stille Blende im Vortrag. Wer eine Wirkung
+/// hinzufügt, fügt sie an beiden Stellen hinzu; das Prüfdeck fährt jede.
+#let wirkungen = ("fade", "fade-up", "fade-down", "fade-left", "fade-right",
+                  "scale", "scale-down", "blur", "rise", "none", "hold", "draw")
+
+/// Complain about an effect name the package does not know.
+///
+/// The runtime used to fall back to `fade` without a word. A typo then looked
+/// like a working deck that simply moved differently than intended -- and
+/// nobody finds that in a talk. `easing:` has answered this way since it was
+/// born; now `enter:` and `exit:` do too.
+#let wirkung-pruefen(name, feld, wo) = if name != none and name != auto {
+  assert(type(name) == str and name in wirkungen, message:
+    "typstage: " + wo + "(" + feld + ": " + repr(name) + ") -- the package "
+    + "does not know that effect. The names are: " + wirkungen.join(", ") + ".")
+}
+
+/// The curve behind a name, or an error.
+///
+/// `auto` gives back `none`: only a departure from the default gets an
+/// attribute, or every element of every deck would carry a new one.
+///
+/// An unknown name is an error and not a silent default. A typo would
+/// otherwise hand back the house curve, and whoever wrote it would spend a
+/// while wondering why the overshoot does not overshoot.
+#let kurve(name, wo) = {
+  if name == auto { return none }
+  assert(type(name) == str and name in kurven, message:
+    "typstage: " + wo + "(easing: " + repr(name) + ") -- the package does not "
+    + "know that curve. The names are: " + kurven.keys().join(", ") + ". "
+    + "Without one, \"standard\" applies: the curve this package moves "
+    + "everything on.")
+  kurven.at(name)
+}
+
 /// Plain text out of content, for speaker notes.
 #let plain-text(c) = {
   if type(c) == str { c } else if type(c) != content { "" } else if c.func() == text {
@@ -149,11 +310,19 @@
 /// its name with one on the slide before it, or the flight there is lost.
 /// The adaptive groups of a slide: name -> (start, count).
 ///
-/// `adaptiv` records which steps its points were given; `adaptiv-schicht`
+/// `cue` records which steps its points were given; `cue-layer`
 /// looks it up so that it shares one. The coupling then falls out of the
 /// shared step -- swapping the step moves the point and everything tied to it
 /// at once, and nothing has to be linked by name.
-#let adaptiv-gruppen = state("typstage-adaptiv", (:))
+#let cue-gruppen = state("typstage-cue", (:))
+
+/// Die Szenen einer Folie: Name -> (start, stops).
+///
+/// Dasselbe Buch wie nebenan, aus demselben Grund. `scene` traegt ein, auf
+/// welchem Schritt welcher Halt steht; `scene-layer` schlaegt nach und legt
+/// sich auf denselben. Wer einen Halt verschiebt, verschiebt alles mit, was
+/// daran haengt, ohne dass irgendwo eine Zahl doppelt stuende.
+#let szene-gruppen = state("typstage-szenen", (:))
 
 #let morph-index = state("typstage-morphs", ())
 
@@ -264,6 +433,18 @@
 /// writing to it in the same place is circular and never settles; a counter is
 /// built for exactly this and converges.
 #let step-cursor = counter("typstage-step")
+
+/// Den Zeiger auf den Schritt rücken, den ein Element mit `at: auto` bekommt.
+///
+/// `max(…, 2)` und nicht schlicht `+ 1`: Schritt eins gehört dem, was beim
+/// Betreten der Folie ohnehin dasteht. Wer `auto` schreibt, will *erscheinen* --
+/// und wer erscheinen will, kann nicht schon da sein. Ohne die Untergrenze fiel
+/// ein `anim` am Kopf einer Folie mit dem statischen Inhalt zusammen und tat
+/// nichts; dasselbe traf die erste Pause, die sich ihren Schritt mit dem Absatz
+/// über ihr teilte.
+///
+/// Nur `auto` ist betroffen. Wer seinen Schritt ausschreibt, bekommt ihn.
+#let schritt-vorruecken() = step-cursor.update(c => calc.max(c + 1, 2))
 
 /// Which slide we are on. Only used to scope things that a companion package
 /// looks up across the whole document. A query sees every slide at once and
@@ -752,6 +933,12 @@
 
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
            width: auto, dim-freiwillig: false) = {
+  // Der eine Trichter, durch den jeder Auftritt und jeder Abgang muss --
+  // `anim`, `stagger`, `alternatives`, `cue`, `build`, `scene`, `flipbook`,
+  // `embed`, `video`, `tiles`. Deshalb steht die Prüfung hier und nicht
+  // zehnmal daneben.
+  wirkung-pruefen(extra.at("enter", default: none), "enter", kind)
+  wirkung-pruefen(extra.at("exit", default: none), "exit", kind)
   // The `box` has to sit around the *whole* construction, not inside it:
   // `layout()` is block-level, so an inline element that only chooses a `box`
   // further in would still break the line it sits in.
@@ -795,7 +982,7 @@
   // only moves where its update stands in the document. Left in the `let` it
   // would join into the value instead of reaching the page.
   let zaehlen = if im-deck() {
-    if at == auto { step-cursor.step() }
+    if at == auto { schritt-vorruecken() }
     else if kind == "anim" {
       step-cursor.update(c => calc.max(c, max-step(selector(at))))
     }

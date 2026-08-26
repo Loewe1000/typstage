@@ -5,8 +5,9 @@ name: Decks im Browser durchfahren
 # mehr. Er gehört vor eine Freigabe, also an den Pull Request.
 #
 # Auch keine schnelle Fassung bei jedem Push. Gemessen auf einem Mac mini:
-# der volle Lauf braucht 254 s, derselbe Lauf mit zwanzigfachem
-# Animationstempo 78 s, und beide liefern einen byteidentischen Bericht. Die
+# der volle Lauf braucht mit neun Decks 283 s, derselbe Lauf mit
+# zwanzigfachem Animationstempo 86 s, und beide liefern einen byteidentischen
+# Bericht. Die
 # Ersparnis sind knapp drei Minuten, der Rest ist Seitenladen und
 # Browserstart, nicht Warten auf Animationen. Dafür einen zweiten Lauf zu
 # pflegen, der dieselben Zahlen ausspricht, lohnt nicht; vier Minuten vor
@@ -21,7 +22,7 @@ permissions:
 
 jobs:
   decks:
-    name: Sechs Beispiele und das Prüfdeck
+    name: Acht Beispiele und das Prüfdeck
     runs-on: ubuntu-latest
 
     steps:

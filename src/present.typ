@@ -82,7 +82,7 @@
   // sample with `align(center)` before a pause still centers unchanged.
   let out = runs.first()
   for (i, run) in runs.slice(1).enumerate() {
-    out += anim(block(width: 100%, run), at: i + 2)
+    out += anim(block(width: 100%, run), at: auto)
   }
   out
 }

@@ -52,6 +52,12 @@
 #     check: aus=<grund>          nicht übersetzen, Grund erscheint im Bericht
 #     ziel=bundle                 mit --format bundle statt --format html
 #     pre=<name>                  benannten Vorspann davorsetzen (siehe VORSPANN)
+#     drin=<name>                 benannten Vorspann *in die Folie* setzen, hinter
+#                                 die Überschrift (siehe IN_DER_FOLIE). Für einen
+#                                 Block, der etwas braucht, das auf derselben
+#                                 Folie stehen muss -- `ggb-run` etwa findet sein
+#                                 Applet nur dort. Ein `pre=` stünde vor der
+#                                 ersten Überschrift und gehörte zu keiner Folie.
 #     davor                       den vorigen ```typ-Block desselben Handbuchs
 #                                 davorsetzen (für Beispiele, die auf einem
 #                                 `#let` aus dem Absatz darüber aufbauen)
@@ -102,6 +108,66 @@ VORSPANN = {
     "#let meine-tabelle = table(columns: 2, [Jahr], [Wert], [2024], [7])\n"
     "#let my-table = meine-tabelle\n"
   ),
+  # Die drei Zeichenpakete, die die Handbücher vorführen. Die Importe stehen
+  # hier und nicht im gezeigten Block: im Handbuch werden sie einmal im
+  # Fließtext genannt, und ein Import mitten im Beispiel machte aus jedem
+  # Bruchstück eine ganze Datei, die der Prüfer dann anders einwickelte.
+  #
+  # Die Versionen sind dieselben wie im Fließtext. Wer eine davon hier
+  # hochzieht, muss sie dort mitziehen, sonst zeigt das Handbuch eine Zeile,
+  # die niemand geprüft hat.
+  # Was die Handbücher als Zeichnung vorführen, ohne sie zu erklären. Für
+  # `enter: "draw"` müssen es Striche sein und keine Flächen — sonst prüfte der
+  # Lauf einen Fall, den das Handbuch gar nicht zeigt. Aus Typsts eigenen
+  # Formen, damit kein fremdes Paket dafür geladen werden muss.
+  "zeichnung": (
+    "#let schaltbild = rect(width: 80pt, height: 40pt, stroke: 1pt)\n"
+    "#let achse = line(length: 80pt, stroke: 1pt)\n"
+    "#let kurve = line(length: 60pt, angle: -30deg, stroke: 1pt)\n"
+    "#let tangente = line(length: 50pt, angle: 20deg, stroke: 1pt)\n"
+    "#let circuit = schaltbild\n"
+    "#let axes = achse\n"
+    "#let curve = kurve\n"
+    "#let tangent = tangente\n"
+    "#let ergebnis = [42]\n"
+    "#let result = ergebnis\n"
+    # Eine Zeichnerfunktion, wie die Stufenzeichnung sie nimmt. Nur dafür da,
+    # dass das Gegenbeispiel an seiner Zusicherung scheitert und nicht an einem
+    # fehlenden Namen.
+    "#let zeichner = frage => rect(width: 40pt, height: 40pt, stroke: 1pt)\n"
+    "#let painter = zeichner\n"
+  ),
+  # Was eine `scene` zeichnet. Zwei Namen, weil beide Handbücher dasselbe
+  # Beispiel in ihrer Sprache schreiben: die Zeichnung selbst ist hier nur
+  # eine Andeutung -- geprüft wird, dass `scene` und `scene-layer` das
+  # annehmen, was das Handbuch vorführt, nicht wie eine Tangente aussieht.
+  "szene": (
+    "#let f(t) = 0.25 * t * t\n"
+    "#let tangente-an(g, x) = box(width: 100%, height: 120pt,\n"
+    "  place(horizon + left, dx: 50% + x * 8%, circle(radius: 6pt)))\n"
+    "#let tangent-at = tangente-an\n"
+    "#let rechteck-mit(breite: 1, hoehe: 1) = box(width: 100%, height: 120pt,\n"
+    "  place(top + left, rect(width: breite * 30pt, height: hoehe * 20pt)))\n"
+    "#let box-of = (width: 1, height: 1) => rechteck-mit(breite: width, hoehe: height)\n"
+    "#let zeichnung-bei(x) = tangente-an(f, x)\n"
+    "#let drawing-at = zeichnung-bei\n"
+  ),
+  "cetz": '#import "@preview/cetz:0.5.2"\n',
+  "lilaq": (
+    '#import "@preview/lilaq:0.6.0" as lq\n'
+    "#let x = (0, 1, 2, 3, 4)\n"
+    "#let messung = (1, 2, 1.5, 2.5, 2)\n"
+    "#let modell = (0.8, 1.9, 1.7, 2.4, 2.1)\n"
+    "#let measured = messung\n"
+    "#let model = modell\n"
+  ),
+}
+
+# Dasselbe, aber im Rumpf der Folie statt davor. Ein Applet muss auf der Folie
+# stehen, auf der seine Befehle stehen; vor der ersten Überschrift gehörte es zu
+# keiner Folie, und `ggb-run` fände es nicht.
+IN_DER_FOLIE = {
+  "applet": "#geogebra(height: 120pt)\n",
 }
 
 # Ein 1x1-Pixel-PNG. `image()` liest die Datei beim Übersetzen, ein leerer
@@ -187,8 +253,9 @@ def bloecke(pfad):
 
 def regie_lesen(text):
   """Eine Prüfzeile in ein Wörterbuch übersetzen."""
-  r = {"art": None, "aus": None, "ziel": "html", "pre": [], "davor": False,
-       "dateien": [], "fehlt": [], "weil": None, "bricht": None}
+  r = {"art": None, "aus": None, "ziel": "html", "pre": [], "drin": [],
+       "davor": False, "dateien": [], "fehlt": [], "weil": None,
+       "bricht": None}
   for wort in (text or "").split():
     if wort in ("ganz", "dokument", "folgen", "folie", "argument"):
       r["art"] = wort
@@ -200,6 +267,8 @@ def regie_lesen(text):
       r["ziel"] = wort[5:]
     elif wort.startswith("pre="):
       r["pre"] += wort[4:].split(",")
+    elif wort.startswith("drin="):
+      r["drin"] += wort[5:].split(",")
     elif wort.startswith("dateien="):
       r["dateien"] += wort[8:].split(",")
     elif wort.startswith("fehlt="):
@@ -223,7 +292,7 @@ def art_raten(rumpf):
   return "folie"
 
 
-def huelle(art, rumpf, vorspann):
+def huelle(art, rumpf, vorspann, in_der_folie=""):
   if art == "ganz":
     return rumpf
   kopf = IMPORT + vorspann
@@ -243,8 +312,8 @@ def huelle(art, rumpf, vorspann):
     return kopf + "#presentation(\n" + ohne + ",\n)\n"
   kopf += "#show: presentation.with()\n"
   if art == "folgen":
-    return kopf + rumpf
-  return kopf + "== Beispiel\n" + rumpf
+    return kopf + in_der_folie + rumpf
+  return kopf + "== Beispiel\n" + in_der_folie + rumpf
 
 
 def uebersetzen(quelle, ziel, dateien, paketpfad=None):
@@ -280,6 +349,11 @@ def pruefen(auftrag):
     return {"ort": ort, "stand": "aus", "grund": regie["aus"]}
   art = regie["art"] or art_raten(block["rumpf"])
   vorspann = "".join(VORSPANN[n] for n in regie["pre"])
+  in_der_folie = "".join(IN_DER_FOLIE[n] for n in regie["drin"])
+  if in_der_folie and art in ("ganz", "dokument", "argument"):
+    return {"ort": ort, "stand": "fehler", "art": art,
+            "meldung": "`drin=` gibt es nur für einen Block, um den eine Folie "
+                       "gelegt wird -- also für `folie` und `folgen`"}
   if regie["davor"]:
     if voriger is None:
       return {"ort": ort, "stand": "fehler", "art": art,
@@ -306,8 +380,8 @@ def pruefen(auftrag):
   # monatelang unerreichbar geblieben, weil niemand sie je ausgelöst hat.
   if regie["bricht"]:
     geklappt, meldung = uebersetzen(
-      huelle(art, dedent(zeilen), vorspann), regie["ziel"], regie["dateien"],
-      paketpfad)
+      huelle(art, dedent(zeilen), vorspann, in_der_folie), regie["ziel"],
+      regie["dateien"], paketpfad)
     if geklappt:
       return {"ort": ort, "stand": "fehler", "art": art,
               "meldung": "sollte an „%s\" abbrechen, übersetzt aber"
@@ -323,15 +397,16 @@ def pruefen(auftrag):
   # Erst der Rest ohne die Zeilen, die fehlschlagen sollen: der muss übersetzen.
   rest = "\n".join(z for i, z in enumerate(zeilen, 1) if i not in regie["fehlt"])
   geklappt, meldung = uebersetzen(
-    huelle(art, rest, vorspann), regie["ziel"], regie["dateien"], paketpfad)
+    huelle(art, rest, vorspann, in_der_folie), regie["ziel"], regie["dateien"],
+    paketpfad)
   if not geklappt:
     return {"ort": ort, "stand": "fehler", "art": art, "meldung": meldung}
 
   # Dann jede einzelne dieser Zeilen für sich: die muss fehlschlagen.
   for n in regie["fehlt"]:
     geklappt, meldung = uebersetzen(
-      huelle(art, zeilen[n - 1], vorspann), regie["ziel"], regie["dateien"],
-      paketpfad)
+      huelle(art, zeilen[n - 1], vorspann, in_der_folie), regie["ziel"],
+      regie["dateien"], paketpfad)
     if geklappt:
       return {
         "ort": ort, "stand": "fehler", "art": art,

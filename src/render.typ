@@ -35,7 +35,11 @@
       attrs.insert("class", "ts-el ts-embed ts-bridged")
     }
     html.elem("div", attrs: attrs, html.elem("iframe", attrs: a, []))
-  } else if s.kind == "flipbook" {
+  } else if s.kind == "flipbook" or s.kind == "scene" {
+    // Ein Daumenkino und eine Szene sind im Markup dasselbe: ein Stapel
+    // fertiger Bilder, von denen genau eines `data-on` trägt. Sie
+    // unterscheiden sich allein darin, wer weiterschaltet -- dort die Uhr,
+    // hier der Tastendruck. Deshalb steht hier ein Zweig und nicht zwei.
     html.elem("div", attrs: attrs + ("data-frames": str(s.raw-frames.len())),
       sprite-number.update(n) +
       s.raw-frames.map(f => html.elem("div", attrs: (class: "ts-frame"),

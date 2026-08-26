@@ -137,21 +137,27 @@ Ein dritter.
 // `sichtbar` auf diesen Schritten null gedimmte und null gezeichnete Elemente
 // meldet -- faellt der Wächter aus, der sie beiseitestellt, kaemen sie von
 // selbst und die Reihe wuerde umfallen.
-#adaptiv("probe", start: 2)[
+#cue("probe", start: 2)[
   - erster Punkt
   - zweiter Punkt
   - dritter Punkt
 ]
-#adaptiv-schicht("probe", 1, [Beiwerk zum ersten])
-#adaptiv-schicht("probe", 2, [Beiwerk zum zweiten])
-#adaptiv-schicht("probe", 3, [Beiwerk zum dritten])
+#cue-layer("probe", 1, [Beiwerk zum ersten])
+#cue-layer("probe", 2, [Beiwerk zum zweiten])
+#cue-layer("probe", 3, [Beiwerk zum dritten])
 
 == Zweite adaptive Gruppe
 // Eine zweite Gruppe auf einer eigenen Folie. Sie belegt, dass Gruppen
 // einander nicht ins Gehege kommen -- und vor allem, dass eine Ziffer den
 // folienlokalen Schritt und nicht den Deckschritt meint: mit der Verwechslung
 // sprang eine Ziffer hier auf die erste Folie des Decks.
-#adaptiv("zweite", start: 1)[
+//
+// `start` steht hier mit Absicht NICHT da: die Gruppe ist das erste verfolgte
+// Element ihrer Folie, `auto` muss also dieselbe 1 ergeben, die vorher
+// ausgeschrieben stand. Rechnet `cue` den Zaehlerstand ohne `+ 1`, faengt
+// sie bei null an und die ganze Reihe rutscht -- die einzige Stelle im Lauf,
+// die den auto-Zweig ueberhaupt betritt.
+#cue("zweite")[
   - anderer erster Punkt
   - anderer zweiter Punkt
 ]
@@ -170,3 +176,228 @@ Dritter Schritt.
 
 == Danach
 #align(center, morph(<verschachtelt>, text(size: 2em)[$x^2$]))
+
+= Zeichnen
+
+== Eine Zeichnung in Stufen
+// `build`: eine Zeichnung, die in vier Stufen entsteht. Sie steht hier aus
+// schlichten Rechtecken und nicht aus CeTZ oder lilaq -- geprueft wird das
+// Paket und nicht ein fremdes Zeichenpaket, und ein Prueflauf, der dafuer
+// etwas aus dem Netz holen muesste, prueft an dem Tag nichts, an dem das Netz
+// fehlt. Wie `build` sich zu CeTZ und lilaq verhaelt, halten die Beispiele
+// der Handbuecher fest; hier steht, was die Laufzeit damit macht.
+//
+// Drei Dinge haengen daran.
+//
+// Erstens: auf jedem Schritt dieser Folie ist genau *eine* Stufe gezeichnet,
+// nie zwei und nie null, und die letzte bleibt bis zum Ende der Folie stehen.
+// Dafuer steht der `anim` unter der Zeichnung: ohne einen Schritt *nach* der
+// letzten Stufe faellt eine Stufe, deren Bereich zu frueh schliesst, gar nicht
+// auf -- ihr letzter Schritt ist dann zugleich der letzte der Folie. Gemessen,
+// indem die letzte Stufe einen geschlossenen statt eines offenen Bereichs
+// bekam: ohne den `anim` bewegte sich in `sichtbar` keine Zahl, mit ihm ging
+// der letzte Schritt dieser Folie von 2/0 auf 1/0.
+//
+// Ein `anim` und kein `#pause`, obwohl beides ginge: `#pause` faengt seinen
+// Abschnitt in einem Block ein, und der Lauf soll hier das nackte verfolgte
+// Element sehen. Dass eine Pause hinter der Zeichnung inzwischen richtig
+// zaehlt, haelt die Folie mit dem verschachtelten `morph` fest.
+//
+// Zweitens: was noch nicht dran ist, steht als Luft da und nicht als Tinte.
+// Ob eine Farbe Alpha 0 traegt, hat im Browser keine Zahl -- gezeichnet wird
+// sie wie jede andere --, das haelt `satz` fest. Gemessen, indem
+// `durchsichtig` seinen Wert unveraendert zurueckgab: `satz` fiel um.
+//
+// Wohl aber eine Zahl hat, ob die Luft ihren *Platz* behaelt, und das ist die
+// eigentliche Zusage. Deshalb steht die Zeichnung hier nicht in einem Kasten
+// fester Groesse, sondern in einem `stack`, dessen Breite an ihren Stuecken
+// haengt, und das letzte Stueck ist Inhalt und keine Farbe: `hide` haelt
+// seinen Platz, `none` nicht. Alle vier Stufen muessen dasselbe Mass melden --
+// siehe `masz` in der Haltprobe. Gemessen, indem `durchsichtig` fuer Inhalt
+// `none` zurueckgab: aus einem Mass wurden zwei.
+//
+// Drittens: der Schrittzaehler laeuft in beiden Ausgaben gleich. Das sagt die
+// Zusicherung unter der Zeichnung, und `pruefe-decks.js` uebersetzt das Deck
+// eigens ein zweites Mal auf Papier, weil sie sonst nur im Browser gefragt
+// wuerde -- und der Papierzweig von `build` ist ein anderer.
+//
+// Wie die abtretende Stufe geht, statt *dass* sie geht, misst der Lauf eigens:
+// siehe `haltProbe` in `pruefe-decks.js`.
+#build(from => stack(dir: ltr, spacing: 8pt,
+  // Der Grund: steht auf jeder Stufe, weil er keine Nummer traegt.
+  rect(width: 44pt, height: 44pt, stroke: 0.6pt),
+  rect(width: 44pt, height: 44pt, fill: from(2, red), stroke: from(2, 0.6pt + black)),
+  rect(width: 44pt, height: 44pt, fill: from(3, green), stroke: from(3, 0.6pt + black)),
+  // Ein Stueck aus Inhalt statt aus Farbe. Daran haengt die Breite des Stapels
+  // und damit das Mass aller vier Stufen.
+  from(4, box(width: 80pt, height: 44pt, align(center + horizon)[Beschriftung])),
+), steps: 4)
+
+#anim[Ein Schritt nach der Zeichnung.]
+
+#context assert(info().step.total == 5, message:
+  "Prüfdeck: die Folie mit build() zählt " + str(info().step.total)
+  + " Schritte statt 5. Der Schrittzeiger zählt build() falsch -- und diese "
+  + "Zahl muss in beiden Ausgaben dieselbe sein, sonst zeigt das Handout eine "
+  + "andere Fußzeile als der Vortrag.")
+
+== Ein Pfad, der sich selbst zeichnet
+// `enter: "draw"` und `easing:`. Beide stehen auf demselben Element und
+// werden trotzdem getrennt gemessen -- `zeichnung` und `kurve` --, damit eine
+// Abweichung sagt, welche der beiden Fähigkeiten umgefallen ist.
+//
+// Wieder aus schlichten Formen und nicht aus CeTZ: geprüft wird das Paket und
+// nicht ein fremdes Zeichenpaket. Welche Zeichenpakete Konturen liefern, die
+// sich abfahren lassen, hält das Handbuch fest.
+//
+// Vier Dinge hängen daran.
+//
+// Erstens: die Zeichnung steht auf dem *zweiten* Schritt ihrer Folie und
+// nicht auf dem ersten, und das ist keine Zierde. Wer eine Folie betritt,
+// sieht keine Auftritte -- `goto` stellt beim Folienwechsel nur den Zustand
+// her. Eine Zeichnung auf Schritt eins zeichnete sich also nie, und der Lauf
+// hätte nichts zu messen. Der Satz davor kostet den Schritt, den es dafür
+// braucht.
+//
+// Zweitens: drei Striche und ein Rechteck ohne Kontur. Die drei werden
+// abgefahren, das vierte blendet -- es hat keine Kontur, an der entlang etwas
+// zu fahren wäre, genau wie Text. Gemessen, indem die Strichbreite als
+// Bedingung wegfiel: aus 3 Pfaden wurden 4.
+//
+// Drittens: rückwärts fährt die Feder wieder heraus, und danach trägt kein
+// Pfad mehr eine Feder. Bliebe eine stehen, stünde ein Strich für den Rest
+// des Vortrags auf halber Strecke -- zu sehen erst bei dem einen Sprung, der
+// genau dorthin geht.
+//
+// Viertens: `easing:` schreibt die fertige Kurve ins Markup, und die Laufzeit
+// legt sie sowohl der Blende als auch der Feder unter. Fällt eine der beiden
+// auf die Hauskurve zurück, fällt `kurve` um.
+#anim[Erst ein Satz -- eine Zeichnung auf Schritt eins zeichnete sich nie.]
+#anim(enter: "draw", duration: 640, easing: "out-back",
+  box(width: 220pt, height: 100pt, {
+    place(top + left, line(end: (100%, 0%), stroke: 1.2pt))
+    place(top + left, line(end: (0%, 100%), stroke: 1.2pt))
+    place(top + left, dy: 24pt, rect(width: 70pt, height: 50pt, stroke: 1pt))
+    // Ohne Kontur: blendet, wie Text es tut, und wird nicht mitgezählt.
+    place(top + left, dx: 150pt, dy: 30pt,
+          rect(width: 40pt, height: 40pt, fill: accent, stroke: none))
+  }))
+#anim[Ein Schritt nach der Zeichnung, damit sie auch abtreten kann.]
+= Bewegen
+
+== Eine Szene mit vier Halten
+// `scene`: eine Zeichnung als Funktion eines Werts, mit vier Halten und acht
+// Zwischenbildern je Strecke -- 4 + 3·8 = 28 Bilder. Aus schlichten Rechtecken
+// und nicht aus CeTZ, aus demselben Grund wie bei `build` daneben: geprüft
+// wird dieses Paket und nicht ein fremdes Zeichenpaket.
+//
+// Vier Dinge hängen daran, und `szeneProbe` in `pruefe-decks.js` fragt sie.
+//
+// Erstens: auf welchem Bild die Szene in Ruhe steht. Halt k liegt auf Bild
+// k·(tween + 1), hier also auf 0, 9, 18 und 27. Verrechnet sich die Zuordnung
+// von Schritt zu Halt, wandert diese Reihe.
+//
+// Zweitens: dass ein Schritt die Strecke wirklich *zieht* und nicht springt.
+// Gefragt wird nicht zu einem geratenen Zeitpunkt -- eine Messung an der Uhr
+// hängt am Rechner --, sondern die Animation selbst: sie muss laufen, und auf
+// halber Zeit muss ein Bild aus der Mitte der Strecke dastehen.
+//
+// Drittens: dass die Kurve die des Pakets ist. Auf halber Zeit steht Bild 7
+// von 9 und nicht Bild 4 oder 5; wer die Kurve gegen eine Gerade tauscht,
+// bekommt genau das zu sehen.
+//
+// Viertens: dass ein Sprung stellt, statt zu ziehen. Nach `goto(…, true)` darf
+// keine Bewegung laufen und das Bild muss am Ziel stehen.
+//
+// Der `anim` darunter ist derselbe Wächter wie bei `build`: ohne einen
+// Schritt *nach* der Szene fiele es nicht auf, wenn sie zu wenige verbrauchte
+// -- ihr letzter Halt wäre dann zugleich der letzte Schritt der Folie.
+#scene("wanderung", x => box(width: 240pt, height: 60pt,
+  place(left + horizon, dx: x * 1pt,
+        rect(width: 30pt, height: 30pt, fill: red))),
+  stops: (0, 60, 120, 180), tween: 8, width: 240pt, height: 60pt)
+
+// Zwei Schichten an zwei Halten. Sie belegen, dass eine Schicht den Schritt
+// ihres Halts findet, ohne dass irgendwo eine Zahl doppelt stünde: wer den
+// zweiten Halt verschiebt, verschiebt den Satz mit.
+#scene-layer("wanderung", 2)[Beim zweiten Halt.]
+#scene-layer("wanderung", 4)[Und beim letzten.]
+
+#anim[Ein Schritt nach der Szene.]
+
+#context assert(info().step.total == 5, message:
+  "Prüfdeck: die Folie mit scene() zählt " + str(info().step.total)
+  + " Schritte statt 5. Eine Szene mit vier Halten verbraucht drei Schritte, "
+  + "der anim darunter den vierten -- und diese Zahl muss in beiden Ausgaben "
+  + "dieselbe sein, sonst zeigt das Handout eine andere Fußzeile als der "
+  + "Vortrag. Der Papierzweig von scene() ist ein anderer.")
+
+== Ein Daumenkino, das erst spät kommt
+// Die Uhr eines Daumenkinos beginnt, wenn es zu sehen ist, und nicht, wenn
+// seine Folie kommt. Genau das war einmal falsch: `mediaOn` stempelte den
+// Startpunkt beim Folieneintritt, für jedes Daumenkino der Folie und ohne
+// nach Sichtbarkeit zu fragen. Ein `flipbook(at: "3-", loop: false)` stand im
+// Augenblick des Aufdeckens deshalb schon auf Bild 23 von 24 -- abgelaufen,
+// bevor es zu sehen war.
+//
+// Schlimmer: der Prüfstand konnte das nicht sehen. Unter der festgenagelten
+// Uhr kürzte sich der Startpunkt aus der Rechnung heraus, und das Kino zeigte
+// auf jedem Schritt dasselbe Bild, das verborgene wie das aufgedeckte.
+//
+// `kinoProbe` in `pruefe-decks.js` fragt jetzt beides an einem Stück: Bild 0
+// auf den ersten beiden Schritten, Bild 0 im Augenblick des Aufdeckens, und
+// danach eine Uhr, die weitergestellt wird und das Kino laufen lässt.
+// Gemessen mit dem alten Stand: 23·23·23·23 statt 0·0·12·23.
+//
+// `loop: false` mit Absicht: ein laufendes Kino ist nach einer Sekunde wieder
+// bei sich selbst, und dann sagte die letzte Zahl nichts mehr.
+// Zuerst das Kino, das von Anfang an zu sehen ist. Es steht *vor* der ersten
+// Pause, und das ist keine Anordnungsfrage: alles hinter einem `#pause` wandert
+// in den Abschnitt des nächsten Schritts, und ein Kino darin ist beim Betreten
+// der Folie verborgen wie das andere auch. Nachgemessen -- unten geschrieben
+// zeigte es dieselbe Reihe wie sein Nachbar und prüfte damit nichts Eigenes.
+//
+// Ohne dieses Kino bleibt eine Hälfte des Falls ungeprüft: stempelt `mediaOn`
+// den Startpunkt wieder beim Folieneintritt, merkt das spät aufgedeckte Kino
+// nichts davon -- es ist beim Betreten verborgen, und der Takt setzt seinen
+// Startpunkt beim Aufdecken ohnehin neu. Dieses hier ist beim Betreten
+// sichtbar, behält also den Stempel aus `mediaOn`, und unter der festgenagelten
+// Uhr ist das der Unterschied zwischen Bild 0 und Bild 23.
+#flipbook(
+  t => box(width: 100%, height: 100%,
+    place(left + horizon, dx: t * 88%, circle(radius: 6pt, fill: blue))),
+  frames: 24, fps: 24, loop: false, width: 240pt, height: 30pt,
+)
+
+Erster Schritt.
+#pause
+Zweiter Schritt.
+#pause
+#flipbook(
+  t => box(width: 100%, height: 100%,
+    place(left + horizon, dx: t * 88%, circle(radius: 9pt, fill: red))),
+  frames: 24, fps: 24, loop: false, at: "3-", width: 240pt, height: 40pt,
+)
+
+== Eine Szene ganz allein
+// Eine Folie, auf der nichts steht als eine Szene: keine Schicht, kein anim,
+// nichts, was eine Schrittzahl in seinen Selektor schriebe.
+//
+// Genau darin liegt ihre Aufgabe. Der Selektor einer Szene ist offen -- sie
+// steht von ihrem ersten Halt an durchgehend da -- und nennt deshalb nur, ab
+// wann. Wie viele Schritte sie *verbraucht*, muss die Laufzeit aus der Zahl
+// ihrer Halte lesen. Auf der Folie oben fiele es nicht auf, wenn sie das
+// vergäße: dort tragen die Schicht auf Halt 4 und der anim dahinter die 4 und
+// die 5 ohnehin in ihre Selektoren. Gemessen, indem der Laufzeit die Zeile
+// genommen wurde, die nach den Halten sieht: mit dieser Folie fiel `schritte`
+// von 50 auf 48, ohne sie bewegte sich keine Zahl.
+#scene(x => box(width: 200pt, height: 40pt,
+  place(left + horizon, dx: x * 1pt,
+        rect(width: 20pt, height: 20pt, fill: blue))),
+  stops: (0, 90, 180), tween: 2, width: 200pt, height: 40pt)
+
+#context assert(info().step.total == 3, message:
+  "Prüfdeck: die Folie mit der alleinstehenden szene() zählt "
+  + str(info().step.total) + " Schritte statt 3. Eine Szene mit drei Halten "
+  + "verbraucht zwei Schritte, und niemand sonst steht auf dieser Folie, der "
+  + "das ausgleichen könnte.")

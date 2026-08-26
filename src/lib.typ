@@ -28,9 +28,13 @@
   // instead of forking the theme.
   info,
 )
-#import "elements.typ": (adaptiv, adaptiv-schicht, alternatives, anim, morph,
-                         pause, pin, stagger)
+#import "elements.typ": (alternatives, anim, build, cue, cue-layer, morph,
+                         pause, pin, scene, scene-layer, stagger)
 #import "layout.typ": card, callout, fit, side-by-side, statement, tiles
 #import "media.typ": video, embed, flipbook
 #import "bridge.typ": bridge-job, bridge-targets
+// GeoGebra, once a companion package of its own. It goes over the same bridge
+// as any other, and a deck that never calls `geogebra` carries nothing of it.
+#import "geogebra.typ": (geogebra, ggb-animate, ggb-hide, ggb-run, ggb-set,
+                         ggb-show, ggb-style, ggb-tween, ggb-view)
 #import "present.typ": presentation, bundle

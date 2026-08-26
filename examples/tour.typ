@@ -392,7 +392,7 @@ and the wrong two find each other), the piece gets a name instead.
 // `embed` puts arbitrary HTML into a sandboxed frame. `bridge:` gives that frame
 // a name, and `bridge-job` sends it a dictionary on a given step. The package
 // never reads it. What it means is known only to the document on the other
-// side. This is exactly how `typstage-geogebra` drives its applets.
+// side. This is exactly how `geogebra` drives its applets.
 //
 // A `+` at the start of a line is a list bullet in Typst and would throw the
 // expression back into markup; the parentheses hold it in code.

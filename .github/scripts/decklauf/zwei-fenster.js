@@ -6,7 +6,7 @@
 // tut -- aber nichts, was zwischen beiden passiert. Drei Fehler sind genau
 // durch diese Lücke gekommen:
 //
-//   1. Die Zuordnung einer adaptiven Gruppe reiste nicht mit. Im
+//   1. Die Zuordnung einer cue-Gruppe reiste nicht mit. Im
 //      Sprecherfenster stand alles richtig, in der Halle erschien nichts.
 //   2. `adSprecher` setzte die Deckkraft eines genannten Punktes auf "",
 //      und ein leerer Wert fällt auf die Stilvorlage zurück, wo ein Element
@@ -18,6 +18,11 @@
 // Keiner davon ist in einem Fenster sichtbar, und keiner in einem Deck mit
 // einer einzigen Folie: dort fallen folienlokaler Schritt und Deckschritt
 // zusammen. Der Prüfling ist deshalb das mehrfoliige Prüfdeck.
+//
+// Aus demselben Grund steht am Ende die Feder: ein Schritt vom Pult aus ist in
+// der Halle ein echter Schritt mit Bewegung und kein Sprung, und eine
+// Zeichnung, die sich nur bei dem zeichnet, der selbst am Rechner steht, wäre
+// in einem Fenster nicht als Fehler zu sehen.
 //
 //   node .github/scripts/decklauf/zwei-fenster.js [--browser /pfad]
 // =============================================================================
@@ -62,6 +67,20 @@ const stand = `(function () {
     fehler: window.typstage.pruef.fehler() });
 })()`;
 
+// Auf welchem Bild die Szene der Folie steht -- in dem Fenster, das gefragt
+// wird. Eine Szene haengt am Schritt und nicht an der Uhr, also muss sie in
+// beiden Fenstern dasselbe Bild zeigen. Ueber `#ts-stage`, wo es die Buehne
+// gibt: im Sprecherfenster steht daneben noch die Vorschau, und die traegt
+// eine zweite Szene, die absichtlich einen Schritt weiter ist.
+const szeneBild = `(function () {
+  var b = document.querySelector('#ts-stage') || document;
+  var el = b.querySelector('.ts-scene');
+  if (!el) return -2;
+  var f = el.querySelectorAll('.ts-frame');
+  for (var j = 0; j < f.length; j++) if (f[j].dataset.on) return j;
+  return -1;
+})()`;
+
 (async () => {
   const datei = deckBauen();
   const halle = await starte(arg("--browser", null) || browserSuchen());
@@ -76,7 +95,7 @@ const stand = `(function () {
     const sprecher = await kommt;
     await schlaf(1500);
 
-    // Bis zur ersten adaptiven Gruppe blättern. Sie steht nicht auf der
+    // Bis zur ersten cue-Gruppe blättern. Sie steht nicht auf der
     // ersten Folie -- gerade das ist der Punkt.
     const zurGruppe = `(function () {
       var st = window.typstage.steps;
@@ -89,7 +108,7 @@ const stand = `(function () {
       return -1;
     })()`;
     const k = await sprecher.ev(zurGruppe);
-    if (k < 0) { sagt("aufbau", "keine adaptive Gruppe im Prüfdeck gefunden"); }
+    if (k < 0) { sagt("cue", "keine cue-Gruppe im Prüfdeck gefunden"); }
     await schlaf(900);
 
     const beide = async () => ({
@@ -216,6 +235,105 @@ const stand = `(function () {
     }
     console.log("Zurueck: Halle S" + zurueck.h.auf + " [" + zurueck.h.punkte
       + "] · Sprecher [" + zurueck.s.punkte + "]");
+
+    // ── Und die Feder, ferngesteuert ─────────────────────────────────────
+    //
+    // Ein Schritt aus dem Sprecherfenster ist in der Halle ein *echter*
+    // Schritt mit Bewegung, kein Sprung: `melde` schickt nur die Zahl, und
+    // drüben nimmt `fernGoto` sie ohne `instant`. Eine Zeichnung, die vom
+    // Pult aus aufgedeckt wird, muss sich also zeichnen -- sonst zeichnete
+    // sie sich nur bei dem, der selbst am Rechner steht, und in der Halle
+    // stünde sie einfach da.
+    //
+    // In einem Fenster ist das nicht zu sehen: dort ist der Weg vom
+    // Tastendruck zum `goto` ein anderer. Gezählt wird der laufende Zähler
+    // der Laufzeit und keine Deckkraft zu einem geratenen Zeitpunkt -- eine
+    // Messung, die an einer Uhr hängt, hängt am Rechner.
+    const zurZeichnung = `(function () {
+      var st = window.typstage.steps;
+      var el = document.querySelector('.ts-el[data-enter="draw"]');
+      if (!el) return -1;
+      var f = [].indexOf.call(document.querySelectorAll('.ts-slide'),
+                              el.closest('.ts-slide'));
+      var ab = +(el.dataset.at.match(/[0-9]+/) || [1])[0];
+      for (var k = 0; k < st.length; k++) {
+        if (st[k].slide === f && st[k].step === ab - 1) {
+          window.typstage.goto(k, true); return k;
+        }
+      }
+      return -1;
+    })()`;
+    // ── Und die Szene, in beiden Fenstern ───────────────────────────────────
+    //
+    // Sie haengt am Schritt und nicht an der Uhr; ein Schritt drueben muss
+    // also hier dasselbe Bild ergeben. Ein Daumenkino koennte das nicht: es
+    // haengt an zwei Uhren, die nie genau gleich gehen.
+    const zurSzene = `(function () {
+      var st = window.typstage.steps;
+      for (var k = 0; k < st.length; k++) {
+        var sec = window.typstage.slides[st[k].slide];
+        if (sec && sec.querySelector('.ts-scene') && st[k].step === 1) {
+          window.typstage.goto(k, true); return k;
+        }
+      }
+      return -1;
+    })()`;
+    const z0 = await sprecher.ev(zurZeichnung);
+    if (z0 < 0) {
+      sagt("feder", "keine Zeichnung mit enter=\"draw\" im Prüfdeck gefunden");
+    } else {
+      await schlaf(1200);
+      const vorFeder = JSON.parse(await halle.ev(
+        "JSON.stringify(window.typstage.pruef.stand().feder)"));
+      await sprecher.taste("ArrowRight");
+      await schlaf(1400);
+      const nachFeder = JSON.parse(await halle.ev(
+        "JSON.stringify(window.typstage.pruef.stand().feder)"));
+      if (nachFeder <= vorFeder) {
+        sagt("feder", "in der Halle zeichnete sich nichts, als das Pult "
+          + "weiterschaltete (" + vorFeder + " -> " + nachFeder + "). Ein "
+          + "ferngesteuerter Schritt ist ein echter Schritt und kein Sprung.");
+      }
+      // Und die Vorschau bleibt ein Standbild: dort läuft keine Feder, und
+      // eine halb gezeichnete Linie hat in einem Standbild nichts zu suchen.
+      const vor = JSON.parse(await sprecher.ev(`JSON.stringify({
+        mini: document.querySelector('.ts-mini')
+          ? document.querySelector('.ts-mini').querySelectorAll('[data-ts-feder]').length : -1,
+        offen: window.typstage.pruef.stand().federOffen })`));
+      if (vor.mini > 0) {
+        sagt("feder", "in der Vorschau des Sprecherfensters stehen " + vor.mini
+          + " halb gezeichnete Pfade; ein Standbild zeigt den Ruhezustand.");
+      }
+      if (vor.offen > 0) {
+        sagt("feder", vor.offen + " Pfad(e) tragen im Sprecherfenster nach der "
+          + "Fahrt noch eine Feder.");
+      }
+      console.log("Feder: Halle " + vorFeder + " -> " + nachFeder
+        + " · Vorschau " + vor.mini + " · offen " + vor.offen);
+    }
+    const sz = await sprecher.ev(zurSzene);
+    if (sz < 0) {
+      sagt("szene", "keine Szene im Prüfdeck gefunden");
+    } else {
+      await schlaf(1100);
+      const erst = [await halle.ev(szeneBild), await sprecher.ev(szeneBild)];
+      if (erst[0] !== erst[1]) {
+        sagt("szene", "beim Betreten steht die Halle auf Bild " + erst[0]
+          + ", das Sprecherfenster auf " + erst[1]);
+      }
+      await sprecher.taste("ArrowRight");
+      await schlaf(1400);
+      const nun = [await halle.ev(szeneBild), await sprecher.ev(szeneBild)];
+      if (nun[0] !== nun[1]) {
+        sagt("szene", "nach einem Schritt steht die Halle auf Bild " + nun[0]
+          + ", das Sprecherfenster auf " + nun[1]);
+      }
+      if (!(nun[0] > erst[0])) {
+        sagt("szene", "ein Schritt im Sprecherfenster hat die Szene in der "
+          + "Halle nicht weitergezogen: Bild " + erst[0] + " -> " + nun[0]);
+      }
+      console.log("Szene: Bild " + erst[0] + " -> " + nun[0] + " in beiden Fenstern");
+    }
 
     await sprecher.ende();
   } catch (e) {

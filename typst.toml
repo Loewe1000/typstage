@@ -6,12 +6,20 @@ entrypoint = "src/lib.typ"
 authors = ["Alexander Schulz"]
 license = "MIT"
 repository = "https://github.com/Loewe1000/typstage"
-description = "Animierte HTML-Präsentationen aus einer einzigen Typst-Datei — und aus derselben Quelle ein PDF-Handout. Typst setzt, der Browser bewegt: Magic-Move-Morphing, gestaffelte Einblendungen, Folienübergänge, Medien."
-keywords = ["presentation", "slides", "animation", "html"]
+description = "Animierte HTML-Präsentationen aus einer einzigen Typst-Datei — und aus derselben Quelle ein PDF-Handout. Typst setzt, der Browser bewegt: Magic-Move-Morphing, gestaffelte Einblendungen, Folienübergänge, Medien und GeoGebra-Applets, die den Schritten der Folie folgen. GeoGebra ist nicht mit dabei: ein gesetztes Applet lädt zur Laufzeit von geogebra.org nach und steht unter GeoGebras Bedingungen."
+keywords = ["presentation", "slides", "animation", "html", "geogebra"]
 categories = ["presentation"]
-disciplines = ["education"]
+disciplines = ["education", "mathematics"]
 
 # Nicht mitausliefern: die Beispieldateien sind zum Ausprobieren da,
 # nicht Teil des Pakets — und `example.typ` zieht CeTZ als Abhängigkeit nach.
-# `examples/` zeigt je eine kurze Präsentation zu jedem mitgelieferten Theme.
-exclude = ["example.typ", "examples", "docs", "assets"]
+# `examples/` zeigt je eine kurze Präsentation zu jedem mitgelieferten Theme
+# und zwei zu GeoGebra.
+#
+# `assets/` steht hier mit seinen drei README-Bildern und nicht als ganzes
+# Verzeichnis. Gemeint waren immer die Bilder; das Verzeichnis auszuschließen
+# nähme dem ausgelieferten Paket auch die Laufzeitdateien -- Stilvorlage und
+# Skript liest `config.typ` beim Übersetzen, das Bootskript des Applets
+# `applet.typ`. Ein Paket ohne sie übersetzt überhaupt nicht mehr.
+exclude = ["example.typ", "examples", "docs",
+           "assets/handout.png", "assets/slide.png", "assets/themes.png"]

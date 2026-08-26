@@ -61,6 +61,7 @@ This manual is ordered by intent rather than by function:
 + *Your first presentation* — from the empty file to a running HTML
 + *Revealing a slide step by step* — `pause`, `stagger`, `anim`, `alternatives`
 + *Showing instead of claiming* — an applet, a video, a flip book
++ *GeoGebra* — constructions that follow the steps of the slide
 + *Developing a calculation* — magic move across several slides
 + *Giving the talk* — keys, touch, the overview, the speaker view
 + *Three outputs from one source* — talk, slide deck, handout
@@ -218,7 +219,7 @@ standing there finished.
 
 == Which tool for what
 
-Four building blocks cover very nearly everything. They mix on one slide, and
+Six building blocks cover very nearly everything. They mix on one slide, and
 which one is right depends on how finely the slide needs to be steered.
 
 #table(
@@ -237,6 +238,12 @@ which one is right depends on how finely the slide needs to be steered.
   [`alternatives(…)`],
   [Several versions of the same thing in the same place, each replacing the
    one before.],
+  [`build(…)`],
+  [A drawing or a diagram that comes into being in stages -- one CeTZ line,
+   one lilaq data series, one label after another.],
+  [`scene(…)`],
+  [A drawing that depends on a value, and the values at which the talk stops.
+   For everything that *moves* rather than being added.],
 )
 
 Beside them stand `tiles` for a grid that staggers itself, and `morph` for
@@ -349,12 +356,12 @@ experiment, which ways there are to work something out -- a class names those
 in whatever order they come, and a deck that reveals them in *its* order makes
 the teacher either wait or reshuffle.
 
-`adaptiv` turns that round: the digits `1` to `9` reveal whatever was just
+`cue` turns that round: the digits `1` to `9` reveal whatever was just
 named.
 
 // check: folie
 #show-code[```typ
-#adaptiv("readings", start: 2)[
+#cue("readings", start: 2)[
   - positive and negative values
   - lowest and highest value
   - falling and rising
@@ -371,12 +378,12 @@ nothing jumps when it arrives later.
 
 === What appears together with a point
 
-A point rarely stands alone. `adaptiv-schicht` hangs something on the same step
+A point rarely stands alone. `cue-layer` hangs something on the same step
 -- a drawing layer, a picture, a sentence beside it:
 
 // check: folie davor
 #show-code[```typ
-#adaptiv-schicht("readings", 1, [and what goes with it])
+#cue-layer("readings", 1, [and what goes with it])
 ```]
 
 Nothing is linked to do that: the point and the layer share a step, and
@@ -398,6 +405,10 @@ than quietly doing nothing.
   A layer carries *only its own contribution*, no grid and no base curve.
   Otherwise the layer set last paints over the first, and that regardless of
   the order things are revealed in.
+
+  Where the drawing is to grow in the order it was written instead, `build`
+  is the tool -- see "A drawing that grows". There every stage carries the
+  *whole* drawing, and the question of painting over does not arise.
 ]
 
 #info[
@@ -429,7 +440,7 @@ than quietly doing nothing.
 
 === Entrance and exit
 
-`enter` and `exit` name the motion. Ten of them exist:
+`enter` and `exit` name the motion. Eleven of them exist:
 
 #table(
   columns: (auto, 1fr),
@@ -443,17 +454,96 @@ than quietly doing nothing.
   [`"scale-down"`], [shrinks into place],
   [`"blur"`], [out of the blur],
   [`"rise"`], [from below and slightly smaller, the loudest of them],
+  [`"draw"`], [it draws itself -- see "A path that draws itself"],
   [`"none"`], [it is simply there],
+  [`"hold"`], [not an exit but a wait: the piece stays until the next one is
+               there. As an `enter` it is the same as `"none"`],
 )
 
 `duration` is in milliseconds and `auto` takes the presentation's. `delay`
 holds the start back, which is what makes two elements on the same step arrive
 one after the other.
 
-#warning[
-  An unknown name does not stop the build. It quietly becomes a cross-fade, so
-  a typo in `enter: "fdae-up"` is only noticed by the motion being duller than
-  it was meant to be.
+*A name the package does not know is an error at compile time*, exactly as it
+is for `easing`. The runtime used to fall back to `"fade"` without a word, and
+a typo then looked like a deck that simply moved differently than intended --
+which nobody finds in the middle of a talk.
+
+// check: folie bricht=the_package_does_not_know_that_effect
+#show-code[```typ
+#anim(enter: "fdae-up")[A typo.]   // error at compile time
+```]
+
+=== The curve
+
+Everything this package moves runs on the same curve: slow off the mark, brisk
+through the middle, soft at the end. `easing` hands that curve to a single
+element -- a result may overshoot its mark and swing back, a stack of bullets
+may arrive at an even pace.
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim(result, enter: "rise", easing: "out-back")
+#stagger(stride: 0, stagger: 60, easing: "out-quad")[
+  - first this
+  - then that
+]
+```]
+
+It stands wherever `duration` stands: on `anim`, `stagger`, `alternatives` and
+the drawing that grows in stages. And it applies to everything the element does
+itself -- the entrance, the departure and the dimming. Not to the slide
+transition, which belongs to the slide and not to the element; and not to the
+flight of a magic move, which has two ends and whose curve cannot be settled
+from one of them.
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Name*], [*Curve*]),
+  [`"standard"`], [this package's own curve, written out -- the same as saying
+                   nothing],
+  [`"linear"`], [even, with no run-up and no run-out],
+  [`"ease"`, `"ease-in"`, `"ease-out"`, `"ease-in-out"`],
+  [the four the Web Animations API knows by itself],
+  [`"in-quad"`, `"out-quad"`, `"in-out-quad"`], [gentle],
+  [`"in-cubic"`, `"out-cubic"`, `"in-out-cubic"`], [more pronounced],
+  [`"in-expo"`, `"out-expo"`, `"in-out-expo"`], [sharp -- nearly everything
+   happens at one end],
+  [`"in-back"`, `"out-back"`, `"in-out-back"`], [winds up and overshoots],
+)
+
+`in` means slow off the mark, `out` means soft at the end. For an entrance
+`out` is nearly always the right one: the eye watches the ending, not the
+beginning.
+
+*A name that does not exist is an error at compile time* and not a silent
+default. A typo would otherwise hand back the house curve, and whoever wrote it
+would spend a while wondering why the overshoot does not overshoot. The message
+lists what there is to choose from. (For `enter` it is the other way round, and
+older; see the box above.)
+
+// check: folie pre=zeichnung bricht=the_package_does_not_know_that_curve
+#show-code[```typ
+#anim(result, easing: "out-bounce")   // an error at compile time
+```]
+
+*The three `back` curves go past their mark*, and that is what they are for. On
+a travel that is the swing back; on opacity the browser clips whatever reaches
+past 1, so `easing: "out-back"` on a plain `"fade"` is merely a faster
+`"fade"`. It pays off together with an effect that travels: `"rise"`,
+`"scale"`, `"fade-up"`.
+
+Springs and bounces -- `elastic`, `bounce` -- do not exist here. They are not
+cubic Bézier curves, and the Web Animations API knows only those; they could
+only be rebuilt as a sequence of frames.
+
+#info[
+  Without `easing` not a byte of a deck changes. The name is resolved to a
+  finished curve at compile time and written into the markup only where it
+  departs from the default -- otherwise every element of every deck would carry
+  a new attribute. Measured on this package's eight examples, HTML as well as
+  PDF: the same bytes as before.
 ]
 
 === The muted resting state
@@ -557,6 +647,524 @@ the content grows. `align` decides where the smaller ones sit inside it,
 `start` on which step the first one appears, and `inline: true` puts the whole
 thing in a line of text instead of in a block of its own.
 
+== A drawing that grows
+
+A CeTZ canvas and a lilaq diagram are *one* piece, not many. Typst hands out
+the finished setting, and what was a line and what was a data series in it
+cannot be reached from outside any more. So there is no `anim` around a single
+line of a drawing.
+
+What there is, is the drawing itself -- as often as you want it. `build` calls
+it once per step and lays the versions exactly on top of one another: on stage
+#box[$k$] the drawing stands as it looks after #box[$k$] steps. Exactly one of
+them is on show.
+
+Which piece joins when is said by the question every stage is handed. It is
+called `ab` -- "from" -- because it says what `at:` says elsewhere:
+
+// check: folie pre=cetz
+#show-code[```typ
+#build(from => cetz.canvas({
+  import cetz.draw: *
+  line((0,0), (4,0))                          // there from the start
+  line((4,0), (4,3), stroke: from(2, black))    // from step 2
+  line((4,3), (0,0), stroke: from(3, 1.4pt + red))
+  content((2.2, 1.8), from(4, [$c$]))
+  if from(4) { circle((4,0), radius: 0.18) }
+  else { hide(circle((4,0), radius: 0.18), bounds: true) }
+}), steps: 4)
+```]
+
+`from(2, black)` gives the colour back once the second piece is due, and
+otherwise the same colour with alpha 0. The base line carries no number and
+therefore stands there from the start. `steps: 4` says how many stages there
+are; that is not guessed, because what the drawing function does with its
+question nobody can see from outside. And `from(4)` with a single argument is the
+same question as a boolean, for everything that cannot be recoloured -- in CeTZ
+that is where `hide(…, bounds: true)` belongs.
+
+=== Why alpha 0 and not leaving it out
+
+Because a piece that is missing takes the room it had along with it. Measured
+on a CeTZ drawing of three lines whose third reaches beyond the other two, and
+on a lilaq diagram of two data series:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*How it is hidden*], [*What comes of it*]),
+  [left out],
+  [The room is gone. CeTZ measures 113 #sym.times 85 instead of
+   198 #sym.times 170; in lilaq the `viewBox` moves from 186.58 to 189.64,
+   because without the second series the axis gets different labels. That is
+   exactly the jump nobody wants.],
+  [`stroke: none`],
+  [The measure holds, but Typst writes the path out without a single stroke
+   attribute -- 933 bytes become 831. In lilaq the marks of a series thereby
+   lose their geometry as well, 141 paths instead of 149.],
+  [alpha 0],
+  [The measure holds, the path stays whole, only its colour carries 00:
+   `stroke="#00000000"`, 935 bytes against 933. In lilaq all 149 paths remain
+   and the `viewBox` holds to the decimal.],
+)
+
+`ab` makes air out of a colour, out of a stroke (the brush goes, thickness and
+dashing stay, because the measure hangs on those), out of the colours inside a
+dictionary, and out of content, which goes into `hide`. Out of a gradient it
+makes nothing: a `gradient` has no opacity to turn, and the package says so
+instead of trying.
+
+=== A lilaq diagram
+
+A data series turns to air in two places: at its colour and at its label in the
+legend. The second is easy to forget -- the entry would otherwise stand in the
+legend while its curve is still missing:
+
+// check: folie pre=lilaq
+#show-code[```typ
+#build(from => lq.diagram(
+  width: 7cm, height: 4.5cm,
+  legend: (position: top + left),
+  lq.plot(x, measured, color: from(1, red), label: from(1, [measured])),
+  lq.plot(x, model, color: from(2, blue), label: from(2, [model])),
+), steps: 2)
+```]
+
+Because the series stays in the data as air, lilaq reckons its axes over both:
+the scale is settled from the start, and the first curve does not jump when the
+second arrives. Leaving the series out would bring a new tick division with it.
+
+=== The arguments
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Argument*], [*Effect*]),
+  [`steps`], [number of stages, and hence of steps (default 2)],
+  [`start`], [first step; `auto` follows on from the cursor],
+  [`enter`], [motion a stage arrives with (default `"fade"`); `"draw"` is an
+              error here, see the next section],
+  [`duration`], [duration in milliseconds],
+  [`easing`], [the curve of the motion, see "The curve"],
+)
+
+On paper only the last stage is set, in a block of the same size: a page shows
+every step at once, and stacked stages would be overprint. Measured on a deck
+with a CeTZ drawing and a lilaq diagram, the pages come out pixel for pixel the
+same as those of a deck that simply writes the drawing down. On paper `build`
+costs nothing. Under "reduce motion" nothing changes either: the stages fade,
+they do not travel, and what the setting would take away is a motion that is
+not there.
+
+#info[
+  Why only *one* stage is on show: because painted ink adds up. Three stages of
+  the same lilaq diagram on top of one another, against that diagram set once
+  -- 3.7 percent of the pixels differ by more than 8 of 255, the largest
+  deviation 99. Axes, labels and the half-transparent box of the legend get
+  painted three times and grow fatter by it. With stages that carry only their
+  own piece it is no better: the same measurement gives 3.5 percent and a
+  largest deviation of 243, because the axes belong to no piece and would then
+  stand on every stage. One stage at a time is the only arrangement that yields
+  the picture that would stand there if the drawing were set once.
+
+  The price is the crossing, since two nearly identical pictures relieving each
+  other fade against one another. Forwards that is solved: the stage stepping
+  down stays until the new one has fully arrived, and then goes without motion.
+  Backwards the fading out and the fading in overlap for a moment, and the ink
+  the two share drops to three quarters while they do. It shows only on paging
+  back, and only while the crossing runs.
+]
+
+#warning[
+  Every stage really is typeset. Four stages mean four layouts and four SVG
+  trees in the file -- for an elaborate drawing both grow as fast as they do
+  for a flip book. A drawing in twenty stages is not a good idea.
+]
+
+== A path that draws itself
+
+`enter: "draw"` lets a stroke *come into being* instead of fading in: the pen
+is set down and traces the path, from its start to its end.
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim(circuit, enter: "draw", duration: 900)
+#stagger(enter: "draw", stride: 1, axes, curve, tangent)
+```]
+
+The means behind it is old and plain. A stroked path in the SVG carries its
+own length; `stroke-dasharray` cuts it into one dash of exactly that length and
+a gap just as long, and `stroke-dashoffset` slides the dash in. At full offset
+nothing is there, at zero everything is -- and in between a pen traces the path.
+
+`duration` applies as it does everywhere, but a drawing wants more time than a
+bullet point. 900 is a workable start; the presentation's default of 520 is
+tight for three long lines.
+
+=== What can be traced and what cannot
+
+*Text cannot.* Typst sets glyphs as filled shapes with no outline -- an "a" is
+an area and not a line, and an area has no length to travel along. The same
+holds for everything filled: an arrow head, a solid dot, the face of a card.
+
+So `draw` is two things at once. *The strokes draw themselves, everything else
+fades in* -- exactly as it would without `draw`, and over exactly the same
+time. The label of a drawing therefore arrives while the lines are being drawn,
+and stands finished together with them.
+
+An element on which *nothing at all* can be traced fades in completely -- but
+not in silence. The runtime says so in the browser's console, once per element:
+
+#show-code[```
+typstage: enter: "draw" on slide 4 (element 2) finds no stroked path to
+trace. What is drawn is an outline, and text has none: Typst sets glyphs
+as filled shapes. The element fades in instead. draw is for a drawing,
+the fade is for text.
+```]
+
+*Why there and not at compile time.* Because Typst only hands out the SVG on
+export. In the document there is no question that would answer "does this
+content have an outline" -- it is the same blind spot for which this package
+paints rectangles in a signal colour and has the browser report back where
+things are. Only in the browser is the path there to be counted. The package's
+own check run reads this message along, so that it cannot one day stop coming.
+
+=== All at once, and how to get them one after another
+
+Every stroked path of an element sets off *at the same time*, and there is no
+knob for that. The order in the SVG is Typst's painting order and not one the
+deck chose; declaring it the order of the argument would be the same
+presumption this package explicitly refuses in the magic move, where glyphs are
+not paired by proximity. And `duration` would stop being a number anyone can
+read: seven strokes at 900 ms one after another are 6.3 seconds.
+
+An order is therefore said rather than inherited. Each piece gets its own step:
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#stagger(enter: "draw", stride: 1, axes, curve, tangent)
+```]
+
+=== Where a drawing has to stand
+
+*Not on the first step of its slide.* Entering a slide plays no entrances --
+on a slide change the runtime only restores the state, or the transition and a
+dozen reveals would run against each other. A drawing on step one would
+therefore simply be there. It needs a step in front of it:
+
+// check: folie pre=zeichnung
+#show-code[```typ
+#anim[First the sentence that announces the drawing.]
+#anim(circuit, enter: "draw", duration: 900)
+```]
+
+That holds for every effect. With `draw` it merely stands out, because there
+the whole point is in the travel.
+
+=== Who delivers outlines
+
+Measured in the emitted SVG, one element with `enter: "draw"` each:
+
+#table(
+  columns: (1fr, auto, auto, auto),
+  stroke: 0.5pt + luma(180),
+  align: (left, right, right, right),
+  table.header([*Drawn with*], [*Paths*], [*stroked*], [*Glyphs*]),
+  [cetz 0.5.2 -- three lines, a circle, a label], [11], [4], [7],
+  [cetz-plot 0.1.4 -- one function with school-book axes], [59], [25], [53],
+  [lilaq 0.6.0 -- two data series], [70], [64], [6],
+  [fletcher 0.5.8 -- three nodes, two edges], [12], [6], [3],
+  [circuiteria 0.2.1 -- two blocks, one wire], [7], [3], [2],
+  [Typst's own `table` with `stroke`], [13], [7], [6],
+  [`line`, `rect(stroke: …)`, `circle(stroke: …)`], [3], [3], [0],
+  [text only], [14], [0], [18],
+)
+
+The rule behind it is simple: *whatever gets a `stroke` in Typst becomes a path
+with an outline and can be traced; whatever gets a `fill` does not.* A drawing
+package therefore delivers exactly as much as it strokes. The 14 paths of the
+last row are not ink -- they are the measuring rectangles and clip paths that
+the package and Typst put into every output; none of them carries an outline.
+
+Two numbers deserve a second look. With `lilaq`, 64 of the 70 paths are stroked
+-- grid, ticks, frame and markers are among them -- and all 64 set off at once.
+That does not look like a drawing coming into being but like a diagram wiping
+in evenly. With `cetz` there are four, and that is the case `draw` was made
+for: a few long lines an eye can follow. For a diagram, the drawing that grows
+in stages from the previous section is the better tool.
+
+*Dashed lines stay with the fade.* A dash pattern lives in the very attribute
+the pen needs; overwriting it would erase the dashes for the duration of the
+drawing, and a dashed guide line would come in solid. So it fades in while its
+solid neighbours draw themselves.
+
+=== In both directions, and what holds at the edges
+
+#table(
+  columns: (auto, 1fr),
+  inset: 6pt,
+  stroke: (x, y) => if y == 0 { (bottom: 0.6pt) } else { (bottom: 0.3pt + luma(80%)) },
+  table.header([Where], [What happens]),
+  [Paging back],
+  [The pen traces its way out. `enter` applies in both directions as it does
+   for every effect: what drew itself undraws itself.],
+  [Jumping to a step],
+  [No drawing. A jump -- through the address, through the overview, on a reload
+   -- restores the end state, and that is the finished drawing.],
+  [`exit: "draw"`],
+  [Allowed and symmetric: an element leaving its range takes its strokes back
+   instead of fading away.],
+  [Speaker view],
+  [The preview of the next step shows the resting state, that is the finished
+   drawing. There is no motion there.],
+  [Paper],
+  [Nothing. `enter` never reaches the PDF, the drawing simply stands there.
+   Measured on this package's eight examples: the same bytes as without
+   `draw`.],
+  [Reduce motion],
+  [The pen holds still, the fade remains. See just below.],
+)
+
+=== Under "reduce motion"
+
+This package's rule is: *opacity stays, travel goes.* For `draw` that is not an
+exception but the rule in its purest form -- the drawing *is* the travel. Take
+it out and what remains is exactly the fade that was running underneath it
+anyway, and the drawing appears like any other element, over the same duration.
+
+Nothing is lost that carried the argument: a drawing coming into being says the
+same as one that is already there, only more slowly. Where that is once not
+true -- where the order of the strokes itself explains something -- it belongs
+in words as well, and those are read by the people who never see it run.
+
+The message about an element without an outline still comes. It is about the
+deck and not about the machine it happens to be running on; whoever has the
+setting turned on should get the same answer as everyone else.
+
+=== Together with a drawing that grows in stages
+
+Both at once does not work, and the package says so at compile time instead of
+trying:
+
+// check: folie pre=zeichnung bricht=is_at_odds_with_what_this_function_does
+#show-code[```typ
+#build(painter, enter: "draw")   // an error at compile time
+```]
+
+Every stage of a drawing from the previous section is the *whole* drawing. A
+stage that drew itself would therefore retrace every stroke on every step,
+including the ones that had long been standing. And it would do so on top of
+the stage stepping down, which deliberately stays until the new one has fully
+arrived -- the pen would travel over ink that is already down, and nothing
+would be seen. The opposite of what `draw` promises.
+
+To have a drawing really come into being stroke by stroke, hand the strokes
+over as pieces of their own and let each draw itself; to have a diagram grow in
+stages, leave it with its fade.
+== A drawing that moves
+
+`build` lets a drawing grow: piece by piece something is added. `scene` is the
+other half of the same idea. Here nothing is added -- here a *value* changes,
+and the picture hangs on it.
+
+The rule in one sentence: *the deck writes a function from a value to a picture
+and says at which values the talk stops. Typst renders every stop and the
+frames in between. A step pulls the picture from one stop to the next.*
+
+// check: folie pre=szene
+#show-example(
+  rendered: {
+    import "../src/lib.typ": *
+    scene(x => box(width: 260pt, height: 64pt, {
+      place(bottom + left, line(length: 100%))
+      place(bottom + left, dx: 50%, line(angle: -90deg, length: 100%))
+      place(horizon + left, dx: 50% + x * 8%,
+            circle(radius: 7pt, fill: accent))
+    }), stops: (-3, 0, 1.5, 3), tween: 8, width: 260pt, height: 64pt)
+  },
+  source: ```typ
+  #scene(
+    x => drawing-at(x),
+    stops: (-3, 0, 1.5, 3),   // four stops, three steps
+    tween: 8,                 // frames between two stops
+  )
+  ```,
+  width: 13cm,
+)
+
+`stops` are the values themselves, not `0.0` to `1.0`. That is exactly the
+difference to the flip book: there `t` is a fraction of a running time, here
+`x` is the quantity being talked about. Whoever wants the tangent at $-3$, at
+the vertex and at $1.5$ writes those three numbers down.
+
+The scene takes `stops.len() - 1` steps. The first stop is there as soon as the
+scene appears -- like a `morph` and unlike an `anim` -- and every further one
+costs a keypress.
+
+=== What belongs to a stop
+
+A sentence beside it, a formula, a second drawing: `scene-layer` puts itself on
+the step of one particular stop. So that it can find the scene again, the scene
+gets a name.
+
+// check: folie pre=szene
+#show-code[```typ
+#scene("derivative", x => tangent-at(f, x), stops: (-3, 0, 1.5, 3))
+
+#scene-layer("derivative", 2)[At the vertex the slope is zero.]
+#scene-layer("derivative", 4, enter: "scale")[$f'(x) = 1/2 x$]
+```]
+
+This is word for word `cue-layer`, and for the same reason: the coupling
+falls out of the shared step. Move a stop and everything hanging on it moves
+along, and nowhere does a number stand twice. The scene has to stand *before*
+its layers in the source; standing after them, the package says so.
+
+=== Several values at once
+
+A stop may be a tuple, and then the drawing function takes that many arguments:
+
+// check: folie pre=szene
+#show-code[```typ
+#scene(
+  (a, b) => box-of(width: a, height: b),
+  stops: ((1, 1), (1, 3), (2, 3)),
+  tween: 6,
+)
+```]
+
+First the height grows, then the width. What does not work: two values moving
+*independently*. Everything travels from stop to stop together. In manim, where
+this idea comes from, two `ValueTracker`s could go separate ways; here there is
+one way, and a tuple puts several values on it.
+
+=== The arguments
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Argument*], [*Effect*]),
+  [`stops`],
+  [The values at which the talk stops. At least two. A number, a length, an
+   angle, a ratio -- or a tuple of them.],
+  [`tween`],
+  [Frames *between* two stops (default 8). With `0` the scene jumps.],
+  [`start`], [first step; `auto` takes the running one],
+  [`width`, `height`],
+  [The box the scene stands in (default `100%` and `190pt`).],
+  [`duration`], [how long one pull from stop to stop takes, in milliseconds],
+  [`enter`], [motion the scene itself arrives with (default `"fade"`)],
+  [`still`], [what stands on paper, if not the last stop],
+)
+
+`duration` is the duration of the *journey*, not of the fade the scene arrives
+with -- the same separation `morph` draws with its `duration`. Putting both
+under one name pulls the same motion visibly apart.
+
+Unlike `build`, `scene` does not measure its frames. The stages of an `build`
+drawing lie exactly on top of one another, because a piece not yet due stands
+there as air; the frames of a scene are drawings of different values and may
+legitimately come out different sizes. So a scene stands in a box of a fixed
+size and every frame is clipped to it.
+
+#warning[
+  *The box stands still, the ink inside it does not do so by itself.* A CeTZ
+  canvas grows with its content. If the tangent at $x = -3$ reaches further
+  left than the one at $x = 3$, the canvas is wider there, and the axis cross
+  sits at a different place in the box -- so paging moves the whole picture
+  although only one point was meant to move. Measured on the scene of this
+  section: 28 frames, *15 different placements* of the ink in the box.
+
+  The package cannot take this off your hands. `build` can, because it
+  measures its stages and a piece not yet due keeps its room; here there is no
+  shared piece whose room could be kept, and `scene` knows nothing of the
+  drawing's coordinate system.
+
+  The way out lies in the drawing: give it a fixed extent and keep what moves
+  inside it. In CeTZ that is a `rect` with a transparent stroke -- the same air
+  `ab` works with:
+
+  // check: folie pre=cetz
+  ```typ
+  #scene(x => cetz.canvas({
+    import cetz.draw: *
+    // Holds the canvas open, wherever the point stands.
+    rect((-4.4, -0.8), (4.4, 4.6), stroke: rgb(0, 0, 0, 0))
+    line((-4, 0), (4, 0))
+    circle((x, 0.25 * x * x), radius: 0.1)
+  }), stops: (-3, 0, 3), height: 160pt)
+  ```
+
+  That pins the width. Whatever still reaches beyond it -- a tangent running
+  off the edge, say -- has to be cut off, or it pulls the canvas open again:
+  the same scene with a frame and a cut-off tangent came to 7 placements
+  instead of 15.
+]
+
+On paper the last stop is set, as with `alternatives` -- a page shows every
+step at once, and that is the state in which the scene leaves the slide.
+`still` puts something else in its place. The step cursor still runs there, so
+`info().step.total` names the same number in both outputs.
+
+Under "reduce motion" the frames in between fall away and the scene jumps from
+stop to stop. That is the package's rule everywhere else too: what stays is the
+destination, what goes is the travel.
+
+=== What a scene costs
+
+Every frame really is a Typst layout and sits in the file as an SVG tree of its
+own. The raw number alone gives a false picture of that, so both stand here.
+
+Measured on a CeTZ drawing that would really carry a slide: axes with ticks, a
+parabola from 61 sample points, a tangent, a dashed slope triangle, two labels.
+Typst 0.15.1, cetz 0.4.2.
+
+#table(
+  columns: (auto, auto, auto, auto),
+  align: (left, right, right, right),
+  stroke: 0.5pt + luma(180),
+  table.header([*Frames*], [*Compile*], [*HTML raw*], [*HTML gzip*]),
+  [2], [0.35 s], [238,559 B], [70,275 B],
+  [6], [0.26 s], [302,054 B], [71,591 B],
+  [12], [0.30 s], [397,320 B], [73,427 B],
+  [24], [0.39 s], [587,817 B], [76,949 B],
+  [48], [0.58 s], [968,815 B], [84,032 B],
+  [96], [0.98 s], [1,730,833 B], [97,175 B],
+)
+
+Per additional frame: *15.9 kB raw, 286 B gzipped, 8.1 ms of compilation.* The
+time is read off the slope between 12 and 96 frames; the first rows of the
+table carry the compiler's start-up and say little on their own.
+
+Over the wire that is about a fiftieth of what the raw number leads one to
+fear. The SVG trees of a scene are so alike that gzip takes 98 percent of them
+away. A scene of four stops and eight frames per stretch -- 28 frames in all --
+costs, against the same drawing written down once: 436 kB raw, *9 kB gzipped*,
+0.21 s of compilation. On paper it costs nothing: a single still image stands
+there.
+
+#warning[
+  The gzipped number is the honest one, but it only holds as long as the web
+  server does gzip. Whoever hands the file on by USB stick or as an attachment
+  carries the raw one. And the compilation time is always the full one: eight
+  frames per stretch are eight layouts, whether they compress away later or
+  not.
+]
+
+#info[
+  Where the idea comes from: `scene` is manim's `ValueTracker` together with
+  `always_redraw`, translated into the step model of a talk -- and the
+  translation turns it around. There a number changes while the film runs, and
+  everything depending on it is redrawn per frame. Here Typst draws at compile
+  time, and a number can only change at a step. So the frames are set
+  beforehand and the keypress travels over them.
+
+  What is gained: the picture is a Typst drawing, with everything Typst can do,
+  equations included, and it stays sharp at any size. What is lost: the frames
+  in between are counted and sit in the file, and several values cannot move
+  independently.
+]
+
 == Three stumbling blocks
 
 *Only reveals count.* The cursor counts `anim`, `stagger`, `alternatives` and
@@ -636,8 +1244,8 @@ when a step arrives:
 ```]
 
 The package never reads what is in the job. What it means is known only to the
-document on the other side. That is exactly how `typstage-geogebra` drives its
-applets.
+document on the other side. That is exactly how the `ggb-` commands drive their
+applets — see the chapter *GeoGebra*.
 
 #warning[
   Three things about the bridge, and each of them has cost somebody an hour.
@@ -694,11 +1302,489 @@ turning, a diagram assembling itself.
 paper. If the viewer has turned on "reduce motion" in their operating system,
 it never starts playing at all; see "Less motion".
 
+The clock starts when the flip book becomes visible, not when its slide comes
+up. A `flipbook(at: "3-", loop: false)` lies still on frame 0 for the first two
+steps and starts from zero when it is revealed; page back and reveal it again,
+and it plays again from the beginning.
+
 #warning[
   Every frame is really typeset. Twenty-four frames are twenty-four layouts and
   twenty-four SVG trees in the file. That is the most expensive element in this
   package, in compile time and in file size alike, and it is worth reaching for
   only where the motion carries the argument.
+]
+
+= GeoGebra
+
+The aim of this chapter: a construction that follows the steps of the slide.
+GeoGebra builds the construction, the slides supply the dramaturgy. Jobs can
+sit on every step. Set values, show or hide objects, change colours, move the
+viewport, start a motion.
+
+This was a package of its own once, `typstage-geogebra`, and the plan of that
+day has stayed: everything here rests on the same two public parts any foreign
+companion package uses — `embed(bridge: …)` registers a frame as a target, and
+`bridge-job` sends it something on a step. What is in the jobs is never read.
+A deck without an applet pays nothing for this: the boot script and the applet
+document come into being only where `geogebra()` is called, and a deck without
+that call is the same size, to the byte, as before.
+
+#warning[
+  A typeset applet loads from `geogebra.org` at run time and therefore stands
+  under GeoGebra's terms — see "Whose applet this is" at the end of this
+  chapter.
+]
+
+== Quick start
+
+An applet stands on the slide with `geogebra()`, and the commands stand in the
+same slide body, because that is where they are collected. They produce no
+output themselves.
+
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+
+#presentation(
+  slide([Remote controlled], {
+    geogebra(app: "classic", perspective: "G", height: 240pt,
+             link: "https://www.geogebra.org/calculator")
+    ggb-run("a=1", "f(x)=a*x^2")
+    ggb-set((a: 3), at: 2)
+  }),
+)
+```]
+
+The parabola is there from the beginning; on step 2 `a` is set to 3 and it
+draws itself together.
+
+`at` is a step selector on every command, as it is on `anim`: `2` means "from
+step two on", and `"1-2"`, `"2,4"` and `"-2"` mean what they say. The default
+is `"1-"`, since most jobs set the construction up as the slide is entered. The
+applet frame itself uses no step and pushes nothing along: the bullets beside it
+belong on step one, not behind its jobs.
+
+#info[
+  The applet lives in the HTML export only. In the PDF, what stands in its
+  place is described in the chapter _On paper_.
+]
+
+== Which applet is meant
+
+In the quick start no command carries a name. With one applet on the slide
+there is nothing to choose between, and the commands find it by themselves,
+whether they stand above or below it in the source.
+
+Two applets on one slide need names, and then the commands need `target`. The
+name may be a string or a label, and Typst colours it as what it is:
+
+#show-code[```typ
+#geogebra(<left>, height: 200pt)
+#geogebra(<right>, height: 200pt)
+#ggb-run("A=(0,0)", target: <left>)
+#ggb-run("B=(1,1)", target: "right")
+```]
+
+Where the argument is missing and there is more than one applet, nothing is
+guessed. The build stops and names what it found:
+
+#show-code[```
+error: panicked with: typstage: 2 applets on this slide
+(left, right) — say which one is meant, e.g. target: "left".
+```]
+
+The same holds where the slide carries no applet at all. A command dropped in
+silence is far harder to notice than a failed build.
+
+== Building the construction
+
+`ggb-run` takes any number of GeoGebra commands and hands them to `evalCommand`
+one at a time. The order counts: whatever is needed has to exist first.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-run(at: "1-",
+         "k: x^2+y^2=4", "t=Slider(0,6.283,0.01)",
+         "P=(2cos(t),2sin(t))", "s=Segment((0,0),P)")
+```]
+
+#warning[
+  GeoGebra's scripting commands, `SetColor`, `SetValue`, `SetVisibleInView` and
+  their relatives, are *not* accepted by `evalCommand`; inside `ggb-run` they
+  would come to nothing. That is what `ggb-set`, `ggb-style`, `ggb-show` and
+  `ggb-hide` are for: they reach for the JavaScript interface, which can do it.
+]
+
+What GeoGebra refuses does not vanish quietly: the applet reports the rejected
+commands back, and the runtime writes them into the browser's console.
+
+On entering a slide and on paging back, the run is repeated from its beginning,
+and the applet returns to its initial state for that. Commands should therefore
+be repeatable. For the same reason it is worth fixing the colour on `"1-"`
+straight away: on a rebuild GeoGebra would otherwise hand out the next colour
+of its palette, and the slide would look different after paging back.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-run("a=1", "f(x)=a*x^2", at: "1-")
+#ggb-style("f", at: "1-", color: dark, thickness: 3)
+```]
+
+#info[
+  A `.ggb` file cannot be embedded: Typst has no base64 encoding, and without
+  it the file's content never reaches the HTML. The construction is therefore
+  built with `ggb-run`, or it is loaded from GeoGebra through `material`:
+  `geogebra(material: "abc123xy")`.
+]
+
+== Values, appearance, viewport
+
+`ggb-set` takes a dictionary of object name and value, `ggb-show` and `ggb-hide`
+any number of object names. The usual way is to build everything up at the
+start and only make it visible when its turn comes:
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-hide("P", "s", "t", at: "1-")
+#ggb-show("P", "s", at: 2)
+#ggb-set((a: 3), at: 2)
+#ggb-set((a: -2, b: 0.5), at: 3)
+```]
+
+=== Appearance
+
+`ggb-style` takes the object names and, with them, what should change. Every
+setting is available on its own; what is not named stays as it is.
+
+#table(
+  columns: (auto, 1fr),
+  align: (left, left),
+  stroke: 0.4pt + luma(75%),
+  table.header([*Setting*], [*Effect*]),
+  [`color`], [colour, as a Typst colour and not a GeoGebra one],
+  [`thickness`], [line weight],
+  [`line-style`], [line style as a number (solid, dashed, dotted …)],
+  [`filling`], [fill, 0 to 1],
+  [`point-size`], [point size],
+  [`trace`], [trace on or off],
+  [`label`], [label visible or not],
+  [`label-mode`], [kind of label as a number (name, value, caption …)],
+  [`fixed`], [held against being moved],
+  [`caption`], [a caption of your own],
+  [`layer`], [layer, that is, what lies in front of what],
+  [`position`], [place as `(x, y)`],
+)
+
+That `color` takes a Typst colour is the point of it: the construction carries
+the colours of the slides instead of GeoGebra's palette.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-style("P", at: 2, color: accent, point-size: 6)
+#ggb-style("s", at: 2, color: dark, thickness: 3)
+#ggb-style("d", at: 3, color: accent, filling: 0.18, thickness: 4)
+```]
+
+#warning[
+  `position` counts in the coordinates of the plane for most objects, but in
+  pixels of the applet for a slider made with the `Slider` command, because
+  such a slider sits at an absolute place on the screen. Measured: written as
+  `(-3.9, 2.2)` two sliders both landed in the same corner on top of one
+  another.
+]
+
+=== Viewport
+
+`ggb-view` sets the visible range as well as the grid and the axes. `x` and `y`
+only take effect together, both being pairs of smallest and largest value.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-view(at: 2, x: (-3, 3), y: (-3, 3), grid: false)
+#ggb-view(at: 3, axes: false)
+```]
+
+#warning[
+  `ggb-view` sets the x range and the y range separately, so a range that does
+  not match the shape of the box stretches one axis. A circle becomes an
+  ellipse and a right angle stops looking like one. Where the geometry carries
+  the argument, give the box a fixed size and match the ranges to it: 424 by
+  262 is 1.618 to one, and so is 8.4 by 5.2.
+]
+
+The applet takes the size of the box it stands in and keeps it across step
+changes and window sizes. How much of the plane is on screen therefore follows
+from `width` and `height` on the `geogebra` line: a wide box shows more x
+range. Where a particular range matters, say it with `ggb-view` rather than
+letting the box width decide it.
+
+== Motion
+
+There are two ways to set something moving, and they do different things.
+
+`ggb-animate` starts GeoGebra's own animation. It runs back and forth without
+end until the slide is left, which is right for a point going round a circle or
+a slider demonstrating a relationship. `trace` switches on the trace of the
+named objects, `speed` sets the pace, `playing: false` stops it.
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-animate("t", at: 3, speed: 1.2, trace: ("P",))
+```]
+
+`ggb-tween` goes once from A to B and stays there. The browser counts the value
+up frame by frame; an object that depends on it grows with it, a segment whose
+endpoint travels, an arc whose angle follows. That is how a construction draws
+itself. `from` gives the starting value where it should not be the one
+currently in force, `duration` the time in milliseconds, `easing` the shape of
+it (`"ease-in-out"` or `"linear"`).
+
+// check: folie drin=applet
+#show-code[```typ
+#ggb-run("t_1=0", "s=Segment(A,(4*t_1,0))", at: "1-")
+#ggb-tween("t_1", at: 2, to: 1, duration: 700)
+```]
+
+#warning[
+  `ggb-tween` needs a step number, not a range: `at: 2`, not `at: "2-"`.
+  Otherwise the build stops with "`ggb-tween() needs a step number`".
+
+  And a tween on step 1 would never arrive as a motion. On entering a slide the
+  runtime replays the run up to the current step at once, and tweens are set to
+  their target value rather than played. Step 1 is for building up; drawing
+  starts at step 2.
+]
+
+From the step after the tween the value sits on its target anyway. Whoever
+pages back therefore sees the finished drawing and not the motion a second
+time.
+
+== On paper
+
+In the PDF there is no applet. Without further arguments a labelled placeholder
+stays in the size of the frame; `link` puts the way to the live applet beneath
+it, clickable in the PDF.
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": geogebra
+    geogebra(height: 90pt, link: "https://www.geogebra.org/calculator")
+  },
+  source: ```typ
+  #geogebra(height: 90pt, link: "https://www.geogebra.org/calculator")
+  ```,
+  width: 12cm,
+)
+
+Better is a drawing of your own in its place. `fallback` takes any content, an
+image, a table, and above all a drawing with CeTZ:
+
+// check: folie pre=cetz
+#show-example(
+  rendered: {
+    import "../src/lib.typ": geogebra
+    import "../src/lib.typ": dark
+    import "@preview/cetz:0.5.2"
+    geogebra(height: 120pt, link: "https://www.geogebra.org/calculator",
+      fallback: cetz.canvas(length: 0.8cm, {
+        import cetz.draw: *
+        line((-2.6, 0), (2.6, 0), stroke: luma(70%))
+        line((0, -0.4), (0, 2.6), stroke: luma(70%))
+        line(..range(0, 45).map(i => (-2.2 + i * 0.1, 0.5 * calc.pow(-2.2 + i * 0.1, 2))),
+             stroke: dark + 1.6pt)
+      }))
+  },
+  source: ```typ
+  #geogebra(height: 120pt, link: "https://www.geogebra.org/calculator",
+    fallback: cetz.canvas(length: 0.8cm, {
+      import cetz.draw: *
+      line((-2.6, 0), (2.6, 0), stroke: luma(70%))
+      line((0, -0.4), (0, 2.6), stroke: luma(70%))
+      line(..range(0, 45).map(i => (-2.2 + i * 0.1, 0.5 * calc.pow(-2.2 + i * 0.1, 2))),
+           stroke: dark + 1.6pt)
+    }))
+  ```,
+  width: 12cm,
+)
+
+#tip[
+  Paper can show a sequence where a screen can only show one moment. Where the
+  applet runs through several states, the better stand-in is often the whole
+  run as a small table or a row of pictures, rather than a photograph of one
+  step of it.
+]
+
+Both settings take effect in the PDF only; in the browser the applet itself
+stands there.
+
+== How the applet looks
+
+The default is `seamless: true`: the applet carries no frame of its own, and
+its drawing area takes the colour of the slide. It then no longer looks like a
+window inside a window but like part of the slide. `background` sets that
+colour; `auto` takes the presentation's paper white, which is worth changing on
+a tinted slide.
+
+#show-code[```typ
+#geogebra(height: 240pt, background: rgb("#f4f1ea"))
+#geogebra(height: 240pt, seamless: false)   // with GeoGebra's own frame
+```]
+
+#tip[
+  `background: auto` takes the package's paper white and not the theme's. On a
+  theme whose paper is pure white, an applet left to `auto` therefore sits as a
+  faintly grey box. `background: themes.lesson.paper` is the way to say it.
+]
+
+#warning[
+  The viewport cannot be dragged by hand, and that is the default. Whoever
+  reaches beside the point during a talk would otherwise push the whole plane
+  away and the construction would be gone. Reported from use, not invented.
+  `pan: true` gives dragging and zooming back where they belong to the matter;
+  points and sliders can be dragged either way.
+]
+
+`font-size` is the applet's type, counted in points of the slide, the way
+`width` and `height` are. It therefore grows with the slide instead of staying
+at its physical size on a projector.
+
+The default is 20 rather than GeoGebra's 16. Measured on rendered pictures, the
+axis numbers are then 0.71 as tall as the slide's body text; at 16 they are
+0.62. The first reads as a subordinate label, the second as an afterthought.
+
+#warning[
+  GeoGebra snaps the size to steps. Measured, it jumps between 20 and 21: the
+  axis numbers go from 0.71 to 1.12 of the body text and are then as large as
+  it is. Setting a value in between therefore need not give you a step in
+  between.
+]
+
+#show-code[```typ
+#geogebra(height: 240pt, font-size: 22)      // larger axis numbers
+#geogebra(height: 240pt, pan: true)          // viewport by hand
+```]
+
+`grid` and `axes` leave GeoGebra's own default alone as long as they are
+`auto`, and force one or the other otherwise. `perspective: "G"` shows the
+graphics view alone, `app` chooses the GeoGebra app (the default is
+`"classic"`), `language` the language of the interface, and `animation-button`
+shows GeoGebra's play button.
+
+#info[
+  The applet is loaded from `codebase`, from `geogebra.org` as it ships.
+  Without a network the frame stays empty; whoever presents offline puts
+  GeoGebra's files beside the deck and points `codebase` at them.
+]
+
+=== Size
+
+`width` and `height` give the size in the measurements of the slide, not in
+screen pixels.
+
+For most embeds the runtime spans the frame in points of the slide and then
+enlarges it with `zoom`. An applet is exempt and gets real screen pixels
+instead. The reason is measured: Safari counts that zoom twice for GeoGebra, a
+canvas buffer of 1400 points at a width of 253, which is zoom times zoom times
+pixel density. The applet drew too small, and correcting its size instead
+moved the place where it could be hit: it then drew correctly but believed
+itself 704 points wide while being shown 424 wide, and a point could only be
+grabbed by clicking far to the right of it.
+
+That every window still shows the same crop therefore does not hang on the
+pixel count but on the range. The applet sets that from the box in slide
+points the first time, at GeoGebra's 50 points per unit; after that `ggb-view`
+decides, and a change of size leaves the range where it is.
+
+The applet takes its pixel size from the frame, not from a number written at
+compile time. `width: 100%` cannot be a number before the slide has been laid
+out, and an applet that guessed one drew a third of the box it sat in.
+
+#tip[
+  Two applets side by side sit best in a `grid`, each with `width: 100%` and a
+  height of its own.
+]
+
+== From the speaker view
+
+The speaker window of `typstage` runs a copy of every applet of its own. `m`
+switches its pointer from the pen to the embedded frame, and from then on the
+applet in front of you is the live one: drag a point, push a slider, pan the
+view, and the copy on the canvas follows.
+
+What crosses is what a hand can move: a point as its coordinates, a slider as
+its value. Whatever follows from those is left alone, because the other copy
+works it out for itself. Creating, deleting or renaming sends the whole
+construction instead, and panning and zooming travel too.
+
+#tip[
+  Measured: a point on a half circle reported four states per frame while being
+  dragged, the point, both segments and the angle. The three dependent ones are
+  not merely redundant. Their XML redefines them on the other side, and that
+  wipes away the trace the dragged point had just left behind.
+]
+
+Only what a hand has touched is reported. An animation that runs on both sides
+anyway therefore sends nothing.
+
+#warning[
+  A step change resets both copies from the base as before and replays the jobs
+  of the slide. A change made by hand lives as long as the step does. Where a
+  position is meant to stay, it belongs in the deck with `ggb-set`.
+]
+
+=== The keyboard
+
+Click the applet and it holds the focus, and from then on every key lands
+inside it. What the core does about that stands under "A frame that has the
+focus" — in short: the keys the talk uses are handed back out of the frame,
+everything else stays with the applet. Measured, this applet has no use for the
+keyboard anyway: without a toolbar and without an algebra input, no key changes
+anything in the construction.
+
+#info[
+  Should that ever change, with a toolbar shown for instance, a change made
+  with the keyboard travels along: the window in which mirroring is awake opens
+  on a key as it does on a press.
+]
+
+#tip[
+  Whatever is not meant to move belongs pinned down. `ggb-style("A", "B",
+  fixed: true)` nails the points that merely span a construction. Otherwise a
+  hand in the talk easily takes the wrong one: with Thales, the diameter
+  instead of the point on the half circle, and the whole arc travels with it.
+  Measured on the example deck: with `fixed`, neither a pull at A nor one at
+  the arc moves anything, and C goes on running along its path.
+]
+
+When building for this, one distinction pays. `Point(k)` is a point on the path
+that a hand can take; `Point(k, 0.3)` is pinned to that parameter and cannot be
+dragged at all, and `isMoveable` answers false for it. Where it should start is
+said with `position:`.
+
+`examples/geogebra-sprecher.typ` is a deck built around exactly this: Thales with a point
+that walks along the half circle and leaves its trace, and a parabola with two
+sliders.
+
+== Whose applet this is
+
+This package does not ship GeoGebra. It puts a frame on the slide, and what
+runs inside it the browser fetches when it shows the page, from `codebase`,
+`https://www.geogebra.org/apps/` by default.
+
+Three things follow, and they are worth knowing before the talk:
+
++ *Without a network the frame stays empty.* Whoever presents offline puts
+  GeoGebra's files beside the deck and points `codebase` at them.
++ *The applet stands under GeoGebra's terms*, not under this package's MIT
+  licence. That one covers the Typst and runtime code here; GeoGebra carries
+  its own licence and terms of use, and for commercial use they are the ones
+  to read.
++ *The viewer's browser talks to `geogebra.org`.* Where that is unwanted — a
+  class without a network, a talk behind a firewall, a data protection
+  requirement — `codebase` is the place to send it elsewhere.
+
+#info[
+  On paper none of this is left: the PDF fetches nothing and shows what "On
+  paper" describes.
 ]
 
 = Developing a calculation
@@ -938,9 +2024,8 @@ instead: the same spot, the same gesture, at whatever size that window happens
 to have. Press, drag and release travel as fractions of the stage, so a small
 laptop window and a large canvas hit the same point of the document.
 
-Where the embedded document can mirror itself, as a GeoGebra applet does
-through `typstage-geogebra`, the live one in front of you is operated instead
-and the projected copy follows.
+Where the embedded document can mirror itself, as a GeoGebra applet does, the
+live one in front of you is operated instead and the projected copy follows.
 
 #warning[
   It reaches listeners, not the browser's own widgets. Measured in one frame: a
@@ -994,6 +2079,10 @@ new", which is what an entrance is for, but nothing crosses the slide any more.
    `fade-left`, `fade-right`, `scale`, `scale-down`, `rise` and `blur` become a
    plain cross-fade. `fade` and `none` are left as they are. `duration` and
    `delay` do not change.],
+  [`enter: "draw"`],
+  [The pen holds still, the fade remains. The drawing *is* the travel, and what
+   is left when it is taken out is exactly the cross-fade that ran underneath
+   it anyway.],
   [Slide transitions],
   [Every kind but `none` becomes the cross-fade, over the same
    `transition-duration`. `none` stays the hard cut.],
@@ -1006,6 +2095,10 @@ new", which is what an entrance is for, but nothing crosses the slide any more.
    away. With `loop` or `pingpong` it is frame zero. `still` does not apply:
    the frame for paper is typeset content and is not in the HTML at all, which
    carries only the frames themselves.],
+  [`scene`],
+  [Jumps from stop to stop. The frames in between still sit in the file, but
+   none of them is shown. What falls away is exactly the travel; the stops
+   themselves are not travel, they are the content.],
   [`after: "dimmed"`],
   [Stays. A point stepping back changes its opacity and does not move.],
   [The progress bar in the speaker view],
@@ -1483,8 +2576,9 @@ scaling: a `card` around a bare `block(height: 1fr)` behaves the same. Give
   slide.
 
   `fit` therefore stops with a message that names the thing, for `pause`,
-  `anim`, `stagger`, `alternatives`, `morph`, `tiles`, `video`, `embed` and
-  `flipbook` -- in both outputs, and also when the fit sits inside another fit.
+  `anim`, `stagger`, `alternatives`, `morph`, `tiles`, `video`, `embed`,
+  `flipbook`, `build` and `scene` -- in both outputs, and also when the fit
+  sits inside another fit.
   The way round it is to put the fit *inside* the reveal rather than around it:
 
   // check: folie pre=tabelle fehlt=2 weil=cannot_stand_inside_fit
@@ -2226,6 +3320,24 @@ The traps, in roughly the order they are usually hit.
   `presentation` reaches both.
 / An embedded frame stays empty and gets no jobs: the document has not
   announced itself with `postMessage({typstage: 1, ready: 1})`.
+/ An applet frame stays empty: the applet is loaded from `geogebra.org`, so
+  without a network there is nothing to load. Point `codebase` at a local copy.
+/ A `ggb-run` command has no effect: it is one of GeoGebra's scripting
+  commands, which `evalCommand` does not accept. `ggb-set`, `ggb-style`,
+  `ggb-show` and `ggb-hide` reach the interface that can do it.
+/ The build stops naming two applets: two frames on one slide and no `target`.
+  Nothing is guessed here on purpose.
+/ The applet's colours change after paging back: GeoGebra hands out the next
+  colour of its palette on a rebuild. Fix the colour on `"1-"`.
+/ A circle in the applet is an ellipse: the x range and the y range of
+  `ggb-view` do not match the shape of the box.
+/ A tween does not play: it sits on step 1, where the runtime sets tweens to
+  their target instead of playing them, or it was given a range instead of a
+  step number.
+/ Two sliders lie on top of one another: `position` counts in pixels for a
+  slider made with `Slider`, not in coordinates.
+/ A point cannot be dragged in the speaker view: it was made with
+  `Point(k, 0.3)` and is pinned to that parameter.
 / An embedded frame is tiny on the projector and right on the laptop: its
   content is sized in pixels instead of `em`. Inside a zoomed frame one CSS
   pixel is one point of the slide.
@@ -2255,9 +3367,10 @@ then media and the bridge, and last the measurements and colours.
 == Revealing, moving, staggering
 
 // `anim-kern` is the checked inside of `anim`. `stagger` uses it from
-// within, and `lib.typ` does not hand it out.
+// within, and `lib.typ` does not hand it out. The same
+// holds for the two helpers of `scene`.
 #show-module(read("../src/elements.typ"), name: "typstage",
-             exclude: ("anim-kern",))
+             exclude: ("anim-kern", "szene-messbar", "szene-zwischen"))
 
 == Layouts
 
@@ -2287,6 +3400,13 @@ then media and the bridge, and last the measurements and colours.
 == The bridge
 
 #show-module(read("../src/bridge.typ"), name: "typstage")
+
+== GeoGebra
+
+// `resolve-target` and `no-stray-target` belong to the internals, and the
+// applet document in `applet.typ` all the more so.
+#show-module(read("../src/geogebra.typ"), name: "typstage",
+             exclude: ("resolve-target", "no-stray-target"))
 
 == Measurements, colours, runtime files
 
