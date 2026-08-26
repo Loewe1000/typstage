@@ -472,44 +472,57 @@
 // überlagern sich Ausblenden und Einblenden für einen Augenblick, und die
 // geteilte Tinte sinkt kurz auf drei Viertel. Das Handbuch sagt es.
 
-/// Eine Zeichnung oder ein Diagramm, das schrittweise entsteht.
+/// A drawing or a diagram that comes into being step by step.
 ///
-/// `zeichnen` wird einmal je Schritt gerufen und bekommt eine Frage gereicht.
-/// Sie heißt hier `ab`, weil sie genau das sagt, was `at:` sonst sagt:
+/// A CeTZ canvas and a lilaq diagram are one piece, not many: Typst hands out
+/// the finished setting, and what was a line and what was a data series in it
+/// cannot be reached from outside any more. So there is no `anim` around a
+/// part of a drawing. What there is, is the drawing itself, as often as one
+/// wants it.
 ///
-/// - `ab(k, wert)` gibt `wert` zurück, sobald das k-te Stück an der Reihe ist,
-///   und sonst dieselbe Sache aus Luft -- eine Farbe mit Alpha 0, einen Strich
-///   mit durchsichtigem Pinsel, einen Text in `hide`.
-/// - `ab(k)` sagt dasselbe als Wahrheitswert, für alles, was sich nicht
-///   umfärben lässt. In cetz gehört dorthin `hide(…, bounds: true)`.
+/// `zeichnen` is called once per step and is handed a question. It is called
+/// `ab` here -- "from" -- because it says exactly what `at:` says elsewhere.
 ///
-/// Was keine Nummer trägt, steht von Anfang an da.
+/// - `ab(k, value)` gives `value` back once the k-th piece is due, and
+///   otherwise the same thing made of air: a colour with alpha 0, a stroke
+///   with a transparent brush, a text in `hide`. The piece is therefore never
+///   really missing, and every stage measures the same to the point.
+/// - `ab(k)` says the same as a boolean, for everything that cannot be
+///   recoloured. In CeTZ that is where `hide(…, bounds: true)` belongs.
+///
+/// Whatever carries no number stands there from the start.
 ///
 /// ```typ
 /// #aufbau(ab => cetz.canvas({
 ///   import cetz.draw: *
-///   line((0,0), (4,0))                        // steht von Anfang an
-///   line((4,0), (4,3), stroke: ab(2, black))  // ab Schritt 2
-///   content((2,3.4), ab(3, [Hypotenuse]))     // ab Schritt 3
+///   line((0,0), (4,0))                        // there from the start
+///   line((4,0), (4,3), stroke: ab(2, black))  // from step 2
+///   content((2,3.4), ab(3, [hypotenuse]))     // from step 3
 /// }), schritte: 3)
 /// ```
 ///
-/// `schritte` ist die Zahl der Stufen und damit die Zahl der Schritte, die die
-/// Zeichnung auf der Folie belegt. Sie wird gesagt und nicht geraten: was
-/// `zeichnen` mit seiner Frage anstellt, sieht von außen niemand.
+/// `schritte` is the number of stages and hence the number of steps the
+/// drawing takes on the slide. It is said and not guessed: what `zeichnen`
+/// does with its question is nobody's business from outside.
 ///
-/// `start` ist `auto`: die Zeichnung fängt auf dem nächsten freien Schritt an
-/// und schiebt den Zähler um `schritte` weiter, so wie `stagger` und
-/// `alternatives` das tun. Eine Zahl setzt den ersten Schritt selbst.
+/// `start` is `auto`: the drawing begins on the next free step and pushes the
+/// cursor along by `schritte`, the way `stagger` and `alternatives` do. A
+/// number sets the first step itself.
 ///
-/// Auf Papier wird nur die letzte Stufe gesetzt, im Block derselben Größe:
-/// eine Seite zeigt alle Schritte auf einmal, und übereinandergelegte Stufen
-/// gäben Doppeldruck. Der Zähler läuft dort trotzdem mit, damit
-/// `info().step.total` in beiden Ausgaben dieselbe Zahl nennt.
+/// Exactly one stage is drawn at a time, and that is not a saving but the only
+/// arrangement that yields the picture that would stand there if the drawing
+/// were set once. Ink adds up: three layers of the same lilaq diagram against
+/// one, and 3.7 percent of the pixels differ by more than 8 of 255, the
+/// largest deviation 99 -- axes, labels and the half-transparent box of the
+/// legend get painted three times and grow fatter by it.
 ///
-/// Unter `prefers-reduced-motion: reduce` ändert sich nichts: die Stufen
-/// blenden, sie wandern nicht, und was hier wegfiele, wäre die Bewegung, die
-/// es nicht gibt.
+/// On paper only the last stage is set, in a block of the same size: a page
+/// shows every step at once, and stacked stages would be overprint. The
+/// cursor still runs there, so that `info().step.total` names the same number
+/// in both outputs.
+///
+/// Under `prefers-reduced-motion: reduce` nothing changes: the stages fade,
+/// they do not travel, and what would fall away is a motion that is not there.
 #let aufbau(zeichnen, schritte: 2, start: auto, enter: "fade", duration: auto) = {
   assert(type(zeichnen) == function, message:
     "typstage: aufbau() nimmt als erstes eine Funktion, die die Zeichnung "

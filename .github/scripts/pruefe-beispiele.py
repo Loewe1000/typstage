@@ -102,6 +102,23 @@ VORSPANN = {
     "#let meine-tabelle = table(columns: 2, [Jahr], [Wert], [2024], [7])\n"
     "#let my-table = meine-tabelle\n"
   ),
+  # Die beiden Zeichenpakete, die `aufbau` im Handbuch vorführt. Der Import
+  # steht hier und nicht im gezeigten Block: im Handbuch wird er einmal im
+  # Fließtext genannt, und ein Import mitten im Beispiel machte aus jedem
+  # Bruchstück eine ganze Datei, die der Prüfer dann anders einwickelte.
+  #
+  # Die Versionen sind dieselben wie im Fließtext. Wer eine davon hier
+  # hochzieht, muss sie dort mitziehen, sonst zeigt das Handbuch eine Zeile,
+  # die niemand geprüft hat.
+  "cetz": '#import "@preview/cetz:0.5.2"\n',
+  "lilaq": (
+    '#import "@preview/lilaq:0.6.0" as lq\n'
+    "#let x = (0, 1, 2, 3, 4)\n"
+    "#let messung = (1, 2, 1.5, 2.5, 2)\n"
+    "#let modell = (0.8, 1.9, 1.7, 2.4, 2.1)\n"
+    "#let measured = messung\n"
+    "#let model = modell\n"
+  ),
 }
 
 # Ein 1x1-Pixel-PNG. `image()` liest die Datei beim Übersetzen, ein leerer
