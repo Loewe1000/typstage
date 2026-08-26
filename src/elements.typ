@@ -1,6 +1,7 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (cue-gruppen, durchsichtig, fit-meldung,
+#import "internal.typ": (cue-gruppen, deck-info, drift-ausweg, drift-modus,
+                        drift-satz, drift-toleranz, durchsichtig, fit-meldung,
                         fit-verbot, html-output, im-deck, im-fit, kurve,
                         name-of, offenes-ende, pin-index, pin-marker,
                         selector, step-cursor, szene-gruppen, track,
@@ -702,6 +703,35 @@
   range(a.len()).map(i => szene-zwischen(a.at(i), b.at(i), u))
 } else { a + (b - a) * u }
 
+/// Die Bilder einer Szene nachmessen, und was dabei auffällt.
+///
+/// Zurück kommt `none`, wenn alle Bilder auf die Toleranz genau gleich groß
+/// sind, und sonst die Zahlen für die Meldung: wie viele Bilder, wie viele
+/// verschiedene Lagen, und wie weit die äußersten auseinanderliegen.
+///
+/// Gemessen wird das *Bild*, nicht der Kasten, in dem es steht -- der ist
+/// überall gleich groß, das ist sein ganzer Sinn. Und ohne Breitenbezug: ein
+/// `measure` mit einem solchen deckelt jedes Bild auf genau diese Breite und
+/// beantwortete die Frage, bevor sie gestellt wäre. Was sich selbst auf `100%`
+/// setzt, misst dann für alle Bilder dieselben 0pt und fällt aus der Prüfung
+/// heraus -- zu Recht, denn so ein Bild hat seinen festen Rahmen schon.
+///
+/// Muss in einem Kontext stehen.
+#let szene-drift(bilder) = {
+  let masse = bilder.map(b => measure(b))
+  let breiten = masse.map(m => m.width)
+  let hoehen = masse.map(m => m.height)
+  let breit = calc.max(..breiten) - calc.min(..breiten)
+  let hoch = calc.max(..hoehen) - calc.min(..hoehen)
+  if breit <= drift-toleranz and hoch <= drift-toleranz { return none }
+  // Wie viele *verschiedene* Lagen -- die Zahl, die beim Blättern zu sehen
+  // ist. Auf den hundertstel Punkt gerundet, damit nicht das letzte Bit einer
+  // Fließkommazahl zwei Lagen daraus macht.
+  let lagen = masse.map(m => (calc.round(m.width.pt(), digits: 2),
+                              calc.round(m.height.pt(), digits: 2))).dedup()
+  (bilder: bilder.len(), lagen: lagen.len(), breit: breit, hoch: hoch)
+}
+
 /// A drawing as a function of a value, with stops for the talk.
 ///
 /// ```typ
@@ -737,9 +767,36 @@
 /// one is a journey, the other a fade.
 ///
 /// The scene stands in a box of a fixed size and every frame is clipped to it.
-/// Unlike `build` the package does not measure the frames: they are drawings
-/// of different values and may legitimately come out different sizes. One
-/// shared frame is the only arrangement in which the drawing does not jump.
+/// The scene stands in a box of a fixed size and every frame is clipped to
+/// it. Unlike `build` the frames are *not* laid out on top of one another:
+/// they are drawings of different values and may legitimately come out
+/// different sizes, so one shared frame is the only arrangement in which the
+/// box itself does not jump.
+///
+/// The frames are measured all the same, and `steady` says what that
+/// measurement is for. A CeTZ canvas is as large as what it holds, so a frame
+/// wider than its neighbour puts the drawing somewhere else inside the box,
+/// and paging through it the whole picture travels while only one point
+/// should move. The package can see that and cannot correct it: `measure`
+/// answers with a size, never with where the ink lies inside it.
+///
+/// - `auto`, the default: the frames are measured and a finding is filed as a
+///   record. `presentation(drift: …)` decides what happens with the records --
+///   `"error"`, the default, stops at the end of the deck with all of them at
+///   once.
+/// - `false`: the frames are meant to differ -- a rectangle that grows, a
+///   number that counts up -- and this scene is taken out of the check. It is
+///   not measured at all.
+/// - `true`: this scene has to stand still, and it stops where it stands if it
+///   does not, whatever the deck says.
+///
+/// Measuring costs one more layout per frame, and a frame is a whole layout.
+/// Measured on a scene of 28 frames -- four stops, eight frames between each
+/// pair, a CeTZ drawing of axes with ticks, a parabola of 61 points, a
+/// tangent, a dashed slope triangle and two labels: 434 ms without the
+/// measuring and 536 ms with it, so about 100 ms for the scene and 3.6 ms per
+/// frame. Only the browser branch pays it. On paper a scene is one still
+/// image, and a still image does not travel.
 ///
 /// On paper the last stop is set, as with `alternatives`; `still` overrides
 /// that. The step cursor still runs there, so `info().step.total` names the
@@ -758,13 +815,14 @@
   duration: auto,
   enter: "fade",
   still: auto,
+  steady: auto,
 ) = {
   // `..parts` would otherwise swallow any named argument without a word: a
   // typo in `tween:` would leave the scene on the default and say nothing.
   assert(parts.named().len() == 0, message:
     "typstage: scene() does not know " + parts.named().keys().join(", ")
-    + ". It takes stops, tween, start, width, height, duration, enter and "
-    + "still.")
+    + ". It takes stops, tween, start, width, height, duration, enter, still "
+    + "and steady.")
   let gegeben = parts.pos()
   assert(gegeben.len() in (1, 2), message:
     "typstage: scene() takes the function that draws the picture, and before "
@@ -785,6 +843,10 @@
   assert(start == auto or (type(start) == int and start >= 1), message:
     "typstage: scene(start: …) counts from 1, not 0. On step 0 the first stop "
     + "would never stand.")
+  assert(steady == auto or type(steady) == bool, message:
+    "typstage: scene(steady: …) is auto (the default), true or false, not "
+    + repr(steady) + ". auto measures the frames and files what it finds, "
+    + "false says they are meant to differ, true insists that they do not.")
   // Jeder Halt einmal angesehen, bevor irgendein Bild entsteht. Sonst bräche
   // die Rechnung `a + (b - a) * u` irgendwo im dreißigsten Zwischenbild, mit
   // einer Meldung, in der weder `scene` noch `stops` vorkäme.
@@ -853,9 +915,38 @@
       block(width: width, height: height,
             if still == auto { male(stops.last()) } else { still })
     } else {
+      // Einmal gemalt, nicht zweimal: das Standbild der Folie ist dasselbe
+      // Bild wie das erste der Reihe, und ein Bild ist ein ganzes Layout.
+      let bilder = werte.map(male)
+      // Ob überhaupt gemessen wird. `false` heißt: die Bilder dürfen
+      // verschieden groß sein, dann ist auch die Messung für nichts. `true`
+      // heißt: diese Szene muss stillstehen, und zwar unabhängig davon, was
+      // das Deck insgesamt mit den Befunden anfängt.
+      let modus = drift-modus.get()
+      let messen = if steady == auto { modus != "none" } else { steady }
+      let befund = if messen { szene-drift(bilder) } else { none }
+      // Der Befund geht als Satz ins Dokument, wie beim Überlauf: Typst hat
+      // keinen Kanal für eine Warnung, also wird abgelegt und am Ende des
+      // Decks auf einmal berichtet. Nur `steady: true` hält sofort an -- wer
+      // das schreibt, hat sich festgelegt und will es hier wissen, nicht am
+      // Ende.
+      if befund != none {
+        assert(steady != true, message:
+          "typstage: scene(steady: true) -- this scene draws its "
+          + str(befund.bilder) + " frames in " + str(befund.lagen)
+          + " different sizes, up to " + str(calc.round(befund.breit.pt(), digits: 2))
+          + "pt apart across and " + str(calc.round(befund.hoch.pt(), digits: 2))
+          + "pt down. A drawing is as large as what it holds, a CeTZ canvas "
+          + "above all, so it sits somewhere else inside the box on every "
+          + "frame and the whole picture travels while only one point should "
+          + "move. "
+          + drift-ausweg)
+        drift-satz(if im-deck() { deck-info.get().data.slide.number } else { 0 },
+                   erster, befund.bilder, befund.lagen, befund.breit, befund.hoch)
+      }
       track(
         "scene",
-        box(width: width, height: height, clip: true, male(stops.first())),
+        box(width: width, height: height, clip: true, bilder.first()),
         at: str(erster) + "-",
         extra: (
           stops: stops.len(), tween: tween, from: erster, enter: enter,
@@ -866,8 +957,8 @@
           // sichtbar auseinander.
           pull: if duration == auto { none } else { duration },
         ),
-        raw-frames: werte.map(w => box(
-          width: width, height: height, clip: true, male(w),
+        raw-frames: bilder.map(b => box(
+          width: width, height: height, clip: true, b,
         )),
       )
     }

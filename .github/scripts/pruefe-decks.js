@@ -191,6 +191,16 @@ const SOLL_HINWEIS = [
   "gegeneinander und die geteilte Tinte sänke auf zwei Drittel -- am",
   "Ruhezustand ist davon nichts zu sehen, an den Zwischenbildern schon.",
   "",
+  "haltRueck ist derselbe Wechsel rückwärts: <Deckkraft der abtretenden",
+  "Stufe> · <die der ankommenden> · <Deckkraft der ankommenden im Augenblick",
+  "des Tastendrucks> · <danach gezeichnete Stufen>/<Stufen>. Rückwärts kommt",
+  "die kleinere Stufe herein und liegt vollständig unter der größeren, die",
+  "noch abtritt: sie hat nichts zu blenden. Deshalb steht dort „sofort\" und",
+  "eine 1 und nicht 0>1 und eine 0. Gemessen, Bild für Bild angehalten und",
+  "abgelichtet: mit der Blende sank die geteilte Tinte auf 0,7522, mit",
+  "enter: \"draw\" von Hand gestapelt auf 0,4348; ohne sie steht sie in beide",
+  "Richtungen bei 1,0000.",
+  "",
   "feder und federRueck sind die Zahl der Pfade, die sich auf dem Hin- und auf",
   "dem Rueckweg selbst gezeichnet haben (enter: \"draw\"). Gezaehlt wie flieger:",
   "in der Laufzeit, dort wo sie entstehen (FEDER in assets/typstage-0.1.0.js),",
@@ -365,6 +375,23 @@ function ueberlaufProbe() {
   }
   return "ueberlauf.typ ließ sich übersetzen. Der Überlaufmelder meldet nicht "
     + "mehr, was übersteht.";
+}
+
+// Gegenprobe zum Melder für wandernde Szenen. `wanderung.typ` ist ein Deck,
+// dessen Szene mit dem Wert wächst, und es darf deshalb *nicht* übersetzen.
+// Dieselbe Vorkehrung wie beim Überlauf: das Prüfdeck nebenan läuft auf der
+// Vorgabe `drift: "error"` durch, ohne dass eine Szene dort wanderte, und
+// sagt damit nur, dass der Prüfgang läuft -- nicht, dass er trifft.
+function wanderungProbe() {
+  try {
+    decklaufBauen("wanderung");
+  } catch (e) {
+    if (/frames of different sizes/.test(e.meldung || "")) return null;
+    return "wanderung.typ brach ab, aber nicht an der wandernden Szene: "
+      + String(e.meldung || "").slice(0, 300);
+  }
+  return "wanderung.typ ließ sich übersetzen. Der Melder sieht nicht mehr, "
+    + "dass die Bilder einer Szene verschieden groß sind.";
 }
 
 // Und dasselbe Deck noch einmal auf Papier. Der Browser sieht nur den
@@ -603,6 +630,26 @@ const HALTPROBE = `(async function () {
   var raus = lesen(stufen[0]), rein = lesen(stufen[1]);
   await p.ruhig(4000);
   var an = stufen.filter(function (e) { return e.dataset.on === "1"; }).length;
+
+  // Und derselbe Wechsel rueckwaerts. Vorwaerts wartet die abtretende Stufe,
+  // bis die neue da ist; rueckwaerts kommt die *kleinere* Stufe herein und
+  // liegt vollstaendig unter der groesseren, die noch abtritt. Sie hat nichts
+  // zu blenden -- sie ist einfach da, und was verschwindet, ist allein die
+  // Tinte, die die groessere mehr hat. Blendete sie doch auf, blendeten
+  // wieder zwei fast gleiche Bilder gegeneinander: gemessen sank die geteilte
+  // Tinte dabei auf 0,7522, und mit enter: "draw" von Hand gestapelt auf
+  // 0,4348. Am Ruhezustand ist davon nichts zu sehen.
+  //
+  // Gefragt wird deshalb dreierlei: ob an der ankommenden Stufe ueberhaupt
+  // eine Blende laeuft (es darf keine), was die abtretende tut, und welche
+  // Deckkraft die ankommende im Augenblick des Tastendrucks traegt. Die
+  // letzte Zahl ist die eigentliche: sie muss 1 sein, und nicht 0.
+  typstage.goto(erste + 1, true); await p.ruhig(4000);
+  typstage.goto(erste);
+  var rRaus = lesen(stufen[1]), rRein = lesen(stufen[0]);
+  var rDeck = String(Math.round(parseFloat(getComputedStyle(stufen[0]).opacity) * 100) / 100);
+  await p.ruhig(4000);
+  var rAn = stufen.filter(function (e) { return e.dataset.on === "1"; }).length;
   // Und das Mass: alle Stufen einer Zeichnung muessen deckungsgleich liegen.
   // Das ist die eigentliche Zusage von build -- ein Stueck, das noch nicht
   // dran ist, steht als Luft da und behaelt seinen Platz. Fiele der Platz weg,
@@ -622,6 +669,8 @@ const HALTPROBE = `(async function () {
   });
   var einig = masze.filter(function (m, i) { return masze.indexOf(m) === i; });
   return JSON.stringify({ raus: raus, rein: rein, an: an,
+                          rueckRaus: rRaus, rueckRein: rRein,
+                          rueckDeck: rDeck, rueckAn: rAn,
                           stufen: stufen.length, masze: einig });
 })()`;
 
@@ -956,6 +1005,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   });
   const ueberlauf = ueberlaufProbe();
   if (ueberlauf) console.error("ABWEICHUNG ueberlauf: " + ueberlauf);
+  const wanderung = wanderungProbe();
+  if (wanderung) console.error("ABWEICHUNG wanderung: " + wanderung);
   const papier = papierProbe();
   if (papier) console.error("ABWEICHUNG papier: " + papier);
   let pd;
@@ -1078,6 +1129,29 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
             + Math.round(h.raus.dauer) + "ms, die ankommende braucht "
             + Math.round(h.rein.dauer) + "ms. Sie muss so lange warten, wie "
             + "die neue braucht, sonst sinkt das Bild zum Schluss doch noch ab.");
+        }
+        // Und derselbe Wechsel rückwärts.
+        z.haltRueck = (h.rueckRaus ? h.rueckRaus.kf.join(">") : "nichts")
+                    + "·" + (h.rueckRein ? h.rueckRein.kf.join(">") : "sofort")
+                    + "·" + h.rueckDeck + "·" + h.rueckAn + "/" + h.stufen;
+        if (h.rueckRein) {
+          z.maengel.push("beim Zurückblättern blendet die ankommende "
+            + "build-Stufe auf (" + h.rueckRein.kf.join(">") + "). Sie liegt "
+            + "vollständig unter der Stufe, die noch abtritt, und muss "
+            + "einfach dastehen: blendet sie, blenden zwei fast gleiche "
+            + "Bilder gegeneinander und die geteilte Tinte sinkt auf drei "
+            + "Viertel.");
+        }
+        if (h.rueckDeck !== "1") {
+          z.maengel.push("beim Zurückblättern steht die ankommende "
+            + "build-Stufe im Augenblick des Tastendrucks bei Deckkraft "
+            + h.rueckDeck + " statt bei 1. Genau in dieser Lücke sinkt die "
+            + "geteilte Tinte ein.");
+        }
+        if (!h.rueckRaus) {
+          z.maengel.push("beim Zurückblättern lief an der abtretenden "
+            + "build-Stufe keine Blende. Sie trägt die Tinte, die die "
+            + "kleinere Stufe nicht hat, und die muss weichen können.");
         }
       }
     }
@@ -1257,8 +1331,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   const felder = ["folien", "schritte", "elemente", "flieger", "fliegerRueck",
                   "feder", "federRueck", "hash", "hashStand", "sprecher",
                   "grund", "sichtbar", "sichtbarRueck", "fehler", "halt",
-                  "masz", "zeichnung", "kurve", "satz", "satzBytes", "szene",
-                  "kino"];
+                  "haltRueck", "masz", "zeichnung", "kurve", "satz",
+                  "satzBytes", "szene", "kino"];
   // `satz` und `satzBytes` hängen an den Schriften des Rechners, nicht am
   // Paket: derselbe Stand ergibt auf macOS 546292 Bytes und auf einem
   // Ubuntu-Läufer 500912, während alle übrigen Felder -- Schritte, Elemente,
@@ -1335,6 +1409,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   }
   bericht.forEach(z => { if (z.maengel.length) schlecht++; });
   if (ueberlauf) schlecht++;
+  if (wanderung) schlecht++;
   if (papier) schlecht++;
   if (ohneStrich) schlecht++;
   if (leiser2) schlecht++;

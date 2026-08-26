@@ -931,6 +931,105 @@
     + "carries on instead of stopping.")
 } }
 
+// ── The check that a scene's frames are all the same size ──────────────
+//
+// A CeTZ canvas is as large as what it holds. Change the content across the
+// stops of a `scene` and every frame comes out a different size, so the
+// drawing sits somewhere else inside the box each time and the whole picture
+// travels while only one point should move.
+//
+// The package cannot put that right. It hands `draw` a value and gets a
+// finished setting back; `measure` answers with a size and not with where the
+// ink lies inside it, so there is no offset to compute and nothing to shift.
+// What it can do is notice, and that is worth doing on its own: whoever does
+// not measure finds out at the projector.
+
+/// How far two frames may differ before it is reported.
+///
+/// Not a setting but a guard against arithmetic. The frames of a scene are
+/// laid out from values that were interpolated, `a + (b - a) * u`, and the
+/// last bit of a float does not always land on the same point. Measured over
+/// the eight example decks and the check deck, every scene that is meant to
+/// stand still came out to the point: the largest spread among frames of one
+/// scene was 0pt. Anything a projector could show is orders of magnitude
+/// above this line.
+#let drift-toleranz = 0.05pt
+
+/// Whether scenes measure themselves, and what happens with what they find.
+///
+/// Written once by `presentation`, before the slides are laid out, and read by
+/// every `scene`. `"none"` switches the measuring off as well, not only the
+/// report: a check nobody wants should not be paid for either.
+#let drift-modus = state("typstage-drift", "error")
+
+/// One record, and the only thing this check leaves behind.
+///
+/// The same arrangement the overflow check uses, and for the same reason:
+/// Typst gives a package no warning channel, so a finding is filed as
+/// queryable metadata and nothing is printed on its own. A tool reads them
+/// with
+///
+/// ```sh
+/// typst eval --target html --features html --in deck.typ \
+///   'query(<typstage-drift>).map(e => e.value)'
+/// ```
+///
+/// The numbers travel as plain numbers in points so the query can write them
+/// as JSON.
+#let drift-satz(nr, schritt, bilder, lagen, breit, hoch) = [#metadata((
+  slide: nr,
+  step: schritt,
+  frames: bilder,
+  sizes: lagen,
+  width: calc.round(breit.pt(), digits: 2),
+  height: calc.round(hoch.pt(), digits: 2),
+)) <typstage-drift>]
+
+/// The way out, in the words the manual uses for it.
+///
+/// Written once and used twice: a scene on `steady: true` stops where it
+/// stands and says this, and the report at the end of the deck says it after
+/// its list. Two wordings for one remedy would be one wording too many.
+#let drift-ausweg = (
+  "The way out lies in the drawing: give it a fixed extent and keep what "
+  + "moves inside it. In CeTZ that is a rect with a transparent stroke, the "
+  + "same air ab() works with: rect((-4.4, -0.8), (4.4, 4.6), "
+  + "stroke: rgb(0, 0, 0, 0)). Whatever still reaches beyond it has to be "
+  + "clipped, or it pulls the canvas open again. Where the frames are meant "
+  + "to differ -- a rectangle that grows, a number that counts up -- "
+  + "scene(steady: false) says so and takes that scene out of the check."
+)
+
+/// What one finding reads like, in one line.
+#let drift-zeile(f) = ("  slide " + str(f.slide) + ", from step " + str(f.step)
+  + ": " + str(f.frames) + " frames in " + str(f.sizes) + " different sizes, "
+  + "up to " + str(f.width) + "pt apart across and " + str(f.height)
+  + "pt down")
+
+/// Read the records back and stop with all of them at once.
+///
+/// At the end of the deck, not at the first finding, and deduplicated per
+/// scene: the same reasoning as `ueberlauf-bericht`, where a `bundle()` writes
+/// several outputs from one source and would otherwise name a scene once per
+/// output.
+#let drift-bericht(modus) = if modus != "error" { [] } else { context {
+  let roh = query(<typstage-drift>).map(e => e.value)
+  let funde = roh.dedup()
+  assert(funde.len() == 0, message:
+    "typstage: " + str(funde.len())
+    + (if funde.len() == 1 { " scene draws frames" } else { " scenes draw frames" })
+    + " of different sizes. A drawing is as large as what it holds, a CeTZ "
+    + "canvas above all, so a frame wider than its neighbour puts the drawing "
+    + "somewhere else inside the box: paging through it, the whole picture "
+    + "travels while only one point should move. The package can see this and "
+    + "cannot correct it -- measure answers with a size, never with where the "
+    + "ink lies inside it.\n"
+    + funde.map(drift-zeile).join("\n")
+    + "\n" + drift-ausweg
+    + " drift: \"record\" files the same records for querying and carries on "
+    + "instead of stopping; drift: \"none\" does not measure at all.")
+} }
+
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
            width: auto, dim-freiwillig: false) = {
   // Der eine Trichter, durch den jeder Auftritt und jeder Abgang muss --

@@ -401,3 +401,25 @@ Zweiter Schritt.
   + str(info().step.total) + " Schritte statt 3. Eine Szene mit drei Halten "
   + "verbraucht zwei Schritte, und niemand sonst steht auf dieser Folie, der "
   + "das ausgleichen könnte.")
+
+== Eine Szene, die wachsen darf
+// Die beiden Szenen oben stehen in Kästen fester Größe: ihre Bilder messen
+// alle gleich, und der Melder für wandernde Szenen hat dort nichts zu sagen.
+// Diese hier wächst mit ihrem Wert, und zwar mit Absicht -- ein Rechteck, das
+// größer wird, ist genau der Fall, für den `steady: false` da ist.
+//
+// Was kaputtgehen muss, damit der Lauf es meldet: fiele `steady: false` weg
+// oder hörte es auf zu wirken, bräche dieses Deck beim Übersetzen ab, denn
+// `drift` steht auf seiner Vorgabe `"error"`. Der ganze Lauf endet dann mit
+// „Prüfdeck ließ sich nicht übersetzen". Die Gegenprobe dazu ist
+// `wanderung.typ` daneben: dasselbe Bild ohne `steady: false`, und das *muss*
+// abbrechen.
+#scene(x => rect(width: x * 1pt, height: 30pt, fill: green),
+       stops: (30, 150), tween: 4, width: 200pt, height: 40pt,
+       steady: false)
+
+#context assert(info().step.total == 2, message:
+  "Prüfdeck: die Folie mit der wachsenden Szene zählt "
+  + str(info().step.total) + " Schritte statt 2. Zwei Halte sind ein Schritt, "
+  + "und `steady:` darf daran nichts ändern -- es entscheidet allein, ob "
+  + "gemessen wird.")
