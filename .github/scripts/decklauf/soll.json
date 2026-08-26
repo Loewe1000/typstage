@@ -39,9 +39,10 @@
   "aber nur nachdem jemand nachgesehen hat, was sich geändert hat.",
   "",
   "Das Pruefdeck ist um eine adaptive Gruppe gewachsen; die linux-Werte von satz",
-  "und satzBytes gehoerten zum alten Stand und sind deshalb entfernt. Der naechste",
-  "CI-Lauf faellt daran um und nennt die neuen -- das ist beabsichtigt: eine Zahl,",
-  "die niemand gemessen hat, gehoert nicht in einen Sollstand."
+  "",
+  "Die linux-Werte stammen aus dem CI-Lauf, der sie gemeldet hat, nachdem das",
+  "Pruefdeck um eine adaptive Gruppe gewachsen war. Der Lauf meldete dort alle",
+  "sieben Decks als ok und nannte nur diese beiden Felder als nicht verglichen."
  ],
  "decks": {
   "tour": {
@@ -713,10 +714,12 @@
    ],
    "fehler": [],
    "satz": {
-    "darwin": "ab308e9c86036597"
+    "darwin": "ab308e9c86036597",
+    "linux": "32a21adbb85e76eb"
    },
    "satzBytes": {
-    "darwin": 644853
+    "darwin": 644853,
+    "linux": 585084
    }
   }
  }
