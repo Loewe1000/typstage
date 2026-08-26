@@ -403,6 +403,78 @@ async function ohneStrichProbe(b) {
     + "heraus, nicht einmal je Schritt.";
 }
 
+// Was „Bewegung reduzieren" aus einer Zeichnung macht.
+//
+// Die Regel des Pakets lautet: Deckkraft bleibt, Weg fällt weg. Das Zeichnen
+// *ist* der Weg -- ein Strich, der sich malt, hat keine Deckkraft, die davon
+// übrig bliebe --, also hält die Feder still und es bleibt bei der Blende, die
+// ohnehin darunter lief.
+//
+// Der Lauf selbst weist einen Browser mit der Einstellung ab, aus gutem Grund:
+// dann flöge kein Morph und vierzehn Zahlen fielen um. Diese eine Frage lässt
+// sich aber vortäuschen, und ohne sie bliebe der ganze Zweig ungeprüft --
+// gemessen, indem die Abfrage in der Laufzeit wegfiel: keine Zahl des Laufs
+// bewegte sich.
+//
+// Vorgetäuscht am Prototyp und nicht an einer neuen Abfrage: die Laufzeit hat
+// ihre MediaQueryList beim Laden gemerkt und fragt sie bei jedem Schritt neu;
+// ein Getter am Prototyp erreicht genau diese. Es geschieht auf einer eigenen,
+// zuletzt geladenen Seite, damit es nichts anderes mehr trifft.
+async function leiserProbe(b, datei) {
+  await laden(b, "about:blank");
+  if (!await laden(b, "file://" + datei)) return "das Prüfdeck lud nicht";
+  const roh = await b.ev(`(async function () {
+    Object.defineProperty(MediaQueryList.prototype, "matches", {
+      configurable: true,
+      get: function () { return this.media.indexOf("reduced-motion") >= 0; }
+    });
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return JSON.stringify({ fehlt: "die Einstellung liess sich nicht vortaeuschen" });
+    }
+    var p = typstage.pruef, S = typstage.steps;
+    var el = document.querySelector('.ts-el[data-enter="draw"]');
+    if (!el) return JSON.stringify({ fehlt: "kein Element mit enter=draw" });
+    var folien = [].slice.call(document.querySelectorAll(".ts-slide"));
+    var nr = folien.indexOf(el.closest(".ts-slide"));
+    var ab = +(el.dataset.at.match(/[0-9]+/) || [1])[0];
+    var davor = -1, ziel = -1;
+    for (var i = 0; i < S.length; i++) if (S[i].slide === nr) {
+      if (S[i].step === ab - 1) davor = i;
+      if (S[i].step === ab) ziel = i;
+    }
+    if (davor < 0 || ziel < 0) return JSON.stringify({ fehlt: "Schritt nicht gefunden" });
+    typstage.goto(davor, true); await p.ruhig(4000);
+    var vor = p.stand().feder;
+    typstage.goto(ziel);
+    var eig = el.getAnimations()[0];
+    var mitten = {
+      federn: el.querySelectorAll("[data-ts-feder]").length,
+      eKf: eig ? eig.effect.getKeyframes().map(function (k) {
+        return String(k.opacity);
+      }) : null
+    };
+    await p.ruhig(4000);
+    return JSON.stringify({ mitten: mitten, gezogen: p.stand().feder - vor,
+                            an: el.dataset.on === "1" ? 1 : 0,
+                            fehler: p.fehler() });
+  })()`);
+  const r = JSON.parse(roh);
+  if (r.fehlt) return r.fehlt;
+  if (r.mitten.federn || r.gezogen) {
+    return "unter „Bewegung reduzieren\" fuhr die Feder trotzdem: "
+      + r.mitten.federn + " am Pfad, " + r.gezogen + " gezogen. Das Zeichnen "
+      + "ist der Weg, und der faellt dort weg.";
+  }
+  if (!r.mitten.eKf || r.mitten.eKf.join(">") !== "0>1") {
+    return "unter „Bewegung reduzieren\" blendete die Zeichnung nicht auf: "
+      + JSON.stringify(r.mitten.eKf) + " statt 0>1. Die Deckkraft bleibt, auch "
+      + "wenn der Weg wegfaellt.";
+  }
+  if (!r.an) return "unter „Bewegung reduzieren\" stand die Zeichnung danach nicht da";
+  if (r.fehler.length) return "unter „Bewegung reduzieren\": " + r.fehler.join(" | ");
+  return null;
+}
+
 // ── Der Durchlauf, als ein Stück Seitencode ─────────────────────────────────
 const DURCHLAUF = `(async function () {
   var p = typstage.pruef, S = typstage.steps;
@@ -930,6 +1002,9 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   }
   const ohneStrich = await ohneStrichProbe(b);
   if (ohneStrich) console.error("ABWEICHUNG ohne-strich: " + ohneStrich);
+  // Zuletzt, weil sie die Seite verbiegt, auf der sie läuft.
+  const leiser2 = await leiserProbe(b, pd);
+  if (leiser2) console.error("ABWEICHUNG leiser: " + leiser2);
   await b.ende();
 
   // ── Gegen den Sollstand ───────────────────────────────────────────────────
@@ -1016,6 +1091,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (ueberlauf) schlecht++;
   if (papier) schlecht++;
   if (ohneStrich) schlecht++;
+  if (leiser2) schlecht++;
   bericht.forEach(z => z.maengel.forEach(m =>
     process.stderr.write("ABWEICHUNG " + z.deck + ": " + m + "\n")));
 
