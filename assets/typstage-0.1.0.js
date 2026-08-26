@@ -434,6 +434,19 @@
     el.getAnimations().forEach(function (a) { try { a.cancel(); } catch (e) {} });
   }
 
+  // Die Kurve, auf der ein Element sich bewegt.
+  //
+  // Aufgeloest ist sie schon: `easing:` laesst den Namen in Typst zu einer
+  // fertigen `cubic-bezier` werden, damit die Tabelle nur an einer Stelle
+  // steht und ein Name, den es nicht gibt, gar nicht erst hier ankommt. Steht
+  // nichts da, gilt die Hauskurve, und das ist der Fall in jedem Deck, das
+  // `easing:` nie hinschreibt.
+  //
+  // Gilt fuer alles, was das Element selbst tut -- Auftritt, Abgang, Dimmen.
+  // Nicht fuer den Folienwechsel und nicht fuer den Flug eines Morphs: der
+  // eine gehoert der Folie und nicht dem Element, der andere hat zwei Enden.
+  function takt(el) { return (el && erbt(el, "easing")) || EASE; }
+
   // The effect, with its travel taken out when less motion is asked for.
   // Every entry of the table above names an opacity in both of its two
   // states, so stripping it down to that leaves a plain fade and never an
@@ -454,7 +467,7 @@
     var f = effekt(name);
     el.style.opacity = "";
     var a = el.animate([f[0], f[1]],
-      { duration: dur, delay: delay, easing: EASE, fill: "both" });
+      { duration: dur, delay: delay, easing: takt(el), fill: "both" });
     a.onfinish = function () { el.style.opacity = "1"; a.cancel(); };
   }
 
@@ -496,7 +509,7 @@
       ab.opacity = von;
     }
     var a = el.animate([ab, f[0]],
-      { duration: dur, easing: EASE, fill: "both" });
+      { duration: dur, easing: takt(el), fill: "both" });
     a.onfinish = function () { el.style.opacity = "0"; try { a.cancel(); } catch (e) {} };
   }
 
@@ -506,7 +519,7 @@
   function fadeTo(el, von, bis, dur) {
     clearAnims(el);
     var a = el.animate([{ opacity: von }, { opacity: bis }],
-      { duration: dur, easing: EASE, fill: "both" });
+      { duration: dur, easing: takt(el), fill: "both" });
     a.onfinish = function () {
       el.style.opacity = String(bis); try { a.cancel(); } catch (e) {}
     };

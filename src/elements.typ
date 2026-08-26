@@ -1,7 +1,7 @@
 // Appearing, moving and staggering.
 
 #import "internal.typ": (adaptiv-gruppen, durchsichtig, fit-meldung, html-output,
-                        im-deck, im-fit, name-of, offenes-ende, pin-index,
+                        im-deck, im-fit, kurve, name-of, offenes-ende, pin-index,
                         pin-marker, selector, step-cursor, track, will-fuellen)
 
 /// What `anim` does once its arguments have been checked.
@@ -15,7 +15,7 @@
 /// end with the slide, and the late check leaves them alone. The flag rides in
 /// the sprite record rather than in `extra`, which becomes markup attributes.
 #let anim-kern(body, at: auto, enter: "fade-up", exit: "fade",
-               after: "hidden", duration: auto, delay: 0,
+               after: "hidden", duration: auto, delay: 0, easing: none,
                dim-freiwillig: false, ad: none, ad-nr: none) = track(
   "anim", body, at: at, dim-freiwillig: dim-freiwillig, extra: (
     // Membership in an adaptive group. `none` never travels into the markup,
@@ -23,6 +23,10 @@
     ad: ad, "ad-nr": ad-nr,
     enter: enter, exit: exit, delay: delay,
     duration: if duration == auto { none } else { duration },
+    // Die fertige Kurve, nicht ihr Name: aufgelöst hat sie `kurve()` schon,
+    // und `none` schreibt kein Attribut. Ein Deck ohne `easing:` sieht danach
+    // aus wie eines von gestern, Byte für Byte.
+    easing: easing,
     // Only the departure from the default travels into the markup. `hidden`
     // is what every sprite has always done after its range, and writing it
     // out would put a new attribute on every element of every deck.
@@ -65,6 +69,12 @@
 /// loses its travel, so `enter` and `exit` become a plain cross-fade of the
 /// same length. `after: "dimmed"` is unaffected: it changes opacity and
 /// nothing else. See the manual.
+///
+/// `easing` ist die Kurve, auf der das Element sich bewegt -- für den
+/// Auftritt, den Abgang und das Dimmen gleichermaßen. `auto` ist die Kurve
+/// des Pakets; `"out-back"` schießt über und schwingt zurück, `"linear"`
+/// kommt gleichmäßig an. Ein Name, den es nicht gibt, ist ein Fehler beim
+/// Übersetzen und keine stille Vorgabe.
 #let anim(
   body,
   at: auto,
@@ -73,6 +83,7 @@
   after: "hidden",
   duration: auto,
   delay: 0,
+  easing: auto,
 ) = {
   assert(after in ("hidden", "dimmed"), message:
     "typstage: anim(after: ...) is \"hidden\" or \"dimmed\", not \""
@@ -83,7 +94,7 @@
     + "after for the element to rest in. Write `at: \"3\"` for that one step "
     + "or `at: \"2-3\"` for a range.")
   anim-kern(body, at: at, enter: enter, exit: exit, after: after,
-            duration: duration, delay: delay)
+            duration: duration, delay: delay, easing: kurve(easing, "anim"))
 }
 
 /// Magic move: the same `name` on two slides, and the thing flies across.
@@ -148,6 +159,7 @@
   align: top + left,
   enter: "fade",
   duration: auto,
+  easing: auto,
   inline: false,
 ) = {
   // `..variants` would otherwise swallow any named argument without a word: a
@@ -156,7 +168,7 @@
   assert(variants.named().len() == 0,
          message: "typstage: alternatives() does not know "
                 + variants.named().keys().join(", ")
-                + ". It takes start, align, enter, duration and inline.")
+                + ". It takes start, align, enter, duration, easing and inline.")
   let items = variants.pos()
   assert(items.len() > 0,
          message: "typstage: alternatives() wants at least one version")
@@ -203,7 +215,8 @@
         // Exactly this step for all but the last, which stays: `"3"` is that
         // one step, `"3-"` is from there on.
         let at = if i == last { str(first + i) + "-" } else { str(first + i) }
-        place(align, anim(v, at: at, enter: enter, duration: duration))
+        place(align, anim(v, at: at, enter: enter, duration: duration,
+                          easing: easing))
       }
     })
   }))
@@ -368,6 +381,7 @@
   stride: 1,
   enter: "fade-up",
   duration: auto,
+  easing: auto,
   stagger: 60,
   spacing: 0.65em,
   dim: false,
@@ -382,8 +396,8 @@
   assert(items.named().len() == 0,
          message: "typstage: stagger() does not know "
                 + items.named().keys().join(", ")
-                + ". It takes start, stride, enter, duration, stagger, "
-                + "spacing and dim.")
+                + ". It takes start, stride, enter, duration, easing, "
+                + "stagger, spacing and dim.")
   let gegeben = items.pos()
   assert(gegeben.len() > 0, message: "typstage: stagger() wants something to stagger")
 
@@ -401,13 +415,16 @@
   // count either way.
   let bereich(n) = if dim { str(n) } else { str(n) + "-" }
   let ruhe = if dim { "dimmed" } else { "hidden" }
+  // Einmal geprüft und einmal aufgelöst, nicht je Punkt: die Meldung nennt
+  // sonst dieselbe Kurve so oft, wie die Liste Punkte hat.
+  let takt = kurve(easing, "stagger")
 
   if punkte.len() == 0 {
     // No list: the pieces in order, each as its own block.
     for (i, b) in gegeben.enumerate() {
       block(anim-kern(b, at: bereich(start + i * stride), after: ruhe,
                       dim-freiwillig: dim, enter: enter, duration: duration,
-                      delay: i * stagger))
+                      easing: takt, delay: i * stagger))
     }
     return
   }
@@ -433,7 +450,7 @@
         marks.at(i), p.body,
       ),
       at: bereich(start + i * stride), after: ruhe, dim-freiwillig: dim,
-      enter: enter, duration: duration, delay: i * stagger,
+      enter: enter, duration: duration, easing: takt, delay: i * stagger,
     )
   }
 }
@@ -527,7 +544,8 @@
 ///
 /// Under `prefers-reduced-motion: reduce` nothing changes: the stages fade,
 /// they do not travel, and what would fall away is a motion that is not there.
-#let aufbau(zeichnen, schritte: 2, start: auto, enter: "fade", duration: auto) = {
+#let aufbau(zeichnen, schritte: 2, start: auto, enter: "fade", duration: auto,
+            easing: auto) = {
   assert(type(zeichnen) == function, message:
     "typstage: aufbau() nimmt als erstes eine Funktion, die die Zeichnung "
     + "malt, und keine fertige Zeichnung. Sie wird einmal je Schritt gerufen "
@@ -538,6 +556,20 @@
   assert(start == auto or (type(start) == int and start >= 1), message:
     "typstage: aufbau(start: …) zählt ab 1, nicht ab 0. Auf Schritt 0 stünde "
     + "die erste Stufe nie.")
+  // Eine Stufe, die sich selbst zeichnete, zeichnete jedes Mal die ganze
+  // Zeichnung noch einmal -- auch die Striche, die schon auf der Stufe davor
+  // standen. Und sie täte es über der abtretenden Stufe, die absichtlich
+  // stehenbleibt (`exit: "hold"`): die Tinte läge längst da, die Feder führe
+  // unsichtbar darüber. Das Gegenteil dessen, was `draw` verspricht, also
+  // lieber ein Wort als ein stummes Nichts.
+  assert(enter != "draw", message:
+    "typstage: aufbau(enter: \"draw\") beißt sich mit dem, was aufbau tut. "
+    + "Jede Stufe ist die *ganze* Zeichnung, und sie käme über der vorigen, "
+    + "die stehenbleibt, bis die neue da ist -- die Feder führe über Tinte, "
+    + "die schon liegt. Wer die Striche nacheinander ziehen lassen will, gibt "
+    + "sie einzeln hin: stagger(enter: \"draw\", stride: 1, achse, kurve). Wer "
+    + "eine Zeichnung in Stufen will, lässt aufbau bei seiner Blende.")
+  let takt = kurve(easing, "aufbau")
   layout(available => context {
     // Wie bei `alternatives`: die Prüfung steht hier und nicht in `track`,
     // weil der Papierzweig weiter unten über ein `return` hinausgeht und ein
@@ -603,7 +635,8 @@
         // zweites Mal gemalt.
         let bereich = if i == letzte { str(erster + i) + "-" } else { str(erster + i) }
         place(top + left, anim-kern(s, at: bereich, enter: enter,
-                                    exit: "hold", duration: duration))
+                                    exit: "hold", duration: duration,
+                                    easing: takt))
       }
     })
   })

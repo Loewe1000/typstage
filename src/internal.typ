@@ -137,6 +137,71 @@
   }
 }
 
+// ── Die Kurve, auf der ein Element sich bewegt ───────────────────────────────
+//
+// Jede Bewegung des Pakets lief bisher auf derselben Kurve, `cubic-bezier(.4,
+// 0,.2,1)`, und die bleibt die Vorgabe. `easing:` gibt sie einem einzelnen
+// Element aus der Hand: ein Ergebnis darf über sein Ziel hinausschießen und
+// zurückschwingen, ein Stapel Stichpunkte darf gleichmäßig ankommen.
+//
+// Aufgelöst wird der Name hier und nicht in der Laufzeit, und das ist eine
+// Entscheidung mit zwei Enden. Hier steht die Tabelle einmal, statt zweimal --
+// einmal zum Prüfen und einmal zum Nachschlagen --, und ein Name, den es nicht
+// gibt, kommt gar nicht erst im Browser an. Was ins Markup wandert, ist die
+// fertige Kurve.
+//
+// Was hier fehlt, fehlt mit Absicht: Federn und Sprünge (`elastic`, `bounce`)
+// sind keine kubischen Bézierkurven und ließen sich nur als Bildfolge
+// nachbauen. Die Web Animations API kennt sie nicht, also kennt das Paket sie
+// auch nicht.
+
+/// Die benannten Kurven. Name -> was die Web Animations API dafür bekommt.
+#let kurven = (
+  // Die Hauskurve, ausgeschrieben. Wer sie hinschreibt, bekommt genau das,
+  // was ohne `easing:` ohnehin gilt.
+  "standard": "cubic-bezier(.4,0,.2,1)",
+  // Was die Web Animations API von sich aus kennt, wörtlich durchgereicht.
+  "linear": "linear",
+  "ease": "ease",
+  "ease-in": "ease-in",
+  "ease-out": "ease-out",
+  "ease-in-out": "ease-in-out",
+  // Vier Familien, je dreimal: hinein, heraus, und beides. `in` startet
+  // langsam, `out` endet langsam -- und `out` ist fast immer das, was ein
+  // Auftritt will, weil das Auge dem Ende zusieht und nicht dem Anfang.
+  "in-quad": "cubic-bezier(.11,0,.5,0)",
+  "out-quad": "cubic-bezier(.5,1,.89,1)",
+  "in-out-quad": "cubic-bezier(.45,0,.55,1)",
+  "in-cubic": "cubic-bezier(.32,0,.67,0)",
+  "out-cubic": "cubic-bezier(.33,1,.68,1)",
+  "in-out-cubic": "cubic-bezier(.65,0,.35,1)",
+  "in-expo": "cubic-bezier(.7,0,.84,0)",
+  "out-expo": "cubic-bezier(.16,1,.3,1)",
+  "in-out-expo": "cubic-bezier(.87,0,.13,1)",
+  // Die drei, die über ihr Ziel hinausgehen. Ein Kontrollpunkt liegt außerhalb
+  // von 0 bis 1, und genau das ist der Rückschwung.
+  "in-back": "cubic-bezier(.36,0,.66,-.56)",
+  "out-back": "cubic-bezier(.34,1.56,.64,1)",
+  "in-out-back": "cubic-bezier(.68,-.6,.32,1.6)",
+)
+
+/// Die Kurve zu einem Namen, oder ein Fehler.
+///
+/// `auto` gibt `none` zurück: nur der Abweichung von der Vorgabe wird ein
+/// Attribut geschrieben, sonst trüge jedes Element jedes Decks ein neues.
+///
+/// Ein unbekannter Name ist ein Fehler und keine stille Vorgabe. Wer sich
+/// vertippt, bekäme sonst die Hauskurve zurück und suchte lange, warum sein
+/// Rückschwung nicht schwingt.
+#let kurve(name, wo) = {
+  if name == auto { return none }
+  assert(type(name) == str and name in kurven, message:
+    "typstage: " + wo + "(easing: " + repr(name) + ") -- diese Kurve kennt das "
+    + "Paket nicht. Zur Wahl stehen: " + kurven.keys().join(", ") + ". Ohne "
+    + "Angabe gilt \"standard\", die Kurve, auf der dieses Paket alles bewegt.")
+  kurven.at(name)
+}
+
 /// Plain text out of content, for speaker notes.
 #let plain-text(c) = {
   if type(c) == str { c } else if type(c) != content { "" } else if c.func() == text {
