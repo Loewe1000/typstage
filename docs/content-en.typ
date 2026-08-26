@@ -696,6 +696,17 @@ not there.
   for a flip book. A drawing in twenty stages is not a good idea.
 ]
 
+#warning[
+  After a drawing comes `anim`, not `#pause`. `#pause` numbers its steps by
+  itself: the first pause on a slide is always step 2, the second step 3, no
+  matter how many steps have been handed out above it. Behind a four-stage
+  drawing the text after a `#pause` therefore lands on step 2, in the middle of
+  the drawing instead of behind it -- measured, the run got `at: "2-"` instead
+  of `at: "5-"`. `#anim[…]` asks the cursor and follows on. The same holds for
+  a `#pause` behind `stagger` or `alternatives`; with a drawing it simply comes
+  up more often, because a drawing takes several steps at once.
+]
+
 == Three stumbling blocks
 
 *Only reveals count.* The cursor counts `anim`, `stagger`, `alternatives` and
