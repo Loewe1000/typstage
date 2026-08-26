@@ -219,6 +219,31 @@ const SOLL_HINWEIS = [
   "als Luft dasteht und seinen Platz behält. Wird daraus mehr als eines,",
   "springt die Zeichnung bei jedem Schritt.",
   "",
+  "szene steht nur beim Prüfdeck und beschreibt eine scene(): <Halte> ·",
+  "<Bilder> · <Ruhebild je Schritt der Folie> · <Bild auf halber Zeit eines",
+  "Zuges> · <Bild nach einem Sprung>. Halt k liegt auf Bild k·(tween + 1);",
+  "wandert diese Reihe, stimmt die Zuordnung von Schritt zu Halt nicht mehr.",
+  "Das Bild auf halber Zeit wird nicht zu einem geratenen Zeitpunkt abgelesen",
+  "-- das hinge am Rechner --, sondern die Bewegung wird angehalten und auf",
+  "die Hälfte ihrer Zeit gestellt. Es muss 7 von 9 sein und nicht 4 oder 5:",
+  "daran hängt, dass der Zug die Kurve des Pakets fährt und keine Gerade.",
+  "",
+  "kino steht ebenfalls nur beim Prüfdeck. Die Uhr eines Daumenkinos beginnt,",
+  "wenn es zu sehen ist, und nicht, wenn seine Folie kommt. Es stehen zwei",
+  "Kinos auf der Folie und deshalb zwei Reihen hier: je fünf Zahlen, nämlich",
+  "die drei Schritte der Folie und danach zweimal eine weitergestellte",
+  "Prüfuhr, ohne dass ein Schritt geschieht.",
+  "",
+  "Das Kino at 3- ist beim Betreten verborgen und deckt auf Schritt 3 auf; das",
+  "Kino at 1- steht von Anfang an da. Beide werden gebraucht. Ein Startpunkt,",
+  "der beim Folieneintritt gestempelt wird, fällt nur dem zweiten auf -- das",
+  "erste ist beim Betreten verborgen und bekommt seinen Startpunkt beim",
+  "Aufdecken ohnehin neu. Ein Startpunkt, der unter der festgenagelten Uhr aus",
+  "der Rechnung fällt, macht dagegen bei beiden alle fünf Zahlen gleich, und",
+  "das ist der gefährlichere Fall: mit ihm bleibt der Lauf grün, während das",
+  "Kino abgelaufen ist, bevor es zu sehen war. Gemessen mit dem alten Stand:",
+  "23/23/23/23/23 statt 0/0/0/12/23.",
+  "",
   "grund ist die Füllfarbe des ersten Pfades im Hintergrund-SVG jeder Folie,",
   "also die Fläche, auf der sie steht. Daran hängen Palette und invert.",
   "",
@@ -678,6 +703,167 @@ const ZEICHENPROBE = `(async function () {
                           offenNachHin: offenNachHin,
                           offen: p.stand().federOffen });
 })()`;
+// ── Wie eine Szene von Halt zu Halt zieht ───────────────────────────────────
+//
+// Der Durchlauf oben sieht von einer Szene nichts: sie ist *ein* verfolgtes
+// Element, und ob es Bild 0 oder Bild 27 zeigt, steht in keiner der Zahlen,
+// die er zählt. Also wird hier eigens gefragt, und zwar viermal.
+//
+// *Wo sie in Ruhe steht.* Halt k liegt auf Bild k·(tween + 1). Verrechnet sich
+// die Zuordnung von Schritt zu Halt, wandert die ganze Reihe.
+//
+// *Dass ein Schritt zieht und nicht springt.* Nicht zu einem geratenen
+// Zeitpunkt gefragt -- eine Messung an der Uhr hängt am Rechner --, sondern an
+// der Bewegung selbst: sie wird angehalten und auf die Hälfte ihrer Zeit
+// gestellt, und dann muss ein Bild aus der Mitte der Strecke dastehen.
+//
+// *Dass die Kurve die des Pakets ist.* Auf halber Zeit steht Bild 7 von 9 und
+// nicht Bild 4 oder 5. Wer die Kurve gegen eine Gerade tauscht, sieht genau
+// das.
+//
+// *Dass ein Sprung stellt, statt zu ziehen.* Nach `goto(…, true)` darf keine
+// Bewegung laufen und das Bild muss am Ziel stehen.
+//
+// Die Bewegung wird daran erkannt, dass sie am Rumpf des Dokuments hängt: dort
+// hängt sonst keine. Warum sie dort hängt und nicht am Sprite, steht in der
+// Laufzeit bei `szeneZiehen`. In den Sollstand geht keine Dauer -- die teilte
+// `--tempo` durch seine Zahl.
+const SZENENPROBE = `(async function () {
+  var p = typstage.pruef, S = typstage.steps;
+  var el = document.querySelector(".ts-scene");
+  if (!el) return JSON.stringify({ fehlt: 1 });
+  var folien = [].slice.call(document.querySelectorAll(".ts-slide"));
+  var nr = folien.indexOf(el.closest(".ts-slide"));
+  var erste = -1, wieviele = 0;
+  for (var i = 0; i < S.length; i++) if (S[i].slide === nr) {
+    if (erste < 0) erste = i;
+    wieviele++;
+  }
+  if (erste < 0) return JSON.stringify({ fehlt: -1 });
+  function bild() {
+    var f = el.querySelectorAll(".ts-frame");
+    for (var j = 0; j < f.length; j++) if (f[j].dataset.on) return j;
+    return -1;
+  }
+  function takte() {
+    return document.getAnimations().filter(function (a) {
+      return a.effect && a.effect.target === document.body;
+    });
+  }
+  function zweiBilder() {
+    return new Promise(function (r) {
+      requestAnimationFrame(function () { requestAnimationFrame(r); });
+    });
+  }
+
+  // Die Ruhezustände, Schritt für Schritt durch die Folie.
+  typstage.goto(erste, true); await p.ruhig(4000);
+  var ruhe = [];
+  for (var k = 0; k < wieviele; k++) {
+    typstage.goto(erste + k); await p.ruhig(4000);
+    ruhe.push(bild());
+  }
+
+  // Und der Zug selbst, angehalten auf halber Zeit.
+  typstage.goto(erste, true); await p.ruhig(4000);
+  var vorher = bild();
+  typstage.goto(erste + 1);
+  var t = takte(), mitte = -1;
+  if (t.length === 1) {
+    t[0].pause();
+    t[0].currentTime = t[0].effect.getTiming().duration / 2;
+    await zweiBilder();
+    mitte = bild();
+    t[0].cancel();
+  }
+
+  // Ein Sprung stellt: kein Zug, und das Bild am Ziel.
+  typstage.goto(erste + wieviele - 1, true);
+  await zweiBilder();
+  var sprung = bild(), sprungTakte = takte().length;
+  await p.ruhig(4000);
+  return JSON.stringify({
+    stops: +el.dataset.stops, tween: +el.dataset.tween,
+    bilder: el.querySelectorAll(".ts-frame").length,
+    ruhe: ruhe, vorher: vorher, zuege: t.length, mitte: mitte,
+    sprung: sprung, sprungTakte: sprungTakte
+  });
+})()`;
+
+// ── Wann die Uhr eines Daumenkinos zu laufen beginnt ────────────────────────
+//
+// Beim Aufdecken, nicht beim Folieneintritt. Das war einmal falsch, und der
+// Fall hat zwei Hälften, die zusammengehören.
+//
+// Die eine: `mediaOn` stempelte den Startpunkt beim Folieneintritt, für jedes
+// Daumenkino der Folie und ohne nach Sichtbarkeit zu fragen. Ein
+// `flipbook(at: "3-", loop: false)` stand im Augenblick des Aufdeckens deshalb
+// schon auf dem letzten Bild.
+//
+// Die andere: der Prüfstand konnte das nicht sehen. Unter der festgenagelten
+// Uhr kürzte sich der Startpunkt aus der Rechnung heraus -- genau die Größe,
+// um die es ging, fiel beim Messen weg. Ein Prüflauf hätte also grün bleiben
+// können, während das Kino abgelaufen war, bevor es zu sehen war.
+//
+// Darum wird hier beides an einem Stück gefragt: Bild 0, solange es verborgen
+// ist, Bild 0 im Augenblick des Aufdeckens -- und danach eine Uhr, die
+// weitergestellt wird und das Kino laufen lässt.
+//
+// Und darum stehen auf der Folie *zwei* Kinos, eines von Anfang an sichtbar
+// und eines erst auf Schritt 3. Sie fangen verschiedene Fehler. Ein
+// Startpunkt, der unter der festgenagelten Uhr aus der Rechnung fällt, macht
+// bei beiden alle fünf Zahlen gleich. Ein Startpunkt, der beim Folieneintritt
+// gestempelt wird, fällt dagegen nur dem ersten auf: das zweite ist beim
+// Betreten verborgen und bekommt seinen Startpunkt beim Aufdecken ohnehin neu.
+// Nachgemessen an genau dieser Mutation: 23/23/23/23/23 für das frühe Kino,
+// 0/0/0/12/23 für das späte -- mit nur einem späten Kino wäre sie durchgegangen.
+const KINOPROBE = (uhr) => `(async function () {
+  var p = typstage.pruef, S = typstage.steps;
+  var erstes = document.querySelector(".ts-flipbook");
+  if (!erstes) return JSON.stringify({ fehlt: 1 });
+  var folien = [].slice.call(document.querySelectorAll(".ts-slide"));
+  var folie = erstes.closest(".ts-slide");
+  var nr = folien.indexOf(folie);
+  // Beide Kinos der Folie, in der Reihenfolge des Quelltexts: das spät
+  // aufgedeckte und das von Anfang an sichtbare. Sie prüfen zwei verschiedene
+  // Hälften desselben Falls, siehe den Kommentar im Prüfdeck.
+  var kinos = [].slice.call(folie.querySelectorAll(".ts-flipbook"));
+  var erste = -1, wieviele = 0;
+  for (var i = 0; i < S.length; i++) if (S[i].slide === nr) {
+    if (erste < 0) erste = i;
+    wieviele++;
+  }
+  if (erste < 0) return JSON.stringify({ fehlt: -1 });
+  function bilder() {
+    return kinos.map(function (fb) {
+      var k = fb.querySelectorAll(".ts-frame");
+      for (var j = 0; j < k.length; j++) if (k[j].dataset.on) return j;
+      return -1;
+    });
+  }
+  function zweiBilder() {
+    return new Promise(function (r) {
+      requestAnimationFrame(function () { requestAnimationFrame(r); });
+    });
+  }
+  // Frisch betreten, damit der Startpunkt nichts von vorher weiß.
+  typstage.goto(0, true); await p.ruhig(4000);
+  p.uhr(${uhr});
+  typstage.goto(erste, true); await p.ruhig(4000); await zweiBilder();
+  var reihen = [bilder()];
+  for (var k = 1; k < wieviele; k++) {
+    typstage.goto(erste + k); await p.ruhig(4000); await zweiBilder();
+    reihen.push(bilder());
+  }
+  // Und jetzt die Uhr weiter, ohne einen Schritt. Nur die Zeit bewegt sich.
+  p.uhr(${uhr} + 500); await zweiBilder(); reihen.push(bilder());
+  p.uhr(${uhr} + 1000); await zweiBilder(); reihen.push(bilder());
+  p.uhr(${uhr});
+  return JSON.stringify({
+    reihen: reihen, anzahl: kinos.length,
+    an: kinos.map(function (fb) { return fb.dataset.at || "1-"; })
+  });
+})()`;
 
 // Animationen im Zeitraffer, ohne den Browser danach zu fragen. `playbackRate`
 // gibt es nur über CDP, also nur in Chrome; `Element.prototype.animate` gibt es
@@ -921,6 +1107,60 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
         }
       }
     }
+    // Wie eine Szene zieht, und wann die Uhr eines Daumenkinos anfängt. Beide
+    // nur im Prüfdeck: nur dort stehen eine Szene und ein spät aufgedecktes
+    // Daumenkino.
+    if (d.satz) {
+      const sz = JSON.parse(await b.ev(SZENENPROBE));
+      if (sz.fehlt !== undefined) {
+        z.maengel.push("keine Szene im Prüfdeck gefunden (" + sz.fehlt
+          + "). Entweder ist die Folie weg oder .ts-scene heißt anders.");
+      } else {
+        z.szene = sz.stops + " Halte · " + sz.bilder + " Bilder · "
+                + sz.ruhe.join("/") + " · Mitte " + sz.mitte + " · Sprung "
+                + sz.sprung;
+        if (sz.zuege !== 1) {
+          z.maengel.push("beim Schritt von Halt 1 auf Halt 2 lief " + sz.zuege
+            + "x ein Zug am Rumpf des Dokuments, erwartet genau einer. Ohne "
+            + "Zug springt die Szene, statt zu ziehen -- und der Prüflauf "
+            + "könnte das an den Ruhezuständen allein nicht sehen.");
+        }
+        if (sz.sprungTakte !== 0) {
+          z.maengel.push("ein Sprung mit goto(…, true) hat einen Zug "
+            + "angeworfen. Ein Sprung stellt die Szene, er zieht sie nicht: "
+            + "dort gibt es keinen Weg, den jemand gesehen hätte.");
+        }
+        if (sz.mitte <= sz.vorher || sz.mitte >= sz.ruhe[1]) {
+          z.maengel.push("auf halber Zeit steht Bild " + sz.mitte
+            + ", also nicht zwischen " + sz.vorher + " und " + sz.ruhe[1]
+            + ". Der Zug zeigt keine Zwischenbilder.");
+        }
+      }
+      const ki = JSON.parse(await b.ev(KINOPROBE(UHR)));
+      if (ki.fehlt !== undefined) {
+        z.maengel.push("kein Daumenkino im Prüfdeck gefunden (" + ki.fehlt
+          + "). Ohne eines bleibt ungeprüft, wann seine Uhr anfängt.");
+      } else if (ki.anzahl !== 2) {
+        z.maengel.push("auf der Folie des Daumenkinos stehen " + ki.anzahl
+          + " statt zwei. Es braucht ein spät aufgedecktes und ein von Anfang "
+          + "an sichtbares -- die beiden prüfen verschiedene Hälften des Falls.");
+      } else {
+        // Je Kino eine Reihe: Schritt 1, 2, 3, dann die Uhr um 500 und um
+        // 1000 ms weiter, ohne dass ein Schritt geschieht.
+        z.kino = ki.an.map((an, k) =>
+          "at " + an + " " + ki.reihen.map(r => r[k]).join("/")).join(" · ");
+        ki.an.forEach((an, k) => {
+          const reihe = ki.reihen.map(r => r[k]);
+          if (reihe.every(x => x === reihe[0])) {
+            z.maengel.push("das Daumenkino at " + an + " zeigt auf allen fünf "
+              + "Messungen Bild " + reihe[0] + ". Dann geht der Startpunkt "
+              + "nicht in die Rechnung ein, und der Prüflauf kann nicht sehen, "
+              + "wann die Uhr anfängt -- genau der blinde Fleck, an dem der "
+              + "Fehler so lange vorbeikam.");
+          }
+        });
+      }
+    }
 
     // Wiedereintritt über den Hash. Frische Seite, sonst ist es nur ein Sprung.
     const ziel = Math.min(8, r.schritte);
@@ -1012,7 +1252,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   const felder = ["folien", "schritte", "elemente", "flieger", "fliegerRueck",
                   "feder", "federRueck", "hash", "hashStand", "sprecher",
                   "grund", "sichtbar", "sichtbarRueck", "fehler", "halt",
-                  "masz", "zeichnung", "kurve", "satz", "satzBytes"];
+                  "masz", "zeichnung", "kurve", "satz", "satzBytes", "szene",
+                  "kino"];
   // `satz` und `satzBytes` hängen an den Schriften des Rechners, nicht am
   // Paket: derselbe Stand ergibt auf macOS 546292 Bytes und auf einem
   // Ubuntu-Läufer 500912, während alle übrigen Felder -- Schritte, Elemente,
