@@ -309,6 +309,24 @@ Dritter Schritt.
 //
 // `loop: false` mit Absicht: ein laufendes Kino ist nach einer Sekunde wieder
 // bei sich selbst, und dann sagte die letzte Zahl nichts mehr.
+// Zuerst das Kino, das von Anfang an zu sehen ist. Es steht *vor* der ersten
+// Pause, und das ist keine Anordnungsfrage: alles hinter einem `#pause` wandert
+// in den Abschnitt des nächsten Schritts, und ein Kino darin ist beim Betreten
+// der Folie verborgen wie das andere auch. Nachgemessen -- unten geschrieben
+// zeigte es dieselbe Reihe wie sein Nachbar und prüfte damit nichts Eigenes.
+//
+// Ohne dieses Kino bleibt eine Hälfte des Falls ungeprüft: stempelt `mediaOn`
+// den Startpunkt wieder beim Folieneintritt, merkt das spät aufgedeckte Kino
+// nichts davon -- es ist beim Betreten verborgen, und der Takt setzt seinen
+// Startpunkt beim Aufdecken ohnehin neu. Dieses hier ist beim Betreten
+// sichtbar, behält also den Stempel aus `mediaOn`, und unter der festgenagelten
+// Uhr ist das der Unterschied zwischen Bild 0 und Bild 23.
+#flipbook(
+  t => box(width: 100%, height: 100%,
+    place(left + horizon, dx: t * 88%, circle(radius: 6pt, fill: blue))),
+  frames: 24, fps: 24, loop: false, width: 240pt, height: 30pt,
+)
+
 Erster Schritt.
 #pause
 Zweiter Schritt.
@@ -318,3 +336,26 @@ Zweiter Schritt.
     place(left + horizon, dx: t * 88%, circle(radius: 9pt, fill: red))),
   frames: 24, fps: 24, loop: false, at: "3-", width: 240pt, height: 40pt,
 )
+
+== Eine Szene ganz allein
+// Eine Folie, auf der nichts steht als eine Szene: keine Schicht, kein anim,
+// nichts, was eine Schrittzahl in seinen Selektor schriebe.
+//
+// Genau darin liegt ihre Aufgabe. Der Selektor einer Szene ist offen -- sie
+// steht von ihrem ersten Halt an durchgehend da -- und nennt deshalb nur, ab
+// wann. Wie viele Schritte sie *verbraucht*, muss die Laufzeit aus der Zahl
+// ihrer Halte lesen. Auf der Folie oben fiele es nicht auf, wenn sie das
+// vergäße: dort tragen die Schicht auf Halt 4 und der anim dahinter die 4 und
+// die 5 ohnehin in ihre Selektoren. Gemessen, indem der Laufzeit die Zeile
+// genommen wurde, die nach den Halten sieht: mit dieser Folie fiel `schritte`
+// von 50 auf 48, ohne sie bewegte sich keine Zahl.
+#scene(x => box(width: 200pt, height: 40pt,
+  place(left + horizon, dx: x * 1pt,
+        rect(width: 20pt, height: 20pt, fill: blue))),
+  stops: (0, 90, 180), tween: 2, width: 200pt, height: 40pt)
+
+#context assert(info().step.total == 3, message:
+  "Prüfdeck: die Folie mit der alleinstehenden szene() zählt "
+  + str(info().step.total) + " Schritte statt 3. Eine Szene mit drei Halten "
+  + "verbraucht zwei Schritte, und niemand sonst steht auf dieser Folie, der "
+  + "das ausgleichen könnte.")

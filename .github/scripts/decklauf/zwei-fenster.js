@@ -62,6 +62,20 @@ const stand = `(function () {
     fehler: window.typstage.pruef.fehler() });
 })()`;
 
+// Auf welchem Bild die Szene der Folie steht -- in dem Fenster, das gefragt
+// wird. Eine Szene haengt am Schritt und nicht an der Uhr, also muss sie in
+// beiden Fenstern dasselbe Bild zeigen. Ueber `#ts-stage`, wo es die Buehne
+// gibt: im Sprecherfenster steht daneben noch die Vorschau, und die traegt
+// eine zweite Szene, die absichtlich einen Schritt weiter ist.
+const szeneBild = `(function () {
+  var b = document.querySelector('#ts-stage') || document;
+  var el = b.querySelector('.ts-scene');
+  if (!el) return -2;
+  var f = el.querySelectorAll('.ts-frame');
+  for (var j = 0; j < f.length; j++) if (f[j].dataset.on) return j;
+  return -1;
+})()`;
+
 (async () => {
   const datei = deckBauen();
   const halle = await starte(arg("--browser", null) || browserSuchen());
@@ -216,6 +230,45 @@ const stand = `(function () {
     }
     console.log("Zurueck: Halle S" + zurueck.h.auf + " [" + zurueck.h.punkte
       + "] · Sprecher [" + zurueck.s.punkte + "]");
+
+    // ── Und die Szene, in beiden Fenstern ───────────────────────────────────
+    //
+    // Sie haengt am Schritt und nicht an der Uhr; ein Schritt drueben muss
+    // also hier dasselbe Bild ergeben. Ein Daumenkino koennte das nicht: es
+    // haengt an zwei Uhren, die nie genau gleich gehen.
+    const zurSzene = `(function () {
+      var st = window.typstage.steps;
+      for (var k = 0; k < st.length; k++) {
+        var sec = window.typstage.slides[st[k].slide];
+        if (sec && sec.querySelector('.ts-scene') && st[k].step === 1) {
+          window.typstage.goto(k, true); return k;
+        }
+      }
+      return -1;
+    })()`;
+    const sz = await sprecher.ev(zurSzene);
+    if (sz < 0) {
+      sagt("szene", "keine Szene im Prüfdeck gefunden");
+    } else {
+      await schlaf(1100);
+      const erst = [await halle.ev(szeneBild), await sprecher.ev(szeneBild)];
+      if (erst[0] !== erst[1]) {
+        sagt("szene", "beim Betreten steht die Halle auf Bild " + erst[0]
+          + ", das Sprecherfenster auf " + erst[1]);
+      }
+      await sprecher.taste("ArrowRight");
+      await schlaf(1400);
+      const nun = [await halle.ev(szeneBild), await sprecher.ev(szeneBild)];
+      if (nun[0] !== nun[1]) {
+        sagt("szene", "nach einem Schritt steht die Halle auf Bild " + nun[0]
+          + ", das Sprecherfenster auf " + nun[1]);
+      }
+      if (!(nun[0] > erst[0])) {
+        sagt("szene", "ein Schritt im Sprecherfenster hat die Szene in der "
+          + "Halle nicht weitergezogen: Bild " + erst[0] + " -> " + nun[0]);
+      }
+      console.log("Szene: Bild " + erst[0] + " -> " + nun[0] + " in beiden Fenstern");
+    }
 
     await sprecher.ende();
   } catch (e) {
