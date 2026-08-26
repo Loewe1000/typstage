@@ -467,18 +467,17 @@ Write the motion down and the whole question collapses into one square root:
     getting there.
   ],
   card(title: [What it does not])[
-    At $zeta = 1$ the door never actually touches the frame; it only ever
-    approaches it. Every setting that arrives in finite time overshoots — by
-    five per cent at $zeta = 0.7$, by a quarter at $zeta = 0.4$.
+    At $zeta = 1$ the door never touches the frame; it only approaches it.
+    Everything that arrives in finite time overshoots: five per cent at
+    $zeta = 0.7$, a quarter at $zeta = 0.4$.
   ],
 )
 
 #v(0.6em)
 
 #anim(at: 2, enter: "fade-up", callout(title: [Which is why doors are set under one])[
-  A door has to latch, so it has to arrive, so it has to overshoot a little.
-  How little depends on whether anybody is trying to sleep on the other side
-  of the wall.
+  A door has to latch, so it has to arrive, so it has to overshoot. How much
+  depends on who is asleep on the other side of the wall.
 ])
 
 #v(1fr)
