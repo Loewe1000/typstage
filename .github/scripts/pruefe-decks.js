@@ -872,8 +872,7 @@ const KAMERAPROBE = `(async function () {
   function streckung(el) {
     var t = el ? getComputedStyle(el).transform : "none";
     if (!t || t === "none") return 1;
-    var z = t.replace(/^matrix\(/, "").split(",");
-    return +(+z[0]).toFixed(3);
+    return +(new DOMMatrix(t).a).toFixed(3);
   }
   function stand(nr) {
     var f = folien[nr];

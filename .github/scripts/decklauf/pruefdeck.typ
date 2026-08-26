@@ -435,9 +435,15 @@ Zweiter Schritt.
 // eigens kommentiert, und der einzige, in dem die Kamera ins Leere zielen
 // kann, ohne dass am Deck etwas falsch wäre. Findet sie nichts, klagt sie in
 // die Konsole -- dann wächst `fehler`, und die Reihe geht flach.
+//
+// Und das Ziel ist klein. Ein Detail von der Breite der Folie ergäbe eine
+// Streckung knapp über eins, und dann läge die Zahl auf halber Zeit so dicht
+// am Ziel, dass eine Gerade statt der Hauskurve in der dritten Nachkommastelle
+// verschwände. Sechzig auf vierzig Punkt strecken auf das Siebenfache, und
+// dort ist der Unterschied zu sehen.
 #anim(at: 2, card(title: [Das Detail])[
-  #pin(<detail>, box(inset: 3pt)[Zwei Zeilen, damit daraus ein Rechteck wird
-  und nicht ein Strich ohne Fläche.])
+  Ein Kasten, klein genug, dass sich das Heranfahren lohnt:
+  #pin(<detail>, rect(width: 60pt, height: 40pt, fill: accent))
 ])
 #camera(<detail>, at: "2-3", margin: 10pt)
 #anim(at: 4)[Ein Schritt nach der Fahrt.]
