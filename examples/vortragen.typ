@@ -311,7 +311,7 @@
 #cue("odd", spacing: 0.9em)[
   - The Lion Brewery, halfway down Broad Street
   - The workhouse on Poland Street, inside the worst of it
-  - A widow in Hampstead, two miles away
+  - A widow in Hampstead, three miles away
 ]
 
 #v(0.8em)
@@ -343,7 +343,7 @@
     Its own well and pump inside the walls. The poorest people on the map,
     and almost untouched.
   ]),
-  cue-layer("odd", 3, tile[2 miles off, 1 dead][
+  cue-layer("odd", 3, tile[3 miles off, 1 dead][
     A cart brought her a bottle of Broad Street water every week. She liked
     the taste of it.
   ]),
