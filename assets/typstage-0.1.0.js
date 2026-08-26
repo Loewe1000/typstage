@@ -1011,9 +1011,14 @@
       if (!v || w.dataset.autoplay === "0") return;
       if (v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
     });
+    // Aufgenommen, aber noch nicht gestartet: `t0` bleibt leer, bis das
+    // Daumenkino wirklich zu sehen ist. Wer es hier stempelte, ließe die Uhr
+    // beim *Folieneintritt* loslaufen, und ein `flipbook(at: "3-")` wäre
+    // abgelaufen, bevor es aufgedeckt wird -- gemessen: Bild 23 von 24 im
+    // Augenblick des Aufdeckens.
     SLIDES[i].querySelectorAll(".ts-flipbook").forEach(function (fb) {
       for (var k = 0; k < ticking.length; k++) if (ticking[k].el === fb) return;
-      ticking.push({ el: fb, t0: performance.now(), letztes: -1 });
+      ticking.push({ el: fb, t0: null, letztes: -1 });
     });
   }
   function mediaOff(i) {
@@ -1030,8 +1035,22 @@
       var t = ticking[k];
       var n = +t.el.dataset.frames, fps = +t.el.dataset.fps || 30;
       if (!n) continue;
+      // Wann die Uhr eines Daumenkinos zu laufen beginnt: wenn es zu sehen
+      // ist, nicht wenn seine Folie kommt. Ein `flipbook(at: "3-")` liegt auf
+      // den ersten beiden Schritten still und faengt beim Aufdecken bei null
+      // an; wird es wieder zugedeckt, faengt es beim naechsten Mal von vorn
+      // an, denn wer zurueckblaettert, will es noch einmal sehen.
+      //
+      // Verborgen steht Bild 0 da, und das ist zweifach das richtige: es ist
+      // das Bild, das Typst in den Kasten gesetzt hat, bevor irgendeine Uhr
+      // lief, und es ist das Bild, das auf Papier steht.
+      var sichtbar = t.el.dataset.on === "1";
+      if (!sichtbar) t.t0 = null;
+      else if (t.t0 === null) t.t0 = current;
       var i;
-      if (wenigerBewegung()) {
+      if (t.t0 === null) {
+        i = 0;
+      } else if (wenigerBewegung()) {
         // Frozen on one frame. A looping flipbook is the loudest thing this
         // package can put on a slide: it runs from the moment the slide
         // comes up until the moment it goes, and it pulls the eye the whole
@@ -1049,9 +1068,15 @@
         i = (t.el.dataset.pingpong !== "1" && t.el.dataset.loop === "0")
           ? n - 1 : 0;
       } else {
-        // With the clock pinned the start time drops out as well. Otherwise the
-        // frame would still depend on when the slide was entered.
-        i = Math.floor((current - (PRUEFUHR === null ? t.t0 : 0)) / 1000 * fps);
+        // Der Startstempel geht immer ein, auch bei festgenagelter Uhr. Er
+        // kuerzte sich sonst heraus -- und genau die Groesse, um die es geht,
+        // faellt beim Messen weg: mit `t0 = 0` zeigte ein Daumenkino unter der
+        // Pruefuhr auf jedem Schritt dasselbe Bild, das aufgedeckte wie das
+        // verborgene, und der Prueflauf konnte den Fall nicht sehen. Ein
+        // Stempel, der in derselben Zeit genommen wird, in der auch abgelesen
+        // wird, macht die Rechnung wieder beobachtbar: aufgedeckt steht Bild
+        // 0 da, und wer die Pruefuhr weiterstellt, sieht das Kino laufen.
+        i = Math.floor((current - t.t0) / 1000 * fps);
         if (t.el.dataset.pingpong === "1") {
           var p = n > 1 ? 2 * n - 2 : 1;
           var m = i % p;
@@ -3423,11 +3448,22 @@
       // Pin the wall clock, or hand it back with no argument.
       // A number or nothing. Without the check `uhr("abc")` pins the clock to
       // NaN and every flipbook shows nonsense until someone calls `uhr()`.
+      // Wechselt die Uhr die Art -- Wanduhr gegen festgenagelt --, faengt
+      // jedes laufende Daumenkino von vorn an. Sein Startstempel steht in der
+      // Zeit, die vorher galt, und in der neuen ist er eine beliebige Zahl.
+      // Das Weiterstellen einer schon festgenagelten Uhr laesst ihn stehen:
+      // genau daran misst ein Prueflauf, dass das Kino ueberhaupt laeuft.
       uhr: function (ms) {
-        if (ms == null) { PRUEFUHR = null; return null; }
-        var n = +ms;
-        if (!isFinite(n)) { throw new TypeError("typstage: uhr() takes a number of milliseconds, or nothing"); }
-        PRUEFUHR = n;
+        var vorher = PRUEFUHR;
+        if (ms == null) { PRUEFUHR = null; }
+        else {
+          var n = +ms;
+          if (!isFinite(n)) { throw new TypeError("typstage: uhr() takes a number of milliseconds, or nothing"); }
+          PRUEFUHR = n;
+        }
+        if ((vorher === null) !== (PRUEFUHR === null)) {
+          ticking.forEach(function (t) { t.t0 = null; t.letztes = -1; });
+        }
         return PRUEFUHR;
       },
 
