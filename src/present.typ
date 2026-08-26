@@ -734,11 +734,18 @@
             dim-index.update(a => a + meine-dims)
             html.elem("script", attrs: (class: "ts-bridge", type: "application/json"),
                       json.encode(bridge-jobs.get()))
-            // Die Fahrten dieser Folie. Ein eigenes Skript und nicht das
-            // daneben: eine Kamerafahrt geht keine Bruecke, und ein Deck ohne
-            // Kamera schreibt hier `[]` -- vier Zeichen, die niemand merkt.
-            html.elem("script", attrs: (class: "ts-camera", type: "application/json"),
-                      json.encode(kamera-liste.get()))
+            // Die Fahrten dieser Folie. Ein eigenes Skript und nicht das der
+            // Bruecke daneben: eine Kamerafahrt geht keine Bruecke.
+            //
+            // Und nur, wenn es welche gibt. Die Bruecke schreibt ihr leeres
+            // `[]` auf jede Folie, weil sie es immer schon tat; eine neue
+            // Marke auf jeder Folie jedes Decks waere dagegen eine Aenderung
+            // an Decks, die von einer Kamera nichts wissen wollen. So sieht
+            // ein Deck ohne Kamera aus wie eines von gestern, Byte fuer Byte.
+            if kamera-liste.get().len() > 0 {
+              html.elem("script", attrs: (class: "ts-camera", type: "application/json"),
+                        json.encode(kamera-liste.get()))
+            }
           }
         })
       })
