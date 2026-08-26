@@ -69,30 +69,38 @@
   start: (px(x1), px(y1)), end: (px(x2), px(y2)),
   stroke: (paint: luma(91%), thickness: 7pt * m, cap: "round")))
 
-// Ein Punkt, an seiner Mitte angegeben. `place` setzt die linke obere Ecke, der
-// Radius muss also abgezogen werden.
-#let punkt(x, y, r: 2.7pt, fill: tot) = place(
-  top + left, dx: px(x) - r, dy: px(y) - r,
-  circle(radius: r, fill: fill, stroke: none))
+// Ein Stück Karte an seinem Ort, und zwar als Schicht der Gruppe "karte".
+//
+// Das `place` steht *außen* und `cue-layer` innen, nicht umgekehrt. Ein
+// verfolgtes Element bekommt im Browser seinen Ort aus der Messung, die Typst
+// von ihm macht, und ein `place` in seinem Inneren nimmt keinen Platz ein --
+// gemessen landete die ganze Schicht dann in der Ecke des Kastens statt auf
+// ihrer Straße. Ein Punkt darf so viele Schichten haben, wie er will, also
+// bekommt jedes Stück sein eigenes `place`.
+#let auf(nr, x, y, body, dx: 0pt, dy: 0pt) = place(
+  top + left, dx: px(x) + dx, dy: px(y) + dy,
+  cue-layer("karte", nr, body))
+
+// Ein Toter, an seiner Mitte angegeben. `place` setzt die linke obere Ecke,
+// der Radius muss also abgezogen werden.
+#let punkt(nr, x, y, r: 2.7pt, fill: tot) = auf(
+  nr, x, y, dx: -r, dy: -r, circle(radius: r, fill: fill, stroke: none))
 
 // Eine Pumpe: heller Ring mit Kern. Kein gefüllter Kreis -- der sähe aus wie
 // ein sehr großer Toter.
-#let pumpe(x, y, r: 6pt, fill: wasser) = place(
-  top + left, dx: px(x) - r, dy: px(y) - r,
+#let pumpe(nr, x, y, r: 6pt, fill: wasser) = auf(
+  nr, x, y, dx: -r, dy: -r,
   circle(radius: r, fill: white, stroke: 2.2pt + fill))
 
-#let beschriftung(x, y, body, fill: leise, size: 8pt) = place(
-  top + left, dx: px(x), dy: px(y),
-  text(size: size, fill: fill, weight: 500, body))
+#let beschriftung(nr, x, y, body, fill: leise, size: 8pt) = auf(
+  nr, x, y, text(size: size, fill: fill, weight: 500, body))
 
-// Ein Häuserblock, umrissen statt gefüllt: unter ihm liegt nichts, was verdeckt
-// werden dürfte, aber die Punkte ringsum sollen weiterlaufen.
-#let block-haus(x1, y1, x2, y2, body) = {
-  place(top + left, dx: px(x1), dy: px(y1), rect(
-    width: px(x2 - x1), height: px(y2 - y1),
-    fill: wasser.lighten(92%), stroke: 1pt + wasser.lighten(45%), radius: 2pt,
-    inset: 5pt, text(size: 8pt, fill: wasser.darken(15%), weight: 600, body)))
-}
+// Ein Häuserblock, hell hinterlegt statt gefüllt: unter ihm liegt nichts, was
+// verdeckt werden dürfte, aber die Punkte ringsum sollen weiterlaufen.
+#let block-haus(nr, x1, y1, x2, y2, body) = auf(nr, x1, y1, rect(
+  width: px(x2 - x1), height: px(y2 - y1),
+  fill: wasser.lighten(92%), stroke: 1pt + wasser.lighten(45%), radius: 2pt,
+  inset: 5pt, text(size: 8pt, fill: wasser.darken(15%), weight: 600, body)))
 
 // Die Toten, Haus für Haus an der Straßenfront. Die Dichte fällt mit der
 // Entfernung zur Pumpe -- das ist die ganze Aussage der Karte, und deshalb sind
@@ -124,40 +132,43 @@
   strasse(150, 42, 150, 272)
   strasse(300, 42, 300, 272)
   strasse(375, 42, 375, 252)
-  beschriftung(42, 128, [BROAD STREET])
+  place(top + left, dx: px(42), dy: px(128),
+        text(size: 8pt, fill: leise, weight: 500, [BROAD STREET]))
 
   // Schicht 1 bis 5. Sie stehen hier in der geschriebenen Folge, aber welche
-  // wann erscheint, entscheidet die Ziffer. Die Reihenfolge im Quelltext legt
-  // allein fest, was über was liegt, und das muss fest sein.
-  cue-layer("karte", 1, tote.map(((x, y)) => punkt(x, y)).join())
-  cue-layer("karte", 2, {
-    pumpe(215, 150)
-    // Die Beschriftung steht weit unter der Straße statt neben der Pumpe: neben
-    // ihr liegen die Toten, und ein Wort über ihnen nähme der Karte ihre
-    // Aussage. Der Strich beginnt erst unterhalb der Häuserreihe, sonst liefe
-    // er durch einen Punkt.
-    place(top + left, dx: px(215), dy: px(168), line(
-      length: px(44), angle: 90deg, stroke: 0.8pt + wasser))
-    beschriftung(174, 214, fill: wasser.darken(10%), size: 8.5pt,
-                 [Broad Street pump])
-  })
-  cue-layer("karte", 3, {
-    pumpe(75, 70, r: 5pt, fill: leise)
-    pumpe(375, 100, r: 5pt, fill: leise)
-    pumpe(95, 240, r: 5pt, fill: leise)
-    pumpe(352, 240, r: 5pt, fill: leise)
-  })
-  cue-layer("karte", 4, {
-    block-haus(252, 166, 296, 210, [Lion \ Brewery])
-    block-haus(165, 90, 215, 138, [Workhouse])
-  })
-  cue-layer("karte", 5, place(top + left, curve(
+  // wann erscheint, entscheidet die Ziffer. Der Quelltext legt allein fest,
+  // was über was liegt, und das muss fest sein.
+  tote.map(((x, y)) => punkt(1, x, y)).join()
+
+  pumpe(2, 215, 150)
+  // Die Beschriftung steht weit unter der Straße statt neben der Pumpe: neben
+  // ihr liegen die Toten, und ein Wort über ihnen nähme der Karte ihre Aussage.
+  // Der Strich beginnt erst unterhalb der Häuserreihe, sonst liefe er durch
+  // einen Punkt.
+  // Als Rechteck und nicht als `line`: eine gedrehte Linie ist ein Rahmen ohne
+  // Breite, und im Browser bekommt ein verfolgtes Element daraus nichts, was
+  // sich zeichnen ließe -- gemessen fehlte der Strich dort, während er auf
+  // Papier stand.
+  auf(2, 214.5, 168, rect(width: 1pt, height: px(44), fill: wasser,
+                          stroke: none))
+  beschriftung(2, 174, 214, fill: wasser.darken(10%), size: 8.5pt,
+               [Broad Street pump])
+
+  pumpe(3, 75, 70, r: 5pt, fill: leise)
+  pumpe(3, 375, 100, r: 5pt, fill: leise)
+  pumpe(3, 95, 240, r: 5pt, fill: leise)
+  pumpe(3, 352, 240, r: 5pt, fill: leise)
+
+  block-haus(4, 252, 166, 296, 210, [Lion \ Brewery])
+  block-haus(4, 165, 90, 215, 138, [Workhouse])
+
+  auf(5, 0, 0, curve(
     stroke: (paint: wasser, thickness: 1.4pt, dash: "dashed"),
     fill: none,
     curve.move((px(grenze.first().at(0)), px(grenze.first().at(1)))),
     ..grenze.slice(1).map(((x, y)) => curve.line((px(x), px(y)))),
     curve.close(),
-  )))
+  ))
 })
 
 
@@ -222,15 +233,12 @@
 
 #speaker-note[
   Ask the question, then be quiet for a count of ten. Whatever gets called out,
-  press its digit -- 1 to 5, in whatever order they come. The right arrow takes
-  the next one nobody has named yet, so you can always move on.
-
-  Do not correct the order. If the brewery comes first, the brewery comes
-  first; the map is the same map either way.
-
-  If anyone in the room runs their machine on "reduce motion", the layers
-  still fade in. What falls away is only the travel, not the fading, so
-  nothing on this slide stops being legible.
+  press its digit -- 1 to 5, in whatever order they come; the right arrow takes
+  the next one nobody has named yet, so you can always move on. Do not correct
+  the order: if the brewery comes first, the brewery comes first, and the map
+  is the same map either way. One more thing, if anyone in the room runs their
+  machine on "reduce motion": the layers still fade in, and what falls away is
+  the travel and not the fading, so nothing here stops being legible.
 ]
 
 // Die Gruppe steht links und damit *vor* der Karte. Das ist keine Frage des
@@ -258,10 +266,9 @@
 #speaker-note[
   This is the slide where you take suggestions and take them seriously. Press
   the digit for whatever they name; the question that goes with it comes up on
-  its own, and that question is for them, not for you to answer.
-
-  If nobody says water, do not lead them to it. Number 4 is still there when
-  the other three have run out.
+  its own, and that question is for them, not for you to answer. If nobody
+  says water, do not lead them to it -- number 4 is still there when the other
+  three have run out.
 ]
 
 // Jeder Punkt und jede Frage genau eine Zeile lang, und beide Spalten im
@@ -297,12 +304,10 @@
 == The three that do not fit
 
 #speaker-note[
-  Three places break the pattern. Let them pick which one to open, and open it.
-  The order genuinely does not matter here: each one is a whole argument by
-  itself, and any of the three would do.
-
-  Hold the brewery until last if you can. Free beer is the line they will
-  repeat at home, and it is also the cleanest experiment on the slide.
+  Three places break the pattern. Let them pick which one to open, and open it:
+  the order genuinely does not matter, because each one is a whole argument by
+  itself. Hold the brewery until last if you can -- free beer is the line they
+  will repeat at home, and it is also the cleanest experiment on the slide.
 ]
 
 #cue("bruch", spacing: 0.9em)[
