@@ -191,6 +191,28 @@ const SOLL_HINWEIS = [
   "gegeneinander und die geteilte Tinte sänke auf zwei Drittel -- am",
   "Ruhezustand ist davon nichts zu sehen, an den Zwischenbildern schon.",
   "",
+  "feder und federRueck sind die Zahl der Pfade, die sich auf dem Hin- und auf",
+  "dem Rueckweg selbst gezeichnet haben (enter: \"draw\"). Gezaehlt wie flieger:",
+  "in der Laufzeit, dort wo sie entstehen (FEDER in assets/typstage-0.1.0.js),",
+  "und nicht am DOM. Sie stehen bei allen Decks; nur das Pruefdeck zeichnet,",
+  "bei den anderen sind sie 0 -- und das ist selbst eine Aussage, denn ein Deck,",
+  "das ploetzlich zeichnet, hat sich veraendert.",
+  "",
+  "zeichnung steht nur beim Pruefdeck und beschreibt eine Fahrt der Feder:",
+  "  <Pfade hin>+<Pfade zurueck> · <Richtung hin>/<Richtung zurueck> ·",
+  "  <Deckkraft der Blende darunter> · <offen nach dem Hinweg>/<offen am Ende>",
+  "  · Sprung <Federn>/<gezeichnet>/<insgesamt gezogen>.",
+  "Keine Laenge und keine Dauer: beide haengen am Fenster und am --tempo. Die",
+  "Richtung haengt an keinem von beiden. Hinter dem Sprung steht der Endzustand,",
+  "den ein Sprung herstellen muss, ohne die Zeichnung zu spielen: keine Feder,",
+  "das Element gezeichnet, und die Gesamtzahl unveraendert.",
+  "",
+  "kurve steht ebenfalls nur beim Pruefdeck:",
+  "  <was easing: ins Markup geschrieben hat> · <Kurve der Blende> ·",
+  "  <Kurve der Feder>. Alle drei, weil jede fuer sich auf die Hauskurve",
+  "zurueckfallen kann. Leerzeichen und fuehrende Nullen sind herausgerechnet,",
+  "sonst schrieben Chrome und Firefox dieselbe Kurve verschieden auf.",
+  "",
   "masz steht ebenfalls nur beim Prüfdeck und sagt, wie viele verschiedene",
   "Maße die Stufen einer aufbau-Zeichnung melden. Es muss genau eines sein:",
   "alle Stufen liegen deckungsgleich, weil ein Stück, das noch nicht dran ist,",
@@ -336,6 +358,51 @@ function papierProbe() {
   return null;
 }
 
+// Gegenprobe zur Klage über `enter: "draw"` ohne gestrichenen Pfad.
+//
+// `ohne-strich.typ` übersetzt anstandslos, und das ist der Punkt: diese
+// Meldung ist zur Übersetzungszeit nicht zu haben. Typst gibt das SVG erst
+// beim Export heraus, und im Dokument gibt es keine Frage, die „hat dieser
+// Inhalt eine Kontur" beantwortete. Erst im Browser steht der Pfad da.
+//
+// Also läuft das Deck im Browser, und hier wird nachgesehen, ob genau eine
+// Klage herauskommt. Ohne das könnte die Klage aufhören zu klagen und
+// niemandem fiele es auf: das Element blendet dann still auf, und eine stille
+// Blende sieht aus wie eine gewollte.
+//
+// Genau eine, nicht mindestens eine: die Klage geht einmal je Element heraus
+// und nicht einmal je Schritt. Wer sechsmal durch das Deck blättert, soll sie
+// nicht sechsmal lesen.
+async function ohneStrichProbe(b) {
+  let datei;
+  try { datei = decklaufBauen("ohne-strich"); }
+  catch (e) {
+    return "ohne-strich.typ ließ sich nicht übersetzen: "
+      + String(e.meldung || "").slice(0, 300);
+  }
+  await laden(b, "about:blank");
+  if (!await laden(b, "file://" + datei)) return "ohne-strich.typ lud nicht";
+  const roh = await b.ev(`(async function () {
+    var p = typstage.pruef;
+    // Durch das ganze Deck: die Klage faellt beim Auftritt, und der faellt
+    // nicht beim Betreten der Folie.
+    typstage.goto(0, true); await p.ruhig(4000);
+    for (var i = 1; i < p.schritte; i++) { typstage.goto(i); await p.ruhig(4000); }
+    return JSON.stringify(p.fehler());
+  })()`);
+  const klagen = JSON.parse(roh).filter(x => x.indexOf('enter: "draw"') >= 0);
+  const fremd = JSON.parse(roh).filter(x => x.indexOf('enter: "draw"') < 0);
+  if (fremd.length) return "ohne-strich.typ meldete außerdem: " + fremd.join(" | ");
+  if (klagen.length === 1) return null;
+  if (klagen.length === 0) {
+    return "ein Element mit enter: \"draw\" ohne gestrichenen Pfad blendete "
+      + "still auf. Die Laufzeit sagt nichts mehr dazu, und eine stille Blende "
+      + "sieht aus wie eine gewollte.";
+  }
+  return klagen.length + " Klagen statt einer. Sie gehört einmal je Element "
+    + "heraus, nicht einmal je Schritt.";
+}
+
 // ── Der Durchlauf, als ein Stück Seitencode ─────────────────────────────────
 const DURCHLAUF = `(async function () {
   var p = typstage.pruef, S = typstage.steps;
@@ -363,7 +430,7 @@ const DURCHLAUF = `(async function () {
     await ruhe();
     vor.push(p.stand());
   }
-  var vorFlieger = p.stand().flieger;
+  var vorFlieger = p.stand().flieger, vorFeder = p.stand().feder;
   for (var j = p.schritte - 2; j >= 0; j--) {
     var w2 = S[j].slide !== S[j + 1].slide;
     typstage.goto(j);
@@ -383,6 +450,10 @@ const DURCHLAUF = `(async function () {
   return JSON.stringify({
     folien: p.folien, schritte: p.schritte, elemente: p.elemente,
     flieger: vorFlieger, fliegerRueck: p.stand().flieger - vorFlieger,
+    feder: vorFeder, federRueck: p.stand().feder - vorFeder,
+    // Kein Pfad darf nach der Fahrt noch eine Feder tragen. Am Ende gefragt,
+    // wo die Buehne zur Ruhe gekommen ist.
+    federOffen: p.stand().federOffen,
     flyDom: flyDom, flyDomRueck: flyDomRueck,
     fristen: fristen, grund: grund,
     vor: vor, zurueck: zurueck, fehler: p.fehler()
@@ -450,6 +521,90 @@ const HALTPROBE = `(async function () {
   var einig = masze.filter(function (m, i) { return masze.indexOf(m) === i; });
   return JSON.stringify({ raus: raus, rein: rein, an: an,
                           stufen: stufen.length, masze: einig });
+})()`;
+
+// ── Wie ein Pfad sich selbst zeichnet ───────────────────────────────────────
+//
+// Der Durchlauf oben zaehlt, *dass* gezeichnet wurde. Was er nicht sieht, ist
+// der Weg: faehrt die Feder hinein und rueckwaerts wieder heraus, laeuft sie
+// so lange wie die Blende darunter, und traegt sie die Kurve, die das Deck
+// genannt hat.
+//
+// Gefragt wird die Animation selbst und keine Deckkraft zu einem geratenen
+// Zeitpunkt -- eine Messung, die an einer Uhr haengt, haengt am Rechner. In
+// den Sollstand geht nur, was keine Dauer ist und keine Laenge: beide haengen
+// am Fenster und an den Schriften.
+const ZEICHENPROBE = `(async function () {
+  var p = typstage.pruef, S = typstage.steps;
+  var el = document.querySelector('.ts-el[data-enter="draw"]');
+  if (!el) return JSON.stringify({ fehlt: "kein Element mit enter=draw" });
+  var folien = [].slice.call(document.querySelectorAll(".ts-slide"));
+  var nr = folien.indexOf(el.closest(".ts-slide"));
+  // Der erste Schritt des Bereichs, und der davor. Die Zeichnung darf nicht
+  // auf Schritt eins ihrer Folie stehen: einen Folienwechsel spielt goto als
+  // Zustand, nicht als Auftritt.
+  var ab = +(el.dataset.at.match(/[0-9]+/) || [1])[0];
+  if (ab < 2) return JSON.stringify({ fehlt: "die Zeichnung steht auf Schritt 1 ihrer Folie" });
+  var davor = -1, ziel = -1;
+  for (var i = 0; i < S.length; i++) if (S[i].slide === nr) {
+    if (S[i].step === ab - 1) davor = i;
+    if (S[i].step === ab) ziel = i;
+  }
+  if (davor < 0 || ziel < 0) return JSON.stringify({ fehlt: "Schritt nicht gefunden" });
+  // Chrome und Firefox schreiben dieselbe Kurve verschieden auf, mit und ohne
+  // Leerzeichen und mit und ohne fuehrende Null. Beides weg, dann steht in
+  // beiden dasselbe. Die Null nur am Wortanfang, sonst wuerde aus 10.5 eine
+  // 1.5 -- in dieser Tabelle kommt das nicht vor, aber der naechste Wert
+  // koennte es.
+  // Die Rueckwaertsschraegstriche stehen doppelt, und das ist kein Vertipper:
+  // der ganze Block ist eine Zeichenkette mit Rueckwaertsakzenten, und darin
+  // frisst ein einzelner sich selbst auf -- aus \\s wuerde ein s, und der
+  // Ausdruck striche die Buchstaben statt der Leerzeichen. Dieselbe Falle wie
+  // beim Mass in der Haltprobe.
+  function glatt(k) {
+    return k == null ? null
+      : String(k).replace(/\\s+/g, "").replace(/\\b0\\./g, ".");
+  }
+  function lesen() {
+    var pf = [].slice.call(el.querySelectorAll("[data-ts-feder]"));
+    var a = pf.length ? pf[0].getAnimations()[0] : null;
+    var eig = el.getAnimations()[0];
+    var kf = a ? a.effect.getKeyframes().map(function (k) {
+      return parseFloat(k.strokeDashoffset);
+    }) : null;
+    return {
+      federn: pf.length,
+      // Nicht die Laengen, sondern die Richtung: eine Laenge haengt am
+      // Fenster, eine Richtung nicht.
+      richtung: kf ? (kf[0] > kf[1] ? "hinein" : "heraus") : "nichts",
+      fKurve: a ? glatt(a.effect.getTiming().easing) : null,
+      fDauer: a ? a.effect.getTiming().duration : null,
+      eKurve: eig ? glatt(eig.effect.getTiming().easing) : null,
+      eDauer: eig ? eig.effect.getTiming().duration : null,
+      eKf: eig ? eig.effect.getKeyframes().map(function (k) {
+        return String(k.opacity);
+      }) : null
+    };
+  }
+  typstage.goto(davor, true); await p.ruhig(4000);
+  var vor = p.stand().feder;
+  typstage.goto(ziel);
+  var hin = lesen();
+  await p.ruhig(4000);
+  var offenNachHin = p.stand().federOffen;
+  typstage.goto(davor);
+  var zurueck = lesen();
+  await p.ruhig(4000);
+  // Und der Sprung: er stellt den Endzustand her, ohne die Zeichnung zu
+  // spielen. Danach darf keine Feder laufen und das Element muss dastehen.
+  typstage.goto(ziel, true); await p.ruhig(4000);
+  var sprung = { federn: el.querySelectorAll("[data-ts-feder]").length,
+                 an: el.dataset.on === "1" ? 1 : 0,
+                 gezogen: p.stand().feder - vor };
+  return JSON.stringify({ hin: hin, zurueck: zurueck, sprung: sprung,
+                          markup: el.dataset.easing || "",
+                          offenNachHin: offenNachHin,
+                          offen: p.stand().federOffen });
 })()`;
 
 // Animationen im Zeitraffer, ohne den Browser danach zu fragen. `playbackRate`
@@ -596,6 +751,9 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
     Object.assign(z, {
       folien: r.folien, schritte: r.schritte, elemente: r.elemente,
       flieger: r.flieger, fliegerRueck: r.fliegerRueck,
+      // Wie viele Pfade sich hin und zurueck selbst gezeichnet haben. Wie
+      // `flieger` in der Laufzeit gezaehlt, dort wo sie entstehen.
+      feder: r.feder, federRueck: r.federRueck,
       grund: r.grund, fehler: r.fehler,
       // Je Schritt sichtbar/gedimmt im ganzen Deck · sichtbar/gedimmt auf der
       // laufenden Folie. Getrennt gezählt, weil sonst niemand merkt, wenn
@@ -621,6 +779,11 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
         z.maengel.push("rückwärts: Schritt " + soll + " meldete " + s.schritt); });
     if (r.fehler.length)
       z.maengel.push(r.fehler.length + " Fehler/Warnungen: " + r.fehler.join(" | "));
+    if (r.federOffen)
+      z.maengel.push(r.federOffen + " Pfad(e) tragen nach der Fahrt noch eine "
+        + "Feder. Ein Strich steht dann fuer den Rest des Vortrags auf halber "
+        + "Strecke, und zu sehen ist das erst bei dem einen Sprung, der genau "
+        + "dorthin geht.");
 
     // Wie eine Stufe von `aufbau` abtritt. Nur im Prüfdeck: nur dort steht eine.
     if (d.satz) {
@@ -652,6 +815,37 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
             + Math.round(h.raus.dauer) + "ms, die ankommende braucht "
             + Math.round(h.rein.dauer) + "ms. Sie muss so lange warten, wie "
             + "die neue braucht, sonst sinkt das Bild zum Schluss doch noch ab.");
+        }
+      }
+    }
+
+    // Wie ein Pfad sich selbst zeichnet. Nur im Prüfdeck: nur dort steht einer.
+    if (d.satz) {
+      const zg = JSON.parse(await b.ev(ZEICHENPROBE));
+      if (zg.fehlt) {
+        z.maengel.push("die Zeichenprobe fand nichts zu messen: " + zg.fehlt);
+      } else if (!zg.hin.federn || !zg.zurueck.federn) {
+        z.maengel.push("beim Auftritt oder beim Rückweg fuhr keine Feder: hin "
+          + JSON.stringify(zg.hin) + ", zurück " + JSON.stringify(zg.zurueck));
+      } else {
+        // Der Sollwert trägt keine Dauer und keine Länge; beide hängen am
+        // Fenster und am --tempo. Er trägt, was gemeint ist: so viele Pfade
+        // fahren hinein, ebenso viele wieder heraus, danach ist keiner offen,
+        // und ein Sprung stellt den Endzustand her, ohne zu zeichnen.
+        z.zeichnung = zg.hin.federn + "+" + zg.zurueck.federn + " Pfade · "
+          + zg.hin.richtung + "/" + zg.zurueck.richtung + " · "
+          + zg.hin.eKf.join(">") + " · "
+          + zg.offenNachHin + "/" + zg.offen + " offen · Sprung "
+          + zg.sprung.federn + "/" + zg.sprung.an + "/" + zg.sprung.gezogen;
+        // Und die Kurve: was Typst ins Markup geschrieben hat, was die Blende
+        // trägt, was die Feder trägt. Alle drei, weil jede für sich auf die
+        // Hauskurve zurückfallen kann.
+        z.kurve = zg.markup + " · " + zg.hin.eKurve + " · " + zg.hin.fKurve;
+        if (Math.round(zg.hin.fDauer) !== Math.round(zg.hin.eDauer)) {
+          z.maengel.push("die Feder läuft " + Math.round(zg.hin.fDauer)
+            + "ms, die Blende darunter " + Math.round(zg.hin.eDauer)
+            + "ms. Beide gehören gleich lang, sonst steht der Strich fertig "
+            + "da, während das Bild noch aufblendet, oder umgekehrt.");
         }
       }
     }
@@ -734,13 +928,16 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
       + " · " + z.elemente + " Elemente · "
       + (z.maengel.length ? "MÄNGEL " + z.maengel.join("; ") : "ok") + "\n");
   }
+  const ohneStrich = await ohneStrichProbe(b);
+  if (ohneStrich) console.error("ABWEICHUNG ohne-strich: " + ohneStrich);
   await b.ende();
 
   // ── Gegen den Sollstand ───────────────────────────────────────────────────
   // Nicht „stürzt nicht ab", sondern „verhält sich wie gestern".
   const felder = ["folien", "schritte", "elemente", "flieger", "fliegerRueck",
-                  "hash", "hashStand", "sprecher", "grund", "sichtbar",
-                  "sichtbarRueck", "fehler", "halt", "masz", "satz", "satzBytes"];
+                  "feder", "federRueck", "hash", "hashStand", "sprecher",
+                  "grund", "sichtbar", "sichtbarRueck", "fehler", "halt",
+                  "masz", "zeichnung", "kurve", "satz", "satzBytes"];
   // `satz` und `satzBytes` hängen an den Schriften des Rechners, nicht am
   // Paket: derselbe Stand ergibt auf macOS 546292 Bytes und auf einem
   // Ubuntu-Läufer 500912, während alle übrigen Felder -- Schritte, Elemente,
@@ -818,6 +1015,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   bericht.forEach(z => { if (z.maengel.length) schlecht++; });
   if (ueberlauf) schlecht++;
   if (papier) schlecht++;
+  if (ohneStrich) schlecht++;
   bericht.forEach(z => z.maengel.forEach(m =>
     process.stderr.write("ABWEICHUNG " + z.deck + ": " + m + "\n")));
 

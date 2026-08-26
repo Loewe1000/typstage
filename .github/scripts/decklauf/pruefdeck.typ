@@ -240,3 +240,46 @@ Dritter Schritt.
   + " Schritte statt 5. Der Schrittzeiger zählt aufbau() falsch -- und diese "
   + "Zahl muss in beiden Ausgaben dieselbe sein, sonst zeigt das Handout eine "
   + "andere Fußzeile als der Vortrag.")
+
+== Ein Pfad, der sich selbst zeichnet
+// `enter: "draw"` und `easing:`. Beide stehen auf demselben Element und
+// werden trotzdem getrennt gemessen -- `zeichnung` und `kurve` --, damit eine
+// Abweichung sagt, welche der beiden Fähigkeiten umgefallen ist.
+//
+// Wieder aus schlichten Formen und nicht aus CeTZ: geprüft wird das Paket und
+// nicht ein fremdes Zeichenpaket. Welche Zeichenpakete Konturen liefern, die
+// sich abfahren lassen, hält das Handbuch fest.
+//
+// Vier Dinge hängen daran.
+//
+// Erstens: die Zeichnung steht auf dem *zweiten* Schritt ihrer Folie und
+// nicht auf dem ersten, und das ist keine Zierde. Wer eine Folie betritt,
+// sieht keine Auftritte -- `goto` stellt beim Folienwechsel nur den Zustand
+// her. Eine Zeichnung auf Schritt eins zeichnete sich also nie, und der Lauf
+// hätte nichts zu messen. Der Satz davor kostet den Schritt, den es dafür
+// braucht.
+//
+// Zweitens: drei Striche und ein Rechteck ohne Kontur. Die drei werden
+// abgefahren, das vierte blendet -- es hat keine Kontur, an der entlang etwas
+// zu fahren wäre, genau wie Text. Gemessen, indem die Strichbreite als
+// Bedingung wegfiel: aus 3 Pfaden wurden 4.
+//
+// Drittens: rückwärts fährt die Feder wieder heraus, und danach trägt kein
+// Pfad mehr eine Feder. Bliebe eine stehen, stünde ein Strich für den Rest
+// des Vortrags auf halber Strecke -- zu sehen erst bei dem einen Sprung, der
+// genau dorthin geht.
+//
+// Viertens: `easing:` schreibt die fertige Kurve ins Markup, und die Laufzeit
+// legt sie sowohl der Blende als auch der Feder unter. Fällt eine der beiden
+// auf die Hauskurve zurück, fällt `kurve` um.
+#anim[Erst ein Satz -- eine Zeichnung auf Schritt eins zeichnete sich nie.]
+#anim(enter: "draw", duration: 640, easing: "out-back",
+  box(width: 220pt, height: 100pt, {
+    place(top + left, line(end: (100%, 0%), stroke: 1.2pt))
+    place(top + left, line(end: (0%, 100%), stroke: 1.2pt))
+    place(top + left, dy: 24pt, rect(width: 70pt, height: 50pt, stroke: 1pt))
+    // Ohne Kontur: blendet, wie Text es tut, und wird nicht mitgezählt.
+    place(top + left, dx: 150pt, dy: 30pt,
+          rect(width: 40pt, height: 40pt, fill: accent, stroke: none))
+  }))
+#anim[Ein Schritt nach der Zeichnung, damit sie auch abtreten kann.]
