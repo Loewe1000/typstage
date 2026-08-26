@@ -766,7 +766,10 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "5/0",
-   "sprecher": 836,
+   "sprecher": {
+    "darwin": 836,
+    "linux": 840
+   },
    "grund": [
     "#ffffff",
     "#ffffff",
@@ -960,10 +963,12 @@
    "zeichnung": "3+3 Pfade · hinein/heraus · 0>1 · 0/0 offen · Sprung 0/1/6",
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
-    "darwin": "eba516f4edd4065c"
+    "darwin": "eba516f4edd4065c",
+    "linux": "7b3836ba7c9c0002"
    },
    "satzBytes": {
-    "darwin": 1152360
+    "darwin": 1152360,
+    "linux": 1041835
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",
    "kino": "at 1- 0/0/0/12/23 · at 3- 0/0/0/12/23"
