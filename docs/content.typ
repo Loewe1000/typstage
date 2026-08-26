@@ -372,7 +372,7 @@ Druck weiter.
 
 == Welches Mittel wofür
 
-Fünf Bausteine decken so gut wie alles ab. Sie lassen sich auf einer Folie
+Sechs Bausteine decken so gut wie alles ab. Sie lassen sich auf einer Folie
 mischen; welcher der richtige ist, hängt daran, wie fein die Folie gesteuert
 werden soll.
 
@@ -396,6 +396,9 @@ werden soll.
   [`aufbau(…)`],
   [Eine Zeichnung oder ein Diagramm, das in Stufen entsteht -- eine CeTZ-Linie,
    eine lilaq-Datenreihe, eine Beschriftung nach der anderen.],
+  [`scene(…)`],
+  [Eine Zeichnung, die von einem Wert abhängt, und die Werte, an denen der
+   Vortrag hält. Für alles, was sich *bewegt*, statt dazuzukommen.],
 )
 
 Dazu kommt `tiles` für ein Kachelraster, das sich von selbst staffelt (Kapitel
@@ -1070,6 +1073,220 @@ hier nicht gibt.
   keine gute Idee.
 ]
 
+== Eine Zeichnung, die sich bewegt
+
+`aufbau` lässt eine Zeichnung wachsen: Stück für Stück kommt etwas hinzu.
+`scene` ist die andere Hälfte derselben Idee. Hier kommt nichts hinzu -- hier
+ändert sich eine *Größe*, und das Bild hängt daran.
+
+Die Regel in einem Satz: *das Deck schreibt eine Funktion von einem Wert auf
+ein Bild und sagt, an welchen Werten der Vortrag hält. Typst rendert jeden Halt
+und die Bilder dazwischen. Ein Schritt zieht das Bild von Halt zu Halt.*
+
+// check: folie pre=szene
+#show-example(
+  rendered: {
+    import "../src/lib.typ": *
+    scene(x => box(width: 260pt, height: 64pt, {
+      place(bottom + left, line(length: 100%))
+      place(bottom + left, dx: 50%, line(angle: -90deg, length: 100%))
+      place(horizon + left, dx: 50% + x * 8%,
+            circle(radius: 7pt, fill: accent))
+    }), stops: (-3, 0, 1.5, 3), tween: 8, width: 260pt, height: 64pt)
+  },
+  source: ```typ
+  #scene(
+    x => zeichnung-bei(x),
+    stops: (-3, 0, 1.5, 3),   // vier Halte, drei Schritte
+    tween: 8,                 // Bilder zwischen zwei Halten
+  )
+  ```,
+  width: 13cm,
+)
+
+`stops` sind die Werte selbst, nicht `0.0` bis `1.0`. Genau das ist der
+Unterschied zum Daumenkino: dort ist `t` ein Anteil an einer Laufzeit, hier ist
+`x` die Größe, über die geredet wird. Wer die Tangente an der Stelle $-3$, im
+Scheitel und bei $1.5$ zeigen will, schreibt diese drei Zahlen hin.
+
+Die Szene verbraucht `stops.len() - 1` Schritte. Der erste Halt steht da,
+sobald die Szene erscheint -- wie ein `morph` und anders als ein `anim` --,
+jeder weitere kostet einen Tastendruck.
+
+=== Was zu einem Halt gehört
+
+Ein Satz daneben, eine Formel, eine zweite Zeichnung: `scene-layer` legt sich
+auf den Schritt eines bestimmten Halts. Damit die Schicht ihre Szene
+wiederfindet, bekommt die Szene einen Namen.
+
+// check: folie pre=szene
+#show-code[```typ
+#scene("ableitung", x => tangente-an(f, x), stops: (-3, 0, 1.5, 3))
+
+#scene-layer("ableitung", 2)[Im Scheitel ist die Steigung null.]
+#scene-layer("ableitung", 4, enter: "scale")[$f'(x) = 1/2 x$]
+```]
+
+Das ist wortgleich zu `adaptiv-schicht` und aus demselben Grund: die Kopplung
+fällt aus dem gemeinsamen Schritt heraus. Wer einen Halt verschiebt,
+verschiebt alles mit, was daran hängt, und nirgends steht eine Zahl doppelt.
+Die Szene muss dabei im Quelltext *vor* ihren Schichten stehen; steht sie
+dahinter, sagt das Paket es.
+
+=== Mehrere Größen zugleich
+
+Ein Halt darf ein Tupel sein. Der Zeichner bekommt dann ebenso viele
+Argumente:
+
+// check: folie pre=szene
+#show-code[```typ
+#scene(
+  (a, b) => rechteck-mit(breite: a, hoehe: b),
+  stops: ((1, 1), (1, 3), (2, 3)),
+  tween: 6,
+)
+```]
+
+Erst wächst die Höhe, dann die Breite. Was dabei nicht geht: zwei Größen, die
+sich *unabhängig* voneinander bewegen. Alles reist gemeinsam von Halt zu Halt.
+In manim, wo diese Idee herkommt, könnten zwei `ValueTracker` getrennte Wege
+gehen; hier gibt es nur einen Weg, und ein Tupel legt mehrere Größen darauf.
+
+=== Die Argumente
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Argument*], [*Wirkung*]),
+  [`stops`],
+  [Die Werte, an denen der Vortrag hält. Mindestens zwei. Eine Zahl, eine
+   Länge, ein Winkel, ein Anteil -- oder ein Tupel davon.],
+  [`tween`],
+  [Bilder *zwischen* zwei Halten (Vorgabe 8). Mit `0` springt die Szene.],
+  [`start`],
+  [Erster Schritt; `auto` nimmt den laufenden.],
+  [`width`, `height`],
+  [Der Kasten, in dem die Szene steht (Vorgabe `100%` und `190pt`).],
+  [`duration`],
+  [Wie lange ein Zug von Halt zu Halt dauert, in Millisekunden.],
+  [`enter`],
+  [Bewegung, mit der die Szene selbst auftritt (Vorgabe `"fade"`).],
+  [`still`],
+  [Was auf Papier steht, wenn nicht der letzte Halt.],
+)
+
+`duration` ist die Dauer des *Wegs*, nicht die der Blende, mit der die Szene
+auftritt -- dieselbe Trennung, die `morph` mit seinem `duration` zieht. Beides
+unter einen Namen zu legen zöge dieselbe Bewegung sichtbar auseinander.
+
+Anders als `aufbau` misst `scene` seine Bilder nicht. Die Stufen einer
+`aufbau`-Zeichnung liegen deckungsgleich, weil ein Stück, das noch nicht dran
+ist, als Luft dasteht; die Bilder einer Szene sind Zeichnungen zu verschiedenen
+Werten und dürfen ohne Weiteres verschieden groß ausfallen. Deshalb steht eine
+Szene in einem Kasten fester Größe, und jedes Bild wird darauf beschnitten. Wer
+`width` und `height` weglässt, bekommt die Vorgabe; wer sie zu klein wählt,
+sieht es sofort.
+
+#warning[
+  *Der Kasten steht still, die Tinte darin nicht von selbst.* Eine
+  CeTZ-Leinwand wächst mit ihrem Inhalt. Reicht die Tangente bei $x = -3$
+  weiter nach links als bei $x = 3$, ist die Leinwand dort breiter, und das
+  Achsenkreuz sitzt an einer anderen Stelle im Kasten -- beim Blättern
+  wandert dann das ganze Bild, obwohl sich nur ein Punkt bewegen sollte.
+  Gemessen an der Szene dieses Abschnitts: 28 Bilder, *15 verschiedene Lagen*
+  der Tinte im Kasten.
+
+  Das kann das Paket nicht abnehmen. `aufbau` kann es, weil es die Stufen misst
+  und ein Stück, das noch nicht dran ist, seinen Platz behält; hier gibt es
+  kein gemeinsames Stück, dessen Platz zu behalten wäre, und vom
+  Koordinatensystem der Zeichnung weiß `scene` nichts.
+
+  Der Ausweg liegt in der Zeichnung: ihr eine feste Ausdehnung geben und das,
+  was sich bewegt, darin halten. In CeTZ ist das ein `rect` mit durchsichtigem
+  Strich, dieselbe Luft, mit der `ab` arbeitet:
+
+  // check: folie pre=cetz
+  ```typ
+  #scene(x => cetz.canvas({
+    import cetz.draw: *
+    // Hält die Leinwand auf, egal wo der Punkt steht.
+    rect((-4.4, -0.8), (4.4, 4.6), stroke: rgb(0, 0, 0, 0))
+    line((-4, 0), (4, 0))
+    circle((x, 0.25 * x * x), radius: 0.1)
+  }), stops: (-3, 0, 3), height: 160pt)
+  ```
+
+  Damit steht die Breite fest. Was trotzdem hinausreicht -- eine Tangente etwa,
+  die über den Rand hinausläuft --, muss gekappt werden, sonst zieht sie die
+  Leinwand doch wieder auf: dieselbe Szene mit Rahmen und gekappter Tangente
+  kam auf 7 Lagen statt 15.
+]
+
+Auf Papier steht der letzte Halt, wie bei `alternatives` -- eine Seite zeigt
+alle Schritte auf einmal, und das ist der Zustand, in dem die Szene die Folie
+verlässt. `still` setzt etwas anderes an seine Stelle. Der Schrittzeiger läuft
+dort trotzdem, damit `info().step.total` in beiden Ausgaben dieselbe Zahl
+nennt.
+
+Unter "Bewegung reduzieren" fallen die Zwischenbilder weg: die Szene springt
+von Halt zu Halt. Das ist die Regel des Pakets an jeder anderen Stelle auch --
+was bleibt, ist das Ziel, was geht, ist der Weg. Siehe "Weniger Bewegung".
+
+=== Was eine Szene kostet
+
+Jedes Bild ist ein echtes Typst-Layout und liegt als eigener SVG-Baum in der
+Datei. Die rohe Zahl allein gibt davon ein falsches Bild, deshalb stehen hier
+beide.
+
+Gemessen an einer CeTZ-Zeichnung, die eine Folie wirklich trüge: Achsen mit
+Marken, eine Parabel aus 61 Stützstellen, Tangente, gestricheltes
+Steigungsdreieck, zwei Beschriftungen. Typst 0.15.1, cetz 0.4.2.
+
+#table(
+  columns: (auto, auto, auto, auto),
+  align: (left, right, right, right),
+  stroke: 0.5pt + luma(180),
+  table.header([*Bilder*], [*Übersetzung*], [*HTML roh*], [*HTML gzip*]),
+  [2], [0,35 s], [238 559 B], [70 275 B],
+  [6], [0,26 s], [302 054 B], [71 591 B],
+  [12], [0,30 s], [397 320 B], [73 427 B],
+  [24], [0,39 s], [587 817 B], [76 949 B],
+  [48], [0,58 s], [968 815 B], [84 032 B],
+  [96], [0,98 s], [1 730 833 B], [97 175 B],
+)
+
+Je zusätzlichem Bild: *15,9 kB roh, 286 B gzip, 8,1 ms Übersetzung.* Die Zeit
+ist an der Steigung zwischen 12 und 96 Bildern abgelesen; die ersten Zeilen der
+Tabelle tragen den Start des Übersetzers mit und sagen für sich genommen wenig.
+
+Über die Leitung geht also rund ein Fünfzigstel dessen, was die rohe Zahl
+befürchten lässt. Die SVG-Bäume einer Szene sind einander so ähnlich, dass gzip
+98 Prozent davon wegnimmt. Eine Szene aus vier Halten und acht Zwischenbildern
+je Strecke -- 28 Bilder -- kostet gegen dieselbe Zeichnung, einmal
+hingeschrieben: 436 kB roh, *9 kB gzip*, 0,21 s Übersetzung. Auf Papier kostet
+sie nichts: dort steht ein einziges Standbild.
+
+#warning[
+  Die gepackte Zahl ist die ehrliche, aber sie gilt nur, solange der Webserver
+  auch packt. Wer die Datei per USB-Stick oder als Anhang weitergibt, trägt die
+  rohe. Und die Übersetzungszeit ist immer die volle: acht Zwischenbilder je
+  Strecke sind acht Layouts, ob sie sich später wegkomprimieren oder nicht.
+]
+
+#info[
+  Woher die Idee kommt: `scene` ist manims `ValueTracker` zusammen mit
+  `always_redraw`, ins Schrittmodell eines Vortrags übersetzt -- und die
+  Übersetzung dreht ihn um. Dort ändert sich eine Zahl, während der Film läuft,
+  und alles, was von ihr abhängt, wird pro Bild neu gezeichnet. Hier zeichnet
+  Typst zur Übersetzungszeit, und eine Zahl kann nur an einem Schritt wechseln.
+  Also werden die Bilder vorher gesetzt, und der Tastendruck fährt darüber.
+
+  Was dabei gewonnen wird: das Bild ist eine Typst-Zeichnung, mit allem, was
+  Typst kann, Formelsatz eingeschlossen, und sie bleibt in jeder Größe scharf.
+  Was verloren geht: die Zwischenbilder sind gezählt und liegen in der Datei,
+  und mehrere Größen können sich nicht unabhängig bewegen.
+]
+
 == Drei Stolpersteine
 
 *Nur Einblendungen zählen.* Der Zeiger zählt `anim`, `stagger`, `alternatives`
@@ -1411,7 +1628,12 @@ schaltet sie nur weiter.
 `frames` ist die Zahl der Einzelbilder (Vorgabe 24), `fps` das Tempo beim
 Abspielen (Vorgabe 30). `loop` ist an und wiederholt von vorn; `pingpong` läuft
 statt dessen vor und zurück und geht dem `loop` vor. Ist beides aus, bleibt das
-letzte Bild stehen. Auf Papier steht ein einziges: `render(0.0)`, oder was
+letzte Bild stehen.
+
+Die Uhr beginnt, wenn das Daumenkino zu sehen ist, und nicht, wenn seine Folie
+kommt. Ein `flipbook(at: "3-", loop: false)` liegt auf den ersten beiden
+Schritten auf Bild 0 still und fängt beim Aufdecken bei null an; wer
+zurückblättert und es noch einmal aufdeckt, sieht es noch einmal von vorn. Auf Papier steht ein einziges: `render(0.0)`, oder was
 `still` an seine Stelle setzt. Hat der Zuschauer im Betriebssystem
 "Bewegung reduzieren" eingeschaltet, läuft das Daumenkino gar nicht erst los --
 siehe "Weniger Bewegung".
@@ -2175,6 +2397,10 @@ nichts wandert dabei mehr über die Folie.
    Mit `loop` oder `pingpong` ist es das erste. `still` gilt dabei nicht: das
    Bild fürs Papier ist gesetzter Inhalt und steht gar nicht in der HTML, in
    der nur die Einzelbilder liegen.],
+  [`scene`],
+  [Springt von Halt zu Halt. Die Zwischenbilder liegen weiter in der Datei,
+   aber es wird keines davon gezeigt. Was wegfällt, ist genau der Weg; die
+   Halte selbst sind kein Weg, sondern der Inhalt.],
   [`after: "dimmed"`],
   [Bleibt. Ein Punkt, der zurücktritt, ändert seine Deckkraft und rührt sich
    nicht von der Stelle.],
@@ -2358,6 +2584,8 @@ verschluckt. Was *gesehen* werden soll, gehört auf die Folie.
   [das `poster`, sonst eine graue Fläche],
   [`flipbook`],
   [ein einziges Bild: `still` oder `render(0.0)`],
+  [`scene`],
+  [ein einziges Bild: `still` oder der letzte Halt],
   [`speaker-note`],
   [im Handout bei der Folie, im gewöhnlichen Foliensatz nichts],
   [`transition`, `bridge-job`],
@@ -3064,7 +3292,8 @@ ausdrücklich an, dann rechnet das `fit` damit.
   lief unten aus der Folie.
 
   `fit` bricht deshalb ab, mit Namen und Rat, für `pause`, `anim`, `stagger`,
-  `alternatives`, `morph`, `tiles`, `video`, `embed` und `flipbook` -- in
+  `alternatives`, `morph`, `tiles`, `video`, `embed`, `flipbook`, `aufbau`
+  und `scene` -- in
   beiden Ausgaben und auch dann, wenn das `fit` in einem anderen `fit` steckt.
   Der Ausweg ist, das `fit` *innerhalb* der Einblendung zu setzen statt darum
   herum:
@@ -3738,9 +3967,10 @@ Medien und Brücke, zuletzt die Maße und Farben.
 == Einblenden, Bewegen, Staffeln
 
 // `anim-kern` ist das geprüfte Innere von `anim`. `stagger` benutzt es von
-// innen, `lib.typ` reicht es nicht hinaus.
+// innen, `lib.typ` reicht es nicht hinaus. Dasselbe gilt für die zwei
+// Handlanger von `scene`.
 #show-module(read("../src/elements.typ"), name: "typstage",
-             exclude: ("anim-kern",))
+             exclude: ("anim-kern", "szene-messbar", "szene-zwischen"))
 
 == Layouts
 

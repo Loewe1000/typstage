@@ -219,7 +219,7 @@ standing there finished.
 
 == Which tool for what
 
-Five building blocks cover very nearly everything. They mix on one slide, and
+Six building blocks cover very nearly everything. They mix on one slide, and
 which one is right depends on how finely the slide needs to be steered.
 
 #table(
@@ -241,6 +241,9 @@ which one is right depends on how finely the slide needs to be steered.
   [`aufbau(…)`],
   [A drawing or a diagram that comes into being in stages -- one CeTZ line,
    one lilaq data series, one label after another.],
+  [`scene(…)`],
+  [A drawing that depends on a value, and the values at which the talk stops.
+   For everything that *moves* rather than being added.],
 )
 
 Beside them stand `tiles` for a grid that staggers itself, and `morph` for
@@ -697,6 +700,210 @@ not there.
   for a flip book. A drawing in twenty stages is not a good idea.
 ]
 
+== A drawing that moves
+
+`aufbau` lets a drawing grow: piece by piece something is added. `scene` is the
+other half of the same idea. Here nothing is added -- here a *value* changes,
+and the picture hangs on it.
+
+The rule in one sentence: *the deck writes a function from a value to a picture
+and says at which values the talk stops. Typst renders every stop and the
+frames in between. A step pulls the picture from one stop to the next.*
+
+// check: folie pre=szene
+#show-example(
+  rendered: {
+    import "../src/lib.typ": *
+    scene(x => box(width: 260pt, height: 64pt, {
+      place(bottom + left, line(length: 100%))
+      place(bottom + left, dx: 50%, line(angle: -90deg, length: 100%))
+      place(horizon + left, dx: 50% + x * 8%,
+            circle(radius: 7pt, fill: accent))
+    }), stops: (-3, 0, 1.5, 3), tween: 8, width: 260pt, height: 64pt)
+  },
+  source: ```typ
+  #scene(
+    x => drawing-at(x),
+    stops: (-3, 0, 1.5, 3),   // four stops, three steps
+    tween: 8,                 // frames between two stops
+  )
+  ```,
+  width: 13cm,
+)
+
+`stops` are the values themselves, not `0.0` to `1.0`. That is exactly the
+difference to the flip book: there `t` is a fraction of a running time, here
+`x` is the quantity being talked about. Whoever wants the tangent at $-3$, at
+the vertex and at $1.5$ writes those three numbers down.
+
+The scene takes `stops.len() - 1` steps. The first stop is there as soon as the
+scene appears -- like a `morph` and unlike an `anim` -- and every further one
+costs a keypress.
+
+=== What belongs to a stop
+
+A sentence beside it, a formula, a second drawing: `scene-layer` puts itself on
+the step of one particular stop. So that it can find the scene again, the scene
+gets a name.
+
+// check: folie pre=szene
+#show-code[```typ
+#scene("derivative", x => tangent-at(f, x), stops: (-3, 0, 1.5, 3))
+
+#scene-layer("derivative", 2)[At the vertex the slope is zero.]
+#scene-layer("derivative", 4, enter: "scale")[$f'(x) = 1/2 x$]
+```]
+
+This is word for word `adaptiv-schicht`, and for the same reason: the coupling
+falls out of the shared step. Move a stop and everything hanging on it moves
+along, and nowhere does a number stand twice. The scene has to stand *before*
+its layers in the source; standing after them, the package says so.
+
+=== Several values at once
+
+A stop may be a tuple, and then the drawing function takes that many arguments:
+
+// check: folie pre=szene
+#show-code[```typ
+#scene(
+  (a, b) => box-of(width: a, height: b),
+  stops: ((1, 1), (1, 3), (2, 3)),
+  tween: 6,
+)
+```]
+
+First the height grows, then the width. What does not work: two values moving
+*independently*. Everything travels from stop to stop together. In manim, where
+this idea comes from, two `ValueTracker`s could go separate ways; here there is
+one way, and a tuple puts several values on it.
+
+=== The arguments
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Argument*], [*Effect*]),
+  [`stops`],
+  [The values at which the talk stops. At least two. A number, a length, an
+   angle, a ratio -- or a tuple of them.],
+  [`tween`],
+  [Frames *between* two stops (default 8). With `0` the scene jumps.],
+  [`start`], [first step; `auto` takes the running one],
+  [`width`, `height`],
+  [The box the scene stands in (default `100%` and `190pt`).],
+  [`duration`], [how long one pull from stop to stop takes, in milliseconds],
+  [`enter`], [motion the scene itself arrives with (default `"fade"`)],
+  [`still`], [what stands on paper, if not the last stop],
+)
+
+`duration` is the duration of the *journey*, not of the fade the scene arrives
+with -- the same separation `morph` draws with its `duration`. Putting both
+under one name pulls the same motion visibly apart.
+
+Unlike `aufbau`, `scene` does not measure its frames. The stages of an `aufbau`
+drawing lie exactly on top of one another, because a piece not yet due stands
+there as air; the frames of a scene are drawings of different values and may
+legitimately come out different sizes. So a scene stands in a box of a fixed
+size and every frame is clipped to it.
+
+#warning[
+  *The box stands still, the ink inside it does not do so by itself.* A CeTZ
+  canvas grows with its content. If the tangent at $x = -3$ reaches further
+  left than the one at $x = 3$, the canvas is wider there, and the axis cross
+  sits at a different place in the box -- so paging moves the whole picture
+  although only one point was meant to move. Measured on the scene of this
+  section: 28 frames, *15 different placements* of the ink in the box.
+
+  The package cannot take this off your hands. `aufbau` can, because it
+  measures its stages and a piece not yet due keeps its room; here there is no
+  shared piece whose room could be kept, and `scene` knows nothing of the
+  drawing's coordinate system.
+
+  The way out lies in the drawing: give it a fixed extent and keep what moves
+  inside it. In CeTZ that is a `rect` with a transparent stroke -- the same air
+  `ab` works with:
+
+  // check: folie pre=cetz
+  ```typ
+  #scene(x => cetz.canvas({
+    import cetz.draw: *
+    // Holds the canvas open, wherever the point stands.
+    rect((-4.4, -0.8), (4.4, 4.6), stroke: rgb(0, 0, 0, 0))
+    line((-4, 0), (4, 0))
+    circle((x, 0.25 * x * x), radius: 0.1)
+  }), stops: (-3, 0, 3), height: 160pt)
+  ```
+
+  That pins the width. Whatever still reaches beyond it -- a tangent running
+  off the edge, say -- has to be cut off, or it pulls the canvas open again:
+  the same scene with a frame and a cut-off tangent came to 7 placements
+  instead of 15.
+]
+
+On paper the last stop is set, as with `alternatives` -- a page shows every
+step at once, and that is the state in which the scene leaves the slide.
+`still` puts something else in its place. The step cursor still runs there, so
+`info().step.total` names the same number in both outputs.
+
+Under "reduce motion" the frames in between fall away and the scene jumps from
+stop to stop. That is the package's rule everywhere else too: what stays is the
+destination, what goes is the travel.
+
+=== What a scene costs
+
+Every frame really is a Typst layout and sits in the file as an SVG tree of its
+own. The raw number alone gives a false picture of that, so both stand here.
+
+Measured on a CeTZ drawing that would really carry a slide: axes with ticks, a
+parabola from 61 sample points, a tangent, a dashed slope triangle, two labels.
+Typst 0.15.1, cetz 0.4.2.
+
+#table(
+  columns: (auto, auto, auto, auto),
+  align: (left, right, right, right),
+  stroke: 0.5pt + luma(180),
+  table.header([*Frames*], [*Compile*], [*HTML raw*], [*HTML gzip*]),
+  [2], [0.35 s], [238,559 B], [70,275 B],
+  [6], [0.26 s], [302,054 B], [71,591 B],
+  [12], [0.30 s], [397,320 B], [73,427 B],
+  [24], [0.39 s], [587,817 B], [76,949 B],
+  [48], [0.58 s], [968,815 B], [84,032 B],
+  [96], [0.98 s], [1,730,833 B], [97,175 B],
+)
+
+Per additional frame: *15.9 kB raw, 286 B gzipped, 8.1 ms of compilation.* The
+time is read off the slope between 12 and 96 frames; the first rows of the
+table carry the compiler's start-up and say little on their own.
+
+Over the wire that is about a fiftieth of what the raw number leads one to
+fear. The SVG trees of a scene are so alike that gzip takes 98 percent of them
+away. A scene of four stops and eight frames per stretch -- 28 frames in all --
+costs, against the same drawing written down once: 436 kB raw, *9 kB gzipped*,
+0.21 s of compilation. On paper it costs nothing: a single still image stands
+there.
+
+#warning[
+  The gzipped number is the honest one, but it only holds as long as the web
+  server does gzip. Whoever hands the file on by USB stick or as an attachment
+  carries the raw one. And the compilation time is always the full one: eight
+  frames per stretch are eight layouts, whether they compress away later or
+  not.
+]
+
+#info[
+  Where the idea comes from: `scene` is manim's `ValueTracker` together with
+  `always_redraw`, translated into the step model of a talk -- and the
+  translation turns it around. There a number changes while the film runs, and
+  everything depending on it is redrawn per frame. Here Typst draws at compile
+  time, and a number can only change at a step. So the frames are set
+  beforehand and the keypress travels over them.
+
+  What is gained: the picture is a Typst drawing, with everything Typst can do,
+  equations included, and it stays sharp at any size. What is lost: the frames
+  in between are counted and sit in the file, and several values cannot move
+  independently.
+]
+
 == Three stumbling blocks
 
 *Only reveals count.* The cursor counts `anim`, `stagger`, `alternatives` and
@@ -833,6 +1040,11 @@ turning, a diagram assembling itself.
 `loop`, `pingpong` and `still` decide how it plays and which frame stands on
 paper. If the viewer has turned on "reduce motion" in their operating system,
 it never starts playing at all; see "Less motion".
+
+The clock starts when the flip book becomes visible, not when its slide comes
+up. A `flipbook(at: "3-", loop: false)` lies still on frame 0 for the first two
+steps and starts from zero when it is revealed; page back and reveal it again,
+and it plays again from the beginning.
 
 #warning[
   Every frame is really typeset. Twenty-four frames are twenty-four layouts and
@@ -1618,6 +1830,10 @@ new", which is what an entrance is for, but nothing crosses the slide any more.
    away. With `loop` or `pingpong` it is frame zero. `still` does not apply:
    the frame for paper is typeset content and is not in the HTML at all, which
    carries only the frames themselves.],
+  [`scene`],
+  [Jumps from stop to stop. The frames in between still sit in the file, but
+   none of them is shown. What falls away is exactly the travel; the stops
+   themselves are not travel, they are the content.],
   [`after: "dimmed"`],
   [Stays. A point stepping back changes its opacity and does not move.],
   [The progress bar in the speaker view],
@@ -2095,8 +2311,9 @@ scaling: a `card` around a bare `block(height: 1fr)` behaves the same. Give
   slide.
 
   `fit` therefore stops with a message that names the thing, for `pause`,
-  `anim`, `stagger`, `alternatives`, `morph`, `tiles`, `video`, `embed` and
-  `flipbook` -- in both outputs, and also when the fit sits inside another fit.
+  `anim`, `stagger`, `alternatives`, `morph`, `tiles`, `video`, `embed`,
+  `flipbook`, `aufbau` and `scene` -- in both outputs, and also when the fit
+  sits inside another fit.
   The way round it is to put the fit *inside* the reveal rather than around it:
 
   // check: folie pre=tabelle fehlt=2 weil=cannot_stand_inside_fit
@@ -2885,9 +3102,10 @@ then media and the bridge, and last the measurements and colours.
 == Revealing, moving, staggering
 
 // `anim-kern` is the checked inside of `anim`. `stagger` uses it from
-// within, and `lib.typ` does not hand it out.
+// within, and `lib.typ` does not hand it out. The same
+// holds for the two helpers of `scene`.
 #show-module(read("../src/elements.typ"), name: "typstage",
-             exclude: ("anim-kern",))
+             exclude: ("anim-kern", "szene-messbar", "szene-zwischen"))
 
 == Layouts
 

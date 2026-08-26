@@ -116,6 +116,21 @@ VORSPANN = {
   # Die Versionen sind dieselben wie im Fließtext. Wer eine davon hier
   # hochzieht, muss sie dort mitziehen, sonst zeigt das Handbuch eine Zeile,
   # die niemand geprüft hat.
+  # Was eine `scene` zeichnet. Zwei Namen, weil beide Handbücher dasselbe
+  # Beispiel in ihrer Sprache schreiben: die Zeichnung selbst ist hier nur
+  # eine Andeutung -- geprüft wird, dass `scene` und `scene-layer` das
+  # annehmen, was das Handbuch vorführt, nicht wie eine Tangente aussieht.
+  "szene": (
+    "#let f(t) = 0.25 * t * t\n"
+    "#let tangente-an(g, x) = box(width: 100%, height: 120pt,\n"
+    "  place(horizon + left, dx: 50% + x * 8%, circle(radius: 6pt)))\n"
+    "#let tangent-at = tangente-an\n"
+    "#let rechteck-mit(breite: 1, hoehe: 1) = box(width: 100%, height: 120pt,\n"
+    "  place(top + left, rect(width: breite * 30pt, height: hoehe * 20pt)))\n"
+    "#let box-of = (width: 1, height: 1) => rechteck-mit(breite: width, hoehe: height)\n"
+    "#let zeichnung-bei(x) = tangente-an(f, x)\n"
+    "#let drawing-at = zeichnung-bei\n"
+  ),
   "cetz": '#import "@preview/cetz:0.5.2"\n',
   "lilaq": (
     '#import "@preview/lilaq:0.6.0" as lq\n'
