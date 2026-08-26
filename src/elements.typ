@@ -2,7 +2,7 @@
 
 #import "internal.typ": (adaptiv-gruppen, durchsichtig, fit-meldung, html-output,
                         im-deck, im-fit, name-of, offenes-ende, pin-index,
-                        pin-marker, selector, step-cursor, track)
+                        pin-marker, selector, step-cursor, track, will-fuellen)
 
 /// What `anim` does once its arguments have been checked.
 ///
@@ -561,7 +561,19 @@
     let frei = stufen.map(s => measure(s, width: available.width))
     let gedeckelt = stufen.map(s => measure(s, width: available.width,
                                             height: available.height))
-    let breite = calc.max(..frei.map(m => m.width), ..gedeckelt.map(m => m.width))
+    // Was sich selbst mittig setzt, misst sich trotzdem so schmal wie seine
+    // Tinte -- `measure(align(center, x), width: 400pt)` gibt die Breite von
+    // `x` zurück und nicht 400pt. Ein Block von dieser Breite nähme dem `align`
+    // genau den Platz weg, in dem es zentrieren wollte, und die Zeichnung
+    // stünde links, obwohl im Quelltext `center` steht. `track` kennt diese
+    // Falle und weicht ihr mit `will-fuellen` aus; hier muss dasselbe gelten,
+    // sonst verhielte sich `aufbau(align(center, …))` anders als
+    // `anim(align(center, …))`. Gemessen: die Stufen lagen bei 3,80 Prozent
+    // der Bühne statt bei 44,61.
+    let fuellt = stufen.any(will-fuellen)
+    let breite = if fuellt { available.width } else {
+      calc.max(..frei.map(m => m.width), ..gedeckelt.map(m => m.width))
+    }
     let hoehe = calc.max(..frei.map(m => m.height), ..gedeckelt.map(m => m.height))
     let erster = if start == auto { step-cursor.get().first() + 1 } else { start }
     if not html-output.get() {
@@ -571,7 +583,12 @@
         if im-deck() {
           step-cursor.update(c => calc.max(c, erster + schritte - 1))
         }
-        block(width: breite, height: hoehe, place(top + left, stufen.last()))
+        // Ohne `place`, anders als im Zweig darunter: hier steht nur eine
+        // Stufe, es ist also nichts zu stapeln, und `place` nähme einem
+        // `align` in der Stufe den Platz, in dem es ausrichten wollte.
+        // Gemessen an `place(top + left, align(center, rect))` in einem Block
+        // voller Breite: die Tinte lag bei x = 39 statt bei x = 312.
+        block(width: breite, height: hoehe, stufen.last())
       }
     }
     let letzte = schritte - 1
