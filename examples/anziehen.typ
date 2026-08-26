@@ -39,7 +39,7 @@
 // `palette-report` measures a whole palette and the deck hands `presentation`
 // only a part, so the merge is written out here -- it is the same one the
 // package makes internally, and slide "Six pairs, one contract" measures it.
-#let voll = (
+#let merged = (
   paper: themes.default.paper, ink: themes.default.ink,
   strong: themes.default.strong, accent: themes.default.accent,
   muted: themes.default.muted, surface: themes.default.surface,
@@ -140,8 +140,8 @@
 )")),
   [
     That is this deck, and the whole of its colour. `surface` and `border` are
-    not named, so every card in the talk still sits on the theme's own white
-    with the theme's own hairline.
+    not named and keep the theme's own white and light grey. The green edge on
+    a card is a label's doing, not a palette's.
 
     #v(0.4em)
 
@@ -222,7 +222,7 @@
   // here, and the header would only make the paged export complain.
   text(fill: p.muted)[Pair], text(fill: p.muted)[Measured],
   text(fill: p.muted)[Wants], text(fill: p.muted)[What for],
-  ..palette-report(voll).map(f => (
+  ..palette-report(merged).map(f => (
     raw(f.pair),
     text(fill: if f.ok { p.accent } else { rgb("#b3261e") }, weight: "bold",
          str(calc.round(f.ratio, digits: 2))),
@@ -247,18 +247,18 @@
 
 #v(1fr)
 
-#let paar(name, farbe, grund, label) = card(title: name)[
-  #block(width: 100%, fill: grund, stroke: 0.5pt + voll.border, inset: 10pt,
-         align(center, text(fill: farbe, weight: "bold", size: 1.1em)[#label]))
+#let swatch(name, colour, ground, glyph) = card(title: name)[
+  #block(width: 100%, fill: ground, stroke: 0.5pt + merged.border, inset: 10pt,
+         align(center, text(fill: colour, weight: "bold", size: 1.1em)[#glyph]))
   #v(0.4em)
   #align(center, text(size: 1.1em, weight: "bold",
-    str(calc.round(contrast(farbe, grund), digits: 2)) + " : 1"))
+    str(calc.round(contrast(colour, ground), digits: 2)) + " : 1"))
 ]
 
 #side-by-side(
   split: (1fr, 1fr), align: top,
-  paar([This accent on the paper], p.accent, p.paper, [Aa]),
-  paar([The same on the ink], p.accent, p.ink, [Aa]),
+  swatch([This accent on the paper], p.accent, p.paper, [Aa]),
+  swatch([The same on the ink], p.accent, p.ink, [Aa]),
 )
 
 #anim([An inverted slide turns ground and text around, so the accent has to
@@ -325,42 +325,42 @@
 // happens below is the real behaviour and not an illustration of it. The
 // label of the left one sits on the content *inside* the call; the label of
 // the right one sits on a group *around* the finished call.
-#let typ-innen = text(fill: p.muted, [#[Reachable] <probe-in>])
-#let typ-aussen = [#text(fill: p.muted)[Not reachable] <probe-out>]
+#let type-inside = text(fill: p.muted, [#[Reachable] <inside-type>])
+#let type-outside = [#text(fill: p.muted)[Not reachable] <outside-type>]
 
-#let flaeche-innen = {
-  set rect(fill: voll.border)
-  [#rect(width: 100%, height: 12pt) <flaeche-in>]
+#let area-inside = {
+  set rect(fill: merged.border)
+  [#rect(width: 100%, height: 12pt) <inside-area>]
 }
-#let flaeche-aussen = [#rect(width: 100%, height: 12pt, fill: voll.border) <flaeche-out>]
+#let area-outside = [#rect(width: 100%, height: 12pt, fill: merged.border) <outside-area>]
 
 // The four rules stand inside a content block, so they hold for this slide
 // and no further. Every one of them asks for the same green.
 #[
-#show label("probe-in"): set text(fill: p.accent, weight: "bold")
-#show label("probe-out"): set text(fill: p.accent, weight: "bold")
-#show label("flaeche-in"): set rect(fill: p.accent)
-#show label("flaeche-out"): set rect(fill: p.accent)
+#show label("inside-type"): set text(fill: p.accent, weight: "bold")
+#show label("outside-type"): set text(fill: p.accent, weight: "bold")
+#show label("inside-area"): set rect(fill: p.accent)
+#show label("outside-area"): set rect(fill: p.accent)
 
 #side-by-side(
   split: (1fr, 1fr), align: top,
   card(title: [Label inside the call])[
     #text(size: 0.56em, raw(lang: "typ", "text(fill: grey, [#[..] <l>])"))
     #v(0.2em)
-    #align(center, typ-innen)
+    #align(center, type-inside)
     #v(0.35em)
     #text(size: 0.56em, raw(lang: "typ", "set rect(fill: grey)\n[#rect(..) <l>]"))
     #v(0.2em)
-    #flaeche-innen
+    #area-inside
   ],
   card(title: [Label around the call])[
     #text(size: 0.56em, raw(lang: "typ", "[#text(fill: grey)[..] <l>]"))
     #v(0.2em)
-    #align(center, typ-aussen)
+    #align(center, type-outside)
     #v(0.35em)
     #text(size: 0.56em, raw(lang: "typ", "\n[#rect(.., fill: grey) <l>]"))
     #v(0.2em)
-    #flaeche-aussen
+    #area-outside
   ],
 )
 ]
@@ -374,8 +374,9 @@
 === Where the rule has to stand
 
 #speaker-note[
-  The measurement is worth quoting exactly: 13 of 37 from inside the style
-  hook, and the other 24 fail silently. Silence is the expensive part.
+  The number worth quoting is the 13: those are the labels that stand in a
+  body, and from inside the style hook they are the only ones that bite.
+  Every other one fails silently. Silence is the expensive part.
 ]
 
 #v(1fr)
@@ -387,9 +388,9 @@
     the title slide, every section slide, and every moving piece.
   ],
   card(title: [Inside #raw(lang: "typ", "style:")], color: p.muted)[
-    The slide *body* only. Measured, all 37 rules one at a time: exactly the
-    13 that stand in a body take effect there, and the other 24 stay silent
-    without a warning.
+    The slide *body* only. Measured one rule at a time: exactly the 13 that
+    stand in a body take effect -- card, callout, statement, and the stand-in
+    for a video. Every other label stays silent, without a warning.
   ],
 )
 
