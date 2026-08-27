@@ -13,10 +13,22 @@
 // "Its monochrome look is one dictionary" — eight entries handed to
 // `m.setup(colors: ..)`. typstage has `palette:` for that, and it is very
 // nearly the same thing: eight roles, overridable in part, independent of the
-// design. Everything below, the title slide and the section plate included,
-// names roles only (`t.ink`, `t.paper`, `t.strong`, `t.accent`). Swap
-// `palette: greyscale` for `palettes.textbook` and the same deck comes out in
-// the colours of a maths textbook, without a second line changing.
+// design. The furniture below names roles only (`t.ink`, `t.paper`,
+// `t.strong`, `t.accent`): the title slide, the section plate, the black
+// panels, the cards. Swap `palette: greyscale` for `palettes.textbook` and
+// every one of them takes the new colours, without a second line changing.
+//
+// How much you then see is a second question, and worth stating plainly
+// rather than promising a different deck. Measured on that swap: the section
+// plate turns vermilion with a blue rule, because its whole ground is
+// `strong`; the rest keeps its look, because textbook's `ink` is very nearly
+// black and its `paper` is white, so the panels and cards land where they
+// already stood. And the grey surfaces further down never move at all: they
+// stand in for photographs and are written in `luma()`, not in roles — a
+// photograph does not turn vermilion because the palette did.
+//
+// That is the honest size of the claim, and it is still mosaic's claim: the
+// deck's own colour lives in one dictionary. The pictures live outside it.
 //
 // What the template cannot do and this deck does: one picture steps out of
 // the contact sheet and becomes the print. And the big number counts itself
@@ -42,9 +54,13 @@
 // The one value that cannot be carried over is the accent. mosaic sets it to
 // the ink, and that works there because its default theme draws no accent
 // shape on a dark ground. typstage draws one: the rule above the section
-// title stands on `strong`, and black on black is not a rule. luma(40%)
-// measures 5.74 to 1 on white and 3.66 on black — the window for a grey that
-// holds on both grounds is narrow, and this is the middle of it.
+// title stands on `strong`, and black on black is not a rule. Measured
+// against the two grounds this deck actually has, luma(40%) holds 5.35 to 1
+// on the paper #f7f7f5 and 3.29 on the strong #111111 — the window for a grey
+// that carries on both is narrow, and this sits in it. Against pure white and
+// pure black the same grey measures 5.74 and 3.66; the deck uses neither, so
+// the numbers above are the ones that count. Both ends clear the 3.0 that
+// WCAG 2 asks of a shape that is not text, which is what the rule is.
 #let greyscale = (
   paper: rgb("#f7f7f5"),
   ink: rgb("#111111"),
