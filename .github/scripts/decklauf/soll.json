@@ -188,7 +188,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 87,
+   "sprecher": 193,
    "grund": [
     "#ffffff",
     "#ffffff",
@@ -342,7 +342,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 110,
+   "sprecher": 216,
    "grund": [
     "#fafafa",
     "#23303f",
@@ -422,7 +422,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "1/0",
-   "sprecher": 539,
+   "sprecher": 645,
    "grund": [
     "#f7f2e6",
     "#f7f2e6",
@@ -512,7 +512,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "3/0",
-   "sprecher": 111,
+   "sprecher": 217,
    "grund": [
     "#ffffff",
     "#e6f0f6",
@@ -603,7 +603,7 @@
    "hash": 8,
    "hashStand": "3/0",
    "sprecher": {
-    "darwin": 1087,
+    "darwin": 1193,
     "linux": 1086
    },
    "grund": [
@@ -701,7 +701,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 96,
+   "sprecher": 202,
    "grund": [
     "#ffffff",
     "#ffffff",
@@ -790,7 +790,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 100,
+   "sprecher": 206,
    "grund": [
     "#fafafa",
     "#23303f",
@@ -893,7 +893,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "4/0",
-   "sprecher": 356,
+   "sprecher": 462,
    "grund": [
     "#fafafa",
     "#fafafa",
@@ -938,7 +938,7 @@
    "hash": 8,
    "hashStand": "5/0",
    "sprecher": {
-    "darwin": 844,
+    "darwin": 950,
     "linux": 848
    },
    "grund": [
@@ -989,7 +989,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 80,
+   "sprecher": 186,
    "grund": [
     "#f5f3ee",
     "#20372c",
@@ -1075,7 +1075,7 @@
    "federRueck": 6,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 114,
+   "sprecher": 220,
    "grund": [
     "#ffffff",
     "#c1361c",
@@ -1229,7 +1229,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "4/3",
-   "sprecher": 98,
+   "sprecher": 204,
    "grund": [
     "#ffffff",
     "#e6f0f6",
@@ -1350,7 +1350,7 @@
    "federRueck": 2,
    "hash": 8,
    "hashStand": "4/0",
-   "sprecher": 173,
+   "sprecher": 279,
    "grund": [
     "#f2eee5",
     "#f2eee5",
@@ -1412,7 +1412,7 @@
    "federRueck": 2,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 126,
+   "sprecher": 232,
    "grund": [
     "#fffcf9",
     "#fffcf9",
@@ -1487,7 +1487,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 186,
+   "sprecher": 292,
    "grund": [
     "#111111",
     "#f7f7f5",
@@ -1554,7 +1554,7 @@
    "federRueck": 3,
    "hash": 8,
    "hashStand": "1/0",
-   "sprecher": 75,
+   "sprecher": 181,
    "grund": [
     "#0f1319",
     "#0c2733",
@@ -1721,11 +1721,11 @@
    "zeichnung": "3+3 Pfade · hinein/heraus · 0>1 · 0/0 offen · Sprung 0/1/6",
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
-    "darwin": "52289bcf2a82d855",
+    "darwin": "3c34089f880b9a83",
     "linux": "5a32b92841b1d97a"
    },
    "satzBytes": {
-    "darwin": 1309855,
+    "darwin": 1321718,
     "linux": 1187179
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",
