@@ -10,7 +10,7 @@ typst compile deck.typ deck.pdf                                  # slides and ha
 
 ![A slide of a typstage deck in the browser, halfway through its reveals](assets/slide.png)
 
-**Try it without installing anything:** [eight example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos: a tour of the package itself, how GPS finds you, why the four margins of a book are unequal, a school lesson on completing the square, a night of rolling deployments, and Simpson's paradox. Two more show GeoGebra: one where the slides drive the applet, one where a hand drives it from the speaker window.
+**Try it without installing anything:** [eleven example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos: a tour of the package itself, how GPS finds you, why the four margins of a book are unequal, a school lesson on completing the square, a night of rolling deployments, and Simpson's paradox. Two more show GeoGebra: one where the slides drive the applet, one where a hand drives it from the speaker window. Three are the other kind of example: presentation templates adapted from the Mosaic package, rebuilt here and given the one thing paper cannot have.
 
 ## Typst sets, the browser moves
 
@@ -361,7 +361,7 @@ else, no Node, no bundler.
 - **The slides are SVG outlines, not text.** Glyphs go into the file as paths,
   so nothing in the browser is selectable, searchable or reflowable, screen
   readers see nothing, and the file grows with the deck. Measured: the little
-  deck above weighs 211 kB, the eight example decks between 0.48 and 2.1 MB,
+  deck above weighs 211 kB, the eleven example decks between 0.50 and 2.1 MB,
   and the largest of them holds 127 SVG trees with 5581 glyph references across
   23 slides. In exchange no font has to load and the layout cannot drift.
 - **`#pause` is read at the top level of a slide body only.** Inside a grid
@@ -439,8 +439,8 @@ exists still compiles.
 
 ### The decks are driven in a browser
 
-Compiling proves nothing about motion. A second run loads the eight example
-decks and a ninth check deck into a real browser, pages through every step
+Compiling proves nothing about motion. A second run loads the eleven example
+decks and a twelfth check deck into a real browser, pages through every step
 forward and backward, and holds the numbers against a written record:
 
 ```bash
