@@ -2989,6 +2989,61 @@
     if (wohin) wohin.appendChild(e);
     return e;
   }
+  // Welcher Entwurf der Werkzeuge gilt. Nur zum Vergleichen da: `?wz=a` bis
+  // `?wz=d` in der Adresse. Ohne Angabe gilt `d`.
+  var WZ_ENTWURF = "d";
+  try {
+    var wzq = /[?&]wz=([a-d])/.exec(String(location.search || ""));
+    if (wzq) WZ_ENTWURF = wzq[1];
+  } catch (xw) {}
+
+  // Die Zeichen der Werkzeuge als Pfade und nicht als Schriftzeichen.
+  // `✎`, `⌫` und `☞` sind auf jedem System anders gross, anders
+  // schwer und manchmal bunt -- der Zeiger kam als Emoji heraus, der Radierer
+  // als Kasten mit Kreuz. Ein Pfad ist ueberall derselbe Pfad, nimmt mit
+  // `currentColor` die Farbe seines Knopfes an und laesst sich auf den halben
+  // Pixel genau neben ein 11-px-Wort stellen.
+  var WZ_ZEICHEN = {
+    stift:  { d: ["M2.8 13.2 L4.1 9.5 L10.7 2.9 L13.1 5.3 L6.5 11.9 Z",
+                  "M9.5 4.1 L11.9 6.5"] },
+    zeiger: { fuell: 1,
+              d: ["M4 2.4 L12.6 8.3 L8.4 8.9 L10.3 12.9 L8.5 13.7 L6.6 9.7 L4 12.3 Z"] },
+    radier: { d: ["M5.9 12.4 L2.7 9.2 A1 1 0 0 1 2.7 7.8 L8.2 2.3 A1 1 0 0 1 9.6 2.3 "
+                  + "L12.9 5.6 A1 1 0 0 1 12.9 7 L7.3 12.4 Z",
+                  "M5.6 4.9 L10.3 9.6", "M2.9 13.7 L13.4 13.7"] },
+    undo:   { d: ["M6.3 3.7 L3 7 L6.3 10.3",
+                  "M3 7 L9.2 7 A3.3 3.3 0 0 1 9.2 13.6 L7.2 13.6"] },
+    clear:  { d: ["M2.6 3.4 L13.4 3.4 L13.4 12.6 L2.6 12.6 Z",
+                  "M6.1 6.6 L9.9 10.4", "M9.9 6.6 L6.1 10.4"] },
+    sonne:  { d: ["M8 4.9 A3.1 3.1 0 1 0 8 11.1 A3.1 3.1 0 1 0 8 4.9 Z",
+                  "M8 1 L8 2.5", "M8 13.5 L8 15", "M1 8 L2.5 8", "M13.5 8 L15 8",
+                  "M3.1 3.1 L4.2 4.2", "M11.8 11.8 L12.9 12.9",
+                  "M12.9 3.1 L11.8 4.2", "M4.2 11.8 L3.1 12.9"] },
+    mond:   { fuell: 1,
+              d: ["M13.1 10.4 A5.7 5.7 0 0 1 5.6 2.9 A5.9 5.9 0 1 0 13.1 10.4 Z"] }
+  };
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function wzBild(wohin, name) {
+    var s = document.createElementNS(SVGNS, "svg");
+    s.setAttribute("viewBox", "0 0 16 16");
+    s.setAttribute("class", "ts-sp-wz-bild");
+    // Das Zeichen sagt nichts, was der Name nicht schon sagt: aus dem
+    // Baum genommen, damit ein Vorleser nicht zweimal dasselbe meldet.
+    s.setAttribute("aria-hidden", "true");
+    s.setAttribute("focusable", "false");
+    var z = WZ_ZEICHEN[name];
+    if (z) {
+      if (z.fuell) s.setAttribute("data-fuell", "1");
+      for (var i = 0; i < z.d.length; i++) {
+        var pf = document.createElementNS(SVGNS, "path");
+        pf.setAttribute("d", z.d[i]);
+        s.appendChild(pf);
+      }
+    }
+    if (wohin) wohin.appendChild(s);
+    return s;
+  }
+
   // Eine Kachel: Flaeche, Rand, Marke. Der Baustein, aus dem diese Ansicht
   // besteht. Was hineinkommt, entscheidet der Aufrufer -- eine Kachel weiss
   // nichts ueber ihren Inhalt, und deshalb sehen alle gleich aus.
@@ -3295,8 +3350,16 @@
     if (!ELN || !ELN.licht) return;
     var hell = document.documentElement.dataset.tsLicht === "hell";
     // Der Knopf nennt das *andere* Bild: was ein Druck bewirkt, nicht was
-    // gerade gilt.
-    ELN.licht.textContent = hell ? wort("dark", "dark") : wort("light", "light");
+    // gerade gilt. Zeichen und Wort sagen dasselbe, und beide werden
+    // getauscht -- ein `textContent` allein haette das Zeichen mit
+    // weggewischt.
+    var wo = wort(hell ? "dark" : "light", hell ? "dark" : "light");
+    var sp = ELN.licht.querySelector(".ts-sp-wz-wort");
+    if (sp) sp.textContent = wo; else ELN.licht.textContent = wo;
+    var alt = ELN.licht.querySelector("svg");
+    if (alt) ELN.licht.replaceChild(wzBild(null, hell ? "mond" : "sonne"), alt);
+    ELN.licht.title = wo + "  (l)";
+    ELN.licht.setAttribute("aria-label", wo);
   }
   function lichtUm() {
     LICHT_HAND = document.documentElement.dataset.tsLicht === "dunkel"
@@ -3491,74 +3554,152 @@
     ELN.vorMarke = vor.firstChild;
     ELN.vorBild = bau("div", "ts-sp-vorbild", vor);
 
-    // Die Fusszeile ist Werkzeug und kein Zustand: Stift, Farben, Tasten.
-    // ── Die Werkzeugkachel ──────────────────────────────────────────────
+    // ── Die Werkzeuge ───────────────────────────────────────────────────
     //
-    // Drei Zeilen, nach dem geordnet, wie oft man sie braucht:
+    // Neun Dinge, und sie sind nicht von einer Art. Nach ihrer Natur
+    // geordnet, nicht nach der Zeile, in der sie zufaellig Platz fanden:
     //
-    //   1. zeichnen  -- Stift und seine vier Farben, nebeneinander. Was man
-    //      waehlt und womit, steht in einer Zeile.
-    //   2. berichtigen -- zurueck, Folie raeumen, radieren. Alles drei nimmt
-    //      etwas weg; sie gehoeren zusammen und nicht zwischen die Farben.
-    //   3. einstellen -- hell/dunkel und der Zeiger. Was man einmal setzt und
-    //      dann stehen laesst.
-    var kStift = kachel(uhren, "ts-sp-werkzeugkachel", wort("tools", "tools"));
-    var stift = bau("div", "ts-sp-stift", kStift);
-    ELN.stiftKasten = stift;
+    //   Auswahl      Stift, Zeiger, Radierer. *Genau eines gilt.*
+    //   Zubehoer     Die vier Farben. Sie gehoeren dem Stift.
+    //   Handlung     Zuruecknehmen, Folie loeschen. Feuern und sind vorbei.
+    //   Einstellung  hell/dunkel. Sagt nichts ueber die Tinte.
+    //
+    // Die Ordnung nach Haeufigkeit -- erst das Zeichnen, dann das
+    // Berichtigen, zuletzt das Einstellen -- bleibt die senkrechte
+    // Reihenfolge. Eine Abweichung gibt es, und sie ist der Grund fuer den
+    // ganzen Umbau: die drei Werkzeuge stehen jetzt *beieinander* statt auf
+    // drei Zeilen verteilt. Von ihnen gilt genau eines; das ist eine
+    // Auswahlgruppe, und eine Auswahlgruppe, deren Glieder man erst suchen
+    // muss, ist als solche nicht zu lesen. Vorher stand der Stift in Zeile 1,
+    // der Radierer zwischen zwei Handlungen in Zeile 2 und der Zeiger neben
+    // einer Einstellung in Zeile 3.
+    //
+    // Drei gleich breite Felder heisst ausserdem: das gewaehlte kann sich
+    // keinen Platz nehmen. Vorher trug es `flex:1 1 auto`, und weil
+    // "gewaehlt" umgedreht war, wurde ausgerechnet der Ruhezustand -- PEN --
+    // zum weissen Klotz ueber die halbe Kachel und damit zum Lautesten.
+    //
+    // Was *nicht* hereinkommt: Notizgroesse und Vollbild. Die Notizgroesse
+    // zeigte auf ein Ding, das es nicht immer gibt -- ein Deck ohne Notizen
+    // bekommt die Notizkachel gar nicht erst (siehe `hatNotiz` oben), und ein
+    // Knopf, der ins Leere greift, ist schlimmer als keiner. Vollbild meint
+    // das *Vortragsfenster*; ein Knopf dafuer im Sprecherfenster machte
+    // gross, was ohnehin schon der Arbeitsplatz ist. Beide behalten `+`/`-`
+    // und `f`: die Kachel ist der zweite Weg, nicht der erste.
+    document.documentElement.dataset.tsWz = WZ_ENTWURF;
+    var wzTraeger = (WZ_ENTWURF === "c")
+      ? kachel(LEIB, "ts-sp-werkzeugleiste", wort("tools", "tools"))
+      : kachel(uhren, "ts-sp-werkzeugkachel", wort("tools", "tools"));
+    ELN.wzTraeger = wzTraeger;
+    var wzk = bau("div", "ts-sp-werkzeug", wzTraeger);
+    ELN.wzKasten = wzk;
     ELN.werkzeug = {};
 
-    var wzKnopf = function (wohin, art, schluessel, vorgabe, zeichen) {
-      var k = bau("button", "ts-sp-wz", wohin);
+    // Eine Gruppe traegt ihren Namen mit, benutzt ihn aber nur dort, wo sie
+    // quer liegt und Platz dafuer hat -- dann sieht sie aus wie ein Kasten
+    // der Tastenzeile darunter, und das ist Absicht: beide sagen "das hier
+    // gehoert zusammen, und so heisst es".
+    var wzGruppe = function (klasse, name) {
+      var g = bau("div", "ts-sp-wzgruppe " + klasse, wzk);
+      bau("span", "ts-sp-wzgruppe-name", g).textContent = name;
+      return g;
+    };
+
+    var wzKnopf = function (wohin, klasse, zeichen, schluessel, vorgabe, taste) {
+      var k = bau("button", klasse, wohin);
       k.type = "button";
-      k.dataset.wz = art;
-      bau("i", "ts-sp-wz-bild", k).textContent = zeichen;
+      wzBild(k, zeichen);
       bau("span", "ts-sp-wz-wort", k).textContent = wort(schluessel, vorgabe);
-      k.addEventListener("click", function () { modusSetzen(art); });
-      ELN.werkzeug[art] = k;
+      // Der Name steht auch dann noch da, wenn die Kachel zu schmal fuer das
+      // Wort ist und nur das Zeichen bleibt.
+      k.title = wort(schluessel, vorgabe) + "  (" + taste + ")";
+      k.setAttribute("aria-label", wort(schluessel, vorgabe));
       return k;
     };
 
-    // 1 ── Stift und Farben
-    var z1 = bau("div", "ts-sp-zeile ts-sp-zeile-stift", stift);
-    wzKnopf(z1, "stift", "pen", "pen", "\u270E");
-    var farben = bau("div", "ts-sp-farben", z1);
+    // 1 ── Welches Werkzeug gilt
+    var tri = wzGruppe("ts-sp-triade", wort("groupTool", "tool"));
+    tri.setAttribute("role", "radiogroup");
+    tri.setAttribute("aria-label", wort("groupTool", "tool"));
+    [["stift", "pen", "pen"], ["zeiger", "pointer", "pointer"],
+     ["radier", "erase", "eraser"]].forEach(function (a) {
+      var k = wzKnopf(tri, "ts-sp-wz", a[0], a[1], a[2], "m");
+      k.dataset.wz = a[0];
+      k.setAttribute("role", "radio");
+      k.addEventListener("click", function () { modusSetzen(a[0]); });
+      ELN.werkzeug[a[0]] = k;
+    });
+    // Innerhalb einer Auswahlgruppe fuehren die Pfeiltasten, nicht die
+    // Tabtaste. Ohne das haette die Gruppe drei Tabstopps statt einem, und
+    // die Pfeile taeten hier gar nichts.
+    tri.addEventListener("keydown", function (ev) {
+      var r = ["stift", "zeiger", "radier"], i = r.indexOf(MODUS);
+      if (i < 0) return;
+      var n = (ev.key === "ArrowRight" || ev.key === "ArrowDown") ? 1
+            : (ev.key === "ArrowLeft" || ev.key === "ArrowUp") ? -1 : 0;
+      if (!n) return;
+      var z = r[(i + n + r.length) % r.length];
+      modusSetzen(z);
+      ELN.werkzeug[z].focus();
+      ev.preventDefault();
+      ev.stopPropagation();
+    });
+
+    // 2 ── Womit. Vier Plaetze in fester Reihenfolge, und die Auswahl steht
+    //      als *Form*: der gewaehlte Tupfen ist hoeher als seine drei
+    //      Nachbarn und traegt zusaetzlich den Halo. Auf Farbe allein waere
+    //      hier kein Verlass. Gemessen liegen Gelb und Blau schon bei
+    //      normalem Sehen mit 1,33 zueinander und Gelb und Weiss mit 1,31;
+    //      unter Deuteranopie Orange und Blau mit 1,47, unter Protanopie
+    //      Gelb und Blau mit 1,15. Kein Paar der vier ist ueber die
+    //      Helligkeit zu trennen. Was bleibt, ist der Platz in der Reihe:
+    //      der dritte ist immer der dritte.
+    var farben = wzGruppe("ts-sp-farben", wort("groupColour", "colour"));
+    farben.setAttribute("role", "radiogroup");
+    farben.setAttribute("aria-label", wort("groupColour", "colour"));
     ELN.farbKasten = farben;
     ELN.tupf = [];
     FARBEN.forEach(function (f, i) {
       var t = bau("button", "ts-sp-tupf", farben);
       t.type = "button";
+      t.setAttribute("role", "radio");
       // Als Eigenschaft und nicht als Hintergrund: das Stilblatt rechnet aus
       // ihr die Kante des Tupfens aus, und das geht nur, wenn die Farbe dort
       // als Wert ankommt.
       t.style.setProperty("--tupf", f);
       t.setAttribute("aria-label", wort("pen", "pen") + " " + (i + 1));
+      t.title = wort("pen", "pen") + " " + (i + 1) + "  (c)";
       t.addEventListener("click", function () { farbeSetzen(i); modusSetzen("stift"); });
       ELN.tupf.push(t);
     });
 
-    // 2 ── zuruecknehmen, raeumen, radieren
-    var z2 = bau("div", "ts-sp-zeile", stift);
-    var tatKnopf = function (wohin, schluessel, vorgabe, taste, tun) {
-      var k = bau("button", "ts-sp-tat", wohin);
-      k.type = "button";
-      k.textContent = wort(schluessel, vorgabe);
-      k.title = wort(schluessel, vorgabe) + "  (" + taste + ")";
-      k.addEventListener("click", tun);
-      return k;
-    };
-    tatKnopf(z2, "undo", "undo", "z", function () {
-      tinteSenden({ b: "weg", s: tinteFolie() });
-    });
-    tatKnopf(z2, "clear", "clear", "x", function () {
-      tinteSenden({ b: "loesch", s: tinteFolie() });
-      hint(wort("inkCleared", "slide cleared \u2014 z brings it back"));
-    });
-    wzKnopf(z2, "radier", "erase", "eraser", "\u232B");
+    // 3 ── Was man tut. Die leisesten der Kachel: sie tragen keinen Zustand,
+    //      also muessen sie auch keinen zeigen.
+    var taten = wzGruppe("ts-sp-taten", wort("groupEdit", "edit"));
+    ELN.taten = taten;
+    wzKnopf(taten, "ts-sp-tat", "undo", "undo", "undo", "z")
+      .addEventListener("click", function () {
+        tinteSenden({ b: "weg", s: tinteFolie() });
+      });
+    wzKnopf(taten, "ts-sp-tat", "clear", "clear", "clear", "x")
+      .addEventListener("click", function () {
+        tinteSenden({ b: "loesch", s: tinteFolie() });
+        hint(wort("inkCleared", "slide cleared — z brings it back"));
+      });
 
-    // 3 ── einstellen
-    var z3 = bau("div", "ts-sp-zeile", stift);
-    ELN.licht = tatKnopf(z3, "light", "light", "l", lichtUm);
-    wzKnopf(z3, "zeiger", "pointer", "pointer", "\u261E");
+    // 4 ── hell/dunkel. Das einzige der neun, das nichts ueber die Tinte
+    //      sagt, sondern ueber diese Ansicht. Wo es steht, ist der
+    //      Unterschied zwischen den Entwuerfen a und b; c und d geben ihm
+    //      einen eigenen Kasten am Ende, getrennt durch Luft und nicht durch
+    //      einen Strich -- dieselbe Sprache, mit der die Kacheln sich
+    //      untereinander trennen.
+    var lichtWohin = (WZ_ENTWURF === "a")
+      ? bau("div", "ts-sp-wzrand", wzTraeger)
+      : (WZ_ENTWURF === "b") ? taten
+      : wzGruppe("ts-sp-wzlicht", wort("light", "light"));
+    ELN.licht = wzKnopf(lichtWohin, "ts-sp-tat ts-sp-licht", "sonne",
+                        "light", "light", "l");
+    ELN.licht.addEventListener("click", lichtUm);
     ELN.modus = ELN.werkzeug.stift;
 
     var fuss = bau("div", "ts-sp-fuss", SPRECHERBOX);
@@ -3614,17 +3755,31 @@
     document.documentElement.dataset.tsModus = MODUS;
     // A half-drawn stroke and a held press must not survive the switch.
     MALT = 0; ZEIGT = 0; LETZT = null; OFFEN = null; GESETZT = 0;
-    if (ELN.stiftKasten) ELN.stiftKasten.dataset.modus = MODUS;
+    if (ELN.wzKasten) ELN.wzKasten.dataset.modus = MODUS;
     if (ELN.werkzeug) {
       for (var w in ELN.werkzeug) {
         var an = w === MODUS;
         ELN.werkzeug[w].dataset.an = an ? "1" : "0";
-        ELN.werkzeug[w].setAttribute("aria-pressed", an ? "true" : "false");
+        // `aria-checked` und nicht `aria-pressed`: die drei sind eine
+        // Auswahlgruppe, in der genau eines gilt, und keine drei Schalter,
+        // die einzeln an und aus gehen. Der Vorleser sagt damit "1 von 3".
+        ELN.werkzeug[w].setAttribute("aria-checked", an ? "true" : "false");
+        // Nur das gewaehlte Feld liegt in der Tabreihenfolge; innerhalb der
+        // Gruppe fuehren die Pfeiltasten. So verlangt es das Muster fuer
+        // `radiogroup`, und so spart es am Pult drei Tabschritte.
+        ELN.werkzeug[w].tabIndex = an ? 0 : -1;
       }
     }
-    // Die Farben gehoeren zum Stift. Im Zeiger- und im Radiermodus haetten
-    // sie nichts zu sagen, also stehen sie dort auch nicht da.
-    if (ELN.farbKasten) ELN.farbKasten.dataset.aus = MODUS === "stift" ? "0" : "1";
+    // Die Farben gehoeren zum Stift. Im Zeiger- und im Radiermodus haben sie
+    // nichts zu sagen und treten zurueck. Vorher stand hier ein
+    // `data-aus`, zu dem es im ganzen Stilblatt keine Regel gab: der
+    // Kommentar versprach etwas, das nie geschah, und die Farben blieben in
+    // jedem Modus voll da und voll bedienbar.
+    if (ELN.tupf) {
+      for (var t = 0; t < ELN.tupf.length; t++) {
+        ELN.tupf[t].disabled = MODUS !== "stift";
+      }
+    }
   }
   function modusUm() {
     var neu = MODUS === "zeiger" ? "stift" : "zeiger";
@@ -4560,6 +4715,22 @@
     LEIB.style.maxWidth = "";
     LEIB.style.gridTemplateColumns = "";
     LEIB.style.gridTemplateRows = "";
+    // Fuenf Kacheln nebeneinander brauchen Platz, und die fuenfte ist keine
+    // Zahl: sie traegt drei Reihen Knoepfe statt einer Ziffer. Bleibt fuer
+    // sie weniger als ein knappes Fuenftel, bekommt sie eine eigene Zeile
+    // unter den Zahlen und legt sich darin quer -- dort ist Breite im
+    // Ueberfluss, waehrend in der Spalte keine mehr war. Gemessen stand die
+    // Kachel bei 560 px Fenster auf 102 px, und die Farbfelder ragten 51 px
+    // aus ihr heraus.
+    //
+    // Das steht *vor* dem Messen von `natur`, und das ist keine Kosmetik:
+    // die Lage entscheidet mit, wie hoch die Kachelzeile ist -- quer belegt
+    // sie eine vierte Rasterzeile. Gemessen wurde sonst die Hoehe der alten
+    // Lage und der neuen zugeschrieben. Wer das Fenster schmal zog und
+    // wieder breit, bekam eine 212 px hohe Zeile, wo frisch geladen 166
+    // standen, und sie blieb so.
+    LEIB.dataset.wz = r.width < 780 ? "schmal" : "weit";
+
     var zeile = ELN.uhrKachel ? ELN.uhrKachel.parentNode : null;
     var natur = zeile ? zeile.getBoundingClientRect().height : 0;
 
@@ -4578,8 +4749,11 @@
     folieHoch = Math.min(folieHoch, uebrig * 0.72);
     var notizHoch = Math.max(0, uebrig - folieHoch);
 
+    // Die vierte Zeile gibt es nur, wenn die Werkzeuge eine eigene haben.
+    var wzZeile = (ELN.wzTraeger
+      && ELN.wzTraeger.classList.contains("ts-sp-werkzeugleiste")) ? " auto" : "";
     LEIB.style.gridTemplateRows =
-      Math.round(folieHoch) + "px " + Math.round(notizHoch) + "px auto";
+      Math.round(folieHoch) + "px " + Math.round(notizHoch) + "px auto" + wzZeile;
 
     // Die Vorschauspalte ist so breit, wie ihr Bild bei dieser Zeilenhoehe
     // sein darf -- dann fuellt es die Kachel ganz, statt oben zu haengen und

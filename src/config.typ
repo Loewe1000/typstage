@@ -104,6 +104,11 @@
               black: "schwarz", frozen: "eingefroren", pen: "Stift",
               pointer: "Zeiger", erase: "Radierer",
               tools: "Werkzeuge", undo: "zurück", clear: "löschen",
+              // Die Namen der drei Gruppen in der Werkzeugkachel. Sie
+              // stehen nur da, wo die Kachel quer liegt und Platz dafür
+              // hat -- dann sieht sie aus wie ein Kasten der Tastenzeile.
+              groupTool: "Werkzeug", groupColour: "Farbe",
+              groupEdit: "berichtigen",
               full: "Vollbild", pinned: "auf der Folie",
               timer: "Klassenuhr", over: "Überzeit",
               light: "hell", dark: "dunkel",
@@ -129,6 +134,8 @@
               black: "black", frozen: "frozen", pen: "pen",
               pointer: "pointer", erase: "eraser",
               tools: "tools", undo: "undo", clear: "clear",
+              groupTool: "tool", groupColour: "colour",
+              groupEdit: "edit",
               full: "full", pinned: "pinned",
               timer: "class clock", over: "over",
               light: "light", dark: "dark",
@@ -152,6 +159,8 @@
               black: "noir", frozen: "figé", pen: "stylo",
               pointer: "pointeur", erase: "gomme",
               tools: "outils", undo: "annuler", clear: "effacer",
+              groupTool: "outil", groupColour: "couleur",
+              groupEdit: "corriger",
               full: "plein écran", pinned: "sur la diapo",
               timer: "minuterie", over: "dépassé",
               light: "clair", dark: "sombre",
