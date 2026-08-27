@@ -435,8 +435,11 @@ veniam, quis nostrud exercitation ullamco laboris.]
       ],
       plate(fill: white, inset: 20pt)[
         // A field of bars in a handful of greys: the role an embedded image
-        // plays in the template, except that this one is typeset and
-        // therefore follows any palette.
+        // plays in the template, except that this one is typeset rather than
+        // imported. Its greys are `luma()` and stay grey when the palette
+        // changes, like the surfaces above and for the same reason — only the
+        // baseline is a role. A chart that had to carry meaning would name
+        // roles here instead; this one carries a shape.
         #block(width: 100%, height: 100%, {
           let heights = (34%, 58%, 46%, 79%, 63%, 92%)
           place(bottom + left, line(length: 100%, stroke: 0.8pt + tp.border))
