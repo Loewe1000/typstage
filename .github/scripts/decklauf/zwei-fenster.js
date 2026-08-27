@@ -498,9 +498,21 @@ const szeneBild = `(function () {
     const tMasse = JSON.parse(await sprecher.ev(`(function(){
       var f = document.getElementById('ts-stage').getBoundingClientRect();
       var k = document.querySelector('.ts-sp-buehne').getBoundingClientRect();
+      var v = document.querySelector('.ts-sp-vorbild').getBoundingClientRect();
       return JSON.stringify({ f: {x:f.x,y:f.y,width:f.width,height:f.height},
-                              k: {x:k.x,y:k.y,width:k.width,height:k.height} });})()`));
+                              k: {x:k.x,y:k.y,width:k.width,height:k.height},
+                              v: {width:v.width,height:v.height} });})()`));
     const tBuehne = tMasse.f, tKachel = tMasse.k;
+    // Die Vorschau richtet sich nach der Hoehe ihrer Kachel, und ihre Breite
+    // rechnet die Laufzeit dazu. Bleibt die Rechnung aus, faellt das Bild auf
+    // Breite null zusammen: die Kachel steht dann da und ist leer. Keine
+    // Knotenzahl merkt das -- die Knoten sind ja alle noch da -- und der
+    // Fingerabdruck des Satzes auch nicht, denn er kennt das Stilblatt und
+    // nicht die Laufzeit.
+    if (tMasse.v.width < 60 || tMasse.v.height < 30) {
+      sagt("vorschau", "die Vorschau misst " + Math.round(tMasse.v.width) + "x"
+        + Math.round(tMasse.v.height) + " -- sie hat ihre Breite nicht bekommen");
+    }
     const tinteZaehlen = "document.querySelectorAll('#ts-ink *').length";
     const tVor = [+await halle.ev(tinteZaehlen), +await sprecher.ev(tinteZaehlen)];
     // Die Buehne liegt *in* ihrer Kachel. Sie ist nicht deren Kind -- sie
@@ -551,7 +563,9 @@ const szeneBild = `(function () {
       }
       console.log("Zeichnen: Sprecher " + tVor[1] + " -> " + tNach[1]
         + " · Halle " + tVor[0] + " -> " + tNach[0]
-        + " · Buehne " + Math.round(tBuehne.width) + "x" + Math.round(tBuehne.height));
+        + " · Buehne " + Math.round(tBuehne.width) + "x" + Math.round(tBuehne.height)
+        + " · Vorschau " + Math.round(tMasse.v.width) + "x"
+        + Math.round(tMasse.v.height));
       // Und `x` raeumt sie wieder ab, damit die naechste Probe eine leere
       // Folie vorfindet.
       await sprecher.taste("x"); await schlaf(500);
