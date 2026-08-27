@@ -138,8 +138,10 @@
 
   // The readout, in a box of fixed width so that one digit more shifts
   // nothing. Inside the frame that is cosmetic; at the edge it would be the
-  // difference between standing still and travelling.
-  content((6.45, 4.4), box(width: 4.8cm, align(right, text(size: 11pt, fill: quiet, {
+  // difference between standing still and travelling. Wide enough for the
+  // longest of them -- the pair of spring and oil needs 4.89 cm, and a box
+  // that made it wrap would break the line between "ζ =" and its value.
+  content((6.45, 4.4), box(width: 5.2cm, align(right, text(size: 11pt, fill: quiet, {
     if note != none [#note #h(0.8em)]
     text(fill: pulled)[$zeta = #two-places(z)$]
   }))), anchor: "north-east")
