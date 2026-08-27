@@ -122,8 +122,8 @@ html[data-ts-clock-over] .ts-clock-num{color:var(--ts-clock-over)}
    only the view is visible. */
 #ts-speaker{display:none}
 html[data-ts-rolle="speaker"] #ts-speaker{display:grid;position:fixed;inset:0;
-  z-index:70;background:#0f1116;color:#f4f4f5;overflow:hidden;
-  grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:10px 12px;
+  z-index:70;background:var(--sp-grund);color:var(--sp-satz);overflow:hidden;
+  grid-template-rows:minmax(0,1fr) auto;gap:9px;padding:11px 12px 9px;
   font-size:14px}
 /* The hint bar would otherwise sit below the container and would not be
    visible, the overview likewise. */
@@ -137,7 +137,7 @@ html[data-ts-rolle="speaker"] #ts-overview{z-index:90}
    the top left for the blink of an eye. */
 html[data-ts-rolle="speaker"] #ts-stage{position:fixed;inset:auto;margin:0;
   z-index:71;opacity:0;cursor:crosshair;touch-action:none;
-  box-shadow:0 0 0 1px #ffffff26,0 10px 34px #0009}
+  box-shadow:0 0 0 1px var(--sp-folienrand),var(--sp-schatten)}
 html[data-ts-rolle="speaker"][data-ts-fertig="1"] #ts-stage{opacity:1}
 /* The pointer says which of the two modes is on, and it says it where the
    eye already is. A cross hair is a pen about to draw; a hand is a hand
@@ -161,132 +161,239 @@ html[data-ts-rolle="speaker"] .ts-video[data-controls="1"]{pointer-events:none}
    caught it here would take the gesture away from that route. */
 html[data-ts-rolle="speaker"][data-ts-modus="zeiger"]
   .ts-bridged[data-spiegel="1"]{pointer-events:auto}
-/* The head: two groups at the two edges, not six equally loud columns
-   crowded to the left. One large number per group, everything else small
-   beside it; that is what carries the hierarchy, not the color. Color
-   stays reserved for the plan, where it means something. */
-.ts-sp-kopf{display:flex;justify-content:space-between;align-items:flex-end;
-  gap:24px;flex-wrap:wrap;border-bottom:1px solid #ffffff1a;padding-bottom:9px}
-.ts-sp-gruppe{display:flex;flex-direction:column;gap:5px;min-width:0}
-.ts-sp-rechts{align-items:flex-end;text-align:right}
-.ts-sp-haupt{display:flex;flex-direction:column;gap:1px;min-width:0}
-.ts-sp-gross{font-size:30px;line-height:1;font-variant-numeric:tabular-nums;
-  letter-spacing:-.01em}
-.ts-sp-gross[data-laeuft="0"]{color:#ffffff63}
-.ts-sp-neben{display:flex;gap:16px;align-items:baseline;flex-wrap:wrap;
+/* ── Die Sprecheransicht: Kacheln auf ruhigem Grund ─────────────────────
+   Jede Zahl steht in einem eigenen Kasten, und wie gross der Kasten ist,
+   sagt, wie wichtig sie ist. Vorher standen fuenf Zeitwerte gleich laut
+   in einer Kopfzeile nebeneinander, waehrend die Uhr, auf die eine ganze
+   Klasse wartet, ein Zehntelprozent der Flaeche bekam -- neben siebzehn
+   Prozent leerem Grund. Kacheln raeumen beides mit derselben Bewegung
+   auf: aus dem leeren Grund werden Kacheln, und eine davon ist die Uhr.
+
+   Zwei Zeilen. Oben, was man liest: die laufende Folie (auf der man
+   zeichnet) und die Notiz. Unten, was man abliest: vier Zahlkacheln und
+   der naechste Schritt. Darunter die Werkzeugzeile.
+
+   Hell und dunkel haengen an `data-ts-licht` am Wurzelelement. Die
+   Laufzeit schreibt es -- aus `prefers-color-scheme`, oder aus der Taste
+   `l`. Deshalb steht hier keine Mediaabfrage und keine Regel doppelt;
+   ohne Laufzeit gibt es diese Ansicht ohnehin nicht.
+
+   Alle Farben sind deckend. `contrast()` im Paket rechnet ohne Alpha:
+   ein `#ffffff70` misst es als volles Weiss und nennt damit eine Zahl,
+   die nie auf dem Schirm stand. Genau so kamen die alten 4,38 zustande. */
+html[data-ts-licht="dunkel"]{
+  --sp-grund:#07090d; --sp-kachel:#1c202b; --sp-kachel-null:#1c202b00;
+  --sp-rand:#323847; --sp-satz:#f4f4f5; --sp-leise:#a7aebb;
+  --sp-marke:#8b93a1; --sp-spur:#2b3140;
+  --sp-uhr:#8fd66a; --sp-vor:#8fd66a;
+  --sp-alarm:#ff8a75; --sp-alarm-flaeche:#5f2418;
+  --sp-pille:#ff7a6b; --sp-pille-satz:#14161c;
+  --sp-ruhig:#3a4251; --sp-ruhig-satz:#d5dae4;
+  --sp-zeiger:#4cc9f0; --sp-zeiger-satz:#0a1418;
+  --sp-schatten:0 1px 2px #00000073,0 10px 26px #0000005e;
+  --sp-folienrand:#323847;
+}
+html[data-ts-licht="hell"]{
+  --sp-grund:#eae8e1; --sp-kachel:#ffffff; --sp-kachel-null:#ffffff00;
+  --sp-rand:#dcd9d0; --sp-satz:#1a1e26; --sp-leise:#4c5361;
+  --sp-marke:#5b6270; --sp-spur:#e4e1d9;
+  --sp-uhr:#3f7d21; --sp-vor:#3f7d21;
+  --sp-alarm:#b52d16; --sp-alarm-flaeche:#fbe2dc;
+  --sp-pille:#b52d16; --sp-pille-satz:#ffffff;
+  --sp-ruhig:#e2dfd6; --sp-ruhig-satz:#3c424f;
+  --sp-zeiger:#0e6f92; --sp-zeiger-satz:#ffffff;
+  --sp-schatten:0 1px 2px #0000000f,0 6px 18px #00000014;
+  --sp-folienrand:#dcd9d0;
+}
+/* Der Leib: oben Folie und Notiz, unten die Kachelzeile. Wie breit die
+   erste Spalte ist, rechnet `sprecherSpalten` aus -- das haengt an der
+   Fensterhoehe und nicht allein an der Breite. Beide Zeilen bekommen
+   dieselben Spalten, damit die Naht senkrecht durchlaeuft. */
+.ts-sp-leib{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);
+  grid-template-rows:minmax(0,1fr) auto;gap:10px 12px;min-height:0}
+/* Die Kachel selbst. Eine Flaeche, ein Rand, eine Marke oben. Mehr ist
+   es nicht, und mehr braucht es nicht: der Abstand zwischen zwei Kacheln
+   trennt sie besser als jede Linie. */
+.ts-sp-kachel{background:var(--sp-kachel);border:1px solid var(--sp-rand);
+  border-radius:10px;box-shadow:var(--sp-schatten);padding:9px 12px 10px;
+  min-width:0;min-height:0;display:flex;flex-direction:column;gap:3px;
+  position:relative;overflow:hidden}
+.ts-sp-marke{font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--sp-marke);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;font-weight:600}
+/* Die grosse Zahl einer Kachel. Sie traegt die Rangordnung, damit nicht
+   vier gleich laute Zahlen nebeneinander stehen und das Auge sich seinen
+   Anker selbst suchen muss. */
+.ts-sp-gross{font-size:clamp(21px,3.4vh,34px);line-height:1.05;
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  color:var(--sp-satz);font-weight:500}
+/* Steht die Uhr, steht auch ihre Zahl still. Leiser, aber lesbar. */
+.ts-sp-gross[data-laeuft="0"]{color:var(--sp-marke)}
+.ts-sp-uhrkachel[data-uhr="aus"] .ts-sp-gross{color:var(--sp-marke)}
+/* Marke oben, Wert unten. Dazwischen Luft, und die Luft ist die Aussage:
+   eine Kachel liest man von oben nach unten, und unten steht, was zaehlt. */
+.ts-sp-gross{margin-top:auto}
+/* Die zweite Zeile einer Kachel: Zahl zuerst, Wort klein dahinter. */
+.ts-sp-neben{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;
   font-variant-numeric:tabular-nums}
-.ts-sp-rechts .ts-sp-neben{justify-content:flex-end}
 .ts-sp-paar{display:inline-flex;gap:5px;align-items:baseline;white-space:nowrap}
-.ts-sp-klein{font-size:15px;font-weight:400;color:#ffffffd6}
-.ts-sp-klein[data-lage="zurueck"]{color:#ff7a6b}
-.ts-sp-klein[data-lage="vor"]{color:#6fd79a}
+.ts-sp-klein{font-size:clamp(12px,1.6vh,15px);font-weight:500;color:var(--sp-leise)}
+.ts-sp-klein[data-lage="zurueck"]{color:var(--sp-alarm)}
+.ts-sp-klein[data-lage="vor"]{color:var(--sp-vor)}
 .ts-sp-wort{font-style:normal;font-size:11px;letter-spacing:.07em;
-  text-transform:uppercase;color:#ffffff70}
-.ts-sp-marke{font-size:11px;letter-spacing:.08em;text-transform:uppercase;
-  color:#ffffff70;white-space:nowrap}
-.ts-sp-wert{font-size:23px;line-height:1.1;font-variant-numeric:tabular-nums}
-.ts-sp-wert[data-lage="zurueck"]{color:#ff7a6b}
-.ts-sp-wert[data-lage="vor"]{color:#6fd79a}
-.ts-sp-wert[data-laeuft="0"]{color:#ffffff73}
-/* A bar instead of yet another pair of numbers: it says without words
-   where things stand, and is thus the second means of hierarchy alongside
-   font size. */
-.ts-sp-balken{width:190px;max-width:38vw;height:3px;border-radius:2px;
-  background:#ffffff1f;overflow:hidden}
-.ts-sp-balken i{display:block;height:100%;background:#ffffff8c;
+  text-transform:uppercase;color:var(--sp-marke);font-weight:600}
+/* Ein Balken statt eines weiteren Zahlenpaars: er sagt ohne Wort, wo man
+   steht, und ist damit das zweite Mittel der Rangordnung neben der
+   Schriftgroesse. Er liegt am Fuss seiner Kachel, von Rand zu Rand. */
+.ts-sp-balken{position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:var(--sp-spur);overflow:hidden}
+.ts-sp-balken i{display:block;height:100%;background:var(--sp-leise);
   transition:width .25s ease-out}
-.ts-sp-ziel{width:3.4em;background:#ffffff12;border:1px solid #ffffff2b;
-  color:inherit;border-radius:5px;padding:1px 5px;font:inherit;font-size:15px;
-  font-variant-numeric:tabular-nums;line-height:1.25}
-/* Two rows: the running slide up top with the preview beside it, the note
-   below across the full width. The slide keeps its aspect ratio, so a
-   strip stays free below it once the window is tall; the note sits there,
-   instead of being squeezed into a narrow column. How wide the first
-   column is gets computed by `sprecherSpalten`, since that depends on the
-   window height and not only the width. */
-.ts-sp-leib{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);
-  grid-template-rows:auto minmax(0,1fr);gap:12px 14px;min-height:0}
-/* The stage's place is empty: the stage itself floats above it. So the row
-   still gets the right height, the box keeps the slide's aspect ratio, the
-   same way the thumbnails do. */
-.ts-sp-platz{grid-column:1;grid-row:1;height:0;
-  padding-bottom:var(--ts-ratio,56.25%);min-width:0}
-.ts-sp-vor{grid-column:2;grid-row:1;min-width:0;overflow:hidden}
-.ts-sp-notizkasten{grid-column:1/3;grid-row:2}
-/* Flat: the slide is already as tall as the body, otherwise a large empty
-   area would remain beside it. Then preview and note stand there stacked
-   on top of each other. Which of the two layouts applies is computed by
-   `sprecherSpalten` and hung on as `data-form`. */
-.ts-sp-leib[data-form="flach"] .ts-sp-platz{grid-row:1/3}
-.ts-sp-leib[data-form="flach"] .ts-sp-notizkasten{grid-column:2;grid-row:2}
-/* Portrait: the stage lays itself crosswise over both columns, preview and
-   note share the row below it. Otherwise, in a portrait window, the note
-   box would be the largest area of the view instead of the running slide. */
-.ts-sp-leib[data-form="hochkant"] .ts-sp-platz{grid-column:1/3;grid-row:1}
-.ts-sp-leib[data-form="hochkant"] .ts-sp-vor{grid-column:1;grid-row:2}
-.ts-sp-leib[data-form="hochkant"] .ts-sp-notizkasten{grid-column:2;grid-row:2}
-.ts-sp-vorbild{margin-top:5px;border-radius:4px;overflow:hidden}
-.ts-sp-vorbild .ts-mini{cursor:default}
-/* No next step left: instead of an image, the announcement, in the same
-   shape so the box does not jump. */
-.ts-sp-ende{position:relative;height:0;padding-bottom:var(--ts-ratio,56.25%);
-  border:1px dashed #ffffff33;border-radius:4px}
-.ts-sp-ende span{position:absolute;inset:0;display:flex;align-items:center;
-  justify-content:center;color:#ffffff8c}
-.ts-sp-notizkasten{display:grid;grid-template-rows:auto minmax(0,1fr);
-  min-height:0;border-top:1px solid #ffffff14;padding-top:6px;position:relative}
-/* A line that is simply cut off at the bottom edge reads as if the note
-   had ended. The gradient and the arrow appear only when there really is
-   more coming; scrolling happens with the up and down arrow keys, because
-   during the talk the hand is not on the mouse. */
+/* Die Zahlkacheln. Vier gleich breite, damit keine sich vordraengt. */
+.ts-sp-uhren{grid-column:1;grid-row:2;display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;min-width:0}
+/* Die Zieldauer ist das einzige Bedienfeld der Ansicht. Frueher sah es
+   aus wie eine Luecke: ein 51 Pixel breiter Kasten mit einer Marke, die
+   niemand las. Jetzt sieht es aus wie das, was es zeigt -- eine Zahl in
+   der Groesse der anderen Zahlen --, und der Kasten erscheint erst beim
+   Hineingehen. */
+.ts-sp-ziel,.ts-sp-uhrfeld{width:2.7em;max-width:100%;background:transparent;border:0;
+  margin-top:auto;
+  border-bottom:1px solid transparent;color:var(--sp-satz);
+  border-radius:0;padding:0;font:inherit;
+  font-size:clamp(21px,3.4vh,34px);font-weight:500;line-height:1.05;
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.ts-sp-ziel:hover,.ts-sp-uhrfeld:hover{border-bottom-color:var(--sp-rand)}
+.ts-sp-ziel:focus,.ts-sp-uhrfeld:focus{outline:none;
+  border-bottom-color:var(--sp-satz)}
+.ts-sp-ziel::placeholder,.ts-sp-uhrfeld::placeholder{color:var(--sp-marke)}
+/* Die Uhr der Klasse. Sie ist die einzige Zahl der Ansicht, auf die
+   ausserhalb des Pults jemand wartet, und sie ist deshalb eine Kachel
+   und keine Pille in der Fusszeile.
+   Vier Zustaende, und sie sehen verschieden aus: aus, laufend, ueberzogen,
+   und blind -- letzteres, wenn kein Vortragsfenster antwortet, denn dann
+   laeuft nirgends eine Uhr und eine Zahl waere gelogen. */
+.ts-sp-uhrkachel[data-uhr="laeuft"] .ts-sp-gross{color:var(--sp-uhr)}
+.ts-sp-uhrkachel[data-uhr="laeuft"] .ts-sp-balken i{background:var(--sp-uhr)}
+/* Die Ueberzeit ist nicht gruen. Gruen heisst ueberall "laeuft gut", und
+   die Wand schlaegt in diesem Augenblick auf die Signalfarbe um: die
+   Klasse sah die Ueberzeit bisher, bevor die Lehrkraft sie sah. Die ganze
+   Kachel faerbt sich, nicht nur die Ziffer -- eine Flaeche sieht man aus
+   dem Augenwinkel, eine Ziffer nicht. */
+.ts-sp-uhrkachel[data-uhr="ueber"]{background:var(--sp-alarm-flaeche);
+  border-color:var(--sp-alarm)}
+.ts-sp-uhrkachel[data-uhr="ueber"] .ts-sp-gross,
+.ts-sp-uhrkachel[data-uhr="ueber"] .ts-sp-marke{color:var(--sp-alarm)}
+.ts-sp-uhrkachel[data-uhr="ueber"] .ts-sp-balken{background:transparent}
+.ts-sp-uhrkachel[data-uhr="ueber"] .ts-sp-balken i{background:var(--sp-alarm)}
+.ts-sp-uhrkachel[data-uhr="blind"] .ts-sp-gross{color:var(--sp-alarm)}
+/* Die Kachel der laufenden Folie. Sie ist zugleich die Zeichenflaeche:
+   die Buehne selbst faehrt hierher, statt nachgebaut zu werden. `fit`
+   misst `ts-sp-platz` aus und setzt sie darauf. Deshalb hat der Platz
+   keine eigene Hoehe -- er nimmt, was die Zeile ihm gibt. */
+.ts-sp-buehne{grid-column:1;grid-row:1}
+.ts-sp-platz{flex:1;min-height:0;min-width:0}
+/* Die Kopfzeile der Folienkachel traegt rechts den Zustand des Saals.
+   Er stand bisher in der Fusszeile, achthundert Pixel von dem Bild
+   entfernt, ueber das er etwas aussagt. */
+.ts-sp-buehnenkopf{display:flex;align-items:center;gap:10px;
+  justify-content:space-between;min-width:0}
+.ts-sp-lage{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.ts-sp-lage span{background:var(--sp-ruhig);color:var(--sp-ruhig-satz);
+  border-radius:99px;padding:2px 9px;font-weight:600;letter-spacing:.05em;
+  font-size:11px;text-transform:uppercase;white-space:nowrap}
+/* Nach Schwere, nicht nach Laune. "Kein Vortragsfenster" heisst: nichts,
+   was du drueckst, kommt an -- das ist der schlimmste Zustand und traegt
+   deshalb als einziger die Signalfarbe. Schwarz und eingefroren hat man
+   selbst herbeigefuehrt und ist einen Tastendruck weit weg; sie sind
+   gedeckt. */
+.ts-sp-lage .ts-sp-weg{background:var(--sp-pille);color:var(--sp-pille-satz)}
+/* Die Notiz: das Einzige, was man wirklich liest. Sie bekommt die ganze
+   zweite Spalte statt eines Streifens unter der Folie. */
+.ts-sp-notizkasten{grid-column:2;grid-row:1;overflow:hidden}
+/* Die Zeile bekommt ein Mass. In einem breiten oder flachen Fenster waere
+   die Spalte sonst achthundert Pixel breit, und eine Zeile, die so lang
+   ist, findet man nach dem Umbruch nicht wieder. */
+.ts-sp-notiz{overflow:auto;white-space:pre-wrap;line-height:1.45;
+  padding-right:6px;overflow-wrap:break-word;color:var(--sp-satz);flex:1;
+  min-height:0;max-width:34em}
+/* Kursiv und in der Farbe der Marken: leiser als eine Notiz, aber
+   lesbar. Der alte Wert mass 3,19. */
+.ts-sp-notiz[data-leer]{color:var(--sp-marke);font-style:italic}
+/* Eine Zeile, die am unteren Rand einfach abbricht, liest sich, als waere
+   die Notiz zu Ende. Verlauf und Pfeil erscheinen nur, wenn wirklich mehr
+   kommt; gerollt wird mit den Pfeiltasten, denn beim Vortrag liegt die
+   Hand nicht auf der Maus. */
 .ts-sp-notizkasten[data-mehr]::after{content:"↓";position:absolute;
-  left:0;right:0;bottom:0;height:2.4em;pointer-events:none;text-align:right;
-  padding-right:10px;color:#ffffffa6;font-size:13px;line-height:4em;
-  background:linear-gradient(to bottom,#0f111600,#0f1116d9 60%,#0f1116)}
-.ts-sp-notiz{overflow:auto;white-space:pre-wrap;line-height:1.45;margin-top:6px;
-  padding-right:6px;overflow-wrap:break-word}
-.ts-sp-notiz[data-leer]{color:#ffffff59;font-style:italic}
+  left:1px;right:1px;bottom:1px;height:2.4em;pointer-events:none;
+  text-align:right;padding-right:12px;color:var(--sp-leise);font-size:13px;
+  line-height:4em;border-radius:0 0 9px 9px;
+  background:linear-gradient(to bottom,var(--sp-kachel-null),
+    var(--sp-kachel) 62%,var(--sp-kachel))}
+/* Der naechste Schritt. Eine Kachel neben den vier Zahlen, so hoch wie
+   sie: die Vorschau ist ein Blick und keine zweite Buehne. Das Bild
+   richtet sich nach der Hoehe der Kachel, nicht nach ihrer Breite --
+   sonst waere es in einer flachen Kachel groesser als der Platz. */
+.ts-sp-naechst{grid-column:2;grid-row:2}
+/* Ein Rand um die Miniatur. Ohne ihn steht eine helle Folie auf einer
+   hellen Kachel und niemand sieht, wo das Bild anfaengt. */
+.ts-sp-vorbild{flex:1;min-height:0;align-self:flex-start;border-radius:5px;
+  overflow:hidden;margin-top:4px;box-shadow:0 0 0 1px var(--sp-rand)}
+/* Die Miniatur richtet sich sonst nach ihrer Breite; hier gibt die Kachel
+   die Hoehe vor, und `sprecherSpalten` rechnet die Breite dazu. */
+.ts-sp-vorbild .ts-mini{cursor:default;height:100%;padding-bottom:0}
+/* Kein naechster Schritt mehr: statt eines Bildes die Ansage, in
+   derselben Form, damit die Kachel nicht springt. */
+.ts-sp-ende{position:relative;height:100%;
+  border:1px dashed var(--sp-rand);border-radius:5px}
+.ts-sp-ende span{position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;color:var(--sp-marke);font-size:12px;
+  text-align:center;padding:4px}
+/* Die Fusszeile ist Werkzeug, kein Zustand: Stift, Farben, Tasten. Sie
+   steht auf dem Grund und nicht auf einer Kachel -- was man bedient,
+   muss nicht auch noch erhoben sein. */
 .ts-sp-fuss{display:flex;gap:16px;align-items:center;flex-wrap:wrap;
-  border-top:1px solid #ffffff1a;padding-top:8px;color:#ffffff8c;font-size:12px}
+  color:var(--sp-leise);font-size:12px;padding:0 2px}
 .ts-sp-stift{display:flex;gap:7px;align-items:center}
-/* The mode is the switch, so it looks like one: pen is the quiet state,
-   pointer the loud one, because in pointer mode a click reaches into the
-   hall and one should be able to see that at a glance. */
-.ts-sp-modus{font:600 11px/1 inherit;letter-spacing:.09em;text-transform:uppercase;
-  padding:5px 9px;border-radius:99px;cursor:pointer;
-  border:1px solid #ffffff33;background:transparent;color:#ffffff8c}
-.ts-sp-modus[data-modus="zeiger"]{border-color:#4cc9f0;background:#4cc9f024;color:#9fe4fa}
-/* In pointer mode the pen does nothing. Leaving its colours standing at
-   full strength would promise otherwise. */
+/* Die Beschriftung ist der Schalter, also sieht er aus wie einer: Stift
+   ist der stille Zustand, Zeiger der laute -- im Zeigermodus greift ein
+   Klick in den Saal, und das soll man sehen koennen. */
+.ts-sp-modus{font:600 11px/1 inherit;letter-spacing:.09em;
+  text-transform:uppercase;padding:6px 10px;border-radius:99px;cursor:pointer;
+  border:1px solid var(--sp-rand);background:var(--sp-kachel);
+  color:var(--sp-leise)}
+.ts-sp-modus[data-modus="zeiger"]{border-color:var(--sp-zeiger);
+  background:var(--sp-zeiger);color:var(--sp-zeiger-satz)}
+/* Im Zeigermodus tut der Stift nichts. Liesse man seine Farben voll
+   stehen, versprachen sie das Gegenteil. */
 .ts-sp-stift[data-modus="zeiger"] .ts-sp-tupf{opacity:.3}
 .ts-sp-tupf{width:19px;height:19px;border-radius:50%;padding:0;cursor:pointer;
-  border:2px solid transparent;outline:1px solid #ffffff33}
-.ts-sp-tupf[data-an]{border-color:#fff}
-.ts-sp-lage{display:flex;gap:8px}
-.ts-sp-lage span{background:#ff7a6b;color:#14161c;border-radius:4px;
-  padding:1px 8px;font-weight:600;letter-spacing:.04em}
-.ts-sp-lage .ts-sp-eis{background:#4cc9f0}
-.ts-sp-lage .ts-sp-weg{background:#ffd166}
-/* Die Vollbilduhr, als kleiner Eintrag. Gleiche Bauart wie `schwarz` und
-   `eingefroren`, nur mit Ziffern darin -- also gleichbreite. */
-.ts-sp-lage .ts-sp-saal{background:#a8e06a;font-variant-numeric:tabular-nums}
-/* Das Minutenfeld. Es steht nur da, solange `t` es aufgeklappt hat. */
-.ts-sp-uhrfeld{width:3.4em;background:#ffffff12;border:1px solid #ffffff2b;
-  color:inherit;border-radius:5px;padding:1px 5px;font:inherit;font-size:15px;
-  font-variant-numeric:tabular-nums;line-height:1.25}
+  border:2px solid transparent;outline:1px solid var(--sp-rand)}
+.ts-sp-tupf[data-an]{border-color:var(--sp-satz)}
 .ts-sp-hilfe{margin-left:auto;text-align:right;line-height:1.5;font-size:13px;
-  color:#ffffffb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* A speaker's laptop can be small. In a narrow window the running slide
-   moves closer to the column beside it, instead of crowding it out. */
+  color:var(--sp-leise);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;min-width:0}
+/* Hochkant: in einem schmalen oder stehenden Fenster nebeneinander zu
+   stellen hiesse, beides unbrauchbar zu machen. Die Folie legt sich quer
+   ueber beide Spalten, die Notiz darunter, die Kacheln zuletzt.
+   Ausgerechnet wird die Form in `sprecherSpalten`, aus dem Ergebnis und
+   nicht aus dem Seitenverhaeltnis: es zaehlt, ob die Folie die groesste
+   Flaeche der Ansicht bleibt. */
+.ts-sp-leib[data-form="hochkant"]{
+  grid-template-rows:auto minmax(0,1fr) auto}
+.ts-sp-leib[data-form="hochkant"] .ts-sp-buehne{grid-column:1/3;grid-row:1}
+.ts-sp-leib[data-form="hochkant"] .ts-sp-notizkasten{grid-column:1/3;grid-row:2}
+.ts-sp-leib[data-form="hochkant"] .ts-sp-uhren{grid-column:1;grid-row:3}
+.ts-sp-leib[data-form="hochkant"] .ts-sp-naechst{grid-column:2;grid-row:3}
+/* Ein Rednerpult-Rechner kann klein sein. Dann ruecken die Kacheln
+   zusammen, statt einander hinauszudraengen. */
 @media (max-width:1100px){
-  .ts-sp-leib{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
-  .ts-sp-wert{font-size:19px}
-  .ts-sp-gross{font-size:24px}
-  .ts-sp-klein{font-size:14px}
-  .ts-sp-ziel,.ts-sp-uhrfeld{font-size:14px}
-  .ts-sp-kopf{gap:14px}
-  .ts-sp-neben{gap:11px}
-  .ts-sp-balken{width:130px}
+  .ts-sp-kachel{padding:7px 9px 8px;border-radius:8px;gap:2px}
+  .ts-sp-uhren{gap:7px}
+  .ts-sp-leib{gap:8px 9px}
+  .ts-sp-marke,.ts-sp-wort{font-size:10px;letter-spacing:.06em}
+  .ts-sp-neben{gap:8px}
+  .ts-sp-hilfe{font-size:12px}
 }
 /* Blacking out: the hall goes dark, in the talk window. The counterpart to
    freezing, which does not sit here but in `fernGoto`, where the step

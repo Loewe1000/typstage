@@ -2731,19 +2731,21 @@
     if (wohin) wohin.appendChild(e);
     return e;
   }
-  function feld(wohin, name) {
-    var d = bau("div", "ts-sp-feld", wohin);
+  // Eine Kachel: Flaeche, Rand, Marke. Der Baustein, aus dem diese Ansicht
+  // besteht. Was hineinkommt, entscheidet der Aufrufer -- eine Kachel weiss
+  // nichts ueber ihren Inhalt, und deshalb sehen alle gleich aus.
+  function kachel(wohin, klasse, name) {
+    var d = bau("div", "ts-sp-kachel" + (klasse ? " " + klasse : ""), wohin);
     bau("div", "ts-sp-marke", d).textContent = name;
-    return bau("div", "ts-sp-wert", d);
+    return d;
   }
-  // The one large number of a group. It carries the hierarchy, so that six
-  // equally loud columns do not stand side by side and the eye has to find
-  // its own anchor.
-  function haupt(wohin, name) {
-    var d = bau("div", "ts-sp-haupt", wohin);
-    bau("div", "ts-sp-marke", d).textContent = name;
-    return bau("div", "ts-sp-gross", d);
-  }
+  // Die grosse Zahl einer Kachel. Sie traegt die Rangordnung, damit nicht
+  // vier gleich laute Zahlen nebeneinander stehen und das Auge sich seinen
+  // Anker selbst suchen muss.
+  function haupt(k) { return bau("div", "ts-sp-gross", k); }
+  // Ein Balken am Fuss einer Kachel. Er sagt ohne Wort, wo man steht, und
+  // ist damit das zweite Mittel der Rangordnung neben der Schriftgroesse.
+  function balken(k) { return bau("i", "", bau("div", "ts-sp-balken", k)); }
   // A quiet value: number first, word small behind it. Read side by side
   // in one line like "12:56 remaining".
   function neben(wohin, name) {
@@ -2765,21 +2767,57 @@
   // wrong number in front of them.
   function uhrAn() { if (!UHR_START) UHR_START = Date.now(); }
 
+  // Der Zustand des Saals, ueber dem Bild des Saals: schwarz, eingefroren,
+  // kein Vortragsfenster. Nach Schwere gefaerbt und nicht nach Laune --
+  // `kein Vortragsfenster` heisst, dass nichts von dem, was man drueckt,
+  // ankommt, und traegt als einziges die Signalfarbe. Schwarz und
+  // eingefroren hat man selbst herbeigefuehrt und ist einen Tastendruck
+  // weit weg.
+  //
+  // Die Uhr der Klasse stand bisher hier, als vierte gleich laute Pille.
+  // Sie hat jetzt ihre eigene Kachel, siehe `uhrZeigen`.
   function lageZeigen() {
     if (!ELN.lage) return;
     while (ELN.lage.firstChild) ELN.lage.removeChild(ELN.lage.firstChild);
     if (GETRENNT) bau("span", "ts-sp-weg", ELN.lage).textContent =
       wort("lost", "no talk window");
     if (SCHWARZ) bau("span", "", ELN.lage).textContent = wort("black", "black");
-    if (EIS) bau("span", "ts-sp-eis", ELN.lage).textContent = wort("frozen", "frozen");
-    // Die Vollbilduhr steht hier und nur hier: ein kleiner Eintrag neben
-    // `schwarz` und `eingefroren`. Eine zweite grosse Uhr im Kopf stuende neben
-    // der Zieldauer, und die beiden zeigten verschiedene Zahlen.
-    if (SAAL_SEK) {
-      bau("span", "ts-sp-saal", ELN.lage).textContent =
-        (SAAL_REST < 0 ? wort("over", "over") : wort("timer", "timer"))
-        + " " + mmss(Math.abs(SAAL_REST));
-    }
+    if (EIS) bau("span", "", ELN.lage).textContent = wort("frozen", "frozen");
+    uhrZeigen();
+  }
+
+  // Die Kachel der Klassenuhr. Vier Zustaende, und sie sehen verschieden
+  // aus, weil sie Verschiedenes bedeuten:
+  //
+  //   aus     -- es laeuft keine; ein Strich, kein Nullwert.
+  //   laeuft  -- `m:ss`, gruen, mit einem Balken, der leerlaeuft.
+  //   ueber   -- die ganze Kachel faerbt sich. Bisher blieb die Pille gruen,
+  //              waehrend die Wand auf die Signalfarbe umschlug: die Klasse
+  //              sah die Ueberzeit, bevor die Lehrkraft sie sah. Eine
+  //              Flaeche sieht man aus dem Augenwinkel, eine Ziffer nicht.
+  //   blind   -- kein Vortragsfenster. Gefuehrt wird die Uhr drueben, diese
+  //              Ansicht liest sie nur ab; ohne Partner steht hinter der
+  //              Zahl nichts, und dann darf keine dastehen.
+  function uhrZeigen() {
+    if (!ELN.saal) return;
+    var lage = !SAAL_SEK ? "aus"
+             : GETRENNT ? "blind"
+             : SAAL_REST < 0 ? "ueber" : "laeuft";
+    ELN.uhrKachel.dataset.uhr = lage;
+    ELN.uhrMarke.textContent = lage === "ueber"
+      ? wort("over", "over") : wort("timer", "class clock");
+    ELN.saal.textContent = lage === "aus" ? "–"
+      : lage === "blind" ? "—"
+      : (lage === "ueber" ? "+" : "") + mmss(Math.abs(SAAL_REST));
+    // Der Balken laeuft leer, solange sie laeuft, und fuellt sich in der
+    // Ueberzeit wieder -- gedeckelt, damit er nicht ueber den Rand hinaus
+    // weiterwaechst.
+    var teil = !SAAL_SEK ? 0
+      : SAAL_REST < 0 ? Math.min(1, -SAAL_REST / SAAL_SEK)
+      : Math.max(0, Math.min(1, SAAL_REST / SAAL_SEK));
+    ELN.saalBalken.style.transition = wenigerBewegung() ? "none" : "";
+    ELN.saalBalken.style.width = (lage === "aus" || lage === "blind"
+      ? 0 : teil * 100) + "%";
   }
 
   // If no one on the other side answers anymore, that has to be visible.
@@ -2837,25 +2875,126 @@
     strom("tinte", ev);
   }
 
+  // ── Hell oder dunkel ──────────────────────────────────────────────────────
+  //
+  // Woran sich das Erscheinungsbild richtet, ist eine Entscheidung mit drei
+  // Kandidaten, und zwei davon sind falsch.
+  //
+  // *Nicht am Thema des Decks.* Eine Palette sagt, wie die Wand aussieht.
+  // Das Pult ist nicht die Wand: dasselbe Nachtdeck laeuft morgens um acht
+  // im hellen Raum und abends im abgedunkelten, und davor sitzt beide Male
+  // dieselbe Lehrkraft. Ein Deck, das seine Farben dem Pult aufzwingt, gibt
+  // die falsche Antwort auf die richtige Frage. Dazu kommt: die Sprecherbox
+  // ist Werkzeug und kein Vortrag. Wechselte sie mit dem Deck die Farbe,
+  // muesste man sie in jeder Stunde neu lesen lernen.
+  //
+  // *Nicht allein an einer Taste.* Wer eine Stunde beginnt, soll nicht
+  // zuerst die Beleuchtung einstellen.
+  //
+  // Also `prefers-color-scheme` als Vorgabe -- das einzige Signal, das dem
+  // Raum, in dem der *Rechner* steht, schon folgt -- und `l` als
+  // Widerspruch, wenn der Raum anders ist, als das Betriebssystem denkt.
+  // (`l` wie Licht, light, lumiere: in allen drei Sprachen derselbe
+  // Buchstabe, dieselbe Ueberlegung wie bei `d`. Und weit weg von den
+  // teuren Nachbarschaften r-t-z und c-x.) Die Wahl haelt die Sitzung, wie
+  // `ts-sicht:` es fuer den Saal tut, und ueberlebt ein Neuladen.
+  //
+  // Geschrieben wird immer ein ausdrueckliches `hell` oder `dunkel`, nie
+  // gar nichts. Damit steht jede Farbe genau zweimal im Stilblatt und keine
+  // nur einmal, und es braucht dort weder Mediaabfrage noch `:not()`.
+  // Kennt der Browser die Vorliebe nicht, gilt dunkel: so sah diese Ansicht
+  // immer aus, und das Klassenzimmer beim Vortrag ist abgedunkelt.
+  var LICHT_HAND = "";
+  function lichtStellen() {
+    var hell = LICHT_HAND ? LICHT_HAND === "hell"
+      : !!(window.matchMedia
+           && window.matchMedia("(prefers-color-scheme: light)").matches);
+    document.documentElement.dataset.tsLicht = hell ? "hell" : "dunkel";
+  }
+  function lichtUm() {
+    LICHT_HAND = document.documentElement.dataset.tsLicht === "dunkel"
+      ? "hell" : "dunkel";
+    try { sessionStorage.setItem("ts-licht", LICHT_HAND); } catch (x) {}
+    lichtStellen();
+    hint(LICHT_HAND === "hell" ? wort("light", "light") : wort("dark", "dark"));
+  }
+  function lichtHorchen() {
+    try { LICHT_HAND = sessionStorage.getItem("ts-licht") || ""; } catch (x) {}
+    lichtStellen();
+    if (!window.matchMedia) return;
+    var m = window.matchMedia("(prefers-color-scheme: light)");
+    // Der Rechner wechselt bei Sonnenuntergang von selbst. Solange niemand
+    // widersprochen hat, folgt die Ansicht mit.
+    var folgen = function () { if (!LICHT_HAND) lichtStellen(); };
+    if (m.addEventListener) m.addEventListener("change", folgen);
+    else if (m.addListener) m.addListener(folgen);
+  }
+
   function sprecherAufbau() {
     if (ROLLE !== "speaker" || !SPRECHERBOX) return;
+    lichtHorchen();
 
-    // The head carries two groups: the time on the left, the position in
-    // the talk on the right. Previously six equally ranked columns stood
-    // side by side, all crowded to the left, with space left unused on the
-    // right. Now each group has one large number, everything else stands
-    // small beside it, and the two groups sit at the two edges.
-    var kopf = bau("div", "ts-sp-kopf", SPRECHERBOX);
-    var gZeit = bau("div", "ts-sp-gruppe", kopf);
-    ELN.zeit = haupt(gZeit, wort("elapsed", "elapsed"));
-    var zeile = bau("div", "ts-sp-neben", gZeit);
-    ELN.uhr = neben(zeile, wort("clock", "clock"));
-    var zf = bau("span", "ts-sp-paar", zeile);
+    // Der Leib traegt vier Kacheln in zwei Zeilen: oben die laufende Folie
+    // und die Notiz -- was man liest --, unten die vier Zahlkacheln und der
+    // naechste Schritt -- was man abliest. Eine Kopfzeile gibt es nicht
+    // mehr: die fuenf Zeitwerte, die dort gleich laut nebeneinander standen,
+    // haben jetzt je eine Kachel oder stehen klein unter der Zahl, zu der
+    // sie gehoeren.
+    LEIB = bau("div", "ts-sp-leib", SPRECHERBOX);
+
+    // 1. Die laufende Folie. Sie ist zugleich die Zeichenflaeche: die Buehne
+    //    faehrt hierher, statt nachgebaut zu werden. Ihre Kopfzeile traegt
+    //    rechts den Zustand des Saals -- schwarz, eingefroren, kein
+    //    Vortragsfenster. Der stand bisher in der Fusszeile, achthundert
+    //    Pixel von dem Bild entfernt, ueber das er etwas aussagt.
+    var kb = bau("div", "ts-sp-kachel ts-sp-buehne", LEIB);
+    var bkopf = bau("div", "ts-sp-buehnenkopf", kb);
+    bau("div", "ts-sp-marke", bkopf).textContent = wort("current", "current slide");
+    ELN.lage = bau("div", "ts-sp-lage", bkopf);
+    PLATZ = bau("div", "ts-sp-platz", kb);
+
+    // 2. Die Notiz. Sie bekommt die ganze zweite Spalte statt eines
+    //    Streifens unter der Folie: sie ist das Einzige in dieser Ansicht,
+    //    das man wirklich liest.
+    var nk = kachel(LEIB, "ts-sp-notizkasten", wort("note", "note"));
+    ELN.notizKasten = nk;
+    ELN.notiz = bau("div", "ts-sp-notiz", nk);
+    notizNachFenster();
+    ELN.notiz.addEventListener("scroll", notizStand);
+
+    // 3. Die Zahlkacheln.
+    var uhren = bau("div", "ts-sp-uhren", LEIB);
+
+    // Verstrichene Zeit, und klein darunter die Uhrzeit an der Wand. Ohne
+    // Sekunden: am Pult ist der Sekundenzeiger nie die Frage, und eine Zahl,
+    // die viermal je Sekunde zappelt, zieht den Blick, ohne ihn zu belohnen.
+    // So macht es reveal.js auch.
+    var kZeit = kachel(uhren, "", wort("elapsed", "elapsed"));
+    ELN.zeit = haupt(kZeit);
+    ELN.uhr = neben(bau("div", "ts-sp-neben", kZeit), wort("clock", "clock"));
+    // Ein Klick auf die verstrichene Zeit setzt sie zurueck. Jede fremde
+    // Sprecheransicht laesst ihre Zeitanzeige durch Klick auf sich selbst
+    // bedienen; hier war bisher jede Zahl reine Auskunft.
+    kZeit.style.cursor = "pointer";
+    kZeit.addEventListener("click", function () { UHR_START = 0; sprecherUhr(); });
+
+    // Folie und Schritt, mit dem Fortschrittsbalken am Fuss der Kachel.
+    var kOrt = kachel(uhren, "", wort("slide", "slide"));
+    ELN.fort = haupt(kOrt);
+    ELN.fortSchritt = neben(bau("div", "ts-sp-neben", kOrt), wort("step", "step"));
+    ELN.balken = balken(kOrt);
+
+    // Die Zieldauer. Sie ist das einzige Bedienfeld der Ansicht und sah
+    // bisher aus wie eine Luecke: ein leerer 51-Pixel-Kasten mit einer
+    // Marke, die niemand las. Jetzt steht sie da wie die anderen Zahlen,
+    // in derselben Groesse, und `d` geht hinein. Rest und Plan stehen klein
+    // darunter -- beides gibt es nur, wenn eine Dauer gesetzt ist.
+    var kZiel = kachel(uhren, "", wort("target", "target (min)"));
     var inp = document.createElement("input");
     inp.type = "number"; inp.min = "0"; inp.step = "1";
     inp.className = "ts-sp-ziel"; inp.id = "ts-sp-ziel";
-    zf.appendChild(inp);
-    bau("i", "ts-sp-wort", zf).textContent = wort("target", "target (min)");
+    inp.placeholder = "–";
+    kZiel.appendChild(inp);
     inp.addEventListener("input", function () {
       ZIEL_MIN = Math.max(0, +inp.value || 0);
       sprecherUhr();
@@ -2872,63 +3011,36 @@
       ev.stopPropagation();
     });
     ELN.ziel = inp;
-    ELN.rest = neben(zeile, wort("left", "remaining"));
-    ELN.takt = neben(zeile, wort("pace", "pace"));
-    // Without a target duration there is neither a remainder nor a plan.
-    // Instead of showing a lone dot beside a loud label twice over, both
-    // pairs disappear until a duration is set. That is half of what made
-    // the head look cluttered.
+    var zZeile = bau("div", "ts-sp-neben", kZiel);
+    ELN.rest = neben(zZeile, wort("left", "remaining"));
+    ELN.takt = neben(zZeile, wort("pace", "pace"));
     ELN.restPaar = ELN.rest.parentNode;
     ELN.taktPaar = ELN.takt.parentNode;
 
-    var gOrt = bau("div", "ts-sp-gruppe ts-sp-rechts", kopf);
-    ELN.fort = haupt(gOrt, wort("slide", "slide"));
-    var zeile2 = bau("div", "ts-sp-neben", gOrt);
-    ELN.fortSchritt = neben(zeile2, wort("step", "step"));
-    // A bar says without words where things stand. It is the second means
-    // of hierarchy alongside font size and needs no label.
-    ELN.balken = bau("i", "", bau("div", "ts-sp-balken", gOrt));
-
-    // The body: the running slide on the left, preview and note on the right.
-    LEIB = bau("div", "ts-sp-leib", SPRECHERBOX);
-    PLATZ = bau("div", "ts-sp-platz", LEIB);
-    var vor = bau("div", "ts-sp-vor", LEIB);
-    ELN.vorMarke = bau("div", "ts-sp-marke", vor);
-    ELN.vorBild = bau("div", "ts-sp-vorbild", vor);
-    var nk = bau("div", "ts-sp-notizkasten", LEIB);
-    bau("div", "ts-sp-marke", nk).textContent = wort("note", "note");
-    ELN.notizKasten = nk;
-    ELN.notiz = bau("div", "ts-sp-notiz", nk);
-    notizNachFenster();
-    ELN.notiz.addEventListener("scroll", notizStand);
-
-    // The foot: colors, state, key help.
-    var fuss = bau("div", "ts-sp-fuss", SPRECHERBOX);
-    var stift = bau("div", "ts-sp-stift", fuss);
-    // The label is the switch. Whoever reads what is on can also click it
-    // and does not have to know the key first.
-    var um = bau("button", "ts-sp-modus", stift);
-    um.type = "button";
-    um.addEventListener("click", modusUm);
-    ELN.modus = um;
-    ELN.stiftKasten = stift;
-    ELN.tupf = [];
-    FARBEN.forEach(function (f, i) {
-      var t = bau("button", "ts-sp-tupf", stift);
-      t.type = "button";
-      t.style.background = f;
-      t.addEventListener("click", function () { farbeSetzen(i); });
-      ELN.tupf.push(t);
-    });
-    ELN.lage = bau("div", "ts-sp-lage", fuss);
-    // Das Minutenfeld der Vollbilduhr, neben der Lagezeile und nicht im Kopf:
-    // dort sitzt die Zieldauer, und zwei Minutenfelder nebeneinander waeren
-    // zwei Zahlen, die dasselbe zu meinen scheinen. Verborgen, bis `t` es holt.
+    // Die Uhr der Klasse. Sie bekam bisher 0,1 Prozent der Flaeche und war
+    // der kleinste Text der Ansicht -- eine Pille in der Fusszeile, neben
+    // `schwarz` und `eingefroren`, gleich laut wie beide. Sie ist die
+    // einzige Zahl hier, auf die ausserhalb des Pults jemand wartet.
+    //
+    // Die Sorge, die sie dorthin gebracht hatte, war richtig: zwei grosse
+    // Zahlen nebeneinander, die Verschiedenes meinen, werden verwechselt.
+    // Aufgeloest wird sie hier durch Bauart und nicht durch Verstecken --
+    // die Zieldauer ist ein Feld mit ganzen Minuten, das man einmal je
+    // Vortrag setzt, die Klassenuhr eine laufende `m:ss` mit einem Balken,
+    // der leerlaeuft. Sie sehen verschieden aus, sie ticken verschieden,
+    // und sie heissen verschieden.
+    var kUhr = kachel(uhren, "ts-sp-uhrkachel", wort("timer", "class clock"));
+    ELN.uhrKachel = kUhr;
+    ELN.uhrMarke = kUhr.firstChild;
+    ELN.saal = haupt(kUhr);
+    // Das Minutenfeld sass in der Fusszeile, damit es nicht neben der
+    // Zieldauer stuende. Jetzt sitzt es in der Kachel, um die es geht, und
+    // nimmt den Platz der Zahl ein, die es gleich setzt.
     var uf = document.createElement("input");
     uf.type = "number"; uf.min = "1"; uf.step = "1";
     uf.className = "ts-sp-uhrfeld";
     uf.style.display = "none";
-    fuss.appendChild(uf);
+    kUhr.appendChild(uf);
     uf.addEventListener("keydown", function (ev) {
       // Enter nimmt den Wert, Escape laesst ihn liegen; beide geben die
       // Tastatur zurueck. `stopPropagation`, damit Escape nicht nebenbei die
@@ -2946,6 +3058,40 @@
     });
     uf.addEventListener("blur", uhrFeldZu);
     ELN.uhrFeld = uf;
+    ELN.saalBalken = balken(kUhr);
+    // Ein Klick auf die laufende Uhr beendet sie -- dieselbe Geste wie in
+    // jedem Vergleichssystem, und dieselbe Wirkung wie ein zweites `t`.
+    kUhr.style.cursor = "pointer";
+    kUhr.addEventListener("click", function (ev) {
+      if (ev.target === uf) return;
+      if (!uhrSaalAus()) uhrFeldAuf();
+    });
+
+    // 4. Der naechste Schritt, als fuenfte Kachel neben den vier Zahlen.
+    //    Die Vorschau ist ein Blick und keine zweite Buehne; sie steht
+    //    deshalb nicht mehr in einer eigenen Spalte, deren Rest leer blieb.
+    var vor = kachel(LEIB, "ts-sp-naechst", "");
+    ELN.vorMarke = vor.firstChild;
+    ELN.vorBild = bau("div", "ts-sp-vorbild", vor);
+
+    // Die Fusszeile ist Werkzeug und kein Zustand: Stift, Farben, Tasten.
+    var fuss = bau("div", "ts-sp-fuss", SPRECHERBOX);
+    var stift = bau("div", "ts-sp-stift", fuss);
+    // The label is the switch. Whoever reads what is on can also click it
+    // and does not have to know the key first.
+    var um = bau("button", "ts-sp-modus", stift);
+    um.type = "button";
+    um.addEventListener("click", modusUm);
+    ELN.modus = um;
+    ELN.stiftKasten = stift;
+    ELN.tupf = [];
+    FARBEN.forEach(function (f, i) {
+      var t = bau("button", "ts-sp-tupf", stift);
+      t.type = "button";
+      t.style.background = f;
+      t.addEventListener("click", function () { farbeSetzen(i); });
+      ELN.tupf.push(t);
+    });
     ELN.hilfe = bau("div", "ts-sp-hilfe", fuss);
     ELN.hilfe.textContent = W.helpSpeakerShort || W.helpSpeaker || W.help || "";
 
@@ -3070,9 +3216,14 @@
     sichtSenden();
     return true;
   }
+  // Das Minutenfeld nimmt den Platz der Zahl ein, die es gleich setzt --
+  // in der Kachel, um die es geht, und nicht mehr als 51 Pixel breiter
+  // Kasten in der unteren Ecke, achthundert Pixel von der Stelle entfernt,
+  // an der das Auge die Zeit sucht.
   function uhrFeldAuf() {
     if (!ELN.uhrFeld) return;
     ELN.uhrFeld.style.display = "";
+    ELN.saal.style.display = "none";
     ELN.uhrFeld.value = ELN.uhrFeld.value || "5";
     ELN.uhrFeld.focus();
     ELN.uhrFeld.select();
@@ -3080,6 +3231,7 @@
   function uhrFeldZu() {
     if (!ELN.uhrFeld) return;
     ELN.uhrFeld.style.display = "none";
+    ELN.saal.style.display = "";
     ELN.uhrFeld.blur();
   }
 
@@ -3137,6 +3289,7 @@
       // gesetzt, die Klassenuhr mehrmals je Stunde.
       else if (k === "d") { if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); } }
       else if (k === "r") { UHR_START = 0; sprecherUhr(); }
+      else if (k === "l") { lichtUm(); }
       else if (k === "m") { modusUm(); }
       else if (k === "c") { farbeSetzen(FARBE + 1); }
       else if (k === "z") { tinteSenden({ b: "weg", s: tinteFolie() }); }
@@ -3266,12 +3419,18 @@
   function sprecherUhr() {
     if (!gebaut) return;
     verbindungStand();
+    // Ohne Zieldauer gibt es weder einen Rest noch einen Plan. Statt zweimal
+    // einen einsamen Punkt neben einer lauten Marke zu zeigen, verschwinden
+    // beide Paare, bis eine Dauer gesetzt ist.
     var zeigen = ZIEL_MIN > 0 && STEPS.length > 0 ? "" : "none";
     if (ELN.restPaar) ELN.restPaar.style.display = zeigen;
     if (ELN.taktPaar) ELN.taktPaar.style.display = zeigen;
+    // Ohne Sekunden. Am Pult ist der Sekundenzeiger nie die Frage -- die
+    // Frage ist, wie viel Zeit noch bleibt --, und eine Zahl, die viermal
+    // je Sekunde neu gezeichnet wird, zieht den Blick, ohne ihn zu
+    // belohnen. reveal.js zeigt hour und minute und sonst nichts.
     var j = new Date();
-    ELN.uhr.textContent = zwei(j.getHours()) + ":" + zwei(j.getMinutes())
-                          + ":" + zwei(j.getSeconds());
+    ELN.uhr.textContent = zwei(j.getHours()) + ":" + zwei(j.getMinutes());
     var v = UHR_START ? (Date.now() - UHR_START) / 1000 : 0;
     ELN.zeit.textContent = mmss(v);
     ELN.zeit.dataset.laeuft = UHR_START ? "1" : "0";
@@ -3715,81 +3874,120 @@
   }
 
   // ── Scaling ────────────────────────────────────────────────────────────────
-  // How the three parts divide up the window.
+  // Wie die Kacheln sich das Fenster teilen.
   //
-  // The running slide is the canvas and gets the most space. It keeps its
-  // aspect ratio while doing so, and that decides the layout:
+  // Die laufende Folie ist die Zeichenflaeche und bekommt die groesste
+  // Kachel. Sie behaelt dabei ihr Seitenverhaeltnis, und daran haengen zwei
+  // Formen:
   //
-  //   tall:  a strip stays free below the slide, and the note sits there
-  //          across the full width. This is the normal case.
-  //   flat:  in a wide, low window the slide is already as tall as the
-  //          body, and a large empty area would remain beside it. Then
-  //          preview and note pull down there, stacked on top of each other.
+  //   hoch      -- Folie links, Notiz rechts, die Kachelzeile darunter.
+  //                Der Regelfall, und er traegt vom breiten Schirm bis in
+  //                ein flaches Fenster hinein: die Notiz steht neben der
+  //                Folie und nicht unter ihr, also bleibt unter der Folie
+  //                auch kein Streifen uebrig, den man fuellen muesste.
+  //   hochkant  -- reicht die Hoehe fuer eine Folie ueber die volle Breite
+  //                und bleibt darunter noch Platz fuer eine Notiz, die
+  //                diesen Namen verdient, dann legt die Folie sich quer und
+  //                die Notiz darunter. Nebeneinander waeren in einem
+  //                stehenden Fenster beide unbrauchbar.
   //
-  // The preview is a glance and not a second stage: at most a scant half of
-  // the running slide, otherwise the layout order would flip.
+  // Die dritte, alte Form (`flach`) gibt es nicht mehr. Sie war noetig,
+  // solange die Notiz *unter* der Folie stand: in einem flachen Fenster
+  // stand die Folie schon so hoch wie der Leib, und daneben blieb ein
+  // grosses Loch. Mit der Notiz *neben* der Folie ist der flache Fall der
+  // Regelfall geworden, und eine Form, die nichts mehr zu entscheiden hat,
+  // ist eine Form zu viel.
   function sprecherSpalten() {
     if (ROLLE !== "speaker" || !LEIB || !PLATZ) return;
     var r = LEIB.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var v = CFG.width / CFG.height;
-    var frei = r.width - 14;
-    // If the window is portrait, the height suffices for a stage across the
-    // full width and plenty still remains below it. Then the note would
-    // stand in a column bigger than the stage itself, and the layout order
-    // would stand on its head. So the stage lays itself crosswise at the
-    // top, and preview and note share the row below it.
-    // This is how wide the stage would be allowed to be if the note below
-    // it keeps a good third.
-    var breit = Math.min(frei * 0.72, r.height * 0.68 * v);
-    var flach = (frei - breit) > breit * 0.75;
-    if (flach) breit = Math.min(frei * 0.72, r.height * v);
-    breit = Math.max(frei * 0.34, breit);
-    // The minimum value must not make the stage taller than the body is.
-    // In a very wide and very flat window it would otherwise stick out
-    // below its place, and the view would get a scrollbar.
-    breit = Math.min(breit, frei, r.height * v);
+    var frei = r.width - 12;                    // ein Spaltenabstand
+    var zeile = ELN.uhrKachel ? ELN.uhrKachel.parentNode : null;
+    if (!zeile) return;
+    // Wie hoch eine Zahlkachel von sich aus ist, weiss nur der Browser: das
+    // haengt an der Schriftgroesse, und die haengt an der Fensterhoehe. Also
+    // die Zeile erst frei stellen und messen, dann rechnen. Ein Kreis
+    // entsteht daraus nicht -- die Hoehe der Zeile haengt an keiner
+    // Spaltenbreite.
+    LEIB.style.gridTemplateRows = "";
+    var natur = zeile.getBoundingClientRect().height;
+    var oben = Math.max(90, r.height - natur - 10);
+    // Was die Kachel der Folie fuer sich selbst braucht: Rand, Polster und
+    // die Zeile mit der Marke und dem Zustand des Saals. Gemessen und nicht
+    // eingetragen -- so bleibt die Rechnung richtig, wenn jemand im
+    // Stilblatt das Polster aendert. Ein Kreis entsteht daraus nicht: der
+    // Betrag haengt an keiner der beiden Groessen, die hier ausgerechnet
+    // werden.
+    var kr = PLATZ.parentNode.getBoundingClientRect();
+    var pr = PLATZ.getBoundingClientRect();
+    var randX = Math.max(0, kr.width - pr.width);
+    var randY = Math.max(0, kr.height - pr.height);
+    // Wie hoch die Kachel steht, wenn die Folie so breit ist.
+    var kachelHoch = function (b) { return (b - randX) / v + randY; };
 
-    // And now the proof of the pudding. What is to be enforced is not some
-    // aspect ratio of the window, but the result: the running slide is the
-    // largest area of the view. So work out what the note would get in
-    // this layout, and switch to the third one if it overtook the stage
-    // and the height suffices for a stage across the full width.
-    //
-    // The old condition hung on the aspect ratio and let through a whole
-    // band of window sizes in which the note got one and a half times the
-    // stage. Measured against the result, that can no longer happen.
-    var vollHoch = frei / v;
-    var vor = Math.min(frei - breit, breit * 0.45);
-    var flBuehne = breit * breit / v;
-    var flNotiz = flach
-      ? (frei - breit) * Math.max(0, r.height - vor / v - 18)
-      : r.width * Math.max(0, r.height - breit / v - 12);
-    if (flNotiz > flBuehne && vollHoch <= r.height - 80) {
+    // Hochkant oder nicht. Entschieden wird am Ergebnis und nicht am
+    // Seitenverhaeltnis des Fensters: es zaehlt, ob eine Folie ueber die
+    // volle Breite noch eine lesbare Notiz unter sich uebrig laesst.
+    var vollHoch = kachelHoch(frei);
+    if (vollHoch + Math.max(120, oben * 0.24) <= oben) {
       LEIB.dataset.form = "hochkant";
-      var vorBreit = Math.min(frei * 0.42, (r.height - vollHoch - 14) * v * 0.9);
-      vorBreit = Math.max(120, vorBreit);
-      LEIB.style.gridTemplateColumns = Math.round(vorBreit) + "px minmax(0,1fr)";
-      if (ELN.vorBild) ELN.vorBild.style.maxWidth = "";
+      LEIB.style.gridTemplateRows =
+        Math.round(vollHoch) + "px minmax(0,1fr) "
+        + Math.round(zeilenHoehe(natur, oben - vollHoch - 10)) + "px";
+      // Nur die Kachelzeile teilt sich hier noch in Spalten; Folie und
+      // Notiz liegen quer darueber.
+      LEIB.style.gridTemplateColumns =
+        Math.round(frei * 0.6) + "px minmax(0,1fr)";
+      vorschauBreite(v);
       notizNachFenster();
       notizStand();
       return;
     }
-    LEIB.dataset.form = flach ? "flach" : "hoch";
+
+    LEIB.dataset.form = "hoch";
+    // So breit duerfte die Folie sein, wenn sie die ganze Zeilenhoehe
+    // ausfuellt -- und so breit darf sie hoechstens werden, damit der Notiz
+    // eine Spalte bleibt, in der ein Satz nicht nach vier Woertern umbricht.
+    var breit = Math.min(frei * 0.63, (oben - randY) * v + randX);
+    breit = Math.max(frei * 0.36, breit);
+    breit = Math.min(breit, frei - 210, frei);
+    // Vier Zahlkacheln stehen unter der Folie und brauchen zusammen eine
+    // Mindestbreite; darunter waere die Zahl in ihnen breiter als ihr Kasten.
+    breit = Math.max(breit, Math.min(frei * 0.55, 380));
     LEIB.style.gridTemplateColumns = Math.round(breit) + "px minmax(0,1fr)";
-    if (ELN.vorBild) {
-      ELN.vorBild.style.maxWidth = Math.max(80, Math.round(breit * 0.45)) + "px";
-    }
-    // If the stage in a very flat window already stands as tall as the
-    // body, more width remains beside it than a note needs. Without a cap,
-    // the note there would be the largest area of the view, and the layout
-    // order would stand on its head again.
-    if (ELN.notiz) {
-      ELN.notiz.style.maxWidth = flach
-        ? Math.round(breit * 1.15) + "px" : "";
-    }
+    // Was die Folie an Hoehe nicht braucht, bekommt die Kachelzeile. Eine
+    // Kachel, die dreissig Pixel zu hoch ist, sieht nach Kachel aus; eine
+    // Folie mit zweihundert Pixeln Luft darueber und darunter sieht nach
+    // Loch aus. Und der Zuwachs geht an die Vorschau, die als einzige
+    // Kachel etwas damit anfangen kann.
+    LEIB.style.gridTemplateRows = "minmax(0,1fr) "
+      + Math.round(zeilenHoehe(natur, r.height - kachelHoch(breit) - 10)) + "px";
+    vorschauBreite(v);
     notizNachFenster();
     notizStand();
+  }
+
+  // Die Hoehe der Kachelzeile: was sie von sich aus braucht, hoechstens
+  // aber, was uebrig bleibt, und nie mehr als das Doppelte -- sonst waere
+  // eine einzelne Zahl in einem Kasten von halber Fensterhoehe.
+  function zeilenHoehe(natur, uebrig) {
+    // Der Boden bei 96 steht wegen der Vorschau: darunter ist das Bild
+    // kleiner als eine Briefmarke und sagt nichts mehr. In einem sehr
+    // flachen Fenster kostet das die Folie ein paar Pixel Hoehe -- ein
+    // Bild, das man erkennt, ist mehr wert als zwanzig Pixel Folie.
+    return Math.max(natur, 96, Math.min(natur * 2.1, uebrig));
+  }
+
+  // Die Vorschau ist ein Blick und keine zweite Buehne. Sie steht in einer
+  // Kachel, die ihre Hoehe vorgibt; die Breite folgt daraus. Anders herum --
+  // Breite vorgeben, Hoehe folgen lassen, wie bei jeder anderen Miniatur --
+  // waere das Bild in einer flachen Kachel hoeher als sein Platz.
+  function vorschauBreite(v) {
+    if (!ELN.vorBild) return;
+    var h = ELN.vorBild.clientHeight;
+    if (h < 8) return;
+    ELN.vorBild.style.width = Math.round(h * v) + "px";
   }
 
   function fit() {
