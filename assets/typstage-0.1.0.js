@@ -4009,7 +4009,10 @@
     // never do. Measured on the six example decks it costs under one percent
     // of the compressed page.
     pruef: {
-      fassung: 1,
+      // Zwei, seit `ziffer`, `punkt` und `adaptiv` dazugekommen sind. Ein Lauf,
+      // der eine cue-Gruppe bedienen will, muss ein Deck von gestern daran
+      // erkennen koennen -- sonst misst er dort still 0/0 und nennt es heil.
+      fassung: 2,
       bau: CFG.build,
       deck: DECK,
       rolle: ROLLE,
@@ -4057,6 +4060,47 @@
         };
       },
       fehler: function () { return FEHLER.slice(); },
+
+      // ── Eine cue-Gruppe von aussen bedienen ──────────────────────────────
+      //
+      // Die Ziffern einer adaptiven Gruppe liegen an der Tastatur, und ein
+      // Prueflauf hat keine Hand. `goto()` allein loest sie nicht aus: es geht
+      // auf einen Schritt, aber es nennt keinen Punkt, und ein nicht genannter
+      // Punkt steht auf `g.aus` -- weit hinter dem letzten Schritt des Decks.
+      // Eine cue-Folie meldete deshalb im Decklauf durchgehend 0/0, und was an
+      // ihr neu ist, war ungeprueft. Gemessen an examples/vortragen.typ: 13
+      // seiner 44 Schritte sah der Lauf gar nicht.
+      //
+      // Drei Griffe, und alle drei tun genau, was die Tastatur tut.
+      // `ziffer(n)` ist die Zifferntaste: sie nennt den Punkt n der Gruppe auf
+      // der laufenden Folie und geht auf dessen Schritt. `punkt()` ist der
+      // Pfeil: er nimmt den naechsten in geschriebener Reihenfolge. Beide
+      // geben zurueck, ob etwas genannt wurde -- `false` heisst, dass hier
+      // keine Gruppe steht oder der Punkt schon gefallen ist, und dann bleibt
+      // dem Aufrufer das gewoehnliche Weiterblaettern.
+      //
+      // Zuruecknehmen steht hier nicht: das ist das Zurueckblaettern, und
+      // `goto()` besorgt es von selbst (`adRueck`).
+      ziffer: function (n) { return adTaste(+n); },
+      punkt: function () { return adPfeil(); },
+
+      // Was die Gruppen gerade zeigen, damit ein Lauf weiss, ob er zu bedienen
+      // hat und mit welcher Ziffer. `nummern` sind alle Punkte in
+      // geschriebener Reihenfolge, `folge` die schon genannten in der
+      // Reihenfolge, in der sie fielen, `plaetze` die Schritte innerhalb der
+      // Folie, die die Gruppe zu vergeben hat.
+      adaptiv: function () {
+        return Object.keys(AD).map(function (name) {
+          var g = AD[name];
+          return {
+            name: name, folie: g.folie,
+            nummern: Object.keys(g.reihen).map(Number)
+              .sort(function (a, b) { return a - b; }),
+            plaetze: g.plaetze.slice(),
+            folge: g.folge.slice()
+          };
+        });
+      },
 
       // Pin the wall clock, or hand it back with no argument.
       // A number or nothing. Without the check `uhr("abc")` pins the clock to

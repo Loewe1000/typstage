@@ -456,6 +456,51 @@ function papierProbe() {
   return null;
 }
 
+// Ob `tiles` seine Kurve und seine Dauer weiterreicht.
+//
+// Ohne Browser, denn hier ist nichts zu fahren: die beiden Werte entstehen in
+// Typst und stehen als `data-duration` und `data-easing` in der Ausgabe. Was
+// die Laufzeit daraus macht, prüft das Prüfdeck an anderer Stelle.
+//
+// Zwei Fragen. Mit Angabe muss jede der sechs Kacheln beide Werte tragen --
+// `tiles` nahm sie lange gar nicht entgegen, und ein Deck, das ein Raster mit
+// Rückschwung wollte, musste die `anim`s von Hand in ein `grid` schreiben.
+// Ohne Angabe darf keine Kachel sie tragen: `auto` schreibt kein Attribut, und
+// jedes Deck von gestern soll Byte für Byte dasselbe bleiben.
+function kachelProbe() {
+  let datei;
+  try { datei = decklaufBauen("kacheln"); }
+  catch (e) {
+    return "kacheln.typ ließ sich nicht übersetzen: "
+      + String(e.meldung || "").slice(0, 300)
+      + " -- nimmt tiles() duration und easing noch entgegen?";
+  }
+  const html = fs.readFileSync(datei, "utf8");
+  // Die Kurve steht aufgelöst da, nicht unter ihrem Namen: `kurve()` schlägt
+  // sie beim Übersetzen nach, damit ein Name, den es nicht gibt, dort auffällt
+  // und nicht als stille Blende im Vortrag.
+  const AUS_BACK = "cubic-bezier(.34,1.56,.64,1)";
+  const dauer = (html.match(/data-duration="1500"/g) || []).length;
+  const kurve = (html.match(/data-easing="cubic-bezier\(\.34,1\.56,\.64,1\)"/g) || []).length;
+  if (dauer !== 6 || kurve !== 6) {
+    return dauer + " Kacheln mit der Dauer und " + kurve + " mit der Kurve "
+      + AUS_BACK + " statt je sechs. tiles() reicht nicht durch, was ihm "
+      + "gegeben wurde, und ein Raster mit Rückschwung muss wieder von Hand "
+      + "in ein grid geschrieben werden.";
+  }
+  // Und die Gegenprobe: die drei ohne Angabe. Insgesamt also nicht mehr als
+  // die sechs von oben.
+  const alleDauer = (html.match(/data-duration="/g) || []).length;
+  const alleKurve = (html.match(/data-easing="/g) || []).length;
+  if (alleDauer !== 6 || alleKurve !== 6) {
+    return "ohne Angabe trugen Kacheln trotzdem ein Attribut: "
+      + alleDauer + " mal data-duration und " + alleKurve + " mal data-easing "
+      + "im ganzen Deck statt je sechs. auto schreibt kein Attribut, sonst "
+      + "verschiebt sich der Satz jedes Decks von gestern.";
+  }
+  return null;
+}
+
 // Gegenprobe zur Klage über `enter: "draw"` ohne gestrichenen Pfad.
 //
 // `ohne-strich.typ` übersetzt anstandslos, und das ist der Punkt: diese
@@ -715,7 +760,7 @@ async function leiserProbe(b, datei) {
 // ── Der Durchlauf, als ein Stück Seitencode ─────────────────────────────────
 const DURCHLAUF = `(async function () {
   var p = typstage.pruef, S = typstage.steps;
-  if (p.fassung !== 1) return JSON.stringify({ fassungFehler: p.fassung });
+  if (p.fassung !== 2) return JSON.stringify({ fassungFehler: p.fassung });
   p.uhr(${UHR});
   var vor = [], zurueck = [], fristen = 0, flyDom = 0, flyDomRueck = 0;
   var FLY = document.getElementById("ts-fly");
@@ -729,10 +774,39 @@ const DURCHLAUF = `(async function () {
     if (wie !== "ruhig") fristen++;
   }
 
-  typstage.goto(0, true); await ruhe(); vor.push(p.stand());
+  // ── Die Hand, die eine cue-Gruppe bedient ────────────────────────────────
+  //
+  // Eine adaptive Gruppe kommt nicht von selbst herein. Ihre Punkte liegen an
+  // den Zifferntasten, und goto() drueckt keine: es geht auf den Schritt, aber
+  // der Punkt bleibt beiseitegestellt, weit hinter dem letzten Schritt des
+  // Decks. Ein Lauf, der nur blaettert, misst auf einer cue-Folie durchgehend
+  // 0/0 und haelt das fuer den Befund. Gemessen an vortragen: 13 seiner 44
+  // Schritte lagen so im Dunkeln, und gerade das Neue an dem Deck war damit
+  // nicht abgesichert.
+  //
+  // Genannt wird in geschriebener Reihenfolge, und nur der Punkt, dessen Platz
+  // der Schritt ist, auf den es gerade geht. Das ist die eine Reihenfolge, die
+  // sich wiederholen laesst -- ein Sprecher darf jede andere waehlen, aber ein
+  // Sollwert kann nicht von seiner Laune abhaengen.
+  //
+  // Nach dem goto, nicht davor: ziffer() sucht den Schritt des Punktes auf der
+  // Folie, auf der das Deck *steht*. Vorher gedrueckt suchte sie ihn auf der
+  // vorigen und traefe eine fremde.
+  function cueBedienen(ziel) {
+    var g = p.adaptiv().filter(function (x) {
+      return x.folie === ziel.slide && x.folge.length < x.nummern.length;
+    })[0];
+    if (!g) return false;
+    if (parseInt(g.plaetze[g.folge.length], 10) !== ziel.step) return false;
+    var offen = g.nummern.filter(function (n) { return g.folge.indexOf(n) < 0; });
+    return p.ziffer(offen[0]);
+  }
+
+  typstage.goto(0, true); cueBedienen(S[0]); await ruhe(); vor.push(p.stand());
   for (var i = 1; i < p.schritte; i++) {
     var wechsel = S[i].slide !== S[i - 1].slide;
     typstage.goto(i);
+    cueBedienen(S[i]);
     // Der alte Weg, nur zum Abgleich mitgezaehlt: sofort und ausschliesslich
     // beim Folienwechsel. Der Zaehler in der Laufzeit ist der massgebliche.
     if (wechsel) flyDom += FLY.querySelectorAll("*").length;
@@ -1353,6 +1427,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (wanderung) console.error("ABWEICHUNG wanderung: " + wanderung);
   const papier = papierProbe();
   if (papier) console.error("ABWEICHUNG papier: " + papier);
+  const kachel = kachelProbe();
+  if (kachel) console.error("ABWEICHUNG kacheln: " + kachel);
   let pd;
   try { pd = decklaufBauen("pruefdeck"); }
   catch (e) {
@@ -1402,7 +1478,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
     }
     const r = JSON.parse(await b.ev(DURCHLAUF));
     if (r.fassungFehler) {
-      z.maengel.push("Messfläche in Fassung " + r.fassungFehler + ", erwartet 1");
+      z.maengel.push("Messfläche in Fassung " + r.fassungFehler + ", erwartet 2");
       bericht.push(z); schlecht++; continue;
     }
 
@@ -1806,6 +1882,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (ueberlauf) schlecht++;
   if (wanderung) schlecht++;
   if (papier) schlecht++;
+  if (kachel) schlecht++;
   if (ohneStrich) schlecht++;
   if (schmal) schlecht++;
   if (ohneFlaeche) schlecht++;
