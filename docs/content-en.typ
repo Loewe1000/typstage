@@ -3701,6 +3701,45 @@ The traps, in roughly the order they are usually hit.
 / The speaker view does not open: `window.open` needs a real keypress, and a
   script cannot stand in for the gesture.
 
+=== `deck-outline()`: how the deck is cut
+
+`info()` says *where* you stand. It does not say how the whole thing is
+divided -- and anyone building a navigation bar needs exactly that: which
+slides belong to which section. `deck-outline()` hands it over, one entry per
+section, in the order they come:
+
+// check: folie
+#show-code[```typ
+#context for a in deck-outline() [
+  - #a.number. #a.title -- slides #a.first to #a.last (#a.count)
+]
+```]
+
+On a deck with `slide-level: 3` and two parts of two sub-sections each, the
+first part covers slides 1 to 3, its two sub-sections 1 to 2 and 3 to 3, and
+the second part 4 to 7.
+
+`first`, `last` and `count` are **transitive**: a depth-1 section counts the
+slides of its sub-sections too. A bar that counted only the immediate ones
+would show a zero for every top-level heading. A section with nothing under it
+has `none` for `first` and `last`, and `0` for `count`.
+
+#info[
+  It reads only what every slide already carries -- no `query`, no second walk
+  over the document, the same answer in both outputs. Measured: `tour`,
+  `theme-editorial` and `geogebra` are byte-identical with and without this
+  call, in HTML as in PDF.
+]
+
+#warning[
+  A foreign package looking for the structure through `query(heading)` finds
+  nothing: the heading notation splits the body at its headings and copies
+  `depth` and `body` out, dropping the element itself. That holds in *both*
+  outputs, not only in the browser. `deck-outline()` is the answer to it --
+  the same information, without anyone having to search a document that is not
+  built that way.
+]
+
 = API reference
 
 Generated from the comments in the source files. The order follows the build of

@@ -534,6 +534,59 @@
   let gliederung = abschnitte.enumerate().map(((j, a)) => (
     depth: a.depth, number: ebenen-satz.at(j).number, title: a.title,
   ))
+  // Dasselbe noch einmal, aber mit dem Stück Deck, das zu jedem Abschnitt
+  // gehört. `gliederung` sagt, wie das Deck gegliedert ist; das hier sagt, wo
+  // die Schnitte liegen -- und das ist, was eine Navigationsleiste braucht und
+  // was `info()` bisher schuldig blieb. Wer es nachbauen wollte, müsste an
+  // `state("typstage-info")` heran, also an ein Internum.
+  //
+  // Gezählt wird transitiv: unter einen Abschnitt der Tiefe 1 fallen auch die
+  // Folien seiner Unterabschnitte. Eine Leiste, die nur die eigenen zählte,
+  // zeigte für jede Oberüberschrift eine Null.
+  //
+  // Eine reine Rechnung über `all`, ohne `query` und ohne zweiten Gang durch
+  // das Dokument -- sie zeichnet nichts und kann deshalb auch nichts
+  // verschieben.
+  let schnitte = {
+    let raus = ()
+    let k = 0
+    for (i, s) in all.enumerate() {
+      if s.kind != "section" { continue }
+      let tiefe = abschnitte.at(k).depth
+      let erste = none
+      let letzte = none
+      let wieviele = 0
+      let n = 0
+      let m = 0
+      // Die Folien vor diesem Abschnitt zählen, um bei seiner ersten die
+      // richtige Nummer zu haben.
+      for (j, t) in all.enumerate() {
+        if j >= i { break }
+        if t.kind == "slide" { n += 1 }
+      }
+      let tieferK = k
+      for (j, t) in all.enumerate() {
+        if j <= i { continue }
+        // Ein Abschnitt derselben oder einer flacheren Tiefe beendet den Lauf.
+        if t.kind == "section" {
+          tieferK += 1
+          if abschnitte.at(tieferK).depth <= tiefe { break }
+          continue
+        }
+        if t.kind == "slide" {
+          m += 1
+          wieviele += 1
+          if erste == none { erste = n + m }
+          letzte = n + m
+        }
+      }
+      raus.push((depth: tiefe, number: ebenen-satz.at(k).number,
+                 title: abschnitte.at(k).title,
+                 first: erste, last: letzte, count: wieviele))
+      k += 1
+    }
+    raus
+  }
   // What a section slide hands its theme: its depth, and the titles above it.
   // Both go on the record itself rather than into a new theme key, so a theme
   // that ignores them draws every level alike instead of failing.
@@ -624,6 +677,7 @@
           (number: innen.number, total: innen.total, title: innen.title)
         } else { (number: 0, total: 0, title: none) },
         levels: ebenen,
+        structure: schnitte,
         // `here` marks the one entry that *is* this slide, and only a section
         // slide can be one. Every other slide gets the list built once above.
         outline: if s.kind == "section" {

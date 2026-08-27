@@ -4591,6 +4591,46 @@ statt sie zu ersetzen.
 ]
 
 
+=== `deck-outline()`: wie das Deck geschnitten ist
+
+`info()` sagt, *wo* man steht. Es sagt nicht, wie das Ganze gegliedert ist --
+und wer sich eine Navigationsleiste baut, braucht genau das: welche Folien zu
+welchem Abschnitt gehören. `deck-outline()` gibt es heraus, einen Eintrag je
+Abschnitt, in der Reihenfolge, in der sie kommen:
+
+// check: folie
+#show-code[```typ
+#context for a in deck-outline() [
+  - #a.number. #a.title -- Folien #a.first bis #a.last (#a.count)
+]
+```]
+
+An einem Deck mit `slide-level: 3` und zwei Teilen zu je zwei Unterabschnitten
+kommt heraus: der erste Teil deckt die Folien 1 bis 3, seine beiden
+Unterabschnitte 1 bis 2 und 3 bis 3, der zweite Teil 4 bis 7.
+
+`first`, `last` und `count` zählen **transitiv**: unter einen Abschnitt der
+Tiefe 1 fallen auch die Folien seiner Unterabschnitte. Eine Leiste, die nur
+die unmittelbar eigenen zählte, zeigte für jede Oberüberschrift eine Null. Ein
+Abschnitt ohne Folien unter sich hat `none` bei `first` und `last` und `0` bei
+`count`.
+
+#info[
+  Gelesen wird nur, was jede Folie ohnehin mit sich trägt -- kein `query`, kein
+  zweiter Gang durch das Dokument, dieselbe Antwort in beiden Ausgaben.
+  Nachgemessen: `tour`, `theme-editorial` und `geogebra` sind mit und ohne
+  diesen Aufruf byteidentisch, in HTML wie im PDF.
+]
+
+#warning[
+  Ein fremdes Paket, das die Gliederung über `query(heading)` sucht, findet
+  nichts: die Überschriftennotation zerlegt den Rumpf an seinen Überschriften
+  und kopiert `depth` und `body` heraus, das Element selbst fällt weg. Das gilt
+  in *beiden* Ausgaben, nicht nur im Browser. `deck-outline()` ist die Antwort
+  darauf -- dieselbe Auskunft, ohne dass jemand ein Dokument durchsuchen muss,
+  das so nicht gebaut ist.
+]
+
 = API-Referenz
 
 Erzeugt aus den Kommentaren der Quelldateien. Die Reihenfolge folgt dem Aufbau
