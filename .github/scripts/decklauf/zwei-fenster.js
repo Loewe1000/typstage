@@ -393,6 +393,184 @@ const szeneBild = `(function () {
         + " in beiden Fenstern");
     }
 
+    // ── Hell und dunkel ───────────────────────────────────────────────────
+    //
+    // Die Ansicht gibt es in zwei Erscheinungsbildern, und die Zusage lautet:
+    // beide sind vollstaendig. Eine Farbe, die nur in einem der beiden Bloecke
+    // steht, faellt im anderen auf den ererbten Wert zurueck -- meist auf
+    // Schwarz auf Schwarz --, und das sieht niemand, der nur in seinem eigenen
+    // Erscheinungsbild arbeitet. Also wird es hier gezaehlt: dieselben Namen,
+    // keiner leer, und die beiden Bloecke duerfen nicht dieselben Werte
+    // tragen.
+    const zeichenSatz = `(function(){
+      var hell = {}, dunkel = {};
+      [].forEach.call(document.styleSheets, function (b) {
+        var rs; try { rs = b.cssRules; } catch (e) { return; }
+        [].forEach.call(rs, function (r) {
+          if (!r.selectorText) return;
+          var z = /data-ts-licht="hell"/.test(r.selectorText) ? hell
+                : /data-ts-licht="dunkel"/.test(r.selectorText) ? dunkel : null;
+          if (!z) return;
+          for (var i = 0; i < r.style.length; i++) {
+            var n = r.style[i];
+            if (n.indexOf("--sp-") === 0) z[n] = r.style.getPropertyValue(n).trim();
+          }
+        });
+      });
+      return JSON.stringify({ hell: hell, dunkel: dunkel });
+    })()`;
+    const pal = JSON.parse(await sprecher.ev(zeichenSatz));
+    const nH = Object.keys(pal.hell), nD = Object.keys(pal.dunkel);
+    if (!nH.length || !nD.length) {
+      sagt("licht", "eines der beiden Erscheinungsbilder nennt gar keine Farbe: "
+        + nH.length + " hell, " + nD.length + " dunkel");
+    }
+    const nurEins = nH.filter(n => nD.indexOf(n) < 0)
+      .concat(nD.filter(n => nH.indexOf(n) < 0));
+    if (nurEins.length) {
+      sagt("licht", "diese Farben stehen nur in einem der beiden Bloecke: "
+        + nurEins.join(", "));
+    }
+    const leer = nH.filter(n => !pal.hell[n]).concat(nD.filter(n => !pal.dunkel[n]));
+    if (leer.length) sagt("licht", "diese Farben sind leer: " + leer.join(", "));
+    const gleich = nH.filter(n => pal.hell[n] === pal.dunkel[n]);
+    if (gleich.length > nH.length / 2) {
+      sagt("licht", "hell und dunkel tragen dieselben Werte, " + gleich.length
+        + " von " + nH.length + " -- ein Block ist eine Kopie des anderen");
+    }
+
+    // Und die Wahl selbst: die Systemeinstellung entscheidet, `l`
+    // widerspricht ihr. Gemessen wird nicht das Attribut allein, sondern die
+    // Farbe, die dabei herauskommt -- ein Attribut, das niemand liest, waere
+    // dieselbe Zeile Arbeit und keine Aussage.
+    const grundVon = `(function(){ return document.documentElement.dataset.tsLicht
+      + " " + getComputedStyle(document.getElementById("ts-speaker")).backgroundColor; })()`;
+    await sprecher.ruf("Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-color-scheme", value: "light" }] });
+    await schlaf(400);
+    const l1 = await sprecher.ev(grundVon);
+    await sprecher.ruf("Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-color-scheme", value: "dark" }] });
+    await schlaf(400);
+    const l2 = await sprecher.ev(grundVon);
+    if (!/^hell /.test(l1) || !/^dunkel /.test(l2)) {
+      sagt("licht", "die Systemeinstellung greift nicht durch: hell gibt "
+        + JSON.stringify(l1) + ", dunkel gibt " + JSON.stringify(l2));
+    }
+    if (l1.split(" ")[1] === l2.split(" ")[1]) {
+      sagt("licht", "beide Erscheinungsbilder stehen auf demselben Grund: "
+        + l1.split(" ")[1]);
+    }
+    await sprecher.taste("l"); await schlaf(400);
+    const l3 = await sprecher.ev(grundVon);
+    if (!/^hell /.test(l3)) {
+      sagt("licht", "`l` hat dem dunklen Bild nicht widersprochen: "
+        + JSON.stringify(l3));
+    }
+    // Und der Widerspruch haelt, wenn das System danach noch einmal wechselt.
+    await sprecher.ruf("Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-color-scheme", value: "light" }] });
+    await schlaf(300);
+    await sprecher.ruf("Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-color-scheme", value: "dark" }] });
+    await schlaf(300);
+    const l4 = await sprecher.ev(grundVon);
+    if (l4 !== l3) {
+      sagt("licht", "die Systemeinstellung hat die Wahl von `l` ueberfahren: "
+        + JSON.stringify(l3) + " -> " + JSON.stringify(l4));
+    }
+    await sprecher.taste("l"); await schlaf(300);
+    await sprecher.ruf("Emulation.setEmulatedMedia", { features: [] });
+    await schlaf(300);
+    console.log("Licht: " + nH.length + " Farben in beiden · " + l1 + " · " + l2
+      + " · nach `l` " + l3);
+
+    // ── Die Kachel der laufenden Folie ist die Zeichenflaeche ─────────────
+    //
+    // Sie sieht nach Verschwendung aus -- die Wand zeigt dasselbe --, und sie
+    // ist keine: auf ihr wird gezeichnet, und die Striche gehen in die Halle.
+    // Der Kachelentwurf hat sie in einen Kasten gesetzt, und ein Kasten, der
+    // ueber ihr laege statt um sie herum, faenge den Zeiger ab. Das faellt an
+    // keiner Knotenzahl auf und an keinem Fingerabdruck -- also hier.
+    //
+    // Gezogen wird mit dem echten Zeiger und nicht mit einer Nachricht: die
+    // Frage ist ja gerade, ob der Zeiger ankommt.
+    const tMasse = JSON.parse(await sprecher.ev(`(function(){
+      var f = document.getElementById('ts-stage').getBoundingClientRect();
+      var k = document.querySelector('.ts-sp-buehne').getBoundingClientRect();
+      var v = document.querySelector('.ts-sp-vorbild').getBoundingClientRect();
+      return JSON.stringify({ f: {x:f.x,y:f.y,width:f.width,height:f.height},
+                              k: {x:k.x,y:k.y,width:k.width,height:k.height},
+                              v: {width:v.width,height:v.height} });})()`));
+    const tBuehne = tMasse.f, tKachel = tMasse.k;
+    // Die Vorschau richtet sich nach der Hoehe ihrer Kachel, und ihre Breite
+    // rechnet die Laufzeit dazu. Bleibt die Rechnung aus, faellt das Bild auf
+    // Breite null zusammen: die Kachel steht dann da und ist leer. Keine
+    // Knotenzahl merkt das -- die Knoten sind ja alle noch da -- und der
+    // Fingerabdruck des Satzes auch nicht, denn er kennt das Stilblatt und
+    // nicht die Laufzeit.
+    if (tMasse.v.width < 60 || tMasse.v.height < 30) {
+      sagt("vorschau", "die Vorschau misst " + Math.round(tMasse.v.width) + "x"
+        + Math.round(tMasse.v.height) + " -- sie hat ihre Breite nicht bekommen");
+    }
+    const tinteZaehlen = "document.querySelectorAll('#ts-ink *').length";
+    const tVor = [+await halle.ev(tinteZaehlen), +await sprecher.ev(tinteZaehlen)];
+    // Die Buehne liegt *in* ihrer Kachel. Sie ist nicht deren Kind -- sie
+    // schwebt darueber, weil `display:none` den Morphs ihre Masse naehme --,
+    // und `fit` setzt sie auf den Platz, den die Kachel freihaelt. Verliert
+    // der Platz seine Hoehe, faellt `fit` auf das ganze Fenster zurueck: die
+    // Buehne deckt dann die Kacheln zu, und gezeichnet wird trotzdem noch.
+    // Der Zug allein faende das also nicht.
+    const raus = Math.max(tKachel.x - tBuehne.x, tKachel.y - tBuehne.y,
+      (tBuehne.x + tBuehne.width) - (tKachel.x + tKachel.width),
+      (tBuehne.y + tBuehne.height) - (tKachel.y + tKachel.height));
+    if (raus > 2) {
+      sagt("zeichnen", "die Buehne steht " + Math.round(raus)
+        + " px ausserhalb ihrer Kachel: Buehne "
+        + Math.round(tBuehne.width) + "x" + Math.round(tBuehne.height)
+        + " bei " + Math.round(tBuehne.x) + "," + Math.round(tBuehne.y)
+        + ", Kachel " + Math.round(tKachel.width) + "x" + Math.round(tKachel.height)
+        + " bei " + Math.round(tKachel.x) + "," + Math.round(tKachel.y));
+    }
+    if (tBuehne.width < 40 || tBuehne.height < 40) {
+      sagt("zeichnen", "die Buehne im Sprecherfenster misst "
+        + Math.round(tBuehne.width) + "x" + Math.round(tBuehne.height)
+        + " -- sie hat ihren Platz in der Kachel nicht gefunden");
+    } else {
+      const bei = (fx, fy) => ({ x: Math.round(tBuehne.x + tBuehne.width * fx),
+                                 y: Math.round(tBuehne.y + tBuehne.height * fy) });
+      const zug = [[0.25, 0.35], [0.38, 0.5], [0.5, 0.36], [0.62, 0.52], [0.74, 0.4]];
+      let q = bei(zug[0][0], zug[0][1]);
+      await sprecher.ruf("Input.dispatchMouseEvent", { type: "mousePressed",
+        x: q.x, y: q.y, button: "left", clickCount: 1, buttons: 1 });
+      for (const [fx, fy] of zug.slice(1)) {
+        q = bei(fx, fy);
+        await sprecher.ruf("Input.dispatchMouseEvent", { type: "mouseMoved",
+          x: q.x, y: q.y, button: "left", buttons: 1 });
+        await schlaf(90);
+      }
+      await sprecher.ruf("Input.dispatchMouseEvent", { type: "mouseReleased",
+        x: q.x, y: q.y, button: "left", clickCount: 1, buttons: 0 });
+      await schlaf(900);
+      const tNach = [+await halle.ev(tinteZaehlen), +await sprecher.ev(tinteZaehlen)];
+      if (tNach[1] <= tVor[1]) {
+        sagt("zeichnen", "ein Zug ueber die Folienkachel hat im Sprecherfenster"
+          + " keinen Strich gemacht: " + tVor[1] + " -> " + tNach[1]);
+      }
+      if (tNach[0] <= tVor[0]) {
+        sagt("zeichnen", "der Strich kam in der Halle nicht an: "
+          + tVor[0] + " -> " + tNach[0]);
+      }
+      console.log("Zeichnen: Sprecher " + tVor[1] + " -> " + tNach[1]
+        + " · Halle " + tVor[0] + " -> " + tNach[0]
+        + " · Buehne " + Math.round(tBuehne.width) + "x" + Math.round(tBuehne.height)
+        + " · Vorschau " + Math.round(tMasse.v.width) + "x"
+        + Math.round(tMasse.v.height));
+      // Und `x` raeumt sie wieder ab, damit die naechste Probe eine leere
+      // Folie vorfindet.
+      await sprecher.taste("x"); await schlaf(500);
+    }
+
     // ── Und die Vollbilduhr, ferngesteuert ────────────────────────────────
     //
     // Sie ist der einzige Zustand, den das Pult setzt und den die Halle
@@ -406,9 +584,21 @@ const szeneBild = `(function () {
       pruef: window.typstage.pruef.clock(),
       an: !!document.documentElement.dataset.tsClock,
       zeigt: document.querySelector('#ts-clock .ts-clock-num').textContent,
-      sicht: getComputedStyle(document.querySelector('#ts-clock')).display })`;
-    const lage = `(function(){ var l = document.querySelector('.ts-sp-saal');
-      return l ? l.textContent : ""; })()`;
+      sicht: getComputedStyle(document.querySelector('#ts-clock')).display,
+      art: (document.getElementById('ts-clock').dataset.art || ''),
+      deckt: (() => { const k = document.getElementById('ts-clock').getBoundingClientRect();
+        const b = document.getElementById('ts-stage').getBoundingClientRect();
+        return b.width ? Math.round(k.width * k.height / (b.width * b.height) * 1000) / 10 : 0;
+      })() })`;
+    // Die Uhr der Klasse steht in ihrer eigenen Kachel und nicht mehr als
+    // vierte Pille in der Zustandszeile. Gelesen wird beides: der Zustand,
+    // den die Kachel von sich behauptet, und die Zahl, die darin steht --
+    // eine Kachel, die `laeuft` sagt und einen Strich zeigt, waere so
+    // falsch wie umgekehrt.
+    const lage = `(function(){ var k = document.querySelector('.ts-sp-uhrkachel');
+      if (!k) return "";
+      var z = k.querySelector('.ts-sp-gross');
+      return (k.dataset.uhr || "?") + " " + (z ? z.textContent : ""); })()`;
 
     await sprecher.taste("t");
     await schlaf(300);
@@ -442,10 +632,15 @@ const szeneBild = `(function () {
       sagt("uhr", "im Sprecherfenster laeuft die Uhr ebenfalls: " + JSON.stringify(sp0));
     }
     let lz = await sprecher.ev(lage);
-    if (!/^\S+ [45]:[0-9][0-9]$/.test(lz)) {
-      sagt("uhr", "die Lagezeile sagt " + JSON.stringify(lz) + ", erwartet etwas wie 'Uhr 4:59'");
+    // Das U+2007 vor der Zahl ist kein Schmutz, sondern die Spalte, in der
+    // spaeter das Plus der Ueberzeit steht. Ohne sie sprangen die Ziffern
+    // beim Umschlag um 19 Pixel nach rechts -- gemessen 64,02 gegen 83,03.
+    // Deshalb wird sie hier verlangt und nicht bloss geduldet.
+    if (!/^laeuft \u2007[45]:[0-9][0-9]$/.test(lz)) {
+      sagt("uhr", "die Uhrkachel sagt " + JSON.stringify(lz)
+        + ", erwartet 'laeuft \u2007" + "4:59' -- mit der Ziffernspalte davor");
     }
-    console.log("Uhr: Halle " + JSON.stringify(uh.zeigt) + " · Lagezeile " + JSON.stringify(lz));
+    console.log("Uhr: Halle " + JSON.stringify(uh.zeigt) + " · Kachel " + JSON.stringify(lz));
 
     // `⇧→` verlaengert, ohne die Uhr neu zu stempeln.
     //
@@ -499,8 +694,59 @@ const szeneBild = `(function () {
         + wo2.schritt + " -> " + wo3.schritt);
     }
     lz = await sprecher.ev(lage);
-    if (lz) sagt("uhr", "die Lagezeile traegt die Uhr noch: " + JSON.stringify(lz));
+    if (!/^aus /.test(lz)) {
+      sagt("uhr", "die Uhrkachel traegt die Uhr noch: " + JSON.stringify(lz));
+    }
     console.log("Uhr: ein Schritt beendet sie, Folie wieder da");
+
+    // ── Die Ueberzeit am Pult ─────────────────────────────────────────────
+    //
+    // Der teuerste Fehler, den diese Ansicht hatte: die Wand schlug auf die
+    // Signalfarbe um, und am Pult blieb die Uhr gruen. Die Klasse sah die
+    // Ueberzeit, bevor die Lehrkraft sie sah. Gemessen wird deshalb beides
+    // zugleich, in beiden Fenstern, und nicht nur die Wand -- die allein
+    // war schon immer richtig.
+    //
+    // Die Uhr der Halle wird dafuer festgenagelt und weitergestellt: eine
+    // Minute abzuwarten waere eine Minute Prueflauf fuer eine Zahl.
+    await sprecher.taste("t"); await schlaf(250);
+    await sprecher.ev("document.activeElement.value='1'");
+    await sprecher.taste("Enter"); await schlaf(700);
+    const jetzt = await halle.ev("Date.now()");
+    await halle.ev("typstage.pruef.uhr(" + jetzt + ")"); await schlaf(300);
+    await halle.ev("typstage.pruef.uhr(" + (jetzt + 71000) + ")");
+    await schlaf(1800);
+    const uz = await sprecher.ev(lage);
+    if (!/^ueber \+0:1[0-9]$/.test(uz)) {
+      sagt("ueberzeit", "die Uhrkachel sagt in der Ueberzeit " + JSON.stringify(uz)
+        + ", erwartet 'ueber +0:11'");
+    }
+    // Und die Kachel sieht anders aus, nicht nur ihre Ziffern: eine Flaeche
+    // sieht man aus dem Augenwinkel, eine Ziffer nicht.
+    const uf = JSON.parse(await sprecher.ev(`(function(){
+      var k = document.querySelector('.ts-sp-uhrkachel');
+      var g = getComputedStyle(k), z = getComputedStyle(k.querySelector('.ts-sp-gross'));
+      var w = getComputedStyle(document.querySelector('.ts-sp-notizkasten'));
+      return JSON.stringify({ grund: g.backgroundColor, ziffer: z.color,
+                              ruhig: w.backgroundColor,
+                              marke: k.querySelector('.ts-sp-marke').textContent });})()`));
+    if (uf.grund === uf.ruhig) {
+      sagt("ueberzeit", "die Kachel traegt in der Ueberzeit denselben Grund wie"
+        + " jede andere: " + uf.grund);
+    }
+    if (uf.grund === uf.ziffer) {
+      sagt("ueberzeit", "Grund und Ziffer der Uhrkachel sind dieselbe Farbe");
+    }
+    // Und das Wort wechselt. Drei Zeichen, die unabhaengig voneinander sagen,
+    // dass die Zeit um ist: das Wort, das Vorzeichen, die Flaeche.
+    if (!/(ber|over|pass)/i.test(uf.marke)) {
+      sagt("ueberzeit", "die Marke der Kachel sagt in der Ueberzeit noch "
+        + JSON.stringify(uf.marke));
+    }
+    console.log("Ueberzeit: Kachel " + JSON.stringify(uz) + " · Grund "
+      + uf.grund + " statt " + uf.ruhig + " · Marke " + JSON.stringify(uf.marke));
+    await halle.ev("typstage.pruef.uhr()"); await schlaf(300);
+    await sprecher.taste("t"); await schlaf(600);
 
     // Und `t` beendet sie ebenfalls.
     await sprecher.taste("t"); await schlaf(250);
@@ -565,6 +811,45 @@ const szeneBild = `(function () {
     if (!JSON.parse(await halle.ev(uhrHalle)).an) {
       sagt("wache", "die Uhr liess sich fuer die Wachprobe nicht stellen");
     }
+    // ── Die angeheftete Uhr ueberlebt das Blaettern ────────────────────────
+    // Der Unterschied zwischen den beiden Uhren ist keine Groesse, sondern
+    // eine Regel: die Vollbilduhr endet beim Blaettern, die angeheftete
+    // nicht. Genau das war der teuerste offene Punkt der Bedienungspruefung,
+    // und genau das kann eine Pruefung in *einem* Fenster nicht sehen.
+    // Erst abraeumen: aus dem Abschnitt davor laeuft noch eine Uhr, und ein
+    // ⇧T auf eine laufende Uhr beendet sie, statt eine neue zu stellen --
+    // gemessen kam danach gar keine angeheftete Uhr zustande, und die
+    // Pruefung meldete das Richtige aus dem falschen Grund.
+    for (let i = 0; i < 3; i++) {
+      if (!JSON.parse(await halle.ev(uhrHalle)).an) break;
+      await sprecher.taste("T", 8); await schlaf(500);
+    }
+    await sprecher.taste("T", 8); await schlaf(300);
+    await sprecher.ev("document.activeElement.value='4'");
+    await sprecher.taste("Enter"); await schlaf(900);
+    const fest0 = JSON.parse(await halle.ev(uhrHalle));
+    if (!fest0.an || fest0.art !== "fest") {
+      sagt("angeheftet", "nach ⇧T steht in der Halle "
+        + JSON.stringify(fest0) + ", erwartet eine angeheftete Uhr.");
+    }
+    const deckte = fest0.deckt;
+    await sprecher.taste("ArrowRight"); await schlaf(800);
+    const fest1 = JSON.parse(await halle.ev(uhrHalle));
+    if (!fest1.an) {
+      sagt("angeheftet", "ein Blaettern hat die angeheftete Uhr beendet. Sie "
+        + "gehoert der Klasse, die gerade arbeitet, und nicht der Folie, die "
+        + "am Pult gerade gesucht wird.");
+    }
+    if (deckte > 25) {
+      sagt("angeheftet", "die angeheftete Uhr deckt " + deckte + " % der "
+        + "Buehne zu. Sie soll auf der Folie stehen und die Aufgabe darunter "
+        + "lesbar lassen.");
+    }
+    await sprecher.taste("T", 8); await schlaf(700);
+    if (JSON.parse(await halle.ev(uhrHalle)).an) {
+      sagt("angeheftet", "ein zweites ⇧T hat die Uhr nicht beendet.");
+    }
+
     await sprecher.ev("window.close()");
     let hoch = -1;
     for (let i = 0; i < 40; i++) {

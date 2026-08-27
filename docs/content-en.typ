@@ -2251,9 +2251,40 @@ second window. One goes on the projector, the other on the machine in front of
 you. The two talk over `postMessage`, and that carries between two local files
 as well, so this needs a server as little as everything else here.
 
-Visible are the running slide, large, beside it the next *step*, below it the
-note, together with the time of day, the elapsed time and, once a target
-duration is typed in, whether you are ahead of or behind plan.
+The view is a lectern made of tiles. The two large ones on top: the running
+slide on the left, the note on the right -- the two things you actually look
+at. Below them a row of four small ones and one wide one:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Tile*], [*What stands in it*]),
+  [elapsed], [the time since the first keypress, and small below it the time
+    of day],
+  [slide], [slide #sym.slash slides, below it step #sym.slash steps, and the
+    progress bar along its foot],
+  [target (min)], [the planned duration -- `d` goes into it --, below it
+    remaining and pace, once one is set],
+  [class clock], [the clock that stands on the wall in the hall; `t` starts it],
+  [next step], [the preview: what the next keypress does],
+)
+
+Below that the tool row: pen or pointer, the four colours, the key help. The
+state of the hall -- `black`, `frozen`, `no talk window` -- stands at the top
+right *inside* the slide tile, that is, above the picture it is talking about.
+
+=== Light or dark
+
+The view follows the system setting of the machine it stands on
+(`prefers-color-scheme`), and `l` contradicts it when the room is not what the
+operating system thinks. The choice holds for the session and survives a
+reload.
+
+Expressly *not* the deck's palette: that one says what the wall looks like. The
+same night deck runs at eight in the morning in a bright room and in the
+evening in a darkened one, and the same teacher sits in front of it both times.
+The lectern is a tool, not a talk; if it changed colour with the deck, you
+would have to learn to read it afresh every lesson.
 
 #tip[
   The preview shows the next step, not the next slide. A deck that counts in
@@ -2292,16 +2323,28 @@ minutes in which the class is doing something and not listening.
   [`→` (or any other paging key)], [ends it and uncovers the slide],
 )
 
-The speaker view itself carries no second large clock. It appears there only as
-a small entry in the line beside `black` and `frozen`: `clock 2:41`. Two large
-numbers side by side -- the talk's target duration and the class's clock --
-would mean different things and look the same.
+In the speaker view it has a tile of its own, `class clock`, beside the tile
+`target (min)`. The worry that two large numbers side by side would be confused
+is a fair one -- it is settled here by construction and not by hiding: the
+target duration is a field of whole minutes you set once per talk, the class
+clock a running `m:ss` with a bar that empties. They look different, they tick
+differently, they are called different things.
+
+While none runs, a dash stands there. While no talk window answers, a longer
+dash: the clock is kept over there, this view only reads it off, and without a
+counterpart there would be nothing behind any number.
 
 At zero it does not stop, it carries on to `+0:01`, and the digits take the
 deck's accent colour. Above them a word then stands that was not there before:
 "over". Its appearance is the event; nothing blinks and nothing chimes. The
 overtime is capped, at the duration itself and at thirty minutes at the most.
 `+2:47:13` tells nobody anything.
+
+At the lectern the whole tile turns over in the same moment: ground, border and
+digits in the warning colour, and `class clock` becomes `over`. A surface is
+something you see out of the corner of your eye, a digit is not -- and the
+teacher should not notice the overtime later than the class, which is looking
+straight at it on the wall.
 
 #warning[
   `t` when nothing else is on the wall. No clock while you are talking.
@@ -2530,6 +2573,42 @@ handout prints it where there is text, so a note built purely out of layout --
 a `fit`, a bare `rect`, an image -- would arrive nowhere. That is refused with
 a message rather than dropped in silence. What is meant to be *seen* belongs on
 the slide.
+
+== Two clocks for the class
+
+The presenter view has two clocks. They differ not in size but in what they
+say about the room.
+
+`t` starts the *full-screen clock*. It covers the slide edge to edge, with
+digits the back row can read: the room is on a break. Paging ends it and
+uncovers the slide again -- what you do after a break is carry on.
+
+`⇧T` starts the *pinned clock*. It stands #emph[on] the slide and leaves the
+task underneath in place. The class is working, and at the lectern you look
+ahead to what comes next: paging deliberately does not end it. In the
+presenter view it can be dragged with the mouse, and it travels along in the
+talk window.
+
+Both ask for the minutes first and only then run. `⇧←` and `⇧→` give a
+minute more or less; the same key again ends the clock.
+
+What a deck knows about the pinned clock it writes with `class-clock`:
+
+#show-example(
+  rendered: [],
+  source: ```typ
+  #slide[
+    = Group work
+    #class-clock(12)
+    Find three examples in pairs.
+  ]
+  ```,
+  width: 12cm,
+)
+
+Nothing starts from that. `⇧T` offers the twelve minutes, the speaker
+confirms or changes them, and only then does the clock run: the deck knows how
+long the task was meant to take, the room decides how long it gets.
 
 = Making it your own
 

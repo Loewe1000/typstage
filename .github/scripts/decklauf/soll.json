@@ -155,6 +155,25 @@
   "wachsen darf --, und pruefdeck/satz und pruefdeck/satzBytes stehen deshalb",
   "nur noch fuer darwin da.",
   "",
+  "Die Vollbilduhr hat sprecher in allen 16 Decks um genau eins gehoben: sie",
+  "legte ein Minutenfeld in den Fuss der Sprecherbox, und ein DOM-Knoten haengt",
+  "an keiner Schrift. Die beiden geteilten Werte wurden deshalb mit +1",
+  "nachgezogen und nicht entfernt.",
+  "",
+  "Der Kachelentwurf der Sprecheransicht hat sprecher danach in allen 16 Decks",
+  "um genau sieben gehoben, und zwar um dieselben sieben: die Kopfzeile mit",
+  "ihren zwei Gruppen ist fort, dafuer stehen fuenf Kacheln da, jede mit einer",
+  "Marke, und die Kachelzeile um vier davon. Dass die Zahl auf allen 16 Decks",
+  "dieselbe ist, ist selbst die Probe -- ein Deck, bei dem sie abwiche, haette",
+  "mehr veraendert als den Aufbau. Die beiden geteilten Werte sind wieder mit",
+  "+7 nachgezogen.",
+  "",
+  "pruefdeck/satz und satzBytes haben sich dabei um 6274 Bytes verschoben, und",
+  "die Zahl geht auf: das Stilblatt ist um 6177 Bytes gewachsen -- es steht mit",
+  "im Satz, herausgeschnitten wird nur der JS-Block -- und die englischen",
+  "Laufzeitwoerter um 97, drei neue Schluessel und zwei laengere Hilfetexte.",
+  "Ihre linux-Werte waren schon fort und sind es geblieben.",
+  "",
   "Dieser Absatz stand einmal von Hand in soll.json und war nach dem ersten",
   "--neu-soll fort: was hier nicht steht, ueberlebt keine Neuaufnahme."
  ],
@@ -169,7 +188,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 80,
+   "sprecher": 87,
    "grund": [
     "#ffffff",
     "#ffffff",
@@ -323,7 +342,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 103,
+   "sprecher": 110,
    "grund": [
     "#fafafa",
     "#23303f",
@@ -403,7 +422,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "1/0",
-   "sprecher": 532,
+   "sprecher": 539,
    "grund": [
     "#f7f2e6",
     "#f7f2e6",
@@ -493,7 +512,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "3/0",
-   "sprecher": 104,
+   "sprecher": 111,
    "grund": [
     "#ffffff",
     "#e6f0f6",
@@ -584,8 +603,8 @@
    "hash": 8,
    "hashStand": "3/0",
    "sprecher": {
-    "darwin": 1080,
-    "linux": 1079
+    "darwin": 1087,
+    "linux": 1086
    },
    "grund": [
     "#0f1319",
@@ -682,7 +701,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 89,
+   "sprecher": 96,
    "grund": [
     "#ffffff",
     "#ffffff",
@@ -771,7 +790,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 93,
+   "sprecher": 100,
    "grund": [
     "#fafafa",
     "#23303f",
@@ -874,7 +893,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "4/0",
-   "sprecher": 349,
+   "sprecher": 356,
    "grund": [
     "#fafafa",
     "#fafafa",
@@ -919,8 +938,8 @@
    "hash": 8,
    "hashStand": "5/0",
    "sprecher": {
-    "darwin": 837,
-    "linux": 841
+    "darwin": 844,
+    "linux": 848
    },
    "grund": [
     "#ffffff",
@@ -970,7 +989,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 73,
+   "sprecher": 80,
    "grund": [
     "#f5f3ee",
     "#20372c",
@@ -1056,7 +1075,7 @@
    "federRueck": 6,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 107,
+   "sprecher": 114,
    "grund": [
     "#ffffff",
     "#c1361c",
@@ -1210,7 +1229,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "4/3",
-   "sprecher": 91,
+   "sprecher": 98,
    "grund": [
     "#ffffff",
     "#e6f0f6",
@@ -1331,7 +1350,7 @@
    "federRueck": 2,
    "hash": 8,
    "hashStand": "4/0",
-   "sprecher": 166,
+   "sprecher": 173,
    "grund": [
     "#f2eee5",
     "#f2eee5",
@@ -1393,7 +1412,7 @@
    "federRueck": 2,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 119,
+   "sprecher": 126,
    "grund": [
     "#fffcf9",
     "#fffcf9",
@@ -1468,7 +1487,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 179,
+   "sprecher": 186,
    "grund": [
     "#111111",
     "#f7f7f5",
@@ -1535,7 +1554,7 @@
    "federRueck": 3,
    "hash": 8,
    "hashStand": "1/0",
-   "sprecher": 68,
+   "sprecher": 75,
    "grund": [
     "#0f1319",
     "#0c2733",
@@ -1702,12 +1721,12 @@
    "zeichnung": "3+3 Pfade · hinein/heraus · 0>1 · 0/0 offen · Sprung 0/1/6",
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
-    "darwin": "bff4919dbfdbe52c",
-    "linux": "2fea5c8216ce8863"
+    "darwin": "52289bcf2a82d855",
+    "linux": "5a32b92841b1d97a"
    },
    "satzBytes": {
-    "darwin": 1288583,
-    "linux": 1165907
+    "darwin": 1309855,
+    "linux": 1187179
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",
    "kino": "at 1- 0/0/0/12/23 · at 3- 0/0/0/12/23",

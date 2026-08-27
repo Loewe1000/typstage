@@ -21,7 +21,7 @@
   palettes, contrast, palette-report,
 )
 #import "slides.typ": (
-  slide, section, title-slide, transition, speaker-note,
+  slide, section, title-slide, transition, speaker-note, class-clock,
   // One slide in the palette turned around, for the heading notation.
   invert,
   // What the deck knows about itself, so a deck can build its own chrome

@@ -165,9 +165,41 @@ Rechner vor dem Vortragenden. Beide reden über `postMessage` miteinander, und
 das trägt auch zwischen zwei lokalen Dateien; es braucht also so wenig einen
 Server wie alles andere hier.
 
-Zu sehen sind die laufende Folie groß, daneben der nächste *Schritt*, darunter
-die Notiz, dazu Uhrzeit, verstrichene Zeit und, wenn eine Zieldauer eingetippt
-ist, ob man vor oder hinter dem Plan liegt.
+Die Ansicht ist ein Pult aus Kacheln. Oben die beiden großen: links die
+laufende Folie, rechts die Notiz -- die beiden Dinge, auf die man wirklich
+sieht. Darunter eine Zeile aus vier kleinen und einer breiten:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Kachel*], [*was darin steht*]),
+  [verstrichen], [die Zeit seit dem ersten Tastendruck, darunter klein die
+    Uhrzeit an der Wand],
+  [Folie], [Folie #sym.slash Folien, darunter Schritt #sym.slash Schritte, am
+    Fuß der Fortschrittsbalken],
+  [Ziel (min)], [die geplante Dauer -- `d` geht hinein --, darunter Rest und
+    Plan, sobald eine gesetzt ist],
+  [Klassenuhr], [die Uhr, die im Saal an der Wand steht; `t` startet sie],
+  [nächster Schritt], [die Vorschau: was der nächste Tastendruck tut],
+)
+
+Darunter die Werkzeugzeile: Stift oder Zeiger, die vier Farben, die
+Tastenbelegung. Der Zustand des Saals -- `schwarz`, `eingefroren`, `kein
+Vortragsfenster` -- steht oben rechts *in* der Folienkachel, also über dem
+Bild, über das er etwas aussagt.
+
+=== Hell oder dunkel
+
+Die Ansicht folgt der Systemeinstellung des Rechners, an dem sie steht
+(`prefers-color-scheme`), und `l` widerspricht ihr, wenn der Raum anders ist,
+als das Betriebssystem denkt. Die Wahl hält die Sitzung und übersteht ein
+Neuladen.
+
+Ausdrücklich *nicht* an der Palette des Decks: die sagt, wie die Wand aussieht.
+Dasselbe Nachtdeck läuft morgens um acht im hellen Raum und abends im
+abgedunkelten, und davor sitzt beide Male dieselbe Lehrkraft. Das Pult ist
+Werkzeug, kein Vortrag; wechselte es mit dem Deck die Farbe, müsste man es in
+jeder Stunde neu lesen lernen.
 
 #tip[
   Die Vorschau zeigt den nächsten Schritt, nicht die nächste Folie. Ein Deck,
@@ -203,15 +235,28 @@ Minuten, in denen die Klasse etwas tut und nicht zuhört.
   [`→` (oder jede andere Blättertaste)], [beendet sie und deckt die Folie auf],
 )
 
-In der Sprecheransicht selbst steht keine zweite große Uhr. Sie erscheint dort
-nur als kleiner Eintrag in der Zeile neben `schwarz` und `eingefroren`:
-`Uhr 2:41`. Zwei große Zahlen nebeneinander -- die Zieldauer des Vortrags und
-die Uhr der Klasse -- meinten Verschiedenes und sähen gleich aus.
+In der Sprecheransicht hat sie eine eigene Kachel, `Klassenuhr`, neben der
+Kachel `Ziel (min)`. Die Sorge, zwei große Zahlen nebeneinander würden
+verwechselt, ist berechtigt -- sie ist hier durch Bauart aufgelöst und nicht
+durch Verstecken: die Zieldauer ist ein Feld mit ganzen Minuten, das man einmal
+je Vortrag setzt, die Klassenuhr eine laufende `m:ss` mit einem Balken, der
+leerläuft. Sie sehen verschieden aus, sie ticken verschieden, sie heißen
+verschieden.
+
+Läuft keine, steht dort ein Strich. Antwortet kein Vortragsfenster, steht dort
+ein langer Strich: geführt wird die Uhr drüben, diese Ansicht liest sie nur ab,
+und ohne Gegenüber stünde hinter jeder Zahl nichts.
 
 Bei null hört sie nicht auf, sie geht auf `+0:01` weiter, und die Ziffern
 nehmen die Signalfarbe des Decks an. Über den Ziffern steht dann ein Wort, das
 vorher nicht da war: „Überzeit". Sein Erscheinen ist das Ereignis; es blinkt
-nichts und es klingelt nichts. Die Überzeit ist gedeckelt, bei der Dauer selbst
+nichts und es klingelt nichts.
+
+Am Pult schlägt im selben Augenblick die ganze Kachel um: Fläche, Rand und
+Ziffern in der Warnfarbe, und aus `Klassenuhr` wird `Überzeit`. Eine Fläche
+sieht man aus dem Augenwinkel, eine Ziffer nicht -- und die Lehrkraft soll die
+Überzeit nicht später bemerken als die Klasse, die sie an der Wand stehen
+sieht. Die Überzeit ist gedeckelt, bei der Dauer selbst
 und höchstens bei dreißig Minuten. `+2:47:13` sagt niemandem etwas.
 
 #warning[
@@ -3197,6 +3242,45 @@ Zeichenkette, und das Handout druckt sie dort, wo Text darin steht -- eine
 Notiz, die nur aus Layout besteht (ein `fit`, ein blankes `rect`, ein Bild),
 käme also nirgends an. Das wird mit einer Meldung abgewiesen statt still
 verschluckt. Was *gesehen* werden soll, gehört auf die Folie.
+
+== Zwei Uhren für die Klasse
+
+Die Sprecheransicht kennt zwei Uhren. Sie unterscheiden sich nicht in der
+Größe, sondern darin, was sie über den Saal sagen.
+
+Die Taste `t` startet die *Vollbilduhr*. Sie deckt die Folie zu, von Rand zu
+Rand, mit Ziffern, die auch die letzte Reihe liest: Der Saal macht Pause. Ein
+Blättern beendet sie und deckt die Folie wieder auf -- was man nach einer
+Pause tut, ist weitermachen.
+
+Die Taste `⇧T` startet die *angeheftete Uhr*. Sie steht #emph[auf] der
+Folie und lässt die Aufgabe darunter stehen. Die Klasse arbeitet, und am Pult
+sieht man schon einmal nach, was danach kommt: Blättern beendet sie
+ausdrücklich nicht. In der Sprecheransicht lässt sie sich mit der Maus
+verschieben und wandert im Vortragsfenster mit.
+
+Beide fragen zuerst nach den Minuten und laufen erst danach. `⇧←` und
+`⇧→` geben eine Minute mehr oder weniger; derselbe Tastendruck noch
+einmal beendet die Uhr.
+
+Was ein Deck über die angeheftete Uhr weiß, schreibt es mit `class-clock`:
+
+#show-example(
+  rendered: [],
+  source: ```typ
+  #slide[
+    = Gruppenarbeit
+    #class-clock(12)
+    Sammelt zu zweit drei Beispiele.
+  ]
+  ```,
+  width: 12cm,
+)
+
+Gestartet wird dadurch nichts. `⇧T` bietet die zwölf Minuten an, die
+Lehrkraft bestätigt oder ändert sie, und erst dann läuft die Uhr: Das Deck
+weiß, wie lange die Aufgabe gedacht war, der Raum entscheidet, wie lange sie
+bekommt.
 
 == Was auf dem Papier fehlt -- und was man dafür vorsieht
 
