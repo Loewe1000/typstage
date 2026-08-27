@@ -4173,10 +4173,6 @@
     var gesetzt = ZIEL_MIN > 0 && STEPS.length > 0;
     if (ELN.restPaar) ELN.restPaar.dataset.leer = gesetzt ? "0" : "1";
     if (ELN.taktPaar) ELN.taktPaar.dataset.leer = gesetzt ? "0" : "1";
-    if (!gesetzt) {
-      if (ELN.rest) ELN.rest.textContent = "\u2013:\u2013\u2013";
-      if (ELN.takt) ELN.takt.textContent = "\u2013";
-    }
     // Ohne Sekunden. Am Pult ist der Sekundenzeiger nie die Frage -- die
     // Frage ist, wie viel Zeit noch bleibt --, und eine Zahl, die viermal
     // je Sekunde neu gezeichnet wird, zieht den Blick, ohne ihn zu
@@ -4195,7 +4191,7 @@
       // or behind. "ahead of plan" would then merely be a consequence of
       // the expected position being zero at zero seconds.
       if (!UHR_START) {
-        ELN.takt.textContent = "·";
+        ELN.takt.textContent = "\u2013:\u2013\u2013";
         ELN.takt.dataset.lage = "";
         return;
       }
@@ -4211,9 +4207,12 @@
              : d > 0 ? wort("ahead", "ahead") : wort("behind", "behind"));
       ELN.takt.dataset.lage = gut ? "" : (d > 0 ? "vor" : "zurueck");
     } else {
-      ELN.rest.textContent = "·";
+      // Ein Strich in der Form, die hier stehen wird, statt eines
+      // Mittelpunkts: der las sich neben seinem Wort wie ein
+      // Aufzaehlungszeichen und nicht wie ein Wert, der noch fehlt.
+      ELN.rest.textContent = "\u2013:\u2013\u2013";
       ELN.rest.dataset.lage = "";
-      ELN.takt.textContent = "·";
+      ELN.takt.textContent = "\u2013:\u2013\u2013";
       ELN.takt.dataset.lage = "";
     }
   }
