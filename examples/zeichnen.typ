@@ -107,7 +107,7 @@ A pendulum keeps time. Something about it must decide how fast.
 #anim(callout(title: [Two of the three are out after one lesson])[
   Hang a rubber and a bolt on strings of the same length: they keep step.
   Start one at $5degree$ and one at $20degree$: over ten swings they drift by
-  half a swing, no more. Only the third candidate is left, and that one has a
+  a fourteenth of a swing. Only the third candidate is left, and that one has a
   number to it.
 ], at: 5, enter: "fade-up")
 
@@ -377,7 +377,7 @@ A pendulum keeps time. Something about it must decide how fast.
 
 #anim(at: 5, align(center, text(fill: hilfs)[
   $sin theta < theta < tan theta$, always. At $10degree$: $0.1736$, $0.1745$,
-  $0.1763$. At $5degree$ the sine is within one part in eight hundred of the
+  $0.1763$. At $5degree$ the sine is within one part in seven hundred of the
   angle -- and it is the sine the force is made of.
 ]))
 
