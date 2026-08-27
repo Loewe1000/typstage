@@ -75,6 +75,12 @@ jobs:
       - name: Die Fernsteuerung mit zwei Fenstern
         run: node .github/scripts/decklauf/zwei-fenster.js
 
+      # Was während einer Bewegung übereinander liegt. Der Lauf darüber misst
+      # Decks im Ruhezustand -- er wartet nach jedem Schritt, bis nichts mehr
+      # läuft. Die Höhe eines fliegenden Elements sieht er nie.
+      - name: Was während eines Fluges übereinander liegt
+        run: node .github/scripts/decklauf/flug-hoehe.js
+
       - name: Bericht aufheben
         if: always()
         uses: actions/upload-artifact@v4

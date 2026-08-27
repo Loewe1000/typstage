@@ -2825,6 +2825,12 @@ Rechnung, Zeile für Zeile:
   nicht Zwischenschritte einer Rechnung.
 ]
 
+Was auf der Zielfolie #emph[über] dem Ziel des Fluges steht, bleibt auch
+während des Fluges darüber. Die Quellreihenfolge entscheidet, im Stillstand
+wie in der Bewegung: Was nach dem `morph` notiert ist, liegt darüber, was
+davor steht, darunter. Eine Bildunterschrift, die auf dem fertigen Bild sitzt,
+muss also nicht warten, bis das Bild angekommen ist.
+
 == Wenn die Zeichen falsch fliegen: pin
 
 Die Paarung sucht sich zu jedem Zeichen der alten Folie das passende Zeichen
