@@ -17,6 +17,12 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
    animation does set the opacity, it wins anyway. */
 .ts-slide[data-off]{visibility:visible;opacity:1}
 .ts-bg{position:absolute;inset:0}
+/* Die Kamera faehrt auf diesen beiden Ebenen, und sie faehrt in Prozent
+   der eigenen Kastenbreite. Der Ursprung muss dafuer in der linken oberen
+   Ecke liegen und nicht in der Mitte, sonst rechnet die Verschiebung gegen
+   einen anderen Nullpunkt als die Marken, die sie gelesen hat. Ohne
+   Kamera steht hier keine Verschiebung, und die Zeile kostet nichts. */
+.ts-bg,.ts-ov,.ts-mini svg{transform-origin:0 0}
 .ts-bg svg{width:100%!important;height:100%!important;display:block}
 .ts-ov{position:absolute;inset:0;pointer-events:none}
 .ts-el{position:absolute;opacity:0;transform-origin:50% 50%;pointer-events:none}
@@ -258,6 +264,11 @@ html[data-ts-schwarz="1"] #ts-fly,html[data-ts-schwarz="1"] #ts-ink{opacity:0}
   .ts-slide{position:relative;visibility:visible!important;opacity:1!important;
     break-after:page;width:100%;height:0;padding-bottom:var(--ts-ratio,56.25%)}
   .ts-el{opacity:1!important;visibility:visible!important}
+  /* Auf Papier gibt es keine Kamera. Die Druckansicht setzt jede Folie auf
+     ihr eigenes Blatt, und eine Folie, die der Vortrag zuletzt herangefahren
+     hatte, traegt ihre Verschiebung sonst mit aufs Blatt -- die haelfte des
+     Bildes waere weg. Sie steht vollstaendig da, wie im Handout. */
+  .ts-bg,.ts-ov{transform:none!important}
   #ts-overview,#ts-hint,#ts-fly,#ts-chrome,#ts-ink,
   #ts-speaker{display:none!important}
   /* Printing produces the same thing from both windows. The speaker

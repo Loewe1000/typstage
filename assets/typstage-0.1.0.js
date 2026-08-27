@@ -161,6 +161,14 @@
     return o ? o.dataset[name] : null;
   }
 
+  // ── Die Fahrten je Folie ──────────────────────────────────────────────────
+  // Gelesen, bevor die Schritte gezaehlt werden: eine Fahrt bringt einen
+  // Schritt mit, auf dem die Folie wieder ganz dasteht.
+  var KAMERAS = SLIDES.map(function (f) {
+    var s = f.querySelector("script.ts-camera");
+    return s ? JSON.parse(s.textContent) : [];
+  });
+
   // ── Step list ─────────────────────────────────────────────────────────────
   // A slide's step count comes from the selectors: those of its elements
   // and those of the bridge jobs.
@@ -182,6 +190,16 @@
     });
     var s = f.querySelector("script.ts-bridge");
     if (s) JSON.parse(s.textContent).forEach(function (j) { schau(j.at); });
+    // Und die Kamerafahrten. Ein geschlossener Bereich braucht einen Schritt
+    // *hinter* sich: den Rueckweg. Ohne ihn faehrt eine Kamera als letzte
+    // Handlung der Folie hinein und kaeme nie wieder heraus -- die Folie waere
+    // auf ihrem letzten Schritt zu Ende, und wer das schreibt, hat vier Zeilen
+    // hoeher `at: "3"` geschrieben und nicht `at: 3`.
+    KAMERAS[i].forEach(function (j) {
+      schau(j.at);
+      var e = endeBei(j.at);
+      if (isFinite(e)) n = Math.max(n, e + 1);
+    });
     f.dataset.steps = n;
     for (var k = 1; k <= n; k++) STEPS.push({ slide: i, step: k });
   });
@@ -419,6 +437,153 @@
     return svg ? marken(SLIDES[i], svg.getBoundingClientRect()) : {};
   }
 
+  // ── Die Kamera ────────────────────────────────────────────────────────────
+  //
+  // Typst gibt zur Uebersetzungszeit keine Geometrie heraus -- `here()
+  // .position()` liefert in der HTML-Ausgabe ueberall (0, 0), und genau das
+  // ist der Grund, warum dieses Paket mit Rechtecken in Signalfarbe arbeitet.
+  // Hier unten liegt die Sache umgekehrt: die Rechtecke *muessen* bekannt
+  // sein, sonst faende kein Sprite seinen Platz. Eine Kamera haengt sich
+  // daran. Sie zielt auf ein `pin`, schlaegt dessen Rechteck nach und rechnet
+  // sich aus, wohin sie zu fahren hat.
+  //
+  // Gefahren werden zwei Ebenen der Folie: der Hintergrund und die
+  // Sprite-Ebene darueber. Beide sind derselbe Kasten (`inset:0`), beide
+  // bekommen dieselbe Zeichenkette, also bleiben sie deckungsgleich.
+  //
+  // Was *nicht* mitfaehrt, faellt aus dem Aufbau, den die Seite ohnehin hat:
+  // die Folienzier, die Tinte und die Flugebene liegen als eigene Ebenen ueber
+  // der Buehne und gehoeren nicht zur Folie. Fussleiste, Fortschritt und
+  // laufender Kopf stehen also weiter, wo sie stehen, waehrend die Folie unter
+  // ihnen groesser wird; was aus dem Bild faehrt, schneidet `#ts-stage` mit
+  // seinem `overflow:hidden` ab. Der Titel dagegen faehrt mit -- er steht im
+  // Rumpf der Folie und gehoert ihr.
+  //
+  // `stelle()` bleibt unberuehrt. Es misst jede Marke im Verhaeltnis zum
+  // Kasten des Hintergrund-SVG, und eine gleichmaessige Streckung mit
+  // Verschiebung laesst Verhaeltnisse in Ruhe: Zaehler und Nenner bekommen
+  // denselben Faktor. Aus demselben Grund steht die Verschiebung in Prozent
+  // der eigenen Kastenbreite und nie in Pixeln -- sie ueberlebt jede
+  // Fenstergroesse ohne Nachrechnen, und dieselbe Zeichenkette taugt fuer das
+  // Standbild der Sprechervorschau, das ein Zehntel so gross ist.
+
+  // Das Rechteck eines Pins, in Verhaeltnissen zum Kasten der Folie. `null`,
+  // wenn keiner dieses Namens gezeichnet ist.
+  function kameraKasten(slide, nr) {
+    var svg = slide.querySelector(".ts-bg svg");
+    if (!svg) return null;
+    var bezug = svg.getBoundingClientRect();
+    if (!bezug.width || !bezug.height) return null;
+    var l = null, o = null, r = null, u = null;
+    slide.querySelectorAll("path").forEach(function (p) {
+      var f = (p.getAttribute("fill") || "").toLowerCase();
+      // `#fd` statt `#fe`: das ist der Unterschied zwischen einem Pin und der
+      // Messflaeche eines verfolgten Elements.
+      if (f.length !== 9 || f.slice(0, 3) !== "#fd" || f.slice(7) !== "00") return;
+      if (parseInt(f.slice(3, 7), 16) !== nr) return;
+      // Wie bei `marken`: eine Marke in einem Sprite, das noch keinen Platz
+      // gefunden hat, misst Unsinn.
+      var wirt = p.closest(".ts-el");
+      if (wirt && !wirt.style.width) return;
+      var k = p.getBoundingClientRect();
+      if (!k.width && !k.height) return;
+      // Zwei Pins desselben Namens auf einer Folie: die Huelle um beide. Fuer
+      // einen Morph ist das der Fall, in dem sich eine Glyphe sichtbar teilt;
+      // hier ist es die Antwort auf "zeig mir diese beiden".
+      l = l === null ? k.left : Math.min(l, k.left);
+      o = o === null ? k.top : Math.min(o, k.top);
+      r = r === null ? k.right : Math.max(r, k.right);
+      u = u === null ? k.bottom : Math.max(u, k.bottom);
+    });
+    if (l === null) return null;
+    return { x: (l - bezug.left) / bezug.width, y: (o - bezug.top) / bezug.height,
+             w: (r - l) / bezug.width, h: (u - o) / bezug.height };
+  }
+
+  // Einmal je Name geklagt und nicht je Schritt: wer auf einer Folie hin und
+  // her blaettert, bekaeme dieselbe Zeile sonst zwanzigmal.
+  var KAMERA_KLAGE = {};
+
+  // Die Verschiebung, die das Detail mitsamt seinem Rand ins Bild rueckt --
+  // oder die leere Zeichenkette, also die ganze Folie.
+  function kameraFahrt(slide, k) {
+    var r = kameraKasten(slide, k.pin);
+    if (!r) {
+      if (!KAMERA_KLAGE[k.name]) {
+        KAMERA_KLAGE[k.name] = 1;
+        console.warn("typstage: camera(" + k.name + ") finds no pin of that "
+          + "name drawn on this slide. The slide stays whole.");
+      }
+      return "";
+    }
+    var mx = (+k.margin || 0) / CFG.width, my = (+k.margin || 0) / CFG.height;
+    var x = r.x - mx, y = r.y - my, w = r.w + 2 * mx, h = r.h + 2 * my;
+    if (!(w > 0) || !(h > 0)) return "";
+    // Die kleinere der beiden Streckungen: nur so ist das ganze Detail zu
+    // sehen und nicht seine Mitte.
+    var s = Math.min(1 / w, 1 / h);
+    // Ein Detail, das schon so gross ist wie die Folie, gibt nichts zu fahren.
+    if (!(s > 1.0001)) return "";
+    var cx = x + w / 2, cy = y + h / 2;
+    return "translate(" + ((0.5 - cx * s) * 100).toFixed(4) + "%,"
+         + ((0.5 - cy * s) * 100).toFixed(4) + "%) scale(" + s.toFixed(5) + ")";
+  }
+
+  // Welche Fahrt auf einem Schritt gilt. Die letzte, die ihn deckt: zwei
+  // Fahrten koennen sich ueberlappen, und dann gewinnt die spaetere im
+  // Quelltext -- eine Regel, die man lesen kann, statt zweier Kameras, die
+  // sich stumm streiten.
+  function kameraStand(i, schritt) {
+    var liste = KAMERAS[i] || [], treffer = null;
+    for (var k = 0; k < liste.length; k++) {
+      if (activeAt(liste[k].at, schritt)) treffer = liste[k];
+    }
+    return treffer;
+  }
+
+  // Eine Ebene an ihren Platz. `sofort` heisst stellen statt fahren: beim
+  // Betreten einer Folie und bei einem Sprung gibt es keinen Weg, den jemand
+  // gesehen haette. Dasselbe gilt unter "Bewegung reduzieren" -- was dort
+  // wegfaellt, ist genau der Weg, und der Ausschnitt selbst ist kein Weg,
+  // sondern der Inhalt.
+  //
+  // Der Ausgangswert wird *gerechnet* abgelesen und nicht aus dem Stil
+  // genommen: wer mitten in einer Fahrt weiterblaettert, soll von dort
+  // weiterfahren und nicht an den Anfang zurueckspringen. Deshalb erst
+  // `getComputedStyle`, dann abbrechen, dann neu setzen.
+  function kameraZiehen(el, bis, d, takt, sofort) {
+    if ((el.style.transform || "") === bis && !el.tsKam) return;
+    var von = getComputedStyle(el).transform;
+    if (el.tsKam) { try { el.tsKam.cancel(); } catch (e) {} el.tsKam = null; }
+    el.style.transform = bis;
+    if (sofort) return;
+    // Nichts zu sehen, also nichts zu zeigen. Beide Seiten kommen aus
+    // `getComputedStyle` und sind darum gleich geschrieben.
+    if (von === getComputedStyle(el).transform) return;
+    var a = el.animate([{ transform: von }, { transform: bis || "none" }],
+                       { duration: d, easing: takt });
+    el.tsKam = a;
+    a.onfinish = function () { el.tsKam = null; try { a.cancel(); } catch (e) {} };
+  }
+
+  function kameraStellen(i, schritt, sofort) {
+    var f = SLIDES[i];
+    if (!f) return;
+    var k = kameraStand(i, schritt);
+    // Der Rueckweg gehoert der Fahrt, aus der er herausfuehrt. Sonst faehre
+    // eine Kamera mit `duration: 1400` gemaechlich hinein und schnellte in der
+    // Hauszeit wieder heraus.
+    var w = k || f.tsKamZuletzt;
+    if (k) f.tsKamZuletzt = k;
+    var bis = k ? kameraFahrt(f, k) : "";
+    var d = (w && +w.duration) || 700;
+    var takt = (w && w.easing) || EASE;
+    var still = sofort || wenigerBewegung();
+    [f.querySelector(".ts-bg"), f.querySelector(".ts-ov")].forEach(function (el) {
+      if (el) kameraZiehen(el, bis, d, takt, still);
+    });
+  }
+
   // ── Less motion ───────────────────────────────────────────────────────────
   //
   // `prefers-reduced-motion: reduce` is set by the person at the machine, in
@@ -459,7 +624,9 @@
     // ohne Bewegung: `fadeOut` faehrt von 1 nach 1 und setzt am Ende 0.
     //
     // Als Eintritt ist es dasselbe wie "none", und das ist kein Zufall: wer
-    // wartet, statt zu gehen, kommt auch, ohne zu kommen.
+    // wartet, statt zu gehen, kommt auch, ohne zu kommen. Rueckwaerts wird
+    // genau das gebraucht: dort kommt die Stufe herein, die vorwaerts
+    // gewartet hat, und sie kommt am besten, ohne zu kommen -- siehe `goto`.
     "hold":       [{ opacity: 1 }, { opacity: 1 }],
     // Sich selbst zeichnen. Was hier steht, ist nur die Haelfte davon: die
     // Blende, unter der die Feder laeuft. Fuer Text und gefuellte Formen ist
@@ -661,7 +828,13 @@
     clearAnims(el);
     // "none" means no effect. Animating from 1 to 1 would not merely be
     // pointless: played backwards it would keep the element visible.
-    if (name === "none") { el.style.opacity = "1"; return; }
+    //
+    // "hold" laeuft hier mit, und zwar aus demselben Grund, aus dem es als
+    // Abgang ein Warten ist: wer wartet, statt zu gehen, kommt auch, ohne zu
+    // kommen. `goto` ruft es beim Zurueckblaettern fuer die Stufe, die
+    // hereinkommt -- sie liegt vollstaendig unter der, die noch abtritt, und
+    // waere waehrend ihres ganzen Auftritts ohnehin verdeckt.
+    if (name === "none" || name === "hold") { el.style.opacity = "1"; return; }
     // Die Feder faehrt unter der Blende. Beides zugleich und beide gleich
     // lang: die Striche zeichnen sich, alles ohne Kontur blendet auf.
     if (name === "draw") feder(el, dur, delay, false, takt(el));
@@ -696,8 +869,10 @@
     // gibt einem Abgang drei Viertel der Dauer und dem, was hereinkommt, die
     // ganze; die abtretende Stufe ginge sonst, wenn die neue erst bei drei
     // Vierteln steht, und das Bild saenke fuer den Rest des Wegs doch noch
-    // ab. Rueckwaerts wird "hold" nie gefragt: dort spielt `goto` den
-    // Eintritt rueckwaerts, und der heisst anders.
+    // ab. Als *Abgang* wird "hold" rueckwaerts nie gefragt: dort spielt
+    // `goto` den Eintritt rueckwaerts, und der heisst anders. Gefragt wird es
+    // rueckwaerts als Eintritt, fuer die Stufe, die hereinkommt -- siehe
+    // `fadeIn`.
     if (name === "hold") dur = dur / 0.75;
     // Rueckwaerts faehrt die Feder heraus. Das ist der Rueckweg des Auftritts
     // -- `goto` ruft beim Zurueckblaettern `fadeOut` mit dem *enter*-Namen --
@@ -2234,6 +2409,24 @@
       });
       m.appendChild(k);
     }
+    // Und die Kamera. Sie gehoert ins Standbild aus dem Grund, aus dem es
+    // dieses Bild ueberhaupt gibt: gefragt ist nicht, wie die Folie aussieht,
+    // sondern was nach dem naechsten Tastendruck dasteht -- und faehrt die
+    // Kamera dann hinein, ist der Ausschnitt die Antwort. Gemessen wird an der
+    // echten Folie, gesetzt wird auf dem Klon: die Verschiebung steht in
+    // Prozent und gilt in einem Kasten von zweihundert Pixeln so wie auf der
+    // Buehne.
+    //
+    // Der Klon *musste* ohnehin angefasst werden. `cloneNode` nimmt das
+    // Stilattribut mit, also auch eine laufende Fahrt der Sprite-Ebene -- die
+    // Kopie des Hintergrunds dagegen entsteht aus `innerHTML` und traegt sie
+    // nicht. Ungefragt stuenden die beiden Haelften des Standbilds
+    // gegeneinander verschoben.
+    var kam = kameraStand(si, schritt);
+    var fahrt = kam ? kameraFahrt(f, kam) : "";
+    var grund = m.querySelector("svg"), ebene = m.querySelector(".ts-ov");
+    if (grund) grund.style.transform = fahrt;
+    if (ebene) ebene.style.transform = fahrt;
     return m;
   }
 
@@ -2845,8 +3038,20 @@
         // Straight to full is the entrance. Straight to muted only happens on
         // a jump that skipped the whole range, and then the point has no
         // arrival to play: it simply is there, quietly.
-        if (wird === 2) fadeIn(el, erbt(el, "enter") || "fade-up", d, delay);
-        else fadeTo(el, 0, DIM, d);
+        //
+        // Rueckwaerts ist der Auftritt eines Wartenden das Spiegelbild des
+        // Wartens selbst. Vorwaerts bleibt die abtretende Stufe stehen, bis
+        // die neue da ist, und die geteilte Tinte steht die ganze Zeit voll
+        // da. Rueckwaerts kommt die *kleinere* Stufe herein, und sie liegt
+        // vollstaendig unter der groesseren, die noch abtritt: sie hat nichts
+        // zu blenden, sie ist einfach da, und was verschwindet, ist allein
+        // die Tinte, die die groessere mehr hat. Blendete sie stattdessen
+        // auf, blendeten wieder zwei fast gleiche Bilder gegeneinander --
+        // gemessen sank die geteilte Tinte dabei auf 0,7522.
+        if (wird === 2) {
+          fadeIn(el, back && erbt(el, "exit") === "hold"
+                     ? "hold" : (erbt(el, "enter") || "fade-up"), d, delay);
+        } else fadeTo(el, 0, DIM, d);
       } else if (wird === 0) {
         var von = war === 1 ? DIM : 1;
         if (back) fadeOut(el, erbt(el, "enter") || "fade-up", d, von);
@@ -2864,6 +3069,11 @@
     SLIDES[dst.slide].querySelectorAll(".ts-scene").forEach(function (el) {
       szeneZiehen(el, dst.step, instant || changed);
     });
+
+    // Und die Kamera auf den Ausschnitt, der auf diesem Schritt gilt. Nach
+    // `stelle()`, weil sie die Rechtecke der Pins liest, und nach den Sprites,
+    // weil ein Pin in einem Sprite erst zaehlt, wenn dieses seinen Platz hat.
+    kameraStellen(dst.slide, dst.step, instant || changed);
 
     mediaOn(dst.slide);
     drive(dst.slide, dst.step, back || changed);

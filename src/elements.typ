@@ -1,10 +1,12 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (cue-gruppen, durchsichtig, fit-meldung,
-                        fit-verbot, html-output, im-deck, im-fit, kurve,
-                        name-of, offenes-ende, pin-index, pin-marker,
-                        selector, step-cursor, szene-gruppen, track,
-                        will-fuellen)
+#import "internal.typ": (cue-gruppen, deck-info, drift-ausweg, drift-modus,
+                        drift-satz, drift-toleranz, durchsichtig,
+                        fit-meldung, fit-verbot, html-output, im-deck,
+                        im-fit, kamera-index, kamera-liste, kurve, max-step,
+                        name-of, offenes-ende, pin-index, pin-index-buch,
+                        pin-marker, selector, step-cursor, szene-gruppen,
+                        track, will-fuellen)
 
 /// What `anim` does once its arguments have been checked.
 ///
@@ -243,7 +245,145 @@
 /// back to shape matching without complaint.
 ///
 /// The name is a string or a label.
-#let pin(name, body) = box(fill: pin-marker(pin-index(name-of(name))), body)
+#let pin(name, body) = {
+  let n = name-of(name)
+  // Der Name wird eingetragen, bevor er zur Zahl wird. `pin-marker` rechnet
+  // ihn zu einem Farbwert und vergisst ihn dabei; ohne dieses Buch koennte am
+  // Dokumentende niemand mehr sagen, welche Namen es auf welcher Folie gibt --
+  // und eine Kamera, die auf einen Tippfehler zielt, faende erst im Browser
+  // jemand. Die Eintragung zeichnet nichts und misst nichts, sie darf also
+  // auch mitten in einer Formel stehen.
+  context if im-deck() {
+    // Erst ausrechnen, dann eintragen. Innerhalb der Funktion, die `update`
+    // bekommt, ist kein Kontext mehr bekannt -- sie laeuft, wenn jemand den
+    // Zustand liest, und nicht hier.
+    let wo = deck-info.get().nr
+    pin-index-buch.update(a => a + ((slide: wo, name: n),))
+  }
+  box(fill: pin-marker(pin-index(n)), body)
+}
+
+// ── Die Kamera ───────────────────────────────────────────────────────────────
+//
+// Typst gibt zur Uebersetzungszeit keine Geometrie heraus: `here().position()`
+// liefert in der HTML-Ausgabe ueberall (0, 0), und genau deshalb arbeitet
+// dieses Paket ueberhaupt mit Rechtecken in Signalfarbe. Die Laufzeit dagegen
+// *muss* diese Rechtecke kennen -- sie legt ihre Sprites darueber. Eine Kamera
+// kann sich daran anhaengen: sie zielt auf ein `pin`, schlaegt dessen Rechteck
+// im Bild nach und rechnet sich aus, wohin sie zu fahren hat. Das Deck nennt
+// einen Namen, keine Koordinate.
+//
+// Gefahren wird nicht die Folie, sondern ihre beiden Ebenen: der Hintergrund
+// und die Sprite-Ebene darueber. Beide sind derselbe Kasten, beide bekommen
+// dieselbe Verschiebung, also bleiben sie deckungsgleich -- und die Rechnung
+// in `stelle()` bleibt unberuehrt, weil sie in Verhaeltnissen misst und eine
+// gleichmaessige Streckung Verhaeltnisse nicht antastet. Die Folienzier, die
+// Tinte und die Uebersicht liegen in eigenen Ebenen ueber der Buehne und
+// fahren nicht mit; das ist keine Ruecksicht, sondern faellt aus dem Aufbau,
+// den sie ohnehin schon haben.
+
+/// Move in on one detail of the slide, and back out again.
+///
+/// ```typ
+/// #pin(<detail>, card[The measuring head])
+/// …
+/// #camera(<detail>)
+/// ```
+///
+/// The camera aims at a `pin`, and at nothing else. That is the package's
+/// word for a named piece of a slide, its marker is exactly the rectangle the
+/// runtime already measures, and it sits wherever content sits: around a
+/// card, around a cell of a table, around one subterm of a formula. Nothing
+/// has to be given in coordinates, and nothing has to be counted.
+///
+/// `at` is a step selector, as everywhere else, and the slide is seen through
+/// the camera for exactly as long as it is active. That answers the way back
+/// out with the notation that is already there: `at: "3"` moves in on step
+/// three and back out on step four, `at: "3-5"` holds the crop across three
+/// steps, `at: 3` keeps it to the end of the slide.
+///
+/// `auto`, the default, is the next free step *closed*: in on it, out on the
+/// one after -- and never step one, because step one is the slide as it is
+/// entered, and a camera there would mean nobody ever saw the slide whole. That differs from `anim`, where `auto` runs to the end of the
+/// slide, and it differs on purpose. An entrance has no natural end -- what
+/// has appeared stays. A camera move has one: one always comes back out, and
+/// coming back out is a keypress like any other, so it is counted like one
+/// and shows up in `info().step.total`.
+///
+/// `margin` is how much of the slide stays around the detail, measured in the
+/// unzoomed slide. The camera fits the detail plus that margin into the
+/// frame; the smaller of the two directions decides, so the whole of it is
+/// seen.
+///
+/// A detail that is already as large as the slide gives nothing to travel to,
+/// and then the slide stays whole.
+///
+/// Two pins of the same name on one slide are framed together, and the camera
+/// shows the box around both.
+///
+/// If two camera moves are active on the same step, the later one in the
+/// source wins.
+///
+/// On paper there is no camera. The slide is set whole, exactly as it would
+/// be without one -- but the steps are counted there too, so the handout's
+/// footer names the same number as the talk.
+///
+/// Under `prefers-reduced-motion: reduce` the camera jumps to the crop
+/// instead of travelling to it. The package's rule everywhere else too: what
+/// stays is the destination, what goes is the travel.
+#let camera(target, at: auto, margin: 16pt, duration: 700, easing: auto) = {
+  let name = name-of(target)
+  assert(type(margin) == length, message:
+    "typstage: camera(margin: …) is a length -- how much of the slide stays "
+    + "around the detail. Not " + str(type(margin)) + ".")
+  assert(type(duration) == int and duration > 0, message:
+    "typstage: camera(duration: …) is the time of the move in milliseconds "
+    + "and wants a number above zero. A move of no length is a jump, and a "
+    + "jump is what reduced motion asks for, not what a deck writes.")
+  let takt = kurve(easing, "camera")
+  context {
+    assert(im-fit.get() == 0, message: fit-meldung("camera"))
+    // Der naechste freie Schritt, aber nie der erste. Schritt 1 ist die Folie,
+    // wie sie betreten wird; eine Fahrt darauf hiesse, dass niemand die Folie
+    // je ganz gesehen hat. Dieselbe Ueberlegung, aus der `anim` bei zwei
+    // beginnt. Wer es trotzdem will, schreibt `at: "1"` hin.
+    let sel = if at == auto {
+      str(calc.max(step-cursor.get().first() + 1, 2))
+    } else { selector(at) }
+    // Der Rueckweg ist ein Schritt. Ein geschlossener Bereich braucht darum
+    // einen Schritt *hinter* sich, auf dem die Folie wieder ganz dasteht --
+    // und der Zeiger muss ihn kennen, sonst zaehlt das Handout einen weniger
+    // als der Vortrag. Ein offener Bereich hat keinen Rueckweg: dort nimmt der
+    // Folienwechsel die Kamera heraus.
+    let letzter = max-step(sel) + (if offenes-ende(sel) { 0 } else { 1 })
+    // Ausserhalb eines Decks gibt es weder einen Zeiger noch eine Folie, nach
+    // deren Nummer sich fragen liesse. `pin` daneben fragt aus demselben Grund.
+    if im-deck() {
+      step-cursor.update(c => calc.max(c, letzter))
+      // Erst ausrechnen, dann eintragen: in der Funktion, die `update`
+      // bekommt, ist kein Kontext mehr bekannt.
+      let wo = deck-info.get().nr
+      kamera-index.update(a => a + ((slide: wo, name: name),))
+    }
+    // Auf Papier bleibt es beim Zaehlen. Es gibt dort keine Kamera, und die
+    // Folie hat vollstaendig und lesbar dazustehen.
+    if html-output.get() {
+      let rand = margin.to-absolute() / 1pt
+      kamera-liste.update(a => a + ((
+        at: sel,
+        // Die Zahl, nicht der Name: `pin-marker` legt genau diese Zahl in die
+        // Ausgabe, und die Laufzeit muesste den Namen sonst ein zweites Mal
+        // durch dieselbe Streuung drehen. Der Name faehrt trotzdem mit --
+        // eine Meldung, die nur eine Zahl nennt, hilft niemandem.
+        pin: pin-index(name),
+        name: name,
+        margin: rand,
+        duration: duration,
+        easing: takt,
+      ),))
+    }
+  }
+}
 
 /// Everything after this appears a step later.
 ///
@@ -488,12 +628,20 @@
 // ist die einzige Anordnung, die genau das Bild ergibt, das dastünde, wenn man
 // die Zeichnung einmal setzte.
 //
-// Der Preis dafür ist der Übergang: zwei fast gleiche Bilder, die einander
+// Der Preis dafür wäre der Übergang: zwei fast gleiche Bilder, die einander
 // ablösen, blenden sich gegenseitig aus. Dagegen steht `exit: "hold"` in der
 // Laufzeit -- die abtretende Stufe bleibt stehen, bis die neue da ist, und
-// geht dann ohne Bewegung. Vorwärts ist der Übergang damit sauber; rückwärts
-// überlagern sich Ausblenden und Einblenden für einen Augenblick, und die
-// geteilte Tinte sinkt kurz auf drei Viertel. Das Handbuch sagt es.
+// geht dann ohne Bewegung.
+//
+// Rückwärts gilt dasselbe spiegelverkehrt, und die Laufzeit weiß, in welche
+// Richtung geblättert wird (`back` in `goto`). Dort kommt die *kleinere*
+// Stufe herein und liegt vollständig unter der größeren, die noch abtritt:
+// sie hat nichts zu blenden, sie ist einfach da. Was verschwindet, ist allein
+// die Tinte, die die größere mehr hat. Gemessen an drei gestapelten Flächen,
+// Bild für Bild angehalten und abgelichtet: die geteilte Tinte sank vorher
+// auf 0,7522 und steht jetzt in beide Richtungen bei 1,0000. Mit
+// `enter: "draw"` von Hand gestapelt war die Senke tiefer -- 0,4348 --, weil
+// die Feder rückwärts über Tinte fuhr, die schon lag; auch das ist damit weg.
 
 /// A drawing or a diagram that comes into being step by step.
 ///
@@ -562,14 +710,19 @@
   // Zeichnung noch einmal -- auch die Striche, die schon auf der Stufe davor
   // standen. Und sie täte es über der abtretenden Stufe, die absichtlich
   // stehenbleibt (`exit: "hold"`): die Tinte läge längst da, die Feder führe
-  // unsichtbar darüber. Das Gegenteil dessen, was `draw` verspricht, also
-  // lieber ein Wort als ein stummes Nichts.
+  // unsichtbar darüber. Rückwärts ist es dieselbe Vergeblichkeit von der
+  // anderen Seite -- dort steht die hereinkommende Stufe sofort da, unter der
+  // abtretenden, und eine Feder liefe gar nicht erst los. Das Gegenteil
+  // dessen, was `draw` verspricht, also lieber ein Wort als ein stummes
+  // Nichts.
   assert(enter != "draw", message:
     "typstage: enter: \"draw\" is at odds with what this function does. Every "
     + "stage is the *whole* drawing, and it would arrive on top of the "
     + "previous one, which stays put until the new one is there -- the pen "
-    + "would travel over ink that is already down. To have the strokes drawn "
-    + "one after another, hand them over one at a time: "
+    + "would travel over ink that is already down. Paging back it is the same "
+    + "futility mirrored: there the arriving stage is simply set, underneath "
+    + "the one still leaving, and no pen runs at all. To have the strokes "
+    + "drawn one after another, hand them over one at a time: "
     + "stagger(enter: \"draw\", stride: 1, axes, curve). For a drawing that "
     + "grows in stages, leave the fade as it is.")
   let takt = kurve(easing, "build")
@@ -689,6 +842,35 @@
   range(a.len()).map(i => szene-zwischen(a.at(i), b.at(i), u))
 } else { a + (b - a) * u }
 
+/// Die Bilder einer Szene nachmessen, und was dabei auffällt.
+///
+/// Zurück kommt `none`, wenn alle Bilder auf die Toleranz genau gleich groß
+/// sind, und sonst die Zahlen für die Meldung: wie viele Bilder, wie viele
+/// verschiedene Lagen, und wie weit die äußersten auseinanderliegen.
+///
+/// Gemessen wird das *Bild*, nicht der Kasten, in dem es steht -- der ist
+/// überall gleich groß, das ist sein ganzer Sinn. Und ohne Breitenbezug: ein
+/// `measure` mit einem solchen deckelt jedes Bild auf genau diese Breite und
+/// beantwortete die Frage, bevor sie gestellt wäre. Was sich selbst auf `100%`
+/// setzt, misst dann für alle Bilder dieselben 0pt und fällt aus der Prüfung
+/// heraus -- zu Recht, denn so ein Bild hat seinen festen Rahmen schon.
+///
+/// Muss in einem Kontext stehen.
+#let szene-drift(bilder) = {
+  let masse = bilder.map(b => measure(b))
+  let breiten = masse.map(m => m.width)
+  let hoehen = masse.map(m => m.height)
+  let breit = calc.max(..breiten) - calc.min(..breiten)
+  let hoch = calc.max(..hoehen) - calc.min(..hoehen)
+  if breit <= drift-toleranz and hoch <= drift-toleranz { return none }
+  // Wie viele *verschiedene* Lagen -- die Zahl, die beim Blättern zu sehen
+  // ist. Auf den hundertstel Punkt gerundet, damit nicht das letzte Bit einer
+  // Fließkommazahl zwei Lagen daraus macht.
+  let lagen = masse.map(m => (calc.round(m.width.pt(), digits: 2),
+                              calc.round(m.height.pt(), digits: 2))).dedup()
+  (bilder: bilder.len(), lagen: lagen.len(), breit: breit, hoch: hoch)
+}
+
 /// A drawing as a function of a value, with stops for the talk.
 ///
 /// ```typ
@@ -724,9 +906,36 @@
 /// one is a journey, the other a fade.
 ///
 /// The scene stands in a box of a fixed size and every frame is clipped to it.
-/// Unlike `build` the package does not measure the frames: they are drawings
-/// of different values and may legitimately come out different sizes. One
-/// shared frame is the only arrangement in which the drawing does not jump.
+/// The scene stands in a box of a fixed size and every frame is clipped to
+/// it. Unlike `build` the frames are *not* laid out on top of one another:
+/// they are drawings of different values and may legitimately come out
+/// different sizes, so one shared frame is the only arrangement in which the
+/// box itself does not jump.
+///
+/// The frames are measured all the same, and `steady` says what that
+/// measurement is for. A CeTZ canvas is as large as what it holds, so a frame
+/// wider than its neighbour puts the drawing somewhere else inside the box,
+/// and paging through it the whole picture travels while only one point
+/// should move. The package can see that and cannot correct it: `measure`
+/// answers with a size, never with where the ink lies inside it.
+///
+/// - `auto`, the default: the frames are measured and a finding is filed as a
+///   record. `presentation(drift: …)` decides what happens with the records --
+///   `"error"`, the default, stops at the end of the deck with all of them at
+///   once.
+/// - `false`: the frames are meant to differ -- a rectangle that grows, a
+///   number that counts up -- and this scene is taken out of the check. It is
+///   not measured at all.
+/// - `true`: this scene has to stand still, and it stops where it stands if it
+///   does not, whatever the deck says.
+///
+/// Measuring costs one more layout per frame, and a frame is a whole layout.
+/// Measured on a scene of 28 frames -- four stops, eight frames between each
+/// pair, a CeTZ drawing of axes with ticks, a parabola of 61 points, a
+/// tangent, a dashed slope triangle and two labels: 434 ms without the
+/// measuring and 536 ms with it, so about 100 ms for the scene and 3.6 ms per
+/// frame. Only the browser branch pays it. On paper a scene is one still
+/// image, and a still image does not travel.
 ///
 /// On paper the last stop is set, as with `alternatives`; `still` overrides
 /// that. The step cursor still runs there, so `info().step.total` names the
@@ -745,13 +954,14 @@
   duration: auto,
   enter: "fade",
   still: auto,
+  steady: auto,
 ) = {
   // `..parts` would otherwise swallow any named argument without a word: a
   // typo in `tween:` would leave the scene on the default and say nothing.
   assert(parts.named().len() == 0, message:
     "typstage: scene() does not know " + parts.named().keys().join(", ")
-    + ". It takes stops, tween, start, width, height, duration, enter and "
-    + "still.")
+    + ". It takes stops, tween, start, width, height, duration, enter, still "
+    + "and steady.")
   let gegeben = parts.pos()
   assert(gegeben.len() in (1, 2), message:
     "typstage: scene() takes the function that draws the picture, and before "
@@ -772,6 +982,10 @@
   assert(start == auto or (type(start) == int and start >= 1), message:
     "typstage: scene(start: …) counts from 1, not 0. On step 0 the first stop "
     + "would never stand.")
+  assert(steady == auto or type(steady) == bool, message:
+    "typstage: scene(steady: …) is auto (the default), true or false, not "
+    + repr(steady) + ". auto measures the frames and files what it finds, "
+    + "false says they are meant to differ, true insists that they do not.")
   // Jeder Halt einmal angesehen, bevor irgendein Bild entsteht. Sonst bräche
   // die Rechnung `a + (b - a) * u` irgendwo im dreißigsten Zwischenbild, mit
   // einer Meldung, in der weder `scene` noch `stops` vorkäme.
@@ -840,9 +1054,38 @@
       block(width: width, height: height,
             if still == auto { male(stops.last()) } else { still })
     } else {
+      // Einmal gemalt, nicht zweimal: das Standbild der Folie ist dasselbe
+      // Bild wie das erste der Reihe, und ein Bild ist ein ganzes Layout.
+      let bilder = werte.map(male)
+      // Ob überhaupt gemessen wird. `false` heißt: die Bilder dürfen
+      // verschieden groß sein, dann ist auch die Messung für nichts. `true`
+      // heißt: diese Szene muss stillstehen, und zwar unabhängig davon, was
+      // das Deck insgesamt mit den Befunden anfängt.
+      let modus = drift-modus.get()
+      let messen = if steady == auto { modus != "none" } else { steady }
+      let befund = if messen { szene-drift(bilder) } else { none }
+      // Der Befund geht als Satz ins Dokument, wie beim Überlauf: Typst hat
+      // keinen Kanal für eine Warnung, also wird abgelegt und am Ende des
+      // Decks auf einmal berichtet. Nur `steady: true` hält sofort an -- wer
+      // das schreibt, hat sich festgelegt und will es hier wissen, nicht am
+      // Ende.
+      if befund != none {
+        assert(steady != true, message:
+          "typstage: scene(steady: true) -- this scene draws its "
+          + str(befund.bilder) + " frames in " + str(befund.lagen)
+          + " different sizes, up to " + str(calc.round(befund.breit.pt(), digits: 2))
+          + "pt apart across and " + str(calc.round(befund.hoch.pt(), digits: 2))
+          + "pt down. A drawing is as large as what it holds, a CeTZ canvas "
+          + "above all, so it sits somewhere else inside the box on every "
+          + "frame and the whole picture travels while only one point should "
+          + "move. "
+          + drift-ausweg)
+        drift-satz(if im-deck() { deck-info.get().data.slide.number } else { 0 },
+                   erster, befund.bilder, befund.lagen, befund.breit, befund.hoch)
+      }
       track(
         "scene",
-        box(width: width, height: height, clip: true, male(stops.first())),
+        box(width: width, height: height, clip: true, bilder.first()),
         at: str(erster) + "-",
         extra: (
           stops: stops.len(), tween: tween, from: erster, enter: enter,
@@ -853,8 +1096,8 @@
           // sichtbar auseinander.
           pull: if duration == auto { none } else { duration },
         ),
-        raw-frames: werte.map(w => box(
-          width: width, height: height, clip: true, male(w),
+        raw-frames: bilder.map(b => box(
+          width: width, height: height, clip: true, b,
         )),
       )
     }

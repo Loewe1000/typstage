@@ -28,8 +28,8 @@
   // instead of forking the theme.
   info,
 )
-#import "elements.typ": (alternatives, anim, build, cue, cue-layer, morph,
-                         pause, pin, scene, scene-layer, stagger)
+#import "elements.typ": (alternatives, anim, build, camera, cue, cue-layer,
+                         morph, pause, pin, scene, scene-layer, stagger)
 #import "layout.typ": card, callout, fit, side-by-side, statement, tiles
 #import "media.typ": video, embed, flipbook
 #import "bridge.typ": bridge-job, bridge-targets

@@ -347,6 +347,34 @@
 /// into an SVG frame of fixed size and is scaled in the browser, so what
 /// sticks out is cut away or drawn beside the slide. A page one leafs through
 /// shows an overrun; a talk one clicks through shows it at the projector.
+///
+/// `drift` is the second check, and unlike `overflow` it is on. Every `scene`
+/// measures its frames, and a scene whose frames come out different sizes is
+/// named: a CeTZ canvas is as large as what it holds, so a wider frame puts
+/// the drawing somewhere else inside its box and paging through it the whole
+/// picture travels while only one point should move.
+///
+/// - `"error"`, the default: the deck is built and then stops with every
+///   scene at once. `scene(steady: false)` says the frames of that one scene
+///   are meant to differ and takes it out of the check.
+/// - `"record"`: it carries on and leaves a record per finding, for a tool to
+///   read, the same way `overflow: "record"` does:
+///
+/// ```sh
+/// typst eval --target html --features html --in deck.typ \
+///   'query(<typstage-drift>).map(e => e.value)'
+/// ```
+///
+/// - `"none"`: the frames are not measured at all.
+///
+/// On by default where `overflow` is not, and for two reasons. Only decks
+/// that use `scene` pay for it at all -- measured on a scene of 28 CeTZ
+/// frames, 434 ms without and 536 ms with, so about 100 ms for that scene --
+/// where `overflow` measures every slide of every deck and costs 1.2 to 1.5
+/// times the whole compilation. And what it finds is invisible while writing:
+/// every frame on its own looks right, and only paging through shows the
+/// drawing travelling. Only the browser branch measures. On paper a scene is
+/// one still image, and a still image does not travel.
 #let presentation(
   ..slides,
   title: none,
@@ -365,6 +393,7 @@
   margin: auto,
   handout: false,
   overflow: "none",
+  drift: "error",
   slide-level: 2,
 ) = {
   // `..slides` would otherwise swallow any named argument without a word:
@@ -375,7 +404,7 @@
     + slides.named().keys().join(", ")
     + ". It takes title, subtitle, author, date, assets, theme, palette, "
     + "transition, transition-duration, duration, style, width, height, "
-    + "margin, handout, overflow and slide-level.")
+    + "margin, handout, overflow, drift and slide-level.")
   assert(type(slide-level) == int and slide-level >= 1, message:
     "typstage: slide-level is the heading depth at which a heading becomes a "
     + "slide, an integer from 1 upwards; 2 is the default. Not "
@@ -383,6 +412,9 @@
   assert(overflow in ("none", "error", "record"), message:
     "typstage: overflow is \"none\" (the default), \"error\" or \"record\", "
     + "not " + repr(overflow))
+  assert(drift in ("none", "error", "record"), message:
+    "typstage: drift is \"error\" (the default), \"record\" or \"none\", not "
+    + repr(drift))
   // 16:9 on an A4-width canvas unless told otherwise. 4:3 is
   // `width: 800pt, height: 600pt`; everything the theme draws scales along.
   let geo = canvas(width: width, height: height, margin: margin)
@@ -597,9 +629,11 @@
            message: "typstage: handout takes true or 1 to 6 slides per page")
     theme-state.update(thema-hell)
     html-output.update(false)
+    drift-modus.update(drift)
     handout-body(all, facts, style, geo, thema-hell, per,
                  thema: if wechselt { thema } else { none }, overflow: overflow)
     ueberlauf-bericht(overflow)
+    drift-bericht(drift)
   } else if target() != "html" {
     set page(width: geo.width, height: geo.height, margin: 0pt)
     theme-state.update(thema-hell)
@@ -610,6 +644,7 @@
     // stayed in `hide()` and was missing from the PDF. Measured on a bundle
     // with an `anim` and an `alternatives`, and the same for the handout above.
     html-output.update(false)
+    drift-modus.update(drift)
     let pages = ()
     for (i, s) in all.enumerate() {
       pages.push(slide-counter.step()
@@ -629,8 +664,10 @@
     }
     pages.join(pagebreak(weak: true))
     ueberlauf-bericht(overflow)
+    drift-bericht(drift)
   } else {
     html-output.update(true)
+    drift-modus.update(drift)
     theme-state.update(thema-hell)
     morph-index.update(())
     let parts = ()
@@ -671,6 +708,7 @@
         sprite-number.update(none)
         sprites.update(())
         bridge-jobs.update(())
+        kamera-liste.update(())
         note-state.update(s.note)
         transition-state.update(s.at("transition", default: none))
         // Only a deck that inverts somewhere writes this per slide. A `card`
@@ -733,6 +771,18 @@
             dim-index.update(a => a + meine-dims)
             html.elem("script", attrs: (class: "ts-bridge", type: "application/json"),
                       json.encode(bridge-jobs.get()))
+            // Die Fahrten dieser Folie. Ein eigenes Skript und nicht das der
+            // Bruecke daneben: eine Kamerafahrt geht keine Bruecke.
+            //
+            // Und nur, wenn es welche gibt. Die Bruecke schreibt ihr leeres
+            // `[]` auf jede Folie, weil sie es immer schon tat; eine neue
+            // Marke auf jeder Folie jedes Decks waere dagegen eine Aenderung
+            // an Decks, die von einer Kamera nichts wissen wollen. So sieht
+            // ein Deck ohne Kamera aus wie eines von gestern, Byte fuer Byte.
+            if kamera-liste.get().len() > 0 {
+              html.elem("script", attrs: (class: "ts-camera", type: "application/json"),
+                        json.encode(kamera-liste.get()))
+            }
           }
         })
       })
@@ -786,9 +836,28 @@
       }
     }
 
+    // Und dieselbe spaete Frage an die Kameras: zielt jede auf ein `pin`, das
+    // es auf ihrer Folie wirklich gibt? Frueher laesst sie sich nicht stellen.
+    // Eine Fahrt darf vor ihrem Ziel stehen -- oft gehoert sie an den Kopf der
+    // Folie --, und was auf einer Folie steht, ist erst gesetzt, wenn sie
+    // gesetzt ist. Ohne die Frage faende ein Tippfehler im Namen erst im
+    // Browser jemand, und dort als eine Kamera, die schlicht stehenbleibt.
+    context {
+      let pins = pin-index-buch.get()
+      for k in kamera-index.get() {
+        assert(pins.any(p => p.slide == k.slide and p.name == k.name), message:
+          "typstage: camera(" + k.name + ") on slide " + str(k.slide)
+          + " finds no pin of that name on its own slide. A camera aims at a "
+          + "pin() and looks its rectangle up while the talk runs, so the "
+          + "name has to stand on the same slide: #pin(<" + k.name + ">, …). "
+          + "A pin on the slide before is a different piece of paper.")
+      }
+    }
+
     // Read back at the end of the deck, not at the first finding: whoever runs
     // the check before a talk wants the whole list in one go.
     ueberlauf-bericht(overflow)
+    drift-bericht(drift)
 
     html.elem("div", attrs: (id: "ts-overview"), [])
     html.elem("div", attrs: (id: "ts-hint"), [])

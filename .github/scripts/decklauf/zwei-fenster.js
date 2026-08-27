@@ -72,6 +72,20 @@ const stand = `(function () {
 // beiden Fenstern dasselbe Bild zeigen. Ueber `#ts-stage`, wo es die Buehne
 // gibt: im Sprecherfenster steht daneben noch die Vorschau, und die traegt
 // eine zweite Szene, die absichtlich einen Schritt weiter ist.
+// Und dasselbe fuer die Kamera: die Streckung, die die Buehne dieses Fensters
+// gerade traegt. Ueber `#ts-stage`, aus demselben Grund wie beim Bild der
+// Szene -- die Vorschau daneben traegt absichtlich den Ausschnitt des
+// naechsten Schritts, und der ist ein anderer.
+const kameraStreckung = `(function () {
+  var b = document.querySelector('#ts-stage');
+  if (!b) return -2;
+  var f = b.querySelector('.ts-slide[data-on] .ts-bg');
+  if (!f) return -1;
+  var t = getComputedStyle(f).transform;
+  if (!t || t === 'none') return 1;
+  return +(new DOMMatrix(t).a).toFixed(2);
+})()`;
+
 const szeneBild = `(function () {
   var b = document.querySelector('#ts-stage') || document;
   var el = b.querySelector('.ts-scene');
@@ -333,6 +347,50 @@ const szeneBild = `(function () {
           + "Halle nicht weitergezogen: Bild " + erst[0] + " -> " + nun[0]);
       }
       console.log("Szene: Bild " + erst[0] + " -> " + nun[0] + " in beiden Fenstern");
+    }
+
+    // ── Und die Kamera, in beiden Fenstern ─────────────────────────────────
+    //
+    // Aus demselben Grund wie die Szene: sie haengt am Schritt und an nichts
+    // sonst, also muss ein Schritt vom Pult aus in der Halle denselben
+    // Ausschnitt ergeben. Und sie ist der einzige Fall, in dem ein Schritt die
+    // *ganze Folie* bewegt und nicht ein Element darauf -- in einem Fenster
+    // allein waere nicht zu sehen, wenn dieser Teil des Zustands beim
+    // Weiterreichen verlorenginge, denn er reist nicht mit: jedes Fenster
+    // rechnet ihn sich aus der Zahl aus, die es bekommt.
+    const zurKamera = `(function () {
+      var st = window.typstage.steps;
+      for (var k = 0; k < st.length; k++) {
+        var sec = window.typstage.slides[st[k].slide];
+        if (sec && sec.querySelector('script.ts-camera') && st[k].step === 1) {
+          window.typstage.goto(k, true); return k;
+        }
+      }
+      return -1;
+    })()`;
+    const km = await sprecher.ev(zurKamera);
+    if (km < 0) {
+      sagt("kamera", "keine Folie mit einer Kamerafahrt im Prüfdeck gefunden");
+    } else {
+      await schlaf(1100);
+      const ganz = [await halle.ev(kameraStreckung), await sprecher.ev(kameraStreckung)];
+      if (ganz[0] !== 1 || ganz[1] !== 1) {
+        sagt("kamera", "beim Betreten steht die Folie nicht ganz da: Halle "
+          + ganz[0] + ", Sprecherfenster " + ganz[1]);
+      }
+      await sprecher.taste("ArrowRight");
+      await schlaf(1600);
+      const nah = [await halle.ev(kameraStreckung), await sprecher.ev(kameraStreckung)];
+      if (nah[0] !== nah[1]) {
+        sagt("kamera", "nach einem Schritt steht die Halle auf Streckung "
+          + nah[0] + ", das Sprecherfenster auf " + nah[1]);
+      }
+      if (!(nah[0] > 1)) {
+        sagt("kamera", "ein Schritt im Sprecherfenster hat die Kamera in der "
+          + "Halle nicht herangefahren: Streckung " + ganz[0] + " -> " + nah[0]);
+      }
+      console.log("Kamera: Streckung " + ganz[0] + " -> " + nah[0]
+        + " in beiden Fenstern");
     }
 
     await sprecher.ende();

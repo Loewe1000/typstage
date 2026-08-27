@@ -401,3 +401,99 @@ Zweiter Schritt.
   + str(info().step.total) + " Schritte statt 3. Eine Szene mit drei Halten "
   + "verbraucht zwei Schritte, und niemand sonst steht auf dieser Folie, der "
   + "das ausgleichen könnte.")
+
+== Eine Szene, die wachsen darf
+// Die beiden Szenen oben stehen in Kästen fester Größe: ihre Bilder messen
+// alle gleich, und der Melder für wandernde Szenen hat dort nichts zu sagen.
+// Diese hier wächst mit ihrem Wert, und zwar mit Absicht -- ein Rechteck, das
+// größer wird, ist genau der Fall, für den `steady: false` da ist.
+//
+// Was kaputtgehen muss, damit der Lauf es meldet: fiele `steady: false` weg
+// oder hörte es auf zu wirken, bräche dieses Deck beim Übersetzen ab, denn
+// `drift` steht auf seiner Vorgabe `"error"`. Der ganze Lauf endet dann mit
+// „Prüfdeck ließ sich nicht übersetzen". Die Gegenprobe dazu ist
+// `wanderung.typ` daneben: dasselbe Bild ohne `steady: false`, und das *muss*
+// abbrechen.
+#scene(x => rect(width: x * 1pt, height: 30pt, fill: green),
+       stops: (30, 150), tween: 4, width: 200pt, height: 40pt,
+       steady: false)
+
+#context assert(info().step.total == 2, message:
+  "Prüfdeck: die Folie mit der wachsenden Szene zählt "
+  + str(info().step.total) + " Schritte statt 2. Zwei Halte sind ein Schritt, "
+  + "und `steady:` darf daran nichts ändern -- es entscheidet allein, ob "
+  + "gemessen wird.")
+
+== Eine Kamerafahrt
+// `camera`: ein Ausschnitt der Folie, für ein paar Schritte herangefahren.
+// Sechs Dinge hängen daran, und `KAMERAPROBE` in `pruefe-decks.js` fragt sie.
+//
+// Erstens: worauf sie steht, Schritt für Schritt. Die Fahrt gilt genau,
+// solange ihr Bereich gilt -- auf Schritt 1 steht die Folie ganz da, auf 2
+// und 3 der Ausschnitt, auf 4 wieder die ganze Folie. Verrechnet sich die
+// Zuordnung von Schritt zu Bereich, wandert diese Reihe.
+//
+// Zweitens: dass beide Ebenen dieselbe Verschiebung tragen. Der Hintergrund
+// und die Sprite-Ebene sind zwei Kästen, und sie *müssen* deckungsgleich
+// bleiben; liefe eine der beiden anders, stünde der Text neben dem Bild, zu
+// dem er gehört. Am Ruhezustand allein wäre das nicht zu sehen.
+//
+// Drittens: dass ein Schritt wirklich *fährt*. Nicht zu einem geratenen
+// Zeitpunkt gefragt -- eine Messung an der Uhr hängt am Rechner --, sondern an
+// der Bewegung selbst: sie wird angehalten und auf die Hälfte ihrer Zeit
+// gestellt, und dann muss eine Streckung dazwischen dastehen.
+//
+// Viertens: dass ein Sprung stellt, statt zu fahren.
+//
+// Fünftens: dass die Sprechervorschau den Ausschnitt trägt. Sie klont die
+// Sprite-Ebene mitsamt ihrem Stilattribut, den Hintergrund aber über
+// `innerHTML` -- ungefragt stünden die beiden Hälften des Standbilds
+// gegeneinander verschoben.
+//
+// Und das Ziel steht mit Absicht *in* einem verfolgten Element. Ein Pin im
+// Hintergrund verschwindet unter dem `hide()` seines Wirts und hat dort gar
+// keinen Pfad; er steht allein im Sprite, und der zählt erst, wenn dieses
+// seinen Platz gefunden hat. Das ist der Fall, den `marken()` in der Laufzeit
+// eigens kommentiert, und der einzige, in dem die Kamera ins Leere zielen
+// kann, ohne dass am Deck etwas falsch wäre. Findet sie nichts, klagt sie in
+// die Konsole -- dann wächst `fehler`, und die Reihe geht flach.
+//
+// Und das Ziel ist klein. Ein Detail von der Breite der Folie ergäbe eine
+// Streckung knapp über eins, und dann läge die Zahl auf halber Zeit so dicht
+// am Ziel, dass eine Gerade statt der Hauskurve in der dritten Nachkommastelle
+// verschwände. Sechzig auf vierzig Punkt strecken auf das Siebenfache, und
+// dort ist der Unterschied zu sehen.
+#anim(at: 2, card(title: [Das Detail])[
+  Ein Kasten, klein genug, dass sich das Heranfahren lohnt:
+  #pin(<detail>, rect(width: 60pt, height: 40pt, fill: accent))
+])
+#camera(<detail>, at: "2-3", margin: 10pt)
+#anim(at: 4)[Ein Schritt nach der Fahrt.]
+
+#context assert(info().step.total == 4, message:
+  "Prüfdeck: die Folie mit camera() zählt " + str(info().step.total)
+  + " Schritte statt 4. Eine Fahrt über 2-3 gibt den Zeiger auf 4 weiter -- "
+  + "der Rückweg ist ein Schritt --, und der anim darunter belegt ihn. Diese "
+  + "Zahl muss in beiden Ausgaben dieselbe sein, sonst zeigt das Handout eine "
+  + "andere Fußzeile als der Vortrag.")
+
+== Eine Fahrt ganz allein
+// Eine Folie, auf der nichts steht als ein Pin und eine Fahrt darauf: kein
+// anim, nichts, was eine Schrittzahl in seinen Selektor schriebe.
+//
+// Darin liegt ihre Aufgabe, und es ist dieselbe wie bei der alleinstehenden
+// Szene nebenan. Der Selektor der Fahrt nennt nur, *wann* sie gilt; dass die
+// Folie einen Schritt mehr braucht -- den, auf dem die Kamera wieder
+// herausfährt --, muss die Laufzeit selbst dazurechnen. Auf der Folie oben
+// fiele es nicht auf: dort trägt der anim dahinter die 4 ohnehin in seinen
+// Selektor. Hier fällt es auf, und zwar als eine Kamera, die hineinfährt und
+// nie wieder heraus.
+#pin(<klein>, rect(width: 40pt, height: 26pt, fill: accent))
+#camera(<klein>)
+
+#context assert(info().step.total == 3, message:
+  "Prüfdeck: die Folie mit der alleinstehenden camera() zählt "
+  + str(info().step.total) + " Schritte statt 3. Eine Fahrt mit at: auto "
+  + "liegt auf Schritt 2 und gibt den Zeiger auf 3 weiter, denn der Rückweg "
+  + "ist ein Schritt. Niemand sonst steht auf dieser Folie, der das "
+  + "ausgleichen könnte.")
