@@ -14,9 +14,10 @@
 // strokes over three steps and an eye can follow every one of them. The manual
 // counts out which drawing packages hand out outlines that can be traced.
 //
-// This deck needs two foreign packages. `examples/geogebra.typ` already pulls
-// cetz, so nothing in the build changes; both resolve from the package cache
-// or are fetched on first compile.
+// This deck needs two foreign packages, and the build already needed both:
+// the manual imports cetz 0.5.2 and lilaq 0.6.0 the same way, and the example
+// check compiles those. They resolve from the package cache or are fetched on
+// first compile.
 
 #import "@schule/typstage:0.1.0": *
 #import "@preview/cetz:0.5.2"
@@ -257,7 +258,7 @@ A pendulum keeps time. Something about it must decide how fast.
   // No number: the pendulum itself is there from the first stage on.
   line((-1.1, 0), (1.1, 0), stroke: 1pt + p.ink)
   for i in range(0, 8) {
-    line((-1.05 + i * 0.3, 0), (-1.25 + i * 0.3, -0.22), stroke: 0.6pt + hilfs)
+    line((-1.05 + i * 0.3, 0), (-1.25 + i * 0.3, 0.22), stroke: 0.6pt + hilfs)
   }
   line((0, 0), (0, -2.70),
        stroke: (paint: hilfs, thickness: 0.7pt, dash: "dashed"))
