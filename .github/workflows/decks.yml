@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   decks:
-    name: Acht Beispiele und das Prüfdeck
+    name: Neun Beispiele und das Prüfdeck
     runs-on: ubuntu-latest
 
     steps:

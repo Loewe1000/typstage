@@ -542,8 +542,8 @@ only be rebuilt as a sequence of frames.
   Without `easing` not a byte of a deck changes. The name is resolved to a
   finished curve at compile time and written into the markup only where it
   departs from the default -- otherwise every element of every deck would carry
-  a new attribute. Measured on this package's eight examples, HTML as well as
-  PDF: the same bytes as before.
+  a new attribute. Measured on this package's eight examples that name no
+  curve, HTML as well as PDF: the same bytes as before.
 ]
 
 === The muted resting state
@@ -927,7 +927,7 @@ solid neighbours draw themselves.
    drawing. There is no motion there.],
   [Paper],
   [Nothing. `enter` never reaches the PDF, the drawing simply stands there.
-   Measured on this package's eight examples: the same bytes as without
+   Measured on this package's nine examples: the same bytes as without
    `draw`.],
   [Reduce motion],
   [The pen holds still, the fade remains. See just below.],
