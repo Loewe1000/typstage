@@ -2820,7 +2820,11 @@
       if (k === "ArrowUp") { notizRollen(-1); e.preventDefault(); return; }
       if (k === "b") { SCHWARZ = SCHWARZ ? 0 : 1; sichtSenden(); }
       else if (k === "e") { EIS = EIS ? 0 : 1; sichtSenden(); }
-      else if (k === "t") { if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); } }
+      // Die Zieldauer sass auf `t` und zog auf `d` um -- duration, Dauer,
+      // duree, in allen drei Sprachen derselbe Buchstabe. Der gute Buchstabe
+      // gehoert dem, was man oft drueckt: die Zieldauer wird einmal je Vortrag
+      // gesetzt, die Klassenuhr mehrmals je Stunde.
+      else if (k === "d") { if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); } }
       else if (k === "r") { UHR_START = 0; sprecherUhr(); }
       else if (k === "m") { modusUm(); }
       else if (k === "c") { farbeSetzen(FARBE + 1); }
