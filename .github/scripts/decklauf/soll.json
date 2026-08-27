@@ -1694,10 +1694,12 @@
    "zeichnung": "3+3 Pfade · hinein/heraus · 0>1 · 0/0 offen · Sprung 0/1/6",
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
-    "darwin": "698d7f482c4beac0"
+    "darwin": "698d7f482c4beac0",
+    "linux": "c5c3dbc5e1e6e996"
    },
    "satzBytes": {
-    "darwin": 1285510
+    "darwin": 1285510,
+    "linux": 1162834
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",
    "kino": "at 1- 0/0/0/12/23 · at 3- 0/0/0/12/23",
