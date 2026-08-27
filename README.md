@@ -236,10 +236,18 @@ second window. Put that one on your laptop and the first one on the projector.
 The two talk to each other with `postMessage`, which works between two local
 files as well, so this needs no server either.
 
-The speaker view shows the running slide large, the next **step** beside it
-(not the next slide: a deck that counts in steps has to answer what the next
-keypress does), the note below, and a clock, an elapsed timer and a pace
-against a target duration you can type in.
+The speaker view is a lectern made of tiles. Two large ones on top: the running
+slide on the left, the note on the right. Below them four small ones — elapsed
+time with the time of day under it, slide and step with the progress bar,
+target duration with remaining and pace, and the clock the class sees — and one
+wide one for the next **step** (not the next slide: a deck that counts in steps
+has to answer what the next keypress does). The state of the hall, `black`,
+`frozen`, `no talk window`, stands in the slide tile, above the picture it is
+about.
+
+It follows the machine's light or dark setting, and `l` overrides that for the
+session. Not the deck's palette: that says what the wall looks like, and the
+lectern is a tool rather than a talk.
 
 You can draw on the running slide there, and the strokes appear on the
 projected one. Strokes stick to their slide, so paging away and back brings
@@ -253,7 +261,9 @@ digits, `m:ss`, large enough for the back row, in place of the slide rather
 than on top of it. It is for the break and the group work — `⇧→` and `⇧←` add
 or take a minute while it runs, `t` again ends it, and so does paging on. Past
 zero it counts up in the deck's accent colour with the word "over" above it,
-capped at the duration and at thirty minutes. Use it when nothing else is on
+capped at the duration and at thirty minutes; at the lectern the whole tile
+turns over into the warning colour in the same moment, so you do not learn
+about the overtime later than the class does. Use it when nothing else is on
 the wall; no clock while you are talking.
 
 `m` switches the pointer between pen and embed. In pointer mode the pen rests
