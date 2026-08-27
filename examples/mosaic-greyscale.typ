@@ -375,7 +375,10 @@ veniam, quis nostrud exercitation ullamco laboris.]
           ([Closing Time], [The final week of a market that stood for 90 years.]),
         ) [
           #text(size: 12pt, weight: "bold", title)
-          #line(length: 100%, stroke: 0.5pt + luma(33%))
+          // The rule names a role. The template writes #555555 here; on this
+          // deck the same job belongs to `muted`, and then the list follows
+          // the palette like the rest of the furniture.
+          #line(length: 100%, stroke: 0.5pt + tp.muted)
           #text(size: 9pt, sub)
           // Wider than the gap above the rule, so each block reads as title,
           // rule, line — and not as a line that belongs to the title below.
