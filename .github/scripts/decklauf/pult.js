@@ -90,6 +90,32 @@ const HINAUS = `(() => {
   return JSON.stringify([...new Set(raus)]);
 })()`;
 
+// Was aus seiner *Kachel* ragt. Das Fenster allein reicht als Grenze
+// nicht: eine Kachel schneidet mit `overflow:hidden` ab, und was sie
+// abschneidet, steht immer noch innerhalb des Fensters -- gemessen ragten
+// die vier Farbfelder 51 px aus einer 102 px schmalen Werkzeugkachel, und
+// zwei davon waren gar nicht mehr zu sehen. Genau deshalb ist der Fall
+// durch diesen Lauf gerutscht.
+const AUS_KACHEL = `(() => {
+  const raus = [];
+  document.querySelectorAll('#ts-speaker .ts-sp-kachel').forEach(k => {
+    const kb = k.getBoundingClientRect();
+    if (!kb.width || !kb.height) return;
+    const name = (String(k.className).match(/ts-sp-[a-z]+/g) || []).join('.');
+    k.querySelectorAll('*').forEach(e => {
+      const b = e.getBoundingClientRect();
+      if (!b.width || !b.height) return;
+      const d = Math.max(b.right - kb.right, kb.left - b.left,
+                         b.bottom - kb.bottom, kb.top - b.top);
+      if (d > 1) {
+        const wer = (String(e.className).match(/ts-sp-[a-z-]+/) || [e.tagName])[0];
+        raus.push(name + ' < ' + wer + ' +' + Math.round(d));
+      }
+    });
+  });
+  return JSON.stringify([...new Set(raus)]);
+})()`;
+
 const GRUNDLINIE = `(() => {
   const sicht = e => e && getComputedStyle(e).display !== 'none';
   const f = [...document.querySelectorAll('.ts-sp-uhren > .ts-sp-kachel')].map(k => {
@@ -104,7 +130,7 @@ const GRUNDLINIE = `(() => {
 // die Marke einer Kachel ist der Massstab, den das Stilblatt selbst setzt.
 const REGELN = `(() => {
   const cs = s => { const e = document.querySelector(s); return e ? getComputedStyle(e) : null; };
-  const marke = cs('.ts-sp-marke'), modus = cs('.ts-sp-modus');
+  const marke = cs('.ts-sp-marke'), modus = cs('.ts-sp-wz');
   if (!marke || !modus) return JSON.stringify({fehlt: true});
   return JSON.stringify({
     markeFam: marke.fontFamily, modusFam: modus.fontFamily,
@@ -138,7 +164,7 @@ const AUSWAHL = `(() => {
 })()`;
 
 const FOKUS = `(() => {
-  const wen = ['.ts-sp-tupf', '.ts-sp-modus', '.ts-sp-ziel', '.ts-sp-uhrfeld'];
+  const wen = ['.ts-sp-tupf', '.ts-sp-wz', '.ts-sp-tat', '.ts-sp-ziel', '.ts-sp-uhrfeld'];
   const aus = {};
   wen.forEach(s => {
     const e = document.querySelector(s);
@@ -165,6 +191,23 @@ const FOKUS = `(() => {
       await c.ruf("Emulation.setEmulatedMedia",
         { features: [{ name: "prefers-color-scheme", value: licht }] });
       const bild = licht === "dark" ? "dunkel" : "hell";
+      // Dunkel ist die Vorgabe, ohne das System zu fragen -- ein Pult steht
+      // im abgedunkelten Raum. Das helle Bild kommt deshalb nicht mehr von
+      // `prefers-color-scheme`, sondern von `l`, und dieser Lauf muss es
+      // genauso holen wie ein Mensch. Vorher prueften beide Durchgaenge
+      // dasselbe dunkle Bild, und die Haelfte des Laufs war blind.
+      // Gestellt, nicht umgeschaltet: `ts-licht` haelt die Sitzung und
+      // ueberlebt ein Neuladen. Ein blindes `l` je Seite kippte deshalb ab
+      // der zweiten Groesse wieder ins Dunkle zurueck, und der helle
+      // Durchgang mass abwechselnd beides.
+      const hellStellen = async () => {
+        for (let i = 0; i < 3; i++) {
+          const ist = await c.ev("document.documentElement.dataset.tsLicht");
+          if (ist === (licht === "light" ? "hell" : "dunkel")) return;
+          await c.taste("l");
+          await schlaf(400);
+        }
+      };
 
       // ── 1 Nichts ragt hinaus, in neun Groessen ────────────────────────────
       for (const [w, h] of GROESSEN) {
@@ -172,11 +215,18 @@ const FOKUS = `(() => {
           { width: w, height: h, deviceScaleFactor: 1, mobile: false });
         await c.navigiere("file://" + datei + "#speaker");
         await schlaf(1100);
+        await hellStellen();
         const raus = JSON.parse(await c.ev(HINAUS));
         if (raus.length) {
           sagt("hinaus", bild + " bei " + w + "x" + h + " steht etwas ausserhalb des "
             + "Fensters: " + raus.join(", ") + ". `#ts-speaker` schneidet ab, es "
             + "gibt also weder Rollbalken noch Fehler -- nur ein halbes Bild.");
+        }
+        const ausK = JSON.parse(await c.ev(AUS_KACHEL));
+        if (ausK.length) {
+          sagt("kachel", bild + " bei " + w + "x" + h + " ragt etwas aus seiner "
+            + "Kachel: " + ausK.join(", ") + ". Die Kachel schneidet es ab; im "
+            + "Fenster steht es damit immer noch, zu sehen ist es nicht mehr.");
         }
       }
 
@@ -185,6 +235,7 @@ const FOKUS = `(() => {
         { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
       await c.navigiere("file://" + datei + "#speaker");
       await schlaf(1400);
+      await hellStellen();
       await c.ev(HILFE);
       for (const [was, vorher] of [["in Ruhe", null], ["mit Zieldauer", "d"]]) {
         if (vorher) {

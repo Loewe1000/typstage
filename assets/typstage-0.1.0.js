@@ -2989,14 +2989,6 @@
     if (wohin) wohin.appendChild(e);
     return e;
   }
-  // Welcher Entwurf der Werkzeuge gilt. Nur zum Vergleichen da: `?wz=a` bis
-  // `?wz=d` in der Adresse. Ohne Angabe gilt `d`.
-  var WZ_ENTWURF = "d";
-  try {
-    var wzq = /[?&]wz=([a-d])/.exec(String(location.search || ""));
-    if (wzq) WZ_ENTWURF = wzq[1];
-  } catch (xw) {}
-
   // Die Zeichen der Werkzeuge als Pfade und nicht als Schriftzeichen.
   // `✎`, `⌫` und `☞` sind auf jedem System anders gross, anders
   // schwer und manchmal bunt -- der Zeiger kam als Emoji heraus, der Radierer
@@ -3586,10 +3578,7 @@
     // das *Vortragsfenster*; ein Knopf dafuer im Sprecherfenster machte
     // gross, was ohnehin schon der Arbeitsplatz ist. Beide behalten `+`/`-`
     // und `f`: die Kachel ist der zweite Weg, nicht der erste.
-    document.documentElement.dataset.tsWz = WZ_ENTWURF;
-    var wzTraeger = (WZ_ENTWURF === "c")
-      ? kachel(LEIB, "ts-sp-werkzeugleiste", wort("tools", "tools"))
-      : kachel(uhren, "ts-sp-werkzeugkachel", wort("tools", "tools"));
+    var wzTraeger = kachel(LEIB, "ts-sp-werkzeugleiste", "");
     ELN.wzTraeger = wzTraeger;
     var wzk = bau("div", "ts-sp-werkzeug", wzTraeger);
     ELN.wzKasten = wzk;
@@ -3693,10 +3682,11 @@
     //      einen eigenen Kasten am Ende, getrennt durch Luft und nicht durch
     //      einen Strich -- dieselbe Sprache, mit der die Kacheln sich
     //      untereinander trennen.
-    var lichtWohin = (WZ_ENTWURF === "a")
-      ? bau("div", "ts-sp-wzrand", wzTraeger)
-      : (WZ_ENTWURF === "b") ? taten
-      : wzGruppe("ts-sp-wzlicht", wort("light", "light"));
+    // Der Kasten heisst nach dem, was er einstellt, und nicht nach dem Knopf
+    // darin: "LIGHT . LIGHT" waere dasselbe Wort zweimal. "Ansicht" ist
+    // ausserdem der Name, unter dem `l` in der Tastenzeile steht -- dieselbe
+    // Sache, derselbe Name, zwei Zeilen uebereinander.
+    var lichtWohin = wzGruppe("ts-sp-wzlicht", wort("groupView", "view"));
     ELN.licht = wzKnopf(lichtWohin, "ts-sp-tat ts-sp-licht", "sonne",
                         "light", "light", "l");
     ELN.licht.addEventListener("click", lichtUm);
@@ -4752,6 +4742,15 @@
       if (breitGenug) zeile.dataset.breit = "1"; else delete zeile.dataset.breit;
     }
     var natur = zeile ? zeile.getBoundingClientRect().height : 0;
+    // Das Werkzeugband ist eine eigene Rasterzeile und will eigene Hoehe.
+    // Ohne diesen Posten rechnete der Rest so, als gaebe es nur die
+    // Zahlenzeile: alle Zeilen zusammen wurden hoeher als der Leib, und die
+    // letzte -- das Band -- wurde auf 18 px gedrueckt, waehrend sein Inhalt
+    // 64 px mass. Gemessen gleich nach dem Zuruecksetzen der Zeilen: nur
+    // jetzt steht das Band auf seiner natuerlichen Hoehe. Die 10 sind der
+    // Zeilenabstand des Rasters.
+    var band = ELN.wzTraeger
+      ? ELN.wzTraeger.getBoundingClientRect().height + 10 : 0;
 
     // Hochkant heisst hier nur noch: die Vorschau passt nicht mehr neben die
     // Notiz. Die Folie liegt in beiden Faellen oben und quer.
@@ -4764,15 +4763,21 @@
     var randX = Math.max(0, kr.width - pr.width);
     var randY = Math.max(0, kr.height - pr.height);
     var folieHoch = (r.width - randX) / v + randY;
-    var uebrig = Math.max(0, r.height - natur - 20);
-    folieHoch = Math.min(folieHoch, uebrig * 0.72);
+    var uebrig = Math.max(0, r.height - natur - band - 20);
+    // Die Folie nimmt hoechstens 72 Prozent -- und laesst der Zeile darunter
+    // ausserdem einen Boden. Ohne den schrumpfte die Vorschau in einem
+    // kleinen Sprecherfenster auf 27x15 Pixel: ein Bild, das kleiner ist als
+    // seine eigene Beschriftung, sagt nichts mehr. Dass es vorher nicht
+    // auffiel, lag an einem Fehler, der es zudeckte -- `vorschauBreite` stieg
+    // bei zu wenig Platz aus, *ohne* die Masse von vorhin zurueckzunehmen,
+    // und liess die Vorschau in ihrer alten Groesse stehen.
+    folieHoch = Math.min(folieHoch, uebrig * 0.72,
+                         Math.max(0, uebrig - Math.min(152, uebrig * 0.42)));
     var notizHoch = Math.max(0, uebrig - folieHoch);
 
-    // Die vierte Zeile gibt es nur, wenn die Werkzeuge eine eigene haben.
-    var wzZeile = (ELN.wzTraeger
-      && ELN.wzTraeger.classList.contains("ts-sp-werkzeugleiste")) ? " auto" : "";
+    // Vier Zeilen: Folie, Notiz, Zahlen, Werkzeuge.
     LEIB.style.gridTemplateRows =
-      Math.round(folieHoch) + "px " + Math.round(notizHoch) + "px auto" + wzZeile;
+      Math.round(folieHoch) + "px " + Math.round(notizHoch) + "px auto auto";
 
     // Die Vorschauspalte ist so breit, wie ihr Bild bei dieser Zeilenhoehe
     // sein darf -- dann fuellt es die Kachel ganz, statt oben zu haengen und
@@ -4831,7 +4836,23 @@
     var marke = ELN.vorMarke ? ELN.vorMarke.getBoundingClientRect().height : 0;
     var platzB = kr.width - pX;
     var platzH = kr.height - pY - marke - 4;      // 4 = margin-top des Bildes
-    if (platzB < 24 || platzH < 14) return;
+    // Kein Platz mehr: das Bild wird zu null und nicht einfach in Ruhe
+    // gelassen. Vorher stieg diese Funktion hier aus, *ohne* die Masse von
+    // vorhin zurueckzunehmen -- in einem schrumpfenden Fenster blieb also
+    // die alte, grosse Vorschau stehen und ragte aus ihrer Kachel. Gemessen
+    // bei 640x480 um 110 px, in beiden Erscheinungsbildern, und das schon
+    // vor diesem Umbau: gefunden hat es erst die neue Kachelgrenze in
+    // `pult.js`, weil das Bild dabei im Fenster blieb und nur die Kachel
+    // verliess.
+    if (platzB < 24 || platzH < 14) {
+      // Ganz weg und nicht auf null: ein Kasten von null Hoehe hat immer
+      // noch ein Bild darin, und dessen Kasten steht dann quer durch die
+      // halbe Ansicht -- unsichtbar, weil die Kachel abschneidet, aber
+      // vorhanden. `display:none` nimmt auch den Kindern ihre Masse.
+      ELN.vorBild.style.display = "none";
+      return;
+    }
+    ELN.vorBild.style.display = "";
     // Das groesste 16:9, das in beides passt. Erst die Hoehe ausreizen, und
     // wo die Breite nicht reicht, von ihr aus zurueckrechnen -- sonst steht
     // ein zu breites Bild in einem zu schmalen Kasten und das Verhaeltnis

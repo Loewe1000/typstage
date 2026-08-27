@@ -108,7 +108,7 @@
               // stehen nur da, wo die Kachel quer liegt und Platz dafür
               // hat -- dann sieht sie aus wie ein Kasten der Tastenzeile.
               groupTool: "Werkzeug", groupColour: "Farbe",
-              groupEdit: "berichtigen",
+              groupEdit: "berichtigen", groupView: "Ansicht",
               full: "Vollbild", pinned: "auf der Folie",
               timer: "Klassenuhr", over: "Überzeit",
               light: "hell", dark: "dunkel",
@@ -135,7 +135,7 @@
               pointer: "pointer", erase: "eraser",
               tools: "tools", undo: "undo", clear: "clear",
               groupTool: "tool", groupColour: "colour",
-              groupEdit: "edit",
+              groupEdit: "edit", groupView: "view",
               full: "full", pinned: "pinned",
               timer: "class clock", over: "over",
               light: "light", dark: "dark",
@@ -160,7 +160,7 @@
               pointer: "pointeur", erase: "gomme",
               tools: "outils", undo: "annuler", clear: "effacer",
               groupTool: "outil", groupColour: "couleur",
-              groupEdit: "corriger",
+              groupEdit: "corriger", groupView: "vue",
               full: "plein écran", pinned: "sur la diapo",
               timer: "minuterie", over: "dépassé",
               light: "clair", dark: "sombre",

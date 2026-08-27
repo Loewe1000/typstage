@@ -439,10 +439,14 @@ const szeneBild = `(function () {
         + " von " + nH.length + " -- ein Block ist eine Kopie des anderen");
     }
 
-    // Und die Wahl selbst: die Systemeinstellung entscheidet, `l`
-    // widerspricht ihr. Gemessen wird nicht das Attribut allein, sondern die
-    // Farbe, die dabei herauskommt -- ein Attribut, das niemand liest, waere
-    // dieselbe Zeile Arbeit und keine Aussage.
+    // Und die Wahl selbst. Dunkel ist die Vorgabe, und zwar *ohne* das System
+    // zu fragen: ein Pult steht im abgedunkelten Raum, und ein helles Fenster
+    // neben einer dunklen Wand blendet. Hier stand die umgekehrte Erwartung --
+    // die Systemeinstellung entscheide --, und sie ist mit dieser Entscheidung
+    // falsch geworden; der Lauf meldete seither zwei Abweichungen fuer etwas,
+    // das so gewollt ist. Geprueft wird jetzt beides: dass das System nicht
+    // durchgreift, und dass `l` sehr wohl etwas aendert. Gemessen wird nicht
+    // das Attribut allein, sondern die Farbe, die dabei herauskommt.
     const grundVon = `(function(){ return document.documentElement.dataset.tsLicht
       + " " + getComputedStyle(document.getElementById("ts-speaker")).backgroundColor; })()`;
     await sprecher.ruf("Emulation.setEmulatedMedia",
@@ -453,19 +457,20 @@ const szeneBild = `(function () {
       { features: [{ name: "prefers-color-scheme", value: "dark" }] });
     await schlaf(400);
     const l2 = await sprecher.ev(grundVon);
-    if (!/^hell /.test(l1) || !/^dunkel /.test(l2)) {
-      sagt("licht", "die Systemeinstellung greift nicht durch: hell gibt "
-        + JSON.stringify(l1) + ", dunkel gibt " + JSON.stringify(l2));
-    }
-    if (l1.split(" ")[1] === l2.split(" ")[1]) {
-      sagt("licht", "beide Erscheinungsbilder stehen auf demselben Grund: "
-        + l1.split(" ")[1]);
+    if (!/^dunkel /.test(l1) || !/^dunkel /.test(l2)) {
+      sagt("licht", "dunkel ist nicht die Vorgabe: bei heller Systemeinstellung "
+        + JSON.stringify(l1) + ", bei dunkler " + JSON.stringify(l2));
     }
     await sprecher.taste("l"); await schlaf(400);
     const l3 = await sprecher.ev(grundVon);
     if (!/^hell /.test(l3)) {
       sagt("licht", "`l` hat dem dunklen Bild nicht widersprochen: "
         + JSON.stringify(l3));
+    }
+    // Zwei Bilder muessen auch zwei Bilder sein, sonst hiesse `l` nichts.
+    if (l3.split(" ")[1] === l2.split(" ")[1]) {
+      sagt("licht", "beide Erscheinungsbilder stehen auf demselben Grund: "
+        + l3.split(" ")[1]);
     }
     // Und der Widerspruch haelt, wenn das System danach noch einmal wechselt.
     await sprecher.ruf("Emulation.setEmulatedMedia",
