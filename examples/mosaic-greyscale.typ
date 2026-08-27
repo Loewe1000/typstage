@@ -287,7 +287,30 @@ veniam, quis nostrud exercitation ullamco laboris.]
     )
   ],
 
-  // ── 05 Mission and vision ────────────────────────────────────────────────
+  // ── 05 The pier ──────────────────────────────────────────────────────────
+  // After the template's fifth slide: two pictures and a column of text, in
+  // three bands of 0.72 / 0.72 / 1.05. The first picture keeps a white border
+  // — that is the cell's own inset, not a stroke — and the second bleeds to
+  // the edges of its cell, which is the whole contrast the slide is built on.
+  slide(none)[
+    #bands((0.72fr, 0.72fr, 1.05fr),
+      plate(fill: white, inset: 25pt, photo("pier")),
+      plate(photo("darkroom")),
+      plate(fill: white, inset: 30pt, align: center + horizon)[
+        #set align(center)
+        #text(size: 12.5pt)[
+          Two of us, one darkroom, and a standing rule: we photograph what is
+          there. Nothing is arranged, nothing re-enacted, nothing composited.
+
+          The work on the following pages was made on assignment over eleven
+          years, in eight countries, mostly on days when nothing in particular
+          happened.
+        ]
+      ],
+    )
+  ],
+
+  // ── 06 Mission and vision ────────────────────────────────────────────────
   slide(none)[
     #bands((1.3fr, 0.7fr),
       plate(fill: white, inset: 28pt)[
@@ -311,10 +334,58 @@ veniam, quis nostrud exercitation ullamco laboris.]
     )
   ],
 
-  // ── 06 Section ───────────────────────────────────────────────────────────
+  // ── 07 Section ───────────────────────────────────────────────────────────
+  // An addition. The template has no section plate at all — it goes straight
+  // from the mission to the best shots — and this one is here because
+  // typstage draws one and the deck should show it. It takes its title from
+  // the slide that follows, so the addition announces the template's own
+  // slide rather than a section the template does not have.
   section([Our best shots]),
 
-  // ── 07 The contact sheet ─────────────────────────────────────────────────
+  // ── 08 Our best shots ────────────────────────────────────────────────────
+  // After the template's eighth slide: an opening column, one tall picture,
+  // and a list on ink. The picture's band is the narrow one at 0.62, which is
+  // what makes it read as a plate between two columns of text rather than as
+  // an illustration beside them.
+  //
+  // No `morph` on this slide, so the trap two slides down does not spring
+  // here: nothing is tracked, the runtime lifts no sprite over the slide, and
+  // ordinary slide content stays where it is drawn.
+  slide(none)[
+    #bands((0.95fr, 0.62fr, 0.9fr),
+      plate(fill: white, inset: 28pt)[
+        #set par(leading: 0.3em)
+        #text(size: 36pt, weight: "bold")[OUR BEST\ SHOTS]
+        #v(18pt)
+        #set par(leading: 0.62em)
+        #text(size: 11pt)[
+          Four sequences, picked because they survived the edit twice: once on
+          the light table, and once a year later, when the reason for taking
+          them had gone.
+        ]
+      ],
+      plate(photo("alley")),
+      plate(fill: tp.ink, inset: 22pt, align: center + horizon)[
+        #set align(center)
+        #set text(fill: tp.paper)
+        #for (title, sub) in (
+          ([Low Water], [Three summers on a river that kept getting shorter.]),
+          ([Night Shift], [A cannery, from the last bus in to the first bus out.]),
+          ([Fifty Metres], [One street corner, photographed for a year.]),
+          ([Closing Time], [The final week of a market that stood for 90 years.]),
+        ) [
+          #text(size: 12pt, weight: "bold", title)
+          #line(length: 100%, stroke: 0.5pt + luma(33%))
+          #text(size: 9pt, sub)
+          // Wider than the gap above the rule, so each block reads as title,
+          // rule, line — and not as a line that belongs to the title below.
+          #v(13pt)
+        ]
+      ],
+    )
+  ],
+
+  // ── 09 The contact sheet ─────────────────────────────────────────────────
   slide(none, note: [Do not say which picture is meant. On the next slide it
                      stands there large, and the way it got there is visible.])[
     #plate(fill: white, inset: 26pt)[
@@ -332,7 +403,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     ]
   ],
 
-  // ── 08 The print ─────────────────────────────────────────────────────────
+  // ── 10 The print ─────────────────────────────────────────────────────────
   slide(none, note: [This is where the tile lands. The enlarger is the one
                      movement in the deck that makes a claim: this one
                      picture, large.])[
@@ -353,7 +424,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     })
   ],
 
-  // ── 09 Numbered work ─────────────────────────────────────────────────────
+  // ── 11 Numbered work ─────────────────────────────────────────────────────
   slide(none, note: [One keypress, four cards. Like a contact sheet coming up
                      in the developer.])[
     #plate(fill: tp.ink, inset: (x: 96pt, y: 62pt), align: center + horizon)[
@@ -375,7 +446,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     ]
   ],
 
-  // ── 10 The big number ────────────────────────────────────────────────────
+  // ── 12 The big number ────────────────────────────────────────────────────
   slide(none, note: [First a zero stands there. Then ask the room how many
                      they think it is — and only then press.])[
     #block(width: 100%, height: 100%, {
@@ -408,7 +479,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     })
   ],
 
-  // ── 11 The chart ─────────────────────────────────────────────────────────
+  // ── 13 The chart ─────────────────────────────────────────────────────────
   slide(none)[
     #bands((0.85fr, 1.15fr),
       plate(fill: tp.ink, inset: 27pt)[
@@ -436,7 +507,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     )
   ],
 
-  // ── 12 Exhibitions ───────────────────────────────────────────────────────
+  // ── 14 Exhibitions ───────────────────────────────────────────────────────
   slide(none)[
     #rows-of((0.28fr, 1fr),
       plate(fill: tp.ink, inset: (x: 34pt, y: 18pt), align: center + horizon,
@@ -458,7 +529,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     )
   ],
 
-  // ── 13 Closing ───────────────────────────────────────────────────────────
+  // ── 15 Closing ───────────────────────────────────────────────────────────
   slide(none)[
     #bands((0.42fr, 0.58fr),
       plate(fill: tp.ink, inset: 32pt, align: left + horizon)[
