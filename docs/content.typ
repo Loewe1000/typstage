@@ -4074,7 +4074,7 @@ steht, sieht man auch nur dort. Das betrifft die sechs Labels unter
   wirken könnte. Wer die beiden Schreibweisen aus anderen Paketen als
   gleichwertig kennt, läuft hier auf.
 
-  Bei den 15 Schrift-Labels sind beide Schreibweisen gleichwertig: dort steckt
+  Bei den 16 Schrift-Labels sind beide Schreibweisen gleichwertig: dort steckt
   im gefundenen Element der Text, und den erreicht eine Regel auch von innen.
 ]
 
@@ -4086,10 +4086,10 @@ Titelfolie und jedes bewegte Element.
 
 Der Haken `style` erreicht *nicht* dasselbe. Er wird um den *Folienrumpf*
 gelegt, und Kopf, Fuß, Fortschritt sowie Titel- und Abschnittsfolie entstehen
-daneben, nicht darin. Gemessen, jede der 37 Regeln einzeln: aus `style`
+daneben, nicht darin. Gemessen, jede der 38 Regeln einzeln: aus `style`
 heraus wirken genau die 13, die im Folienrumpf stehen -- die Bausteine
 `ts-card…`, `ts-callout…`, `ts-statement` und die drei Ersatzflächen
-`ts-media-…`. Die übrigen 24 bleiben dort stumm, ohne Warnung. `style` bleibt richtig für
+`ts-media-…`. Die übrigen 25 bleiben dort stumm, ohne Warnung. `style` bleibt richtig für
 Typografie, die den ganzen Rumpf betrifft; für Labels ist die Stelle vor
 `#show: presentation` die richtige.
 
@@ -4258,6 +4258,9 @@ tut dann nichts.
   [`ts-section-slide-title`], [Ihr Titel], [`text`],
   [`ts-section-slide-rule`], [Die Zierlinie; `themes.night` hat zwei,
     `themes.lesson` keine], [`rect`],
+  [`ts-section-slide-parent`], [Die Zeile darüber, die sagt, unter welchen
+    Abschnitten dieser hängt. Erst ab der zweiten Gliederungsebene, bei
+    `slide-level: 2` also nie], [`text`],
 )
 
 Eine Abschnittsfolie hat in typstage keinen Untertitel, deshalb steht in der
