@@ -2870,6 +2870,45 @@ Rechnung, Zeile für Zeile:
   nicht Zwischenschritte einer Rechnung.
 ]
 
+== Zwei Uhren für die Klasse
+
+Die Sprecheransicht kennt zwei Uhren. Sie unterscheiden sich nicht in der
+Größe, sondern darin, was sie über den Saal sagen.
+
+Die Taste `t` startet die *Vollbilduhr*. Sie deckt die Folie zu, von Rand zu
+Rand, mit Ziffern, die auch die letzte Reihe liest: Der Saal macht Pause. Ein
+Blättern beendet sie und deckt die Folie wieder auf -- was man nach einer
+Pause tut, ist weitermachen.
+
+Die Taste `⇧T` startet die *angeheftete Uhr*. Sie steht #emph[auf] der
+Folie und lässt die Aufgabe darunter stehen. Die Klasse arbeitet, und am Pult
+sieht man schon einmal nach, was danach kommt: Blättern beendet sie
+ausdrücklich nicht. In der Sprecheransicht lässt sie sich mit der Maus
+verschieben und wandert im Vortragsfenster mit.
+
+Beide fragen zuerst nach den Minuten und laufen erst danach. `⇧←` und
+`⇧→` geben eine Minute mehr oder weniger; derselbe Tastendruck noch
+einmal beendet die Uhr.
+
+Was ein Deck über die angeheftete Uhr weiß, schreibt es mit `class-clock`:
+
+#show-example(
+  rendered: [],
+  source: ```typ
+  #slide[
+    = Gruppenarbeit
+    #class-clock(12)
+    Sammelt zu zweit drei Beispiele.
+  ]
+  ```,
+  width: 12cm,
+)
+
+Gestartet wird dadurch nichts. `⇧T` bietet die zwölf Minuten an, die
+Lehrkraft bestätigt oder ändert sie, und erst dann läuft die Uhr: Das Deck
+weiß, wie lange die Aufgabe gedacht war, der Raum entscheidet, wie lange sie
+bekommt.
+
 == Wenn die Zeichen falsch fliegen: pin
 
 Die Paarung sucht sich zu jedem Zeichen der alten Folie das passende Zeichen

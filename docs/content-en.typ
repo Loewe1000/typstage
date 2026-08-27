@@ -2070,6 +2070,42 @@ per glyph, `"block"` moves the whole thing as one rectangle.
   swarm rather than a movement.
 ]
 
+== Two clocks for the class
+
+The presenter view has two clocks. They differ not in size but in what they
+say about the room.
+
+`t` starts the *full-screen clock*. It covers the slide edge to edge, with
+digits the back row can read: the room is on a break. Paging ends it and
+uncovers the slide again -- what you do after a break is carry on.
+
+`⇧T` starts the *pinned clock*. It stands #emph[on] the slide and leaves the
+task underneath in place. The class is working, and at the lectern you look
+ahead to what comes next: paging deliberately does not end it. In the
+presenter view it can be dragged with the mouse, and it travels along in the
+talk window.
+
+Both ask for the minutes first and only then run. `⇧←` and `⇧→` give a
+minute more or less; the same key again ends the clock.
+
+What a deck knows about the pinned clock it writes with `class-clock`:
+
+#show-example(
+  rendered: [],
+  source: ```typ
+  #slide[
+    = Group work
+    #class-clock(12)
+    Find three examples in pairs.
+  ]
+  ```,
+  width: 12cm,
+)
+
+Nothing starts from that. `⇧T` offers the twelve minutes, the speaker
+confirms or changes them, and only then does the clock run: the deck knows how
+long the task was meant to take, the room decides how long it gets.
+
 == When the wrong signs fly
 
 Where the pairing goes astray, name the pieces. `pin` marks a piece inside a
