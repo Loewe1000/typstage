@@ -3583,8 +3583,8 @@ The aim of this chapter: getting the talk to where it will be given.
 result is one file that runs from a memory stick, from a download folder, from
 an email attachment. No server, no network, nothing loaded afterwards.
 
-The six example decks measure between 1.2 and 2.1 MB that way, and the runtime
-is about 100 KB of that. What makes up the rest are the slides themselves: the
+The fifteen example decks measure between 0.54 and 3.3 MB that way, and the
+runtime is about 214 KB of it. What makes up the rest are the slides themselves: the
 tour holds 136 SVGs and 6111 glyph references.
 
 == Beside the file
@@ -3601,6 +3601,18 @@ tour holds 136 SVGs and 6111 glyph references.
 That is worth it where many decks are published together, because the browser
 then caches the runtime once for all of them. `assets: "https://…"` points at a
 directory on a server or a CDN.
+
+#info[
+  How much `"split"` saves depends on how large the deck itself is -- and on a
+  small one it is the majority. Measured gzipped: runtime and stylesheet
+  together 78 kB; the smallest example deck weighs 136 kB, so the runtime is
+  **57 % of what goes over the wire**. For `theme-plain` it is 27 %, for `tour`
+  17 %.
+
+  With `"split"` the *first* deck pays those 78 kB and every further one in the
+  same directory pays nothing -- the browser has it cached by then. Publishing
+  many short talks side by side roughly halves what your visitors load.
+]
 
 == Hosting
 
@@ -3726,9 +3738,10 @@ The traps, in roughly the order they are usually hit.
 / `#pause` does nothing: it is inside a grid cell or a table. `#pause` splits
   the body, and there is nothing there to split. `anim` goes anywhere content
   goes.
-/ A transition or an entrance is duller than it was meant to be: an unknown
-  name quietly becomes a cross-fade. Check the spelling against the tables
-  above, since a typo does not stop the build.
+/ A transition or an entrance is refused by name: the package does not know
+  that effect. It used to fall back to a cross-fade without a word, which made
+  a typo look like a deck that simply moved differently than intended. The
+  message names every effect there is.
 / The bullets beside an applet start at step three: an `embed` uses no step,
   but something before it did. Count the reveals, not the elements.
 / A flying equation has the wrong font: typography set with `#set` does not

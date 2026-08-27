@@ -3249,6 +3249,19 @@ Laufzeitumgebung, die die Bewegung ausführt. Wo sie herkommen, sagt `assets`:
     Website, die viele Vorträge trägt.],
 )
 
+#info[
+  Wie viel `"split"` spart, hängt daran, wie groß das Deck selbst ist -- und bei
+  einem kleinen ist es die Mehrheit. Gepackt gemessen: Laufzeit und Stilvorlage
+  zusammen 78 kB; das kleinste Beispieldeck wiegt 136 kB, die Laufzeit ist also
+  **57 % dessen, was über die Leitung geht**. Bei `theme-plain` sind es 27 %,
+  bei `tour` 17 %.
+
+  Mit `"split"` zahlt das *erste* Deck diese 78 kB, und jedes weitere im selben
+  Ordner nichts mehr -- der Browser hat sie dann im Zwischenspeicher. Wer viele
+  kurze Vorträge nebeneinander veröffentlicht, halbiert damit ungefähr, was
+  seine Besucher laden.
+]
+
 Die Dateinamen führen die Version mit sich, damit mehrere Fassungen
 nebeneinander liegen können und kein Browser einen neuen Vortrag aus einem
 alten Zwischenspeicher bedient.
