@@ -484,6 +484,53 @@ function gitterProbe() {
     + "und die Tabelle ist ein Fließabsatz.";
 }
 
+// Gegenprobe zur Sprechernotiz. `notiz.typ` trägt eine Notiz aus zwei
+// Absätzen, und die muss mit der Leerzeile dazwischen ankommen.
+//
+// Zwei Hälften, denn eine allein trägt nichts. Die erste ist der Wortlaut in
+// `data-note`: die Notiz ist ein Attribut und kann nur eine Zeichenkette
+// sein, also steht der Absatz dort als Umbruch oder gar nicht. Die zweite ist
+// `white-space: pre-wrap` am Notizfeld -- ohne die faltete der Browser
+// denselben Umbruch zu einem Leerzeichen zurück, und der Absatz wäre wieder
+// fort, obwohl die Zeichenkette stimmt. Genau deshalb ist es eine Leerzeile
+// und kein Leerzeichen geworden: die Blase der `s`-Taste steht auf `normal`
+// und faltet ohnehin, das Notizfeld nicht. Eine Zeichenkette, zwei Leser,
+// jeder bekommt das Seine.
+//
+// Der Wortlaut wird verglichen, nicht die Zeilenzahl: wie viele Zeilen daraus
+// werden, hängt am Umbruch und damit an der Schrift des Rechners.
+function notizProbe() {
+  let datei;
+  try { datei = decklaufBauen("notiz"); }
+  catch (e) {
+    return "notiz.typ ließ sich nicht übersetzen: "
+      + String(e.meldung || "").slice(0, 300);
+  }
+  const html = fs.readFileSync(datei, "utf8");
+  const treffer = html.match(/ data-note="([^"]*)"/);
+  if (!treffer) {
+    return "notiz.typ trägt kein data-note mehr. Die Notiz erreicht die "
+      + "Sprecheransicht nur über dieses Attribut; ohne es steht dort "
+      + "\"no note\".";
+  }
+  const SOLL = "Erster Absatz.\n\nZweiter Absatz.";
+  if (treffer[1] !== SOLL) {
+    return "die zweiabsätzige Notiz kam als " + JSON.stringify(treffer[1])
+      + " an, erwartet war " + JSON.stringify(SOLL) + ". Ein Absatz ist auf "
+      + "dem Weg ins Attribut verlorengegangen -- kennt `plain-text` den "
+      + "`parbreak` nicht, stoßen die Sätze ohne ein Leerzeichen aneinander.";
+  }
+  const css = fs.readFileSync(path.join(WURZEL, "assets",
+                                        "typstage-0.1.0.css"), "utf8");
+  if (!/\.ts-sp-notiz\{[^}]*white-space:\s*pre-wrap/.test(css)) {
+    return "das Notizfeld der Sprecheransicht steht nicht mehr auf "
+      + "white-space: pre-wrap. Der Umbruch im Attribut stimmt dann zwar, "
+      + "aber der Browser faltet ihn zu einem Leerzeichen, und der Absatz "
+      + "ist trotzdem fort.";
+  }
+  return null;
+}
+
 // Und dasselbe Deck noch einmal auf Papier. Der Browser sieht nur den
 // HTML-Zweig, und `build` hat einen zweiten: dort wird nur die letzte Stufe
 // gesetzt, und der Schrittzähler muss trotzdem so weit laufen wie im Browser.
@@ -1263,6 +1310,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (wanderung) console.error("ABWEICHUNG wanderung: " + wanderung);
   const gitter = gitterProbe();
   if (gitter) console.error("ABWEICHUNG gitter: " + gitter);
+  const notiz = notizProbe();
+  if (notiz) console.error("ABWEICHUNG notiz: " + notiz);
   const papier = papierProbe();
   if (papier) console.error("ABWEICHUNG papier: " + papier);
   let pd;
@@ -1714,6 +1763,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (ueberlauf) schlecht++;
   if (wanderung) schlecht++;
   if (gitter) schlecht++;
+  if (notiz) schlecht++;
   if (papier) schlecht++;
   if (ohneStrich) schlecht++;
   if (leiser2) schlecht++;
