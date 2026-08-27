@@ -2933,7 +2933,12 @@
       // Enter nimmt den Wert, Escape laesst ihn liegen; beide geben die
       // Tastatur zurueck. `stopPropagation`, damit Escape nicht nebenbei die
       // Uebersicht aufklappt -- derselbe Ausweg wie beim Zielfeld.
-      if (ev.key === "Enter") { uhrStarten(+uf.value || 0); uhrFeldZu(); }
+      // Ein leeres Feld ist ein Ruecktritt und keine Uhr ueber eine Minute:
+      // wer die Zahl loescht und die Eingabetaste drueckt, meint nichts.
+      if (ev.key === "Enter") {
+        if (+uf.value > 0) uhrStarten(+uf.value);
+        uhrFeldZu();
+      }
       else if (ev.key === "Escape") { uhrFeldZu(); }
       else return;
       ev.preventDefault();

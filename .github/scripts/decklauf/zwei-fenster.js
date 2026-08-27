@@ -447,19 +447,29 @@ const szeneBild = `(function () {
     }
     console.log("Uhr: Halle " + JSON.stringify(uh.zeigt) + " · Lagezeile " + JSON.stringify(lz));
 
-    // `⇧→` verlaengert, ohne die Uhr neu zu stempeln. Der Rest muss um rund
-    // 60 s wachsen -- waere sie neu gestempelt, staende er wieder bei 360.
-    const vorMehr = uh.pruef.remaining;
+    // `⇧→` verlaengert, ohne die Uhr neu zu stempeln.
+    //
+    // Gemessen wird das VERSTRICHENE und nicht der Rest. Am Rest ist der
+    // Unterschied nicht zu sehen, solange die Uhr erst eine halbe Sekunde
+    // laeuft: dann sind "60 s dazu" und "von vorn mit 360" fast dieselbe Zahl,
+    // und eine Mutation, die jede Nachricht neu stempeln laesst, kam so
+    // ungesehen durch -- gemessen. Drei Sekunden Vorlauf, und das Verstrichene
+    // trennt die beiden Faelle sauber: es waechst nur um die Wartezeit, oder
+    // es faellt auf null.
+    await schlaf(3000);
+    uh = JSON.parse(await halle.ev(uhrHalle));
+    const vorMehr = uh.pruef.duration - uh.pruef.remaining;
     await sprecher.taste("ArrowRight", 8);
     await schlaf(600);
     uh = JSON.parse(await halle.ev(uhrHalle));
     if (uh.pruef.duration !== 360) {
       sagt("uhr", "`⇧→` machte aus 300 s nicht 360, sondern " + uh.pruef.duration);
     }
-    const zuwachs = uh.pruef.remaining - vorMehr;
-    if (!(zuwachs > 58 && zuwachs < 61)) {
-      sagt("uhr", "`⇧→` liess den Rest um " + zuwachs.toFixed(1)
-        + " s wachsen; 60 waren gemeint, und ein Sprung auf 360 hiesse neu gestempelt");
+    const nachMehr = uh.pruef.duration - uh.pruef.remaining;
+    if (!(nachMehr >= vorMehr && nachMehr - vorMehr < 2)) {
+      sagt("uhr", "`⇧→` hat die Uhr neu gestempelt: verstrichen waren "
+        + vorMehr.toFixed(1) + " s, danach " + nachMehr.toFixed(1)
+        + " s. Es soll die Dauer wachsen und nicht der Stempel fallen.");
     }
     // Und es hat nicht geblaettert.
     const wo = JSON.parse(await halle.ev(stand));
