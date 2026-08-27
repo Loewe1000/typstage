@@ -1702,6 +1702,26 @@
     document.documentElement.dataset.tsClock = "1";
     sichtMerken();
   }
+  // Wo die angeheftete Uhr steht und wie gross sie ist. Bruchteile der
+  // Buehne, keine Pixel: die Buehne ist in beiden Fenstern verschieden gross,
+  // und die Uhr soll in beiden an derselben Stelle der Folie stehen.
+  function uhrOrt(art, x, y) {
+    if (!UHR_KNOTEN) return;
+    var fest = art === "fest";
+    UHR_KNOTEN.dataset.art = fest ? "fest" : "voll";
+    if (!fest) {
+      UHR_KNOTEN.style.left = UHR_KNOTEN.style.top = UHR_KNOTEN.style.width = "";
+      return;
+    }
+    var b = B ? B.getBoundingClientRect() : null;
+    if (!b || !b.width) return;
+    UHR_KNOTEN.style.left = Math.round(b.left + b.width * (+x || 0)) + "px";
+    UHR_KNOTEN.style.top = Math.round(b.top + b.height * (+y || 0)) + "px";
+    // Ein Viertel der Buehnenbreite. Gross genug, dass die letzte Reihe sie
+    // liest, klein genug, dass die Aufgabe darunter stehen bleibt.
+    UHR_KNOTEN.style.width = Math.round(b.width * 0.25) + "px";
+  }
+
   function uhrAus() {
     if (!UHR) return;
     UHR = null;
@@ -1709,6 +1729,7 @@
     delete document.documentElement.dataset.tsClockOver;
     if (UHR_ZAHL) UHR_ZAHL.textContent = "";
     if (UHR_WORT) UHR_WORT.textContent = "";
+    if (UHR_KNOTEN) delete UHR_KNOTEN.dataset.art;
     sichtMerken();
   }
   // Die Dauer nachziehen, waehrend sie laeuft: es waechst die Dauer, nicht der
@@ -2172,6 +2193,13 @@
   // does not touch anything: a deck without a speaker window notices
   // nothing of it.
   var TINTE = [], TINTE_AN = 0, TINTE_SVG = null, TINTE_FOLIE = -1;
+  // Was `x` von einer Folie geraeumt hat. `x` war der einzige Tastendruck
+  // der Ansicht, der ohne Rueckfrage etwas endgueltig wegnahm -- und `z`
+  // danach half nicht, denn es nahm nur den letzten Strich zurueck, und
+  // Striche gab es keine mehr. Jetzt holt `z` auf einer leeren Folie die
+  // geraeumte Zeichnung zurueck. Der Korb steht in beiden Fenstern gleich:
+  // beide fuehren dieselben Ereignisse aus.
+  var PAPIERKORB = [];
   var FARBEN = ["#eb5e28", "#ffd166", "#4cc9f0", "#f4f4f5"];
   var STRICH_PT = 3.2;    // stroke width in points of the stage, scaled with it
 
@@ -2242,10 +2270,20 @@
   function tinteNimm(ev, schmutz) {
     if (!ev) return;
     TINTE_AN = 1;
-    if (ev.b === "loesch") { TINTE[ev.s] = []; tinteNeu(); return; }
+    if (ev.b === "loesch") {
+      if (TINTE[ev.s] && TINTE[ev.s].length) PAPIERKORB[ev.s] = TINTE[ev.s];
+      TINTE[ev.s] = [];
+      tinteNeu();
+      return;
+    }
     if (ev.b === "weg") {
       var l = TINTE[ev.s];
-      if (l && l.length) l.pop();
+      if ((!l || !l.length) && PAPIERKORB[ev.s] && PAPIERKORB[ev.s].length) {
+        TINTE[ev.s] = PAPIERKORB[ev.s];
+        PAPIERKORB[ev.s] = null;
+      } else if (l && l.length) {
+        l.pop();
+      }
       tinteNeu();
       return;
     }
@@ -2604,6 +2642,9 @@
       if (!d.uhr) uhrAus();
       else if (!UHR || UHR.lauf !== d.uhrLauf) uhrStellen(d.uhr, d.uhrLauf, 0);
       else uhrDauer(d.uhr);
+      // Art und Ort kommen bei *jedem* Schlag mit und nicht nur beim Stempeln:
+      // eine Uhr, die am Pult gerade verschoben wird, soll drueben mitwandern.
+      if (UHR) uhrOrt(d.uhrArt, d.uhrX, d.uhrY);
     }
     if (FROST || document.documentElement.dataset.tsSchwarz || UHR) wacheAn();
     sichtMerken();
@@ -2747,12 +2788,49 @@
   var gebaut = 0;
   var UHR_START = 0;       // since when counting runs, 0 = not started yet
   var ZIEL_MIN = 0;        // planned duration in minutes, 0 = no plan
+
+  // Schwarz, Frost und die Klassenuhr ueberleben ein Neuladen, der
+  // Stundenzaehler und die Zieldauer nicht -- eine Asymmetrie, die niemand
+  // erklaeren kann und die eine Lehrkraft nach einem versehentlichen F5
+  // ohne ihre Zeit dastehen laesst. Beides steht jetzt daneben, im selben
+  // Speicher und mit demselben Schluessel je Deck.
+  function standMerken() {
+    if (ROLLE !== "speaker") return;
+    try {
+      sessionStorage.setItem("ts-pult:" + DECK, UHR_START + "," + ZIEL_MIN);
+    } catch (x) {}
+  }
+  function standErinnern() {
+    if (ROLLE !== "speaker") return;
+    try {
+      var t = (sessionStorage.getItem("ts-pult:" + DECK) || "").split(",");
+      if (+t[0] > 0) UHR_START = +t[0];
+      if (+t[1] > 0) ZIEL_MIN = Math.max(0, +t[1]);
+    } catch (x) {}
+  }
   // Die Vollbilduhr, von hier aus gesehen. `SAAL_SEK` ist die Dauer, die
   // drueben laeuft (0 = aus), `SAAL_NR` die laufende Nummer des Laufs, und
   // `SAAL_REST` das, was das Buehnenfenster zuletzt zurueckgemeldet hat.
   // Diese Ansicht fuehrt die Uhr nicht, sie liest sie ab: zwei Uhren, die
   // dieselbe Pause zaehlen, gehen frueher oder spaeter auseinander.
   var SAAL_SEK = 0, SAAL_NR = 0, SAAL_REST = 0;
+  // Zwei Arten Uhr, und der Unterschied ist nicht die Groesse, sondern was
+  // sie ueber den Saal sagt.
+  //
+  //   "voll" -- das Vollbild. Der Saal macht Pause, die Folie ist zugedeckt,
+  //             und der naechste Tastendruck beendet beides zugleich:
+  //             weiterblaettern heisst weitermachen.
+  //   "fest" -- eine Uhr *auf* der Folie. Die Klasse arbeitet, die Folie mit
+  //             der Aufgabe bleibt stehen, und am Pult sieht man schon
+  //             einmal nach, was danach kommt. Blaettern beendet sie
+  //             deshalb ausdruecklich *nicht* -- das war der teuerste
+  //             offene Punkt der Bedienungspruefung.
+  //
+  // `SAAL_X`/`SAAL_Y` sind Bruchteile der Buehne, gemessen an der linken
+  // oberen Ecke der Uhr. Bruchteile und nicht Pixel: die Buehne ist in
+  // beiden Fenstern verschieden gross, und die Uhr soll in beiden an
+  // derselben Stelle der *Folie* stehen.
+  var SAAL_ART = "voll", SAAL_X = 0.72, SAAL_Y = 0.78;
   var NOTIZ_PX = 21;
   var SCHWARZ = 0, EIS = 0;
   var VORSCHAU = "";
@@ -2828,7 +2906,7 @@
   // The clock runs from the first keypress, not from loading: whoever
   // opens the view early and is still talking to the hall does not want a
   // wrong number in front of them.
-  function uhrAn() { if (!UHR_START) UHR_START = Date.now(); }
+  function uhrAn() { if (!UHR_START) { UHR_START = Date.now(); standMerken(); } }
 
   // Der Zustand des Saals, ueber dem Bild des Saals: schwarz, eingefroren,
   // kein Vortragsfenster. Nach Schwere gefaerbt und nicht nach Laune --
@@ -2898,6 +2976,7 @@
     var teil = !SAAL_SEK ? 0
       : SAAL_REST < 0 ? Math.min(1, -SAAL_REST / SAAL_SEK)
       : Math.max(0, Math.min(1, SAAL_REST / SAAL_SEK));
+    festZeigen(lage);
     ELN.saalBalken.style.transition = wenigerBewegung() ? "none" : "";
     ELN.saalBalken.style.width = (lage === "aus" || lage === "blind"
       ? 0 : teil * 100) + "%";
@@ -2916,11 +2995,77 @@
     GETRENNT = weg;
     lageZeigen();
   }
+  // Die angeheftete Uhr im Sprecherfenster. Sie wird hier nicht empfangen --
+  // `horch("sicht")` gilt nur drueben --, sondern aus dem eigenen Stand
+  // gezeichnet: das Pult weiss, was es geschickt hat. Ohne sie saehe man am
+  // Pult nicht, wo die Uhr auf der Folie steht, und haette nichts zum
+  // Anfassen.
+  function festZeigen(lage) {
+    if (ROLLE !== "speaker" || !UHR_KNOTEN) return;
+    var an = SAAL_SEK && SAAL_ART === "fest" && lage !== "aus";
+    if (!an) {
+      delete document.documentElement.dataset.tsClock;
+      delete UHR_KNOTEN.dataset.art;
+      return;
+    }
+    document.documentElement.dataset.tsClock = "1";
+    uhrOrt("fest", SAAL_X, SAAL_Y);
+    var drueber = SAAL_REST < 0;
+    if (UHR_ZAHL) UHR_ZAHL.textContent = uhrText(Math.abs(Math.round(SAAL_REST)), drueber);
+    if (UHR_WORT) UHR_WORT.textContent = drueber ? wort("over", "over") : "";
+    if (drueber) document.documentElement.dataset.tsClockOver = "1";
+    else delete document.documentElement.dataset.tsClockOver;
+  }
+
+  // Die angeheftete Uhr laesst sich am Pult verschieben. Sie liegt ueber der
+  // Buehne, die zugleich die Zeichenflaeche ist -- deshalb haelt sie das
+  // Ereignis auf: ein Zug, der auf ihr beginnt, soll sie bewegen und keinen
+  // Strich ziehen. Gesendet wird waehrend des Ziehens, nicht erst am Ende:
+  // wer eine Uhr aus dem Weg schiebt, will drueben sehen, wohin.
+  function festZiehen() {
+    if (ROLLE !== "speaker" || !UHR_KNOTEN) return;
+    var greift = null;
+    UHR_KNOTEN.addEventListener("pointerdown", function (ev) {
+      if (UHR_KNOTEN.dataset.art !== "fest") return;
+      var r = UHR_KNOTEN.getBoundingClientRect();
+      greift = { dx: ev.clientX - r.left, dy: ev.clientY - r.top };
+      try { UHR_KNOTEN.setPointerCapture(ev.pointerId); } catch (x) {}
+      ev.preventDefault();
+      ev.stopPropagation();
+    });
+    UHR_KNOTEN.addEventListener("pointermove", function (ev) {
+      if (!greift) return;
+      var b = B.getBoundingClientRect();
+      if (!b.width || !b.height) return;
+      var r = UHR_KNOTEN.getBoundingClientRect();
+      // In der Buehne gehalten, ganz: eine Uhr, die halb ueber den Rand
+      // haengt, steht drueben halb neben der Folie.
+      var x = (ev.clientX - greift.dx - b.left) / b.width;
+      var y = (ev.clientY - greift.dy - b.top) / b.height;
+      SAAL_X = Math.max(0, Math.min(1 - r.width / b.width, x));
+      SAAL_Y = Math.max(0, Math.min(1 - r.height / b.height, y));
+      uhrOrt("fest", SAAL_X, SAAL_Y);
+      sichtSenden();
+      ev.preventDefault();
+      ev.stopPropagation();
+    });
+    var los = function (ev) {
+      if (!greift) return;
+      greift = null;
+      try { UHR_KNOTEN.releasePointerCapture(ev.pointerId); } catch (x) {}
+      standMerken();
+      ev.stopPropagation();
+    };
+    UHR_KNOTEN.addEventListener("pointerup", los);
+    UHR_KNOTEN.addEventListener("pointercancel", los);
+  }
+
   function sichtSenden() {
     if (ROLLE !== "speaker") return;
     SICHT_GESENDET = Date.now();
     sende("sicht", { schwarz: SCHWARZ, frost: EIS,
-                     uhr: SAAL_SEK, uhrLauf: SAAL_NR });
+                     uhr: SAAL_SEK, uhrLauf: SAAL_NR,
+                     uhrArt: SAAL_ART, uhrX: SAAL_X, uhrY: SAAL_Y });
     lageZeigen();
   }
   // What holds on the other side also holds here, continuously and not
@@ -3065,7 +3210,7 @@
     // Ein Klick auf die verstrichene Zeit setzt sie zurueck -- dieselbe
     // Wirkung wie `r`.
     ELN.zeit = hauptKnopf(kZeit, wort("resetTip", "reset elapsed"), function () {
-      UHR_START = 0; sprecherUhr();
+      UHR_START = 0; sprecherUhr(); standMerken();
       return wort("resetDone", "elapsed reset");
     });
     ELN.uhr = neben(bau("div", "ts-sp-neben", kZeit), wort("clock", "clock"));
@@ -3089,6 +3234,7 @@
     kZiel.appendChild(inp);
     inp.addEventListener("input", function () {
       ZIEL_MIN = Math.max(0, +inp.value || 0);
+      standMerken();
       sprecherUhr();
     });
     // Without this way out, the field would be a trap: `tippt` keeps the
@@ -3097,6 +3243,7 @@
     // the keyboard back. `stopPropagation`, so Escape does not also pop
     // open the overview on the side.
     inp.addEventListener("keydown", function (ev) {
+      if (feldDurchreichen(ev, function () { inp.blur(); })) return;
       if (ev.key !== "Enter" && ev.key !== "Escape") return;
       inp.blur();
       ev.preventDefault();
@@ -3129,7 +3276,7 @@
     ELN.saal = hauptKnopf(kUhr, wort("clockTip", "set or stop the class clock"),
       function () {
         if (uhrSaalAus()) return wort("clockDone", "class clock stopped");
-        uhrFeldAuf();
+        uhrFeldAuf("voll");
         return "";
       });
     // Das Minutenfeld sass in der Fusszeile, damit es nicht neben der
@@ -3141,13 +3288,14 @@
     uf.style.display = "none";
     kUhr.appendChild(uf);
     uf.addEventListener("keydown", function (ev) {
+      if (feldDurchreichen(ev, uhrFeldZu)) return;
       // Enter nimmt den Wert, Escape laesst ihn liegen; beide geben die
       // Tastatur zurueck. `stopPropagation`, damit Escape nicht nebenbei die
       // Uebersicht aufklappt -- derselbe Ausweg wie beim Zielfeld.
       // Ein leeres Feld ist ein Ruecktritt und keine Uhr ueber eine Minute:
       // wer die Zahl loescht und die Eingabetaste drueckt, meint nichts.
       if (ev.key === "Enter") {
-        if (+uf.value > 0) uhrStarten(+uf.value);
+        if (+uf.value > 0) uhrStarten(+uf.value, FELD_ART);
         uhrFeldZu();
       }
       else if (ev.key === "Escape") { uhrFeldZu(); }
@@ -3202,8 +3350,13 @@
 
     tasten();
     zeichnen();
+    festZiehen();
     farbeSetzen(0);
     modusSetzen("stift");
+    // Was vor dem Neuladen dastand, steht danach wieder da -- nach dem
+    // Aufbau, denn erst jetzt gibt es das Feld, in das die Zieldauer gehoert.
+    standErinnern();
+    if (ELN.ziel && ZIEL_MIN) ELN.ziel.value = String(ZIEL_MIN);
     gebaut = 1;
     document.documentElement.dataset.tsFertig = "1";
 
@@ -3240,7 +3393,20 @@
       ? wort("pointer", "pointer") : wort("pen", "pen");
     ELN.modus.dataset.modus = MODUS;
   }
-  function modusUm() { modusSetzen(MODUS === "stift" ? "zeiger" : "stift"); }
+  function modusUm() {
+    var neu = MODUS === "stift" ? "zeiger" : "stift";
+    modusSetzen(neu);
+    // Der Zeiger greift nur in eingebettete Dokumente hinein. Auf einer
+    // Textfolie tat er bisher gar nichts und sagte es auch nicht: der
+    // Schalter versprach eine Faehigkeit, die es nur auf manchen Folien
+    // gibt, und das Pult zeigte nicht, auf welchen.
+    if (neu === "zeiger" && current >= 0 && STEPS[current]) {
+      var f = SLIDES[STEPS[current].slide];
+      if (f && !f.querySelector("iframe")) {
+        hint(wort("pointerNone", "nothing to point at on this slide"));
+      }
+    }
+  }
 
   function farbeSetzen(i) {
     FARBE = i % FARBEN.length;
@@ -3296,8 +3462,9 @@
   // Hier steht nur die Rechnung: eine Dauer und eine Nummer, beide ueber den
   // `sicht`-Kanal. Gezaehlt wird drueben, in Buehnenzeit; diese Ansicht liest
   // nur die Zahl ab, die zurueckkommt.
-  function uhrStarten(min) {
+  function uhrStarten(min, art) {
     var m = Math.max(1, Math.round(+min || 0));
+    SAAL_ART = art === "fest" ? "fest" : "voll";
     SAAL_SEK = m * 60;
     // Eine neue Nummer heisst drueben: neu stempeln. Nur hier wird sie erhoeht.
     SAAL_NR++;
@@ -3323,8 +3490,51 @@
   // in der Kachel, um die es geht, und nicht mehr als 51 Pixel breiter
   // Kasten in der unteren Ecke, achthundert Pixel von der Stelle entfernt,
   // an der das Auge die Zeit sucht.
-  function uhrFeldAuf() {
+  // Tasten, die dem Saal gelten und nicht dem Feld. Steht ein Zahlenfeld
+  // offen, waren sie bisher verloren: gemessen blaetterte `→` nicht, `e`
+  // fror nicht ein, und `b` verdunkelte nicht, sondern *loeschte still die
+  // eingegebene Zahl* -- ein Zahlenfeld nimmt keinen Buchstaben an und
+  // raeumt sich dabei selbst ab. Zwei Befehle verloren, null Rueckmeldung,
+  // mitten in einer Stunde.
+  //
+  // Jetzt schliesst so eine Taste das Feld und tut danach, wofuer sie da
+  // ist. Ausgefuehrt wird sie neu ausgeloest und nicht hier nachgebaut: der
+  // grosse Empfaenger steigt bei `tippt(e)` aus, und `e.target` steht fest,
+  // sobald das Ereignis unterwegs ist -- ein blosses `blur()` kaeme dafuer
+  // zu spaet.
+  var SAALTASTEN = {
+    b: 1, e: 1, m: 1, x: 1, z: 1, c: 1, o: 1, f: 1, n: 1, p: 1,
+    ArrowLeft: 1, ArrowRight: 1, PageUp: 1, PageDown: 1, Home: 1, End: 1
+  };
+  function feldDurchreichen(ev, zu) {
+    if (!SAALTASTEN[ev.key] || ev.metaKey || ev.ctrlKey || ev.altKey) return false;
+    zu();
+    ev.preventDefault();
+    ev.stopPropagation();
+    var k = ev.key, um = ev.shiftKey;
+    setTimeout(function () {
+      document.dispatchEvent(new KeyboardEvent("keydown",
+        { key: k, shiftKey: um, bubbles: true, cancelable: true }));
+    }, 0);
+    return true;
+  }
+
+  // Was das Deck fuer die laufende Folie an Minuten vorgesehen hat, oder 0.
+  // Ein Vorschlag und kein Befehl: das Feld steht mit der Zahl offen, und wer
+  // eine andere will, tippt sie.
+  function geplanteUhr() {
+    if (current < 0 || !STEPS[current]) return 0;
+    var f = SLIDES[STEPS[current].slide];
+    return f ? Math.max(0, +attr(f, "clock") || 0) : 0;
+  }
+
+  var FELD_ART = "voll";      // welche Art das offene Minutenfeld startet
+  function uhrFeldAuf(art) {
     if (!ELN.uhrFeld) return;
+    FELD_ART = art === "fest" ? "fest" : "voll";
+    ELN.uhrKachel.dataset.art = FELD_ART;
+    var geplant = FELD_ART === "fest" ? geplanteUhr() : 0;
+    if (geplant) ELN.uhrFeld.value = String(geplant);
     ELN.uhrFeld.style.display = "";
     ELN.saal.style.display = "none";
     ELN.uhrFeld.value = ELN.uhrFeld.value || "5";
@@ -3367,9 +3577,11 @@
         // nicht geschehen soll.
         if (e.shiftKey && SAAL_SEK
             && (k === "ArrowRight" || k === "ArrowLeft")) return;
-        // Blaettern beendet die Vollbilduhr und deckt die Folie auf. Was man
-        // nach der Pause tut, ist weitermachen.
-        uhrSaalAus();
+        // Blaettern beendet die *Vollbilduhr* und deckt die Folie auf: was
+        // man nach der Pause tut, ist weitermachen. Eine angeheftete Uhr
+        // bleibt stehen -- sie gehoert der Klasse, die gerade arbeitet, und
+        // nicht der Folie, die am Pult gerade gesucht wird.
+        if (SAAL_ART !== "fest") uhrSaalAus();
         uhrAn(); return;
       }
       // Up and down are free in the shared control and scroll the note
@@ -3381,8 +3593,16 @@
       // `e`, nur mit einer Frage davor. `Shift+t` bleibt ausdruecklich frei:
       // dort soll spaeter die angeheftete Uhr liegen, die das Vollbild
       // erzwingt. Sie ist noch nicht gebaut, und der Platz wartet auf sie.
-      else if (k === "t" && !e.shiftKey) {
-        if (!uhrSaalAus()) uhrFeldAuf();
+      // `⇧t` ist die angeheftete Uhr: dieselbe Frage nach den Minuten, aber
+      // sie deckt den Saal nicht zu und ueberlebt das Blaettern. Der Platz
+      // war seit dem Einbau der Vollbilduhr dafuer freigehalten.
+      //
+      // Gepruefte wird der Buchstabe und nicht `k === "t"`: mit Umschalt
+      // meldet der Browser `"T"`, und ein Vergleich auf das kleine `t`
+      // ginge fuer die angeheftete Uhr nie auf -- gemessen startete `⇧t`
+      // das Vollbild.
+      else if (k === "t" || k === "T") {
+        if (!uhrSaalAus()) uhrFeldAuf(e.shiftKey ? "fest" : "voll");
         e.preventDefault();
       }
       else if (k === "e") { EIS = EIS ? 0 : 1; sichtSenden(); }
@@ -3391,12 +3611,20 @@
       // gehoert dem, was man oft drueckt: die Zieldauer wird einmal je Vortrag
       // gesetzt, die Klassenuhr mehrmals je Stunde.
       else if (k === "d") { if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); } }
-      else if (k === "r") { UHR_START = 0; sprecherUhr(); }
+      // Sagt, was es getan hat. `r` liegt auf einer Tastatur neben `t` und
+      // `z`, und es loeschte den Stundenzaehler ohne ein Wort.
+      else if (k === "r") {
+        UHR_START = 0; sprecherUhr(); standMerken();
+        hint(wort("resetDone", "elapsed reset"));
+      }
       else if (k === "l") { lichtUm(); }
       else if (k === "m") { modusUm(); }
       else if (k === "c") { farbeSetzen(FARBE + 1); }
       else if (k === "z") { tinteSenden({ b: "weg", s: tinteFolie() }); }
-      else if (k === "x") { tinteSenden({ b: "loesch", s: tinteFolie() }); }
+      else if (k === "x") {
+        tinteSenden({ b: "loesch", s: tinteFolie() });
+        hint(wort("inkCleared", "slide cleared — z brings it back"));
+      }
       else if (k === "+" || k === "=") { notizGroesse(2); }
       else if (k === "-" || k === "_") { notizGroesse(-2); }
     });
