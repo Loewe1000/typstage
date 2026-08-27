@@ -364,7 +364,8 @@ else, no Node, no bundler.
   deck above weighs 211 kB, the nine example decks between 0.52 and 3.3 MB,
   and the largest of them holds 143 SVG trees with 5083 glyph references across
   15 slides -- it is the one that pulls a drawing from stop to stop, and every
-  frame in between is a tree of its own. In exchange no font has to load and the layout cannot drift.
+  frame in between is a tree of its own. In exchange no font has to load and
+  the layout cannot drift.
 - **`#pause` is read at the top level of a slide body only.** Inside a grid
   cell, a table or a figure it is not seen, so reach for `anim` there.
 - **GeoGebra is not in the box.** A typeset applet is an empty frame that
