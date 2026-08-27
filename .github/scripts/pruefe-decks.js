@@ -552,6 +552,51 @@ function papierProbe() {
   return null;
 }
 
+// Ob `tiles` seine Kurve und seine Dauer weiterreicht.
+//
+// Ohne Browser, denn hier ist nichts zu fahren: die beiden Werte entstehen in
+// Typst und stehen als `data-duration` und `data-easing` in der Ausgabe. Was
+// die Laufzeit daraus macht, prüft das Prüfdeck an anderer Stelle.
+//
+// Zwei Fragen. Mit Angabe muss jede der sechs Kacheln beide Werte tragen --
+// `tiles` nahm sie lange gar nicht entgegen, und ein Deck, das ein Raster mit
+// Rückschwung wollte, musste die `anim`s von Hand in ein `grid` schreiben.
+// Ohne Angabe darf keine Kachel sie tragen: `auto` schreibt kein Attribut, und
+// jedes Deck von gestern soll Byte für Byte dasselbe bleiben.
+function kachelProbe() {
+  let datei;
+  try { datei = decklaufBauen("kacheln"); }
+  catch (e) {
+    return "kacheln.typ ließ sich nicht übersetzen: "
+      + String(e.meldung || "").slice(0, 300)
+      + " -- nimmt tiles() duration und easing noch entgegen?";
+  }
+  const html = fs.readFileSync(datei, "utf8");
+  // Die Kurve steht aufgelöst da, nicht unter ihrem Namen: `kurve()` schlägt
+  // sie beim Übersetzen nach, damit ein Name, den es nicht gibt, dort auffällt
+  // und nicht als stille Blende im Vortrag.
+  const AUS_BACK = "cubic-bezier(.34,1.56,.64,1)";
+  const dauer = (html.match(/data-duration="1500"/g) || []).length;
+  const kurve = (html.match(/data-easing="cubic-bezier\(\.34,1\.56,\.64,1\)"/g) || []).length;
+  if (dauer !== 6 || kurve !== 6) {
+    return dauer + " Kacheln mit der Dauer und " + kurve + " mit der Kurve "
+      + AUS_BACK + " statt je sechs. tiles() reicht nicht durch, was ihm "
+      + "gegeben wurde, und ein Raster mit Rückschwung muss wieder von Hand "
+      + "in ein grid geschrieben werden.";
+  }
+  // Und die Gegenprobe: die drei ohne Angabe. Insgesamt also nicht mehr als
+  // die sechs von oben.
+  const alleDauer = (html.match(/data-duration="/g) || []).length;
+  const alleKurve = (html.match(/data-easing="/g) || []).length;
+  if (alleDauer !== 6 || alleKurve !== 6) {
+    return "ohne Angabe trugen Kacheln trotzdem ein Attribut: "
+      + alleDauer + " mal data-duration und " + alleKurve + " mal data-easing "
+      + "im ganzen Deck statt je sechs. auto schreibt kein Attribut, sonst "
+      + "verschiebt sich der Satz jedes Decks von gestern.";
+  }
+  return null;
+}
+
 // Gegenprobe zur Klage über `enter: "draw"` ohne gestrichenen Pfad.
 //
 // `ohne-strich.typ` übersetzt anstandslos, und das ist der Punkt: diese
@@ -595,6 +640,145 @@ async function ohneStrichProbe(b) {
   }
   return klagen.length + " Klagen statt einer. Sie gehört einmal je Element "
     + "heraus, nicht einmal je Schritt.";
+}
+
+// Der Weg durch ein ganzes Deck, den beide Proben unten brauchen. Die Klage
+// fällt beim Auftritt, und der fällt nicht beim Betreten der Folie.
+const DURCH_DAS_DECK = `
+  var p = typstage.pruef;
+  typstage.goto(0, true); await p.ruhig(4000);
+  for (var i = 1; i < p.schritte; i++) { typstage.goto(i); await p.ruhig(4000); }
+`;
+
+// Zwei Elemente, die im Fluss nichts messen, und die trotzdem stehen müssen.
+//
+// `schmal.typ` sagt selbst, worum es geht. Hier steht, woran gemessen wird:
+// an der Hülle, denn die Hülle war das Feld, das umfiel. Sie bekam `width: 0%`
+// -- aus einer Marke ohne Ausdehnung bei der senkrechten Linie, aus einer
+// Marke am falschen Ort bei den drei gesetzten Rechtecken --, und ein
+// Ansichtsfenster der Breite null skaliert seinen Inhalt mit dem Faktor null.
+// Das Element stand vollständig in der Seite und war nicht da.
+//
+// Drei Fragen, weil drei Dinge schiefgehen können. Keine Hülle ohne
+// Ausdehnung: das ist der Verlust selbst. Die drei gesetzten auf einer Höhe
+// und in gleichem Abstand: das ist die Treppe, die sie im Browser hinunter-
+// liefen, während sie auf Papier nebeneinander standen. Und die Fehlerliste
+// leer: ein Deck, das seine Elemente behält, hat nichts zu klagen.
+//
+// In Promille des Folienkastens gemessen und nicht in Pixeln. Die Bühne ist
+// so groß, wie das Fenster es zulässt, und eine Zahl, die daran hängt, fiele
+// bei jeder anderen Fenstergröße um.
+async function schmalProbe(b) {
+  let datei;
+  try { datei = decklaufBauen("schmal"); }
+  catch (e) {
+    return "schmal.typ ließ sich nicht übersetzen: "
+      + String(e.meldung || "").slice(0, 300);
+  }
+  await laden(b, "about:blank");
+  if (!await laden(b, "file://" + datei)) return "schmal.typ lud nicht";
+  const roh = await b.ev(`(async function () {
+    ${DURCH_DAS_DECK}
+    var r = [];
+    document.querySelectorAll(".ts-slide").forEach(function (f, i) {
+      var svg = f.querySelector(".ts-bg svg");
+      if (!svg) return;
+      var bg = svg.getBoundingClientRect();
+      f.querySelectorAll(".ts-el").forEach(function (el) {
+        var h = el.getBoundingClientRect();
+        r.push({ folie: i + 1, n: +el.dataset.n,
+                 x: Math.round((h.left - bg.left) / bg.width * 1000),
+                 y: Math.round((h.top - bg.top) / bg.height * 1000),
+                 w: Math.round(h.width / bg.width * 1000),
+                 h: Math.round(h.height / bg.height * 1000) });
+      });
+    });
+    return JSON.stringify({ els: r, fehler: p.fehler() });
+  })()`);
+  const d = JSON.parse(roh);
+  if (d.fehler.length) return "schmal.typ meldete: " + d.fehler.join(" | ");
+  if (d.els.length !== 6) {
+    return d.els.length + " verfolgte Elemente statt sechs. Das Deck hält zwei "
+      + "Linien, ein gesetztes Rechteck ohne Ausrichtung und drei mit.";
+  }
+  const leer = d.els.filter(e => !e.w || !e.h);
+  if (leer.length) {
+    return leer.map(e => "Folie " + e.folie + ", Element " + e.n).join(", ")
+      + ": Hülle ohne Ausdehnung (" + leer.map(e => e.w + "x" + e.h).join(", ")
+      + " Promille). Ein Ansichtsfenster der Breite null skaliert seinen Inhalt "
+      + "mit dem Faktor null: das Element steht in der Seite und ist nicht da. "
+      + "Im PDF steht es.";
+  }
+  // Die drei gesetzten. Sie stehen auf derselben Zeile und in gleichem
+  // Abstand, so wie sie auf Papier stehen.
+  //
+  // Über die letzte Folie gesucht und nicht über eine gezählte: die Titelfolie
+  // steht vorn, und wer hier eine 2 hinschreibt, hat sie vergessen.
+  const letzte = Math.max.apply(null, d.els.map(e => e.folie));
+  const gesetzt = d.els.filter(e => e.folie === letzte).sort((a, c) => a.x - c.x);
+  if (gesetzt.length !== 3) {
+    return gesetzt.length + " gesetzte Rechtecke statt dreier auf Folie "
+      + letzte;
+  }
+  if (gesetzt[0].y !== gesetzt[1].y || gesetzt[1].y !== gesetzt[2].y) {
+    return "die drei gesetzten Rechtecke stehen auf den Höhen "
+      + gesetzt.map(e => e.y).join(", ") + " Promille statt auf einer. Im "
+      + "Browser laufen sie eine Treppe hinunter, auf Papier stehen sie "
+      + "nebeneinander: die Hülle nimmt Platz im Fluss, statt keinen zu nehmen.";
+  }
+  const ab = [gesetzt[1].x - gesetzt[0].x, gesetzt[2].x - gesetzt[1].x];
+  if (Math.abs(ab[0] - ab[1]) > 1) {
+    return "die drei gesetzten Rechtecke stehen in den Abständen "
+      + ab.join(" und ") + " Promille statt in gleichen. Ihr dx ist dreimal "
+      + "dasselbe Stück.";
+  }
+  return null;
+}
+
+// Gegenprobe zur Klage über ein verfolgtes Element, das keinen Platz findet.
+//
+// Dasselbe Muster wie bei `ohne-strich.typ`, und aus demselben Grund:
+// `ohne-flaeche.typ` übersetzt anstandslos, denn keine der beiden Meldungen
+// ist zur Übersetzungszeit zu haben. Erst im Browser liegt das Rechteck da.
+//
+// Genau eine und genau zwei, nicht mindestens: die Klage geht einmal je
+// Element heraus und nicht einmal je Schritt.
+//
+// Warum es diese Probe gibt: der stille Verlust ist der eine Ausgang, den es
+// nicht geben darf. Ein Deck, das ein Element verliert, muss das sagen. Hört
+// die Laufzeit damit auf, sagt es sonst niemand -- am Deck ist nichts zu
+// sehen, es fehlt ja gerade das, was zu sehen wäre.
+async function ohneFlaecheProbe(b) {
+  let datei;
+  try { datei = decklaufBauen("ohne-flaeche"); }
+  catch (e) {
+    return "ohne-flaeche.typ ließ sich nicht übersetzen: "
+      + String(e.meldung || "").slice(0, 300);
+  }
+  await laden(b, "about:blank");
+  if (!await laden(b, "file://" + datei)) return "ohne-flaeche.typ lud nicht";
+  const roh = await b.ev(`(async function () {
+    ${DURCH_DAS_DECK}
+    return JSON.stringify(p.fehler());
+  })()`);
+  const alle = JSON.parse(roh);
+  const ohneMass = alle.filter(x => x.indexOf("has a marker with no") >= 0);
+  const ohneMarke = alle.filter(x => x.indexOf("finds no marker to sit on") >= 0);
+  const fremd = alle.filter(x => ohneMass.indexOf(x) < 0
+                                 && ohneMarke.indexOf(x) < 0);
+  if (fremd.length) return "ohne-flaeche.typ meldete außerdem: " + fremd.join(" | ");
+  if (ohneMass.length !== 1) {
+    return ohneMass.length + " Klagen über eine Marke ohne Ausdehnung statt "
+      + "einer. Bei null: das Element steht in der Seite, ist nicht zu sehen, "
+      + "und die Laufzeit sagt nichts mehr dazu -- der stille Verlust ist "
+      + "zurück.";
+  }
+  if (ohneMarke.length !== 2) {
+    return ohneMarke.length + " Klagen über eine fehlende Marke statt zweier. "
+      + "Sechs verfolgte Elemente ineinander, vier Runden zum Stellen: die "
+      + "beiden innersten finden keinen Ort und bleiben liegen.";
+  }
+  return null;
 }
 
 // Was „Bewegung reduzieren" aus einer Zeichnung macht.
@@ -672,7 +856,7 @@ async function leiserProbe(b, datei) {
 // ── Der Durchlauf, als ein Stück Seitencode ─────────────────────────────────
 const DURCHLAUF = `(async function () {
   var p = typstage.pruef, S = typstage.steps;
-  if (p.fassung !== 1) return JSON.stringify({ fassungFehler: p.fassung });
+  if (p.fassung !== 2) return JSON.stringify({ fassungFehler: p.fassung });
   p.uhr(${UHR});
   var vor = [], zurueck = [], fristen = 0, flyDom = 0, flyDomRueck = 0;
   var FLY = document.getElementById("ts-fly");
@@ -686,10 +870,39 @@ const DURCHLAUF = `(async function () {
     if (wie !== "ruhig") fristen++;
   }
 
-  typstage.goto(0, true); await ruhe(); vor.push(p.stand());
+  // ── Die Hand, die eine cue-Gruppe bedient ────────────────────────────────
+  //
+  // Eine adaptive Gruppe kommt nicht von selbst herein. Ihre Punkte liegen an
+  // den Zifferntasten, und goto() drueckt keine: es geht auf den Schritt, aber
+  // der Punkt bleibt beiseitegestellt, weit hinter dem letzten Schritt des
+  // Decks. Ein Lauf, der nur blaettert, misst auf einer cue-Folie durchgehend
+  // 0/0 und haelt das fuer den Befund. Gemessen an vortragen: 13 seiner 44
+  // Schritte lagen so im Dunkeln, und gerade das Neue an dem Deck war damit
+  // nicht abgesichert.
+  //
+  // Genannt wird in geschriebener Reihenfolge, und nur der Punkt, dessen Platz
+  // der Schritt ist, auf den es gerade geht. Das ist die eine Reihenfolge, die
+  // sich wiederholen laesst -- ein Sprecher darf jede andere waehlen, aber ein
+  // Sollwert kann nicht von seiner Laune abhaengen.
+  //
+  // Nach dem goto, nicht davor: ziffer() sucht den Schritt des Punktes auf der
+  // Folie, auf der das Deck *steht*. Vorher gedrueckt suchte sie ihn auf der
+  // vorigen und traefe eine fremde.
+  function cueBedienen(ziel) {
+    var g = p.adaptiv().filter(function (x) {
+      return x.folie === ziel.slide && x.folge.length < x.nummern.length;
+    })[0];
+    if (!g) return false;
+    if (parseInt(g.plaetze[g.folge.length], 10) !== ziel.step) return false;
+    var offen = g.nummern.filter(function (n) { return g.folge.indexOf(n) < 0; });
+    return p.ziffer(offen[0]);
+  }
+
+  typstage.goto(0, true); cueBedienen(S[0]); await ruhe(); vor.push(p.stand());
   for (var i = 1; i < p.schritte; i++) {
     var wechsel = S[i].slide !== S[i - 1].slide;
     typstage.goto(i);
+    cueBedienen(S[i]);
     // Der alte Weg, nur zum Abgleich mitgezaehlt: sofort und ausschliesslich
     // beim Folienwechsel. Der Zaehler in der Laufzeit ist der massgebliche.
     if (wechsel) flyDom += FLY.querySelectorAll("*").length;
@@ -1314,6 +1527,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (notiz) console.error("ABWEICHUNG notiz: " + notiz);
   const papier = papierProbe();
   if (papier) console.error("ABWEICHUNG papier: " + papier);
+  const kachel = kachelProbe();
+  if (kachel) console.error("ABWEICHUNG kacheln: " + kachel);
   let pd;
   try { pd = decklaufBauen("pruefdeck"); }
   catch (e) {
@@ -1363,7 +1578,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
     }
     const r = JSON.parse(await b.ev(DURCHLAUF));
     if (r.fassungFehler) {
-      z.maengel.push("Messfläche in Fassung " + r.fassungFehler + ", erwartet 1");
+      z.maengel.push("Messfläche in Fassung " + r.fassungFehler + ", erwartet 2");
       bericht.push(z); schlecht++; continue;
     }
 
@@ -1673,6 +1888,10 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   }
   const ohneStrich = await ohneStrichProbe(b);
   if (ohneStrich) console.error("ABWEICHUNG ohne-strich: " + ohneStrich);
+  const schmal = await schmalProbe(b);
+  if (schmal) console.error("ABWEICHUNG schmal: " + schmal);
+  const ohneFlaeche = await ohneFlaecheProbe(b);
+  if (ohneFlaeche) console.error("ABWEICHUNG ohne-flaeche: " + ohneFlaeche);
   // Zuletzt, weil sie die Seite verbiegt, auf der sie läuft.
   const leiser2 = await leiserProbe(b, pd);
   if (leiser2) console.error("ABWEICHUNG leiser: " + leiser2);
@@ -1765,7 +1984,10 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (gitter) schlecht++;
   if (notiz) schlecht++;
   if (papier) schlecht++;
+  if (kachel) schlecht++;
   if (ohneStrich) schlecht++;
+  if (schmal) schlecht++;
+  if (ohneFlaeche) schlecht++;
   if (leiser2) schlecht++;
   bericht.forEach(z => z.maengel.forEach(m =>
     process.stderr.write("ABWEICHUNG " + z.deck + ": " + m + "\n")));

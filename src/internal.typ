@@ -641,6 +641,26 @@
   teile.filter(c => c.func() in (v, h) and type(c.amount) == fraction)
 }
 
+// ── Ein Maß aus Rundungsstaub ist keines ───────────────────────────────────
+//
+// Eine senkrechte `line` misst nicht null breit, sondern 4,898587e-15 pt: der
+// Kosinus von 90° ist in Gleitkomma nicht sauber null, und `measure` reicht
+// den Staub durch. Gedruckt sieht man ihn nie -- `repr()` sagt brav `0pt` --,
+// aber ein Vergleich auf `== 0pt` sagt nein, und daran hängt weiter unten, ob
+// ein Element ohne Fläche Luft um seine Marke bekommt.
+//
+// Ohne Luft bekam die Marke Breite null, die Hülle im Browser `width: 0%`,
+// und ein Ansichtsfenster der Breite null skaliert seinen Inhalt unter
+// `xMidYMid meet` auf null. Die Linie stand im PDF und fehlte im Browser --
+// still, denn es klagte niemand. Gemessen an vier Fällen nebeneinander: die
+// waagerechte Linie (Höhe exakt 0pt) bekam ihre Luft, die um 90° gedrehte
+// nicht, und nur die gedrehte verschwand.
+//
+// Die Schwelle ist ein Hundertstel Punkt. Was dünner ist als das, trägt keine
+// Fläche, die ein Sprite füllen könnte; was dicker ist, hat eine und braucht
+// die Luft nicht.
+#let ohne-mass(l) = l < 0.01pt
+
 /// Does the body consist *only* of such spacers (and empty space)?
 #let nur-fr(body) = {
   let teile = if body == none { () }
@@ -1086,6 +1106,51 @@
   // zehnmal daneben.
   wirkung-pruefen(extra.at("enter", default: none), "enter", kind)
   wirkung-pruefen(extra.at("exit", default: none), "exit", kind)
+  // ── Ein `place` gibt seinen Platz nicht her ───────────────────────────────
+  //
+  // `place` steht außerhalb des Flusses. Gemessen ist es 0x0, und wohin es
+  // seinen Inhalt wirklich setzt -- `dx`, `dy`, die Ausrichtung -- steht in
+  // keinem Maß, das `measure` zurückgeben könnte. Ein verfolgtes Element *um*
+  // ein `place` bekäme deshalb eine Marke am Ort des Flusses und in der Größe
+  // der Luft, die ein Element ohne Fläche bekommt: gemessen 40x40 pt statt
+  // null. Drei davon liefen im Browser eine Treppe hinunter, je 38 px, und
+  // schoben den Text hinter sich mit, während auf Papier alle drei
+  // nebeneinander standen.
+  //
+  // Zu retten ist der Fall, indem das `place` nach *außen* wandert und das
+  // verfolgte Element nach innen -- derselbe Handgriff, zu dem die Decks
+  // bisher von Hand greifen mussten. Danach steht die Marke dort, wo der
+  // Inhalt steht, und der Fluss behält seine Null. Es gilt für jede Art, denn
+  // hier kommen alle durch.
+  //
+  // Ein `float: true` wandert nicht mit. Ein Gleitobjekt sucht sich den Kopf
+  // oder den Fuß der Seite, und eine Folie hat weder das eine noch das andere;
+  // wohin es geriete, wüsste hier niemand. Lieber eine Meldung als eine Marke
+  // an einem geratenen Ort.
+  if type(body) == content and body.func() == place {
+    assert(not body.at("float", default: false), message:
+      "typstage: a tracked element cannot hold a floating place. "
+      + "place(float: true) looks for the top or bottom of a page, and a "
+      + "slide has neither, so there is no place for the marker to go. "
+      + "Drop float: true, or put the place outside the "
+      + kind + "().")
+    let innen = track(kind, body.body, at: at, extra: extra,
+                      raw-frames: raw-frames, inline: inline, width: width,
+                      dim-freiwillig: dim-freiwillig)
+    let dx = body.at("dx", default: 0pt)
+    let dy = body.at("dy", default: 0pt)
+    // Eine nicht genannte Ausrichtung ist nicht dasselbe wie `auto`. Ein
+    // `place(dx: 60pt, …)` ohne Ausrichtung übersetzt anstandslos; dasselbe
+    // `place` mit einem hingeschriebenen `auto` bricht ab, denn `auto` gibt es
+    // nur für ein Gleitobjekt. Das Feld wird darum nur weitergereicht, wenn es
+    // dasteht.
+    let wohin = body.at("alignment", default: none)
+    return if wohin == none or wohin == auto {
+      place(dx: dx, dy: dy, innen)
+    } else {
+      place(wohin, dx: dx, dy: dy, innen)
+    }
+  }
   // The `box` has to sit around the *whole* construction, not inside it:
   // `layout()` is block-level, so an inline element that only chooses a `box`
   // further in would still break the line it sits in.
@@ -1223,7 +1288,8 @@
       // cannot be measured in Typst. A font's height covers any common
       // stroke width; anything thicker is a drawing and normally brings its
       // own box along.
-      let luft = if m.height == 0pt or m.width == 0pt { text.size } else { 0pt }
+      let luft = if ohne-mass(m.height) or ohne-mass(m.width) { text.size }
+                 else { 0pt }
       // The *original* region travels along. Without it, the body sits in
       // the sprite inside a wrapper of the measured size, and a relative
       // measure resolves there a second time: `p%` becomes `p²%`. Only
