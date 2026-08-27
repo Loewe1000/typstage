@@ -407,8 +407,15 @@ const szeneBild = `(function () {
       an: !!document.documentElement.dataset.tsClock,
       zeigt: document.querySelector('#ts-clock .ts-clock-num').textContent,
       sicht: getComputedStyle(document.querySelector('#ts-clock')).display })`;
-    const lage = `(function(){ var l = document.querySelector('.ts-sp-saal');
-      return l ? l.textContent : ""; })()`;
+    // Die Uhr der Klasse steht in ihrer eigenen Kachel und nicht mehr als
+    // vierte Pille in der Zustandszeile. Gelesen wird beides: der Zustand,
+    // den die Kachel von sich behauptet, und die Zahl, die darin steht --
+    // eine Kachel, die `laeuft` sagt und einen Strich zeigt, waere so
+    // falsch wie umgekehrt.
+    const lage = `(function(){ var k = document.querySelector('.ts-sp-uhrkachel');
+      if (!k) return "";
+      var z = k.querySelector('.ts-sp-gross');
+      return (k.dataset.uhr || "?") + " " + (z ? z.textContent : ""); })()`;
 
     await sprecher.taste("t");
     await schlaf(300);
@@ -442,10 +449,10 @@ const szeneBild = `(function () {
       sagt("uhr", "im Sprecherfenster laeuft die Uhr ebenfalls: " + JSON.stringify(sp0));
     }
     let lz = await sprecher.ev(lage);
-    if (!/^\S+ [45]:[0-9][0-9]$/.test(lz)) {
-      sagt("uhr", "die Lagezeile sagt " + JSON.stringify(lz) + ", erwartet etwas wie 'Uhr 4:59'");
+    if (!/^laeuft [45]:[0-9][0-9]$/.test(lz)) {
+      sagt("uhr", "die Uhrkachel sagt " + JSON.stringify(lz) + ", erwartet 'laeuft 4:59'");
     }
-    console.log("Uhr: Halle " + JSON.stringify(uh.zeigt) + " · Lagezeile " + JSON.stringify(lz));
+    console.log("Uhr: Halle " + JSON.stringify(uh.zeigt) + " · Kachel " + JSON.stringify(lz));
 
     // `⇧→` verlaengert, ohne die Uhr neu zu stempeln.
     //
@@ -499,8 +506,59 @@ const szeneBild = `(function () {
         + wo2.schritt + " -> " + wo3.schritt);
     }
     lz = await sprecher.ev(lage);
-    if (lz) sagt("uhr", "die Lagezeile traegt die Uhr noch: " + JSON.stringify(lz));
+    if (!/^aus /.test(lz)) {
+      sagt("uhr", "die Uhrkachel traegt die Uhr noch: " + JSON.stringify(lz));
+    }
     console.log("Uhr: ein Schritt beendet sie, Folie wieder da");
+
+    // ── Die Ueberzeit am Pult ─────────────────────────────────────────────
+    //
+    // Der teuerste Fehler, den diese Ansicht hatte: die Wand schlug auf die
+    // Signalfarbe um, und am Pult blieb die Uhr gruen. Die Klasse sah die
+    // Ueberzeit, bevor die Lehrkraft sie sah. Gemessen wird deshalb beides
+    // zugleich, in beiden Fenstern, und nicht nur die Wand -- die allein
+    // war schon immer richtig.
+    //
+    // Die Uhr der Halle wird dafuer festgenagelt und weitergestellt: eine
+    // Minute abzuwarten waere eine Minute Prueflauf fuer eine Zahl.
+    await sprecher.taste("t"); await schlaf(250);
+    await sprecher.ev("document.activeElement.value='1'");
+    await sprecher.taste("Enter"); await schlaf(700);
+    const jetzt = await halle.ev("Date.now()");
+    await halle.ev("typstage.pruef.uhr(" + jetzt + ")"); await schlaf(300);
+    await halle.ev("typstage.pruef.uhr(" + (jetzt + 71000) + ")");
+    await schlaf(1800);
+    const uz = await sprecher.ev(lage);
+    if (!/^ueber \+0:1[0-9]$/.test(uz)) {
+      sagt("ueberzeit", "die Uhrkachel sagt in der Ueberzeit " + JSON.stringify(uz)
+        + ", erwartet 'ueber +0:11'");
+    }
+    // Und die Kachel sieht anders aus, nicht nur ihre Ziffern: eine Flaeche
+    // sieht man aus dem Augenwinkel, eine Ziffer nicht.
+    const uf = JSON.parse(await sprecher.ev(`(function(){
+      var k = document.querySelector('.ts-sp-uhrkachel');
+      var g = getComputedStyle(k), z = getComputedStyle(k.querySelector('.ts-sp-gross'));
+      var w = getComputedStyle(document.querySelector('.ts-sp-notizkasten'));
+      return JSON.stringify({ grund: g.backgroundColor, ziffer: z.color,
+                              ruhig: w.backgroundColor,
+                              marke: k.querySelector('.ts-sp-marke').textContent });})()`));
+    if (uf.grund === uf.ruhig) {
+      sagt("ueberzeit", "die Kachel traegt in der Ueberzeit denselben Grund wie"
+        + " jede andere: " + uf.grund);
+    }
+    if (uf.grund === uf.ziffer) {
+      sagt("ueberzeit", "Grund und Ziffer der Uhrkachel sind dieselbe Farbe");
+    }
+    // Und das Wort wechselt. Drei Zeichen, die unabhaengig voneinander sagen,
+    // dass die Zeit um ist: das Wort, das Vorzeichen, die Flaeche.
+    if (!/(ber|over|pass)/i.test(uf.marke)) {
+      sagt("ueberzeit", "die Marke der Kachel sagt in der Ueberzeit noch "
+        + JSON.stringify(uf.marke));
+    }
+    console.log("Ueberzeit: Kachel " + JSON.stringify(uz) + " · Grund "
+      + uf.grund + " statt " + uf.ruhig + " · Marke " + JSON.stringify(uf.marke));
+    await halle.ev("typstage.pruef.uhr()"); await schlaf(300);
+    await sprecher.taste("t"); await schlaf(600);
 
     // Und `t` beendet sie ebenfalls.
     await sprecher.taste("t"); await schlaf(250);
