@@ -1268,6 +1268,69 @@
   var CHROME = [].slice.call(document.querySelectorAll("#ts-chrome > .ts-chrome"));
 
   var flyTimers = [];
+  // Elemente, die im Ruhezustand ueber dem Ziel eines Fluges stehen. Der Geist
+  // liegt auf `#ts-fly`, sie liegen in der Folie -- zwei getrennte
+  // Stapelkontexte, zwischen die kein z-index passt. Fuer die Dauer des Fluges
+  // ziehen sie deshalb mit auf die Flugebene, hinter die Geister, und danach
+  // an ihren Platz zurueck. `.ts-ov` und `#ts-fly` sind beide `inset:0` auf der
+  // Buehne, die Koordinaten stimmen also weiter, und eine Web-Animation
+  // ueberlebt das Umhaengen.
+  var HOCH = [];          // was gerade oben haengt, mit dem Weg zurueck
+  var HOCH_LAUF = 0;      // welcher Flug es hochgezogen hat
+  var NACHZUEGLER = [];   // was der letzte Flug zum Hochziehen vorgemerkt hat
+  var NACHZUEGLER_DAUER = 0;
+
+  function nachzueglerZurueck() {
+    for (var i = HOCH.length - 1; i >= 0; i--) {
+      var h = HOCH[i];
+      if (h.next && h.next.parentNode === h.parent) h.parent.insertBefore(h.el, h.next);
+      else h.parent.appendChild(h.el);
+    }
+    HOCH = [];
+  }
+
+  // Erst *nach* den Sprites von `goto` gerufen: die Schleife dort sucht ihre
+  // Elemente unter `SLIDES[i]`, und was schon oben haengt, faende sie nicht
+  // mehr -- der Nachzuegler bliebe den ganzen Flug lang auf seinem alten Stand.
+  function nachzueglerHoch() {
+    if (!NACHZUEGLER.length) return;
+    // Ort und Mass bleiben von selbst richtig: `setzen()` schreibt beides in
+    // Prozent, und `#ts-fly` und `.ts-ov` sind dieselbe Flaeche. Ein Fenster,
+    // das sich mitten im Flug aendert, traegt den Hochgezogenen also mit --
+    // `stelle()` muss ihn dafuer nicht suchen. Einzig die Rundung stuende
+    // still, denn die rechnet in Punkten; sie gibt es nur an `video()`, und
+    // ein Video als Nachbar eines `morph` ist bis jetzt nirgends geprueft.
+    //
+    // Die Bewegungen der Geister -- vor dem Anhaengen gelesen, damit die
+    // Nachzuegler nicht mit ihren eigenen darin stehen.
+    var fluege = FLY.getAnimations ? FLY.getAnimations({ subtree: true }) : [];
+    NACHZUEGLER.forEach(function (el) {
+      if (!el.parentNode) return;
+      HOCH.push({ el: el, parent: el.parentNode, next: el.nextSibling });
+      FLY.appendChild(el);
+    });
+    NACHZUEGLER = [];
+
+    // Zurueck, sobald der Flug wirklich zu Ende ist, und nicht erst, wenn ein
+    // Zeitgeber es fuer wahrscheinlich haelt: `finished` faellt als Microtask
+    // an, noch in dem Bild, in dem die letzte Bewegung steht. Ein Zeitgeber
+    // mit derselben Frist kann danach kommen -- gemessen im Decklauf, der
+    // nach jedem Schritt wartet, bis nichts mehr laeuft, und dann eine Folie
+    // vorfand, unter der ein Sprite fehlte (`sichtbar` 3/0·1/0 statt 3/0·2/0).
+    // Der Zeitgeber bleibt als Rueckfall stehen: wo gar nichts animiert wurde,
+    // faellt auch kein `finished` an.
+    var lauf = ++HOCH_LAUF;
+    if (fluege.length) {
+      Promise.all(fluege.map(function (a) {
+        return a.finished.catch(function () {});
+      })).then(function () {
+        if (lauf === HOCH_LAUF) nachzueglerZurueck();
+      });
+    }
+    flyTimers.push(setTimeout(function () {
+      if (lauf === HOCH_LAUF) nachzueglerZurueck();
+    }, NACHZUEGLER_DAUER));
+  }
   // How many ghosts a talk has produced since it was loaded. Counted where
   // they are made, not read off `#ts-fly` afterwards: the layer is emptied
   // again by a timer, so whoever counts it later counts whatever the machine
@@ -1294,6 +1357,8 @@
     // the slide change falls back to the ordinary transition. `false` says
     // "no morph happened", the same answer a slide pair without a matching
     // name gives, and it is the same route a jump already takes.
+    NACHZUEGLER = [];
+    NACHZUEGLER_DAUER = 0;
     if (wenigerBewegung()) return false;
     flyTimers.forEach(function (t) { clearTimeout(t); });
     flyTimers = [];
@@ -1333,6 +1398,27 @@
 
       src.dataset.hold = "1";
       dst.dataset.hold = "1";
+
+      // Die Bahn ist das Rechteck, das der Geist ueberstreicht: von der Quelle
+      // zum Ziel. Vorgemerkt wird nur, was in Quellreihenfolge *nach* dem
+      // `morph` steht -- also im Ruhezustand ohnehin darueber liegt -- und was
+      // diese Bahn beruehrt. Alles andere hat der Flug nie verdeckt.
+      var bahn = {
+        left: Math.min(qr.left, zr.left), top: Math.min(qr.top, zr.top),
+        right: Math.max(qr.right, zr.right), bottom: Math.max(qr.bottom, zr.bottom)
+      };
+      var danach = false;
+      SLIDES[toSlide].querySelectorAll(".ts-el").forEach(function (el) {
+        if (el === dst) { danach = true; return; }
+        if (!danach || el.dataset.hold === "1") return;
+        if (NACHZUEGLER.indexOf(el) >= 0) return;
+        var r = el.getBoundingClientRect();
+        if (r.right <= bahn.left || r.left >= bahn.right ||
+            r.bottom <= bahn.top || r.top >= bahn.bottom) return;
+        NACHZUEGLER.push(el);
+      });
+      if (d > NACHZUEGLER_DAUER) NACHZUEGLER_DAUER = d;
+
       var ghosts = [];
       var ueber = 0.42;
       var window = { duration: d * ueber, delay: d * (0.5 - ueber / 2),
@@ -3858,6 +3944,10 @@
     var back = current > n;
     current = n;
 
+    // Vor allem anderen: was ein Flug hochgezogen hat, gehoert zurueck in
+    // seine Folie, bevor irgendjemand dort wieder Elemente sucht.
+    nachzueglerZurueck();
+
     if (changed) stelle(dst.slide);
 
     var hasMorph = false;
@@ -3959,6 +4049,10 @@
     // invisible to the speaker as well, and there is nothing to choose from
     // in an empty column.
     adSprecher();
+
+    // Ganz zuletzt, nachdem Vorschau, Marken und Sprecheransicht oben noch
+    // einmal unter der Folie gesucht haben.
+    nachzueglerHoch();
   }
 
   // ── Slide transitions ─────────────────────────────────────────────────────

@@ -2870,44 +2870,11 @@ Rechnung, Zeile für Zeile:
   nicht Zwischenschritte einer Rechnung.
 ]
 
-== Zwei Uhren für die Klasse
-
-Die Sprecheransicht kennt zwei Uhren. Sie unterscheiden sich nicht in der
-Größe, sondern darin, was sie über den Saal sagen.
-
-Die Taste `t` startet die *Vollbilduhr*. Sie deckt die Folie zu, von Rand zu
-Rand, mit Ziffern, die auch die letzte Reihe liest: Der Saal macht Pause. Ein
-Blättern beendet sie und deckt die Folie wieder auf -- was man nach einer
-Pause tut, ist weitermachen.
-
-Die Taste `⇧T` startet die *angeheftete Uhr*. Sie steht #emph[auf] der
-Folie und lässt die Aufgabe darunter stehen. Die Klasse arbeitet, und am Pult
-sieht man schon einmal nach, was danach kommt: Blättern beendet sie
-ausdrücklich nicht. In der Sprecheransicht lässt sie sich mit der Maus
-verschieben und wandert im Vortragsfenster mit.
-
-Beide fragen zuerst nach den Minuten und laufen erst danach. `⇧←` und
-`⇧→` geben eine Minute mehr oder weniger; derselbe Tastendruck noch
-einmal beendet die Uhr.
-
-Was ein Deck über die angeheftete Uhr weiß, schreibt es mit `class-clock`:
-
-#show-example(
-  rendered: [],
-  source: ```typ
-  #slide[
-    = Gruppenarbeit
-    #class-clock(12)
-    Sammelt zu zweit drei Beispiele.
-  ]
-  ```,
-  width: 12cm,
-)
-
-Gestartet wird dadurch nichts. `⇧T` bietet die zwölf Minuten an, die
-Lehrkraft bestätigt oder ändert sie, und erst dann läuft die Uhr: Das Deck
-weiß, wie lange die Aufgabe gedacht war, der Raum entscheidet, wie lange sie
-bekommt.
+Was auf der Zielfolie #emph[über] dem Ziel des Fluges steht, bleibt auch
+während des Fluges darüber. Die Quellreihenfolge entscheidet, im Stillstand
+wie in der Bewegung: Was nach dem `morph` notiert ist, liegt darüber, was
+davor steht, darunter. Eine Bildunterschrift, die auf dem fertigen Bild sitzt,
+muss also nicht warten, bis das Bild angekommen ist.
 
 == Wenn die Zeichen falsch fliegen: pin
 
@@ -3275,6 +3242,45 @@ Zeichenkette, und das Handout druckt sie dort, wo Text darin steht -- eine
 Notiz, die nur aus Layout besteht (ein `fit`, ein blankes `rect`, ein Bild),
 käme also nirgends an. Das wird mit einer Meldung abgewiesen statt still
 verschluckt. Was *gesehen* werden soll, gehört auf die Folie.
+
+== Zwei Uhren für die Klasse
+
+Die Sprecheransicht kennt zwei Uhren. Sie unterscheiden sich nicht in der
+Größe, sondern darin, was sie über den Saal sagen.
+
+Die Taste `t` startet die *Vollbilduhr*. Sie deckt die Folie zu, von Rand zu
+Rand, mit Ziffern, die auch die letzte Reihe liest: Der Saal macht Pause. Ein
+Blättern beendet sie und deckt die Folie wieder auf -- was man nach einer
+Pause tut, ist weitermachen.
+
+Die Taste `⇧T` startet die *angeheftete Uhr*. Sie steht #emph[auf] der
+Folie und lässt die Aufgabe darunter stehen. Die Klasse arbeitet, und am Pult
+sieht man schon einmal nach, was danach kommt: Blättern beendet sie
+ausdrücklich nicht. In der Sprecheransicht lässt sie sich mit der Maus
+verschieben und wandert im Vortragsfenster mit.
+
+Beide fragen zuerst nach den Minuten und laufen erst danach. `⇧←` und
+`⇧→` geben eine Minute mehr oder weniger; derselbe Tastendruck noch
+einmal beendet die Uhr.
+
+Was ein Deck über die angeheftete Uhr weiß, schreibt es mit `class-clock`:
+
+#show-example(
+  rendered: [],
+  source: ```typ
+  #slide[
+    = Gruppenarbeit
+    #class-clock(12)
+    Sammelt zu zweit drei Beispiele.
+  ]
+  ```,
+  width: 12cm,
+)
+
+Gestartet wird dadurch nichts. `⇧T` bietet die zwölf Minuten an, die
+Lehrkraft bestätigt oder ändert sie, und erst dann läuft die Uhr: Das Deck
+weiß, wie lange die Aufgabe gedacht war, der Raum entscheidet, wie lange sie
+bekommt.
 
 == Was auf dem Papier fehlt -- und was man dafür vorsieht
 
