@@ -10,7 +10,7 @@ typst compile deck.typ deck.pdf                                  # slides and ha
 
 ![A slide of a typstage deck in the browser, halfway through its reveals](assets/slide.png)
 
-**Try it without installing anything:** [nine example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos: a tour of the package itself, how GPS finds you, why the four margins of a book are unequal, a school lesson on completing the square, a night of rolling deployments, Simpson's paradox, and why a pendulum that beats seconds is 99.4 cm long — that one draws its geometry in front of you and grows its diagrams a stage at a time. Two more show GeoGebra: one where the slides drive the applet, one where a hand drives it from the speaker window.
+**Try it without installing anything:** [fifteen example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos: a tour of the package itself, how GPS finds you, why the four margins of a book are unequal, a school lesson on completing the square, a night of rolling deployments, and Simpson's paradox. Four more were built around what the package learned to do last: a pendulum that beats seconds, drawing its own geometry and growing its diagrams a stage at a time; a door that slams, sticks or settles, pulled from one damping value to the next; John Snow's cholera map, where the class calls out what it sees and the lecturer reveals it in the order it is named; and one about dressing a deck, which computes every contrast ratio it quotes. Three are rebuilt from the [mosaic](https://github.com/vincentarelbundock/mosaic) package's own decks, to see what carries across. Two show GeoGebra: one where the slides drive the applet, one where a hand drives it from the speaker window.
 
 ## Typst sets, the browser moves
 
@@ -363,7 +363,7 @@ else, no Node, no bundler.
 - **The slides are SVG outlines, not text.** Glyphs go into the file as paths,
   so nothing in the browser is selectable, searchable or reflowable, screen
   readers see nothing, and the file grows with the deck. Measured: the little
-  deck above weighs 211 kB, the nine example decks between 0.48 and 2.1 MB,
+  deck above weighs 211 kB, the fifteen example decks between 0.54 and 3.3 MB,
   and the largest of them holds 127 SVG trees with 5581 glyph references across
   23 slides. In exchange no font has to load and the layout cannot drift.
 - **`#pause` is read at the top level of a slide body only.** Inside a grid
@@ -441,8 +441,8 @@ exists still compiles.
 
 ### The decks are driven in a browser
 
-Compiling proves nothing about motion. A second run loads the nine example
-decks and a tenth check deck into a real browser, pages through every step
+Compiling proves nothing about motion. A second run loads the fifteen example
+decks and a sixteenth check deck into a real browser, pages through every step
 forward and backward, and holds the numbers against a written record:
 
 ```bash
@@ -486,10 +486,11 @@ how many elements are marked as drawn and as dimmed on every step, the
 number of ghosts a magic move produces, re entry through the hash, the speaker
 view, the ground colour of every slide and the runtime's own error list.
 
-The seventh deck, `.github/scripts/decklauf/pruefdeck.typ`, exists because the
-six examples never use `after: "dimmed"`, `stagger(dim: true)`, `invert`,
-`info()` or `fit`. Counted in their sources: zero times each. The dim lookup was
-deliberately broken and nothing in the six moved. The check deck is not under
+The sixteenth deck, `.github/scripts/decklauf/pruefdeck.typ`, exists because
+the examples leave gaps. `invert`, `info()` and `fit` appear in none of the
+fifteen; `after: "dimmed"` in one and `stagger(dim: true)` in two, all of them
+added late. Counted in their sources. The dim lookup was once deliberately
+broken and nothing in the examples of the day moved. The check deck is not under
 `examples/`, so it stays off the website and the published decks keep their
 pages unchanged. Beside it, `ueberlauf.typ` and `wanderung.typ` are decks that have to *fail* to
 compile, so that the overflow check and the drift check are caught when they

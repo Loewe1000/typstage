@@ -415,6 +415,11 @@ veniam, quis nostrud exercitation ullamco laboris.]
           tween: 18,
           width: 100%,
           height: 96pt,
+          // The frames really do differ in width -- "0" is narrower than
+          // "123,456" -- and that is the point of a number that counts up.
+          // It does not wander for it: `align(center)` inside a full-width
+          // block holds the middle still while the figures grow out from it.
+          steady: false,
         )
         v(4pt)
         panel(tp, inset: (x: 12pt, y: 6pt), width: auto,
