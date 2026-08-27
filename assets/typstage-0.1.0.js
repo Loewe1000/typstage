@@ -4203,13 +4203,25 @@
           // left edge of its column, and anything outside is clipped away.
           var wo = "left:" + (el.style.left || "0") + ";top:" + (el.style.top || "0") + ";";
           b.style.cssText = "position:absolute;" + wo
-            + "font:700 0.72em/1.55 system-ui,sans-serif;width:1.55em;"
-            + "height:1.55em;border-radius:50%;text-align:center;"
-            + "background:#eb5e28;color:#fff;opacity:1;"
+            + "font:700 0.72em/1.3 system-ui,sans-serif;width:1.3em;"
+            + "height:1.3em;border-radius:50%;text-align:center;"
+            // Nicht Weiss auf Orange: das misst 3,41, und eine fette
+            // Elfpunktziffer ist nach WCAG kein grosser Text. Dasselbe
+            // dunkle Grau, das die uebrigen Marken des Pakets tragen, misst
+            // auf demselben Orange 5,31.
+            + "background:#eb5e28;color:#14161c;opacity:1;"
             // Auf den Aufzaehlungspunkt, nicht daneben: die Ziffer nimmt den
             // Platz des Punktes ein, den sie ohnehin ersetzt, und die Zeile
             // rueckt nicht.
-            + "pointer-events:none;z-index:5;transform:translate(-12%,6%)";
+            //
+            // Sie war dabei aber zu gross: 1,55em breit bei einem Einzug von
+            // 1,19em, und zwischen ihrem rechten Rand und dem ersten
+            // Buchstaben blieben zwei Pixel -- gemessen bei 1600x900. Auf
+            // 1,3em geschrumpft und um vierzig Prozent nach links geschoben
+            // deckt sie den Punkt weiterhin ganz, laesst dem Wort zehn Pixel
+            // Luft und ragt dabei nur sechs Pixel in den Rand hinein, wo bei
+            // keinem der Themen etwas steht.
+            + "pointer-events:none;z-index:5;transform:translate(-40%,6%)";
           if (el.parentNode) el.parentNode.appendChild(b);
         });
       });
