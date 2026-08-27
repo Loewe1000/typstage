@@ -393,6 +393,57 @@ const szeneBild = `(function () {
         + " in beiden Fenstern");
     }
 
+    // ── Die Kachel der laufenden Folie ist die Zeichenflaeche ─────────────
+    //
+    // Sie sieht nach Verschwendung aus -- die Wand zeigt dasselbe --, und sie
+    // ist keine: auf ihr wird gezeichnet, und die Striche gehen in die Halle.
+    // Der Kachelentwurf hat sie in einen Kasten gesetzt, und ein Kasten, der
+    // ueber ihr laege statt um sie herum, faenge den Zeiger ab. Das faellt an
+    // keiner Knotenzahl auf und an keinem Fingerabdruck -- also hier.
+    //
+    // Gezogen wird mit dem echten Zeiger und nicht mit einer Nachricht: die
+    // Frage ist ja gerade, ob der Zeiger ankommt.
+    const tBuehne = JSON.parse(await sprecher.ev(
+      "JSON.stringify(document.getElementById('ts-stage').getBoundingClientRect())"));
+    const tinteZaehlen = "document.querySelectorAll('#ts-ink *').length";
+    const tVor = [+await halle.ev(tinteZaehlen), +await sprecher.ev(tinteZaehlen)];
+    if (tBuehne.width < 40 || tBuehne.height < 40) {
+      sagt("zeichnen", "die Buehne im Sprecherfenster misst "
+        + Math.round(tBuehne.width) + "x" + Math.round(tBuehne.height)
+        + " -- sie hat ihren Platz in der Kachel nicht gefunden");
+    } else {
+      const bei = (fx, fy) => ({ x: Math.round(tBuehne.x + tBuehne.width * fx),
+                                 y: Math.round(tBuehne.y + tBuehne.height * fy) });
+      const zug = [[0.25, 0.35], [0.38, 0.5], [0.5, 0.36], [0.62, 0.52], [0.74, 0.4]];
+      let q = bei(zug[0][0], zug[0][1]);
+      await sprecher.ruf("Input.dispatchMouseEvent", { type: "mousePressed",
+        x: q.x, y: q.y, button: "left", clickCount: 1, buttons: 1 });
+      for (const [fx, fy] of zug.slice(1)) {
+        q = bei(fx, fy);
+        await sprecher.ruf("Input.dispatchMouseEvent", { type: "mouseMoved",
+          x: q.x, y: q.y, button: "left", buttons: 1 });
+        await schlaf(90);
+      }
+      await sprecher.ruf("Input.dispatchMouseEvent", { type: "mouseReleased",
+        x: q.x, y: q.y, button: "left", clickCount: 1, buttons: 0 });
+      await schlaf(900);
+      const tNach = [+await halle.ev(tinteZaehlen), +await sprecher.ev(tinteZaehlen)];
+      if (tNach[1] <= tVor[1]) {
+        sagt("zeichnen", "ein Zug ueber die Folienkachel hat im Sprecherfenster"
+          + " keinen Strich gemacht: " + tVor[1] + " -> " + tNach[1]);
+      }
+      if (tNach[0] <= tVor[0]) {
+        sagt("zeichnen", "der Strich kam in der Halle nicht an: "
+          + tVor[0] + " -> " + tNach[0]);
+      }
+      console.log("Zeichnen: Sprecher " + tVor[1] + " -> " + tNach[1]
+        + " · Halle " + tVor[0] + " -> " + tNach[0]
+        + " · Buehne " + Math.round(tBuehne.width) + "x" + Math.round(tBuehne.height));
+      // Und `x` raeumt sie wieder ab, damit die naechste Probe eine leere
+      // Folie vorfindet.
+      await sprecher.taste("x"); await schlaf(500);
+    }
+
     // ── Und die Vollbilduhr, ferngesteuert ────────────────────────────────
     //
     // Sie ist der einzige Zustand, den das Pult setzt und den die Halle
