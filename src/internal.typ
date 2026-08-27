@@ -1087,6 +1087,42 @@
   // zehnmal daneben.
   wirkung-pruefen(extra.at("enter", default: none), "enter", kind)
   wirkung-pruefen(extra.at("exit", default: none), "exit", kind)
+  // ── Ein `place` gibt seinen Platz nicht her ───────────────────────────────
+  //
+  // `place` steht außerhalb des Flusses. Gemessen ist es 0x0, und wohin es
+  // seinen Inhalt wirklich setzt -- `dx`, `dy`, die Ausrichtung -- steht in
+  // keinem Maß, das `measure` zurückgeben könnte. Ein verfolgtes Element *um*
+  // ein `place` bekäme deshalb eine Marke am Ort des Flusses und in der Größe
+  // der Luft, die ein Element ohne Fläche bekommt: gemessen 40x40 pt statt
+  // null. Drei davon liefen im Browser eine Treppe hinunter, je 38 px, und
+  // schoben den Text hinter sich mit, während auf Papier alle drei
+  // nebeneinander standen.
+  //
+  // Zu retten ist der Fall, indem das `place` nach *außen* wandert und das
+  // verfolgte Element nach innen -- derselbe Handgriff, zu dem die Decks
+  // bisher von Hand greifen mussten. Danach steht die Marke dort, wo der
+  // Inhalt steht, und der Fluss behält seine Null. Es gilt für jede Art, denn
+  // hier kommen alle durch.
+  //
+  // Ein `float: true` wandert nicht mit. Ein Gleitobjekt sucht sich den Kopf
+  // oder den Fuß der Seite, und eine Folie hat weder das eine noch das andere;
+  // wohin es geriete, wüsste hier niemand. Lieber eine Meldung als eine Marke
+  // an einem geratenen Ort.
+  if type(body) == content and body.func() == place {
+    assert(not body.at("float", default: false), message:
+      "typstage: a tracked element cannot hold a floating place. "
+      + "place(float: true) looks for the top or bottom of a page, and a "
+      + "slide has neither, so there is no place for the marker to go. "
+      + "Drop float: true, or put the place outside the "
+      + kind + "().")
+    return place(
+      body.at("alignment", default: auto),
+      dx: body.at("dx", default: 0pt),
+      dy: body.at("dy", default: 0pt),
+      track(kind, body.body, at: at, extra: extra, raw-frames: raw-frames,
+            inline: inline, width: width, dim-freiwillig: dim-freiwillig),
+    )
+  }
   // The `box` has to sit around the *whole* construction, not inside it:
   // `layout()` is block-level, so an inline element that only chooses a `box`
   // further in would still break the line it sits in.
