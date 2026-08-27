@@ -197,6 +197,31 @@
   ))
 }
 
+/// How the deck is cut, section by section.
+///
+/// `info()` says where you are; this says how the whole thing is divided. One
+/// entry per section, in the order they come, each with the slides beneath it:
+///
+/// ```typ
+/// #context for a in deck-outline() {
+///   [#a.number. #a.title -- slides #a.first to #a.last (#a.count)]
+/// }
+/// ```
+///
+/// `first`, `last` and `count` are transitive: a depth-1 section counts the
+/// slides of its sub-sections too. A section with no slides under it has
+/// `none` for `first` and `last`, and 0 for `count`.
+///
+/// Read straight off the state every slide already carries. No `query`, no
+/// second walk over the document, and the same answer in both outputs.
+#let deck-outline() = {
+  let stand = deck-info.get()
+  assert(stand != none, message:
+    "typstage: deck-outline() reads how the deck is cut and therefore works "
+    + "only inside a presentation.")
+  stand.data.at("structure", default: ())
+}
+
 /// A note for the presenter view (key `s`).
 ///
 /// The note has to carry text: the presenter view transports it as a string,
