@@ -65,6 +65,36 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
 #ts-ink{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6}
 #ts-ink svg,#ts-ink canvas{position:absolute;inset:0;width:100%;height:100%;
   display:block}
+
+/* Die Vollbilduhr. Kein Aufsatz ueber der Folie, sondern an ihrer Stelle:
+   schwarz von Rand zu Rand, wie `b schwarz`, nur dass hier Ziffern stehen.
+
+   z-index 7, also genau eine Stufe ueber #ts-ink (6). Damit liegt sie ueber
+   allem, was zur Folie gehoert, und unter allem, was zur Bedienung gehoert --
+   die Uebersicht (50) und der Hinweis (60) decken sie von selbst zu. Auf 60
+   gesetzt lag sie ueber der Uebersicht: gemessen, und `o` war damit blind. */
+#ts-clock{position:fixed;inset:0;z-index:7;display:none;background:#000;
+  color:#fff;align-items:center;justify-content:center;flex-direction:column;
+  pointer-events:none;--ts-clock-over:#eb5e28}
+html[data-ts-clock] #ts-clock{display:flex}
+/* Monospace mit gleichbreiten Ziffern. Ohne `tabular-nums` wandert die Zeile
+   bei jedem Sekundenschlag um Bruchteile, und aus der letzten Reihe sieht das
+   aus, als zappele die Uhr. Die Ziffern sind Absicht so gross: der Kasten
+   nimmt gut 46 % der Buehnenhoehe ein, die Versalhoehe rund 32 % -- siebenmal
+   die groesste Glyphe, die eine Folienueberschrift traegt.
+
+   `min(46vh,26vw)`, nicht 46vh allein: auf 16:9 sind die beiden dasselbe, auf
+   einem schmaleren Fenster gewinnt die Breite, und `m:ss` samt freigehaltener
+   Vorzeichenspalte laeuft nicht ueber den Rand hinaus. */
+.ts-clock-num{font:700 min(46vh,26vw)/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:pre}
+/* Das Wort steht erst in der Ueberzeit da. Sein Erscheinen ist das Ereignis,
+   deshalb haelt die Zeile ihre Hoehe auch vorher frei: die Ziffern duerfen
+   beim Umschlag nicht nach unten rutschen. */
+.ts-clock-word{font:600 min(6vh,3.4vw)/1 system-ui,-apple-system,sans-serif;
+  letter-spacing:.18em;text-transform:uppercase;margin-bottom:.7em;
+  min-height:1em;color:var(--ts-clock-over)}
+html[data-ts-clock-over] .ts-clock-num{color:var(--ts-clock-over)}
 #ts-overview{position:absolute;inset:0;background:#0f1116;display:none;
   grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;
   padding:16px;overflow:auto;z-index:50;align-content:start}
@@ -237,6 +267,13 @@ html[data-ts-rolle="speaker"][data-ts-modus="zeiger"]
   padding:1px 8px;font-weight:600;letter-spacing:.04em}
 .ts-sp-lage .ts-sp-eis{background:#4cc9f0}
 .ts-sp-lage .ts-sp-weg{background:#ffd166}
+/* Die Vollbilduhr, als kleiner Eintrag. Gleiche Bauart wie `schwarz` und
+   `eingefroren`, nur mit Ziffern darin -- also gleichbreite. */
+.ts-sp-lage .ts-sp-saal{background:#a8e06a;font-variant-numeric:tabular-nums}
+/* Das Minutenfeld. Es steht nur da, solange `t` es aufgeklappt hat. */
+.ts-sp-uhrfeld{width:3.4em;background:#ffffff12;border:1px solid #ffffff2b;
+  color:inherit;border-radius:5px;padding:1px 5px;font:inherit;font-size:15px;
+  font-variant-numeric:tabular-nums;line-height:1.25}
 .ts-sp-hilfe{margin-left:auto;text-align:right;line-height:1.5;font-size:13px;
   color:#ffffffb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* A speaker's laptop can be small. In a narrow window the running slide
@@ -246,7 +283,7 @@ html[data-ts-rolle="speaker"][data-ts-modus="zeiger"]
   .ts-sp-wert{font-size:19px}
   .ts-sp-gross{font-size:24px}
   .ts-sp-klein{font-size:14px}
-  .ts-sp-ziel{font-size:14px}
+  .ts-sp-ziel,.ts-sp-uhrfeld{font-size:14px}
   .ts-sp-kopf{gap:14px}
   .ts-sp-neben{gap:11px}
   .ts-sp-balken{width:130px}
@@ -257,7 +294,11 @@ html[data-ts-rolle="speaker"][data-ts-modus="zeiger"]
    block costs nothing. */
 html[data-ts-schwarz="1"],html[data-ts-schwarz="1"] body{background:#000}
 html[data-ts-schwarz="1"] #ts-stage,html[data-ts-schwarz="1"] #ts-chrome,
-html[data-ts-schwarz="1"] #ts-fly,html[data-ts-schwarz="1"] #ts-ink{opacity:0}
+html[data-ts-schwarz="1"] #ts-fly,html[data-ts-schwarz="1"] #ts-ink,
+/* Und die Uhr dazu. Ohne diese Nennung blieb sie bei `b` voll stehen --
+   gemessen: die Buehne war weg, die Ziffern nicht. Wer schwarz drueckt,
+   will nichts sehen, auch keine Uhr. Schwarz gewinnt. */
+html[data-ts-schwarz="1"] #ts-clock{opacity:0}
 @media print{
   html,body{overflow:visible;background:#fff;height:auto}
   #ts-stage{position:static;width:100%!important;height:auto!important}
@@ -269,7 +310,10 @@ html[data-ts-schwarz="1"] #ts-fly,html[data-ts-schwarz="1"] #ts-ink{opacity:0}
      hatte, traegt ihre Verschiebung sonst mit aufs Blatt -- die haelfte des
      Bildes waere weg. Sie steht vollstaendig da, wie im Handout. */
   .ts-bg,.ts-ov{transform:none!important}
-  #ts-overview,#ts-hint,#ts-fly,#ts-chrome,#ts-ink,
+  /* `#ts-clock` steht mit in dieser Liste, sonst laege eine schwarze
+     Countdown-Seite im Handout -- gemessen. Auf Papier gibt es keine
+     Pause, die zu Ende geht. */
+  #ts-overview,#ts-hint,#ts-fly,#ts-chrome,#ts-ink,#ts-clock,
   #ts-speaker{display:none!important}
   /* Printing produces the same thing from both windows. The speaker
      view's rules are more specific than the print rule above and would
