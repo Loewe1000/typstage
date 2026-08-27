@@ -1690,39 +1690,14 @@
     document.documentElement.style.setProperty("--ts-clock-over", CFG.accent);
   }
 
-  // Dieselbe Rechnung wie `contrast()` im Paket, hier fuer die eine Stelle,
-  // an der die Laufzeit selbst eine Farbe waehlen muss.
-  function leuchte(h) {
-    var m = /^#?([0-9a-f]{6})$/i.exec(String(h).trim());
-    if (!m) return null;
-    var v = parseInt(m[1], 16), t = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-    var l = t.map(function (c) {
-      c /= 255;
-      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2];
-  }
-  function kontrast(a, b) {
-    var x = leuchte(a), y = leuchte(b);
-    if (x === null || y === null) return 0;
-    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
-  }
-
-  // Die Farbe der cue-Ziffer. Sie war fest auf die Signalfarbe der Vorgabe
-  // gesetzt -- auf einem Deck mit anderem Akzent ein Fremdkoerper, und
-  // zufaellig dieselbe Farbe wie der erste Stift. Jetzt nimmt sie den Akzent
-  // des Decks, *wenn* darauf eine Ziffer lesbar steht: gepruefte 4,5, sonst
-  // bleibt es bei der eigenen Farbe der Laufzeit, deren 5,31 gemessen sind.
-  // Eine Marke, die man nicht lesen kann, ist keine.
-  var AD_FLAECHE = "#eb5e28", AD_SATZ = "#14161c";
-  (function () {
-    var a = CFG.accent;
-    if (!a || leuchte(a) === null) return;
-    var dunkel = kontrast(a, "#14161c"), hell = kontrast(a, "#ffffff");
-    if (Math.max(dunkel, hell) < 4.5) return;
-    AD_FLAECHE = a;
-    AD_SATZ = dunkel >= hell ? "#14161c" : "#ffffff";
-  })();
+  // Die Farbe der cue-Ziffer. Sie hing eine Zeit lang am Akzent des Decks --
+  // gut gemeint, aber die Ziffer ist keine Zier: sie ist eine Marke, die man
+  // im Vorbeisehen lesen koennen muss, und ein Deck darf sie nicht schlechter
+  // machen. Deshalb feste Farben, und zwar die deutlichsten, die es gibt:
+  // weiss auf fast schwarz, 18,08. Dazu ein weisser Ring, damit der schwarze
+  // Kern auch auf einer dunklen Folie eine Kante hat -- 18,88 gegen ein
+  // typisches Folienschwarz. So liest sie sich auf jedem Grund.
+  var AD_FLAECHE = "#14161c", AD_SATZ = "#ffffff";
 
   var UHR_KNOTEN = document.getElementById("ts-clock");
   var UHR_WORT = UHR_KNOTEN && UHR_KNOTEN.querySelector(".ts-clock-word");
@@ -1735,9 +1710,28 @@
   // Ziffern beim Umschlag nicht seitwaerts. Erstes von drei Signalen der
   // Ueberzeit -- die anderen sind das Wort und die Farbe, und ein viertes gibt
   // es nicht: kein Blinken, kein Ton.
-  function uhrText(sek, drueber) {
+  function uhrText(sek, drueber, spalte) {
     var s = Math.max(0, sek);
-    return (drueber ? "+" : " ") + Math.floor(s / 60) + ":" + uhrZwei(s % 60);
+    // Zweistellig, auch unter zehn Minuten. Sonst wechselt die Zeichenzahl
+    // beim Sprung von 10:00 auf 9:59, und ein Kasten, der sich nach seinem
+    // Inhalt richtet, zuckt in dem Augenblick -- in der angehefteten Uhr war
+    // genau das zu sehen: die Ziffern standen nicht mittig in ihrem Rahmen.
+    // Die Vollbilduhr haelt eine Spalte fuer das Vorzeichen frei: dort sind
+    // die Ziffern riesig, und ein Sprung um eine Zeichenbreite faellt aus der
+    // letzten Reihe auf. Die angeheftete Uhr haelt sie *nicht* frei -- ihr
+    // Kasten misst sich an seinem Inhalt, und eine leere Spalte darin ist
+    // nichts als eine Kante Luft auf einer Seite.
+    // Die Spalte steht auf *beiden* Seiten. Nur links reserviert schiebt sie
+    // die Ziffern nach rechts aus der Mitte -- die Zeile ist mittig gesetzt,
+    // und das Vorzeichen zaehlt beim Zentrieren mit. Mit einer gleich breiten
+    // Spalte rechts stehen die Ziffern in der Mitte der Buehne, im Lauf wie in
+    // der Ueberzeit, und sie ruecken beim Umschlag um kein Haar.
+    if (spalte === false) {
+      return (drueber ? "+" : "") + uhrZwei(Math.floor(s / 60)) + ":"
+             + uhrZwei(s % 60);
+    }
+    return (drueber ? "+" : " ") + uhrZwei(Math.floor(s / 60)) + ":"
+           + uhrZwei(s % 60) + " ";
   }
 
   // Ein Bild der Uhr, in Buehnenzeit. Steht unmittelbar hinter der Zeile, die
@@ -1756,7 +1750,8 @@
     var zeig = drueber
       ? Math.ceil(Math.min(-rest, Math.min(UHR.dauer, UHR_DECKEL)))
       : Math.floor(rest);
-    var txt = uhrText(zeig, drueber);
+    var txt = uhrText(zeig, drueber,
+                      UHR_KNOTEN && UHR_KNOTEN.dataset.art !== "fest");
     if (txt === UHR.letztes) return;
     UHR.letztes = txt;
     if (UHR_ZAHL) UHR_ZAHL.textContent = txt;
@@ -1797,15 +1792,25 @@
     UHR_KNOTEN.dataset.art = fest ? "fest" : "voll";
     if (!fest) {
       UHR_KNOTEN.style.left = UHR_KNOTEN.style.top = UHR_KNOTEN.style.width = "";
+      if (UHR_ZAHL) UHR_ZAHL.style.fontSize = "";
+      if (UHR_WORT) UHR_WORT.style.fontSize = "";
       return;
     }
     var b = B ? B.getBoundingClientRect() : null;
     if (!b || !b.width) return;
     UHR_KNOTEN.style.left = Math.round(b.left + b.width * (+x || 0)) + "px";
     UHR_KNOTEN.style.top = Math.round(b.top + b.height * (+y || 0)) + "px";
-    // Ein Viertel der Buehnenbreite. Gross genug, dass die letzte Reihe sie
-    // liest, klein genug, dass die Aufgabe darunter stehen bleibt.
-    UHR_KNOTEN.style.width = Math.round(b.width * 0.25) + "px";
+    // Keine Breite von hier. Die Ziffern stehen in einer Schrift mit festen
+    // Zeichenbreiten -- der Kasten weiss selbst, wie breit er sein muss, und
+    // jede Zahl, die man ihm vorgibt, kann nur falsch sein. Vorgegeben war
+    // ein Viertel der Buehne, und das war zu viel: die Ziffern standen mit
+    // Luft daneben, statt in ihrem Rahmen zu sitzen.
+    // Und die Ziffern messen sich an der *Buehne*, nicht am Fenster. Mit
+    // `vh`/`vw` war die Uhr im Sprecherfenster viel zu gross fuer ihre kleine
+    // Buehne: der Kasten folgte der Folie, die Schrift dem Fenster, und
+    // dieselbe Uhr sah in beiden Fenstern verschieden aus.
+    if (UHR_ZAHL) UHR_ZAHL.style.fontSize = Math.round(b.width * 0.052) + "px";
+    if (UHR_WORT) UHR_WORT.style.fontSize = Math.round(b.width * 0.014) + "px";
   }
 
   function uhrAus() {
@@ -2279,6 +2284,7 @@
   // does not touch anything: a deck without a speaker window notices
   // nothing of it.
   var TINTE = [], TINTE_AN = 0, TINTE_SVG = null, TINTE_FOLIE = -1;
+  var RADIERT = 0;         // haelt der Radiergummi gerade gedrueckt?
   // Was `x` von einer Folie geraeumt hat. `x` war der einzige Tastendruck
   // der Ansicht, der ohne Rueckfrage etwas endgueltig wegnahm -- und `z`
   // danach half nicht, denn es nahm nur den letzten Strich zurueck, und
@@ -2356,6 +2362,12 @@
   function tinteNimm(ev, schmutz) {
     if (!ev) return;
     TINTE_AN = 1;
+    if (ev.b === "radier") {
+      var lr = TINTE[ev.s];
+      if (lr) TINTE[ev.s] = lr.filter(function (x) { return x.n !== ev.n; });
+      tinteNeu();
+      return;
+    }
     if (ev.b === "loesch") {
       if (TINTE[ev.s] && TINTE[ev.s].length) PAPIERKORB[ev.s] = TINTE[ev.s];
       TINTE[ev.s] = [];
@@ -2768,6 +2780,39 @@
   //
   // `stelle` first, because the sprites get their places from the marks in
   // the background. A slide that has never been on has none yet.
+  // Ein geklontes SVG bringt die Namen seiner Teile mit, und im Dokument gibt
+  // es sie damit zweimal. Ein `href="#..."` und ein `url(#...)` treffen dann
+  // *das erste* Vorkommen -- also das Original. Gemessen auf `ziehen`: der
+  // Klon der Szene stand mit 120x89 Pixeln sichtbar da, trug 19 465 Zeichen
+  // Inhalt, und gemalt wurde nichts. Der Schnittpfad des Klons zeigte auf den
+  // Schnittpfad der laufenden Folie, und der liegt in einem anderen
+  // Koordinatensystem: alles fiel heraus.
+  //
+  // Also bekommen die Namen im Klon eine eigene Endung. Nur im Klon -- das
+  // Original bleibt, wie es ist.
+  var KLON_NR = 0;
+  function namenEindeutig(wurzel) {
+    var nr = ++KLON_NR, karte = {};
+    wurzel.querySelectorAll("[id]").forEach(function (e) {
+      var alt = e.id, neu = alt + "-k" + nr;
+      karte[alt] = neu;
+      e.id = neu;
+    });
+    if (!Object.keys(karte).length) return;
+    var zeiger = ["href", "xlink:href", "clip-path", "mask", "fill", "stroke",
+                  "filter", "marker-start", "marker-mid", "marker-end"];
+    wurzel.querySelectorAll("*").forEach(function (e) {
+      zeiger.forEach(function (a) {
+        var v = e.getAttribute(a);
+        if (!v) return;
+        var m = /^#(.+)$/.exec(v);
+        if (m && karte[m[1]]) { e.setAttribute(a, "#" + karte[m[1]]); return; }
+        var u = /^url\(#(.+)\)$/.exec(v.trim());
+        if (u && karte[u[1]]) e.setAttribute(a, "url(#" + karte[u[1]] + ")");
+      });
+    });
+  }
+
   function schrittBild(si, schritt) {
     var f = SLIDES[si];
     var m = document.createElement("div");
@@ -2776,6 +2821,9 @@
     stelle(si);
     var cp = f.querySelector(".ts-chromep");
     m.innerHTML = f.querySelector(".ts-bg").innerHTML + (cp ? cp.innerHTML : "");
+    // Auch hier: derselbe Name zweimal im Dokument, und die Verweise des
+    // Standbildes zeigen auf die laufende Folie.
+    namenEindeutig(m);
     var ov = f.querySelector(".ts-ov");
     if (ov) {
       // Read off the originals, applied to the copies further down. A nested
@@ -2786,6 +2834,7 @@
         stufen.push(zustand(el, schritt));
       });
       var k = ov.cloneNode(true);
+      namenEindeutig(k);
       // A cloned iframe would load the foreign document a second time, a
       // cloned video would play sound a second time. Neither belongs in a
       // still image.
@@ -3044,6 +3093,15 @@
              : GETRENNT ? "blind"
              : SAAL_REST < 0 ? "ueber" : "laeuft";
     ELN.uhrKachel.dataset.uhr = lage;
+    // Bei stehender Uhr zeigt die Wahl, was der naechste Start braechte; bei
+    // laufender, was gerade laeuft.
+    var artJetzt = SAAL_SEK ? SAAL_ART : FELD_ART;
+    if (ELN.uhrArt) {
+      for (var a in ELN.uhrArt) {
+        ELN.uhrArt[a].dataset.an = a === artJetzt ? "1" : "0";
+        ELN.uhrArt[a].setAttribute("aria-pressed", a === artJetzt ? "true" : "false");
+      }
+    }
     ELN.uhrMarke.textContent = lage === "ueber"
       ? wort("over", "over") : wort("timer", "class clock");
     ELN.saal.textContent = lage === "aus" ? "–"
@@ -3097,7 +3155,8 @@
     document.documentElement.dataset.tsClock = "1";
     uhrOrt("fest", SAAL_X, SAAL_Y);
     var drueber = SAAL_REST < 0;
-    if (UHR_ZAHL) UHR_ZAHL.textContent = uhrText(Math.abs(Math.round(SAAL_REST)), drueber);
+    if (UHR_ZAHL) UHR_ZAHL.textContent =
+      uhrText(Math.abs(Math.round(SAAL_REST)), drueber, false);
     if (UHR_WORT) UHR_WORT.textContent = drueber ? wort("over", "over") : "";
     if (drueber) document.documentElement.dataset.tsClockOver = "1";
     else delete document.documentElement.dataset.tsClockOver;
@@ -3220,10 +3279,24 @@
   // immer aus, und das Klassenzimmer beim Vortrag ist abgedunkelt.
   var LICHT_HAND = "";
   function lichtStellen() {
-    var hell = LICHT_HAND ? LICHT_HAND === "hell"
-      : !!(window.matchMedia
-           && window.matchMedia("(prefers-color-scheme: light)").matches);
+    // Vorgabe ist dunkel, ohne die Systemeinstellung zu fragen. Ein Pult
+    // steht im abgedunkelten Raum, und ein helles Fenster neben einer dunklen
+    // Wand blendet. Wer es hell will, sagt es mit `l`; die Wahl haelt die
+    // Sitzung.
+    var hell = LICHT_HAND === "hell";
     document.documentElement.dataset.tsLicht = hell ? "hell" : "dunkel";
+    lichtStand();
+  }
+  function lichtStand() {
+    // `lichtHorchen` laeuft ganz zu Anfang, lange bevor die Ansicht gebaut
+    // ist: `ELN` gibt es dann noch gar nicht. Deshalb hier beides pruefen und
+    // nicht nur den Knopf -- sonst wirft der Aufbau, und die ganze Ansicht
+    // bleibt leer.
+    if (!ELN || !ELN.licht) return;
+    var hell = document.documentElement.dataset.tsLicht === "hell";
+    // Der Knopf nennt das *andere* Bild: was ein Druck bewirkt, nicht was
+    // gerade gilt.
+    ELN.licht.textContent = hell ? wort("dark", "dark") : wort("light", "light");
   }
   function lichtUm() {
     LICHT_HAND = document.documentElement.dataset.tsLicht === "dunkel"
@@ -3391,6 +3464,25 @@
     });
     uf.addEventListener("blur", uhrFeldZu);
     ELN.uhrFeld = uf;
+    // Welche Uhr der naechste Start bringt. Man sah es der Ansicht nicht an:
+    // `t` und `⇧t` starten Verschiedenes, und der Unterschied stand nirgends
+    // ausser in der Tastenzeile. Jetzt steht er in der Kachel, um die es geht
+    // -- als Wahl zwischen zweien, und die getroffene ist umgedreht.
+    var artZeile = bau("div", "ts-sp-uhrart", kUhr);
+    ELN.uhrArt = {};
+    [["voll", "full"], ["fest", "pinned"]].forEach(function (a) {
+      var k = bau("button", "ts-sp-art", artZeile);
+      k.type = "button";
+      k.textContent = wort(a[1], a[1]);
+      k.dataset.art = a[0];
+      k.addEventListener("click", function () {
+        // Laeuft schon eine, wechselt sie die Art im Lauf -- eine Pause, die
+        // man zudecken wollte und dann doch nicht, soll nicht neu beginnen.
+        if (SAAL_SEK) { SAAL_ART = a[0]; sichtSenden(); uhrZeigen(); return; }
+        uhrFeldAuf(a[0]);
+      });
+      ELN.uhrArt[a[0]] = k;
+    });
     ELN.saalBalken = balken(kUhr);
     // 4. Der naechste Schritt, als fuenfte Kachel neben den vier Zahlen.
     //    Die Vorschau ist ein Blick und keine zweite Buehne; sie steht
@@ -3400,34 +3492,83 @@
     ELN.vorBild = bau("div", "ts-sp-vorbild", vor);
 
     // Die Fusszeile ist Werkzeug und kein Zustand: Stift, Farben, Tasten.
-    var fuss = bau("div", "ts-sp-fuss", SPRECHERBOX);
-    var stift = bau("div", "ts-sp-stift", fuss);
-    // The label is the switch. Whoever reads what is on can also click it
-    // and does not have to know the key first.
-    var um = bau("button", "ts-sp-modus", stift);
-    um.type = "button";
-    // Beide Woerter sind verschieden lang, und die Pille schob bei jedem
-    // Umschalten die Tupfenreihe seitwaerts. Gemessen wird das laengere,
-    // sobald die Ansicht wirklich steht -- vorher hat der Kasten keine
-    // Breite, und ein Mass von null ist keins.
-    um.dataset.breit = "0";
-    um.addEventListener("click", modusUm);
-    ELN.modus = um;
+    // ── Die Werkzeugkachel ──────────────────────────────────────────────
+    //
+    // Drei Zeilen, nach dem geordnet, wie oft man sie braucht:
+    //
+    //   1. zeichnen  -- Stift und seine vier Farben, nebeneinander. Was man
+    //      waehlt und womit, steht in einer Zeile.
+    //   2. berichtigen -- zurueck, Folie raeumen, radieren. Alles drei nimmt
+    //      etwas weg; sie gehoeren zusammen und nicht zwischen die Farben.
+    //   3. einstellen -- hell/dunkel und der Zeiger. Was man einmal setzt und
+    //      dann stehen laesst.
+    var kStift = kachel(uhren, "ts-sp-werkzeugkachel", wort("tools", "tools"));
+    var stift = bau("div", "ts-sp-stift", kStift);
     ELN.stiftKasten = stift;
+    ELN.werkzeug = {};
+
+    var wzKnopf = function (wohin, art, schluessel, vorgabe, zeichen) {
+      var k = bau("button", "ts-sp-wz", wohin);
+      k.type = "button";
+      k.dataset.wz = art;
+      bau("i", "ts-sp-wz-bild", k).textContent = zeichen;
+      bau("span", "ts-sp-wz-wort", k).textContent = wort(schluessel, vorgabe);
+      k.addEventListener("click", function () { modusSetzen(art); });
+      ELN.werkzeug[art] = k;
+      return k;
+    };
+
+    // 1 ── Stift und Farben
+    var z1 = bau("div", "ts-sp-zeile ts-sp-zeile-stift", stift);
+    wzKnopf(z1, "stift", "pen", "pen", "\u270E");
+    var farben = bau("div", "ts-sp-farben", z1);
+    ELN.farbKasten = farben;
     ELN.tupf = [];
     FARBEN.forEach(function (f, i) {
-      var t = bau("button", "ts-sp-tupf", stift);
+      var t = bau("button", "ts-sp-tupf", farben);
       t.type = "button";
       // Als Eigenschaft und nicht als Hintergrund: das Stilblatt rechnet aus
       // ihr die Kante des Tupfens aus, und das geht nur, wenn die Farbe dort
       // als Wert ankommt.
       t.style.setProperty("--tupf", f);
       t.setAttribute("aria-label", wort("pen", "pen") + " " + (i + 1));
-      t.addEventListener("click", function () { farbeSetzen(i); });
+      t.addEventListener("click", function () { farbeSetzen(i); modusSetzen("stift"); });
       ELN.tupf.push(t);
     });
+
+    // 2 ── zuruecknehmen, raeumen, radieren
+    var z2 = bau("div", "ts-sp-zeile", stift);
+    var tatKnopf = function (wohin, schluessel, vorgabe, taste, tun) {
+      var k = bau("button", "ts-sp-tat", wohin);
+      k.type = "button";
+      k.textContent = wort(schluessel, vorgabe);
+      k.title = wort(schluessel, vorgabe) + "  (" + taste + ")";
+      k.addEventListener("click", tun);
+      return k;
+    };
+    tatKnopf(z2, "undo", "undo", "z", function () {
+      tinteSenden({ b: "weg", s: tinteFolie() });
+    });
+    tatKnopf(z2, "clear", "clear", "x", function () {
+      tinteSenden({ b: "loesch", s: tinteFolie() });
+      hint(wort("inkCleared", "slide cleared \u2014 z brings it back"));
+    });
+    wzKnopf(z2, "radier", "erase", "eraser", "\u232B");
+
+    // 3 ── einstellen
+    var z3 = bau("div", "ts-sp-zeile", stift);
+    ELN.licht = tatKnopf(z3, "light", "light", "l", lichtUm);
+    wzKnopf(z3, "zeiger", "pointer", "pointer", "\u261E");
+    ELN.modus = ELN.werkzeug.stift;
+
+    var fuss = bau("div", "ts-sp-fuss", SPRECHERBOX);
     ELN.hilfe = bau("div", "ts-sp-hilfe", fuss);
-    ELN.hilfe.textContent = W.helpSpeakerShort || W.helpSpeaker || W.help || "";
+    // Die ganze Tastenzeile, nicht die kurze Fassung: die Leiste ist breit
+    // genug fuer alles, und eine Auswahl daraus zwingt nur dazu, sich den Rest
+    // zu merken. Jede Taste steht als kleiner Kasten da -- was man drueckt,
+    // sieht aus wie etwas, das man drueckt, und hebt sich damit vom Wort ab,
+    // das sagt, was dabei geschieht.
+    tastenzeile(ELN.hilfe, W.helpSpeaker || W.helpSpeakerShort || W.help || "");
 
     // The sound belongs in the hall, not at the speaker's seat: the stage
     // runs along here in full, video included. Seeing it is desired,
@@ -3469,18 +3610,24 @@
   // step: in pointer mode the colour swatches step back, and an embed that
   // mirrors itself gets the pointer locally (see the style sheet).
   function modusSetzen(m) {
-    MODUS = (m === "zeiger") ? "zeiger" : "stift";
+    MODUS = (m === "zeiger" || m === "radier") ? m : "stift";
     document.documentElement.dataset.tsModus = MODUS;
     // A half-drawn stroke and a held press must not survive the switch.
     MALT = 0; ZEIGT = 0; LETZT = null; OFFEN = null; GESETZT = 0;
     if (ELN.stiftKasten) ELN.stiftKasten.dataset.modus = MODUS;
-    if (!ELN.modus) return;
-    ELN.modus.textContent = MODUS === "zeiger"
-      ? wort("pointer", "pointer") : wort("pen", "pen");
-    ELN.modus.dataset.modus = MODUS;
+    if (ELN.werkzeug) {
+      for (var w in ELN.werkzeug) {
+        var an = w === MODUS;
+        ELN.werkzeug[w].dataset.an = an ? "1" : "0";
+        ELN.werkzeug[w].setAttribute("aria-pressed", an ? "true" : "false");
+      }
+    }
+    // Die Farben gehoeren zum Stift. Im Zeiger- und im Radiermodus haetten
+    // sie nichts zu sagen, also stehen sie dort auch nicht da.
+    if (ELN.farbKasten) ELN.farbKasten.dataset.aus = MODUS === "stift" ? "0" : "1";
   }
   function modusUm() {
-    var neu = MODUS === "stift" ? "zeiger" : "stift";
+    var neu = MODUS === "zeiger" ? "stift" : "zeiger";
     modusSetzen(neu);
     // Der Zeiger greift nur in eingebettete Dokumente hinein. Auf einer
     // Textfolie tat er bisher gar nichts und sagte es auch nicht: der
@@ -3619,6 +3766,7 @@
     if (!ELN.uhrFeld) return;
     FELD_ART = art === "fest" ? "fest" : "voll";
     ELN.uhrKachel.dataset.art = FELD_ART;
+    uhrZeigen();
     var geplant = FELD_ART === "fest" ? geplanteUhr() : 0;
     if (geplant) ELN.uhrFeld.value = String(geplant);
     ELN.uhrFeld.style.display = "";
@@ -3763,8 +3911,34 @@
       tinteSenden({ n: STRICH_NR, s: tinteFolie(), f: FARBEN[FARBE],
                     x: p.x, y: p.y });
     }
+    // Was der Radiergummi beruehrt. Verglichen wird in Bruchteilen der
+    // Buehne, denn so stehen die Punkte auch in der Tinte -- ein Mass in
+    // Pixeln waere in den zwei verschieden grossen Fenstern zweierlei.
+    function radiere(e) {
+      var p = anteil(e);
+      if (!p) return;
+      var si = tinteFolie(), l = TINTE[si];
+      if (!l || !l.length) return;
+      var nah = 0.018, weg = null;
+      for (var i = l.length - 1; i >= 0 && weg === null; i--) {
+        var pt = l[i].punkte || [];
+        for (var k = 0; k < pt.length; k++) {
+          var dx = pt[k].x - p.x, dy = pt[k].y - p.y;
+          if (dx * dx + dy * dy < nah * nah) { weg = l[i].n; break; }
+        }
+      }
+      if (weg !== null) tinteSenden({ b: "radier", s: si, n: weg });
+    }
+
     B.addEventListener("pointerdown", function (e) {
       if (e.button !== 0) return;
+      if (MODUS === "radier") {
+        RADIERT = 1;
+        try { B.setPointerCapture(e.pointerId); } catch (x) {}
+        radiere(e);
+        e.preventDefault();
+        return;
+      }
       if (MODUS === "zeiger") {
         var p0 = anteil(e);
         if (!p0 || !drin(p0)) return;
@@ -3782,6 +3956,10 @@
       e.preventDefault();
     });
     B.addEventListener("pointermove", function (e) {
+      if (MODUS === "radier") {
+        if (RADIERT) { radiere(e); e.preventDefault(); }
+        return;
+      }
       if (MODUS === "zeiger") {
         // Only while pressed. A hover would put a message on the wire for
         // every mouse movement across the slide, and nothing in the hall
@@ -3803,6 +3981,11 @@
       e.preventDefault();
     });
     function schluss(e) {
+      if (MODUS === "radier") {
+        RADIERT = 0;
+        try { B.releasePointerCapture(e.pointerId); } catch (x) {}
+        return;
+      }
       if (MODUS === "zeiger") {
         if (!ZEIGT) return;
         ZEIGT = 0;
@@ -4274,6 +4457,9 @@
     if (!f) return m;
     var cp = f.querySelector(".ts-chromep");
     m.innerHTML = f.querySelector(".ts-bg").innerHTML + (cp ? cp.innerHTML : "");
+    // Auch hier: derselbe Name zweimal im Dokument, und die Verweise des
+    // Standbildes zeigen auf die laufende Folie.
+    namenEindeutig(m);
     return m;
   }
 
@@ -4324,116 +4510,100 @@
   // grosses Loch. Mit der Notiz *neben* der Folie ist der flache Fall der
   // Regelfall geworden, und eine Form, die nichts mehr zu entscheiden hat,
   // ist eine Form zu viel.
+  // Eine Zeile aus Tastenkappen. Die Vorlage nennt Taste und Bedeutung durch
+  // einen senkrechten Strich getrennt: wo die Taste aufhoert, kann man nicht
+  // raten -- "Ende zum Schluss" faengt mit einem Wort an, das selbst eine
+  // Taste ist.
+  function tastenzeile(wohin, text) {
+    if (!wohin) return;
+    while (wohin.firstChild) wohin.removeChild(wohin.firstChild);
+    // Die Vorlage nennt Gruppen, durch `§` getrennt; in jeder steht vor dem
+    // Doppelpunkt ihr Name und danach die Tasten. Der senkrechte Strich
+    // trennt Taste und Bedeutung -- wo die Taste aufhoert, kann man nicht
+    // raten: "Ende zum Schluss" faengt mit einem Wort an, das selbst eine
+    // Taste ist.
+    String(text).split("\u00a7").forEach(function (roh) {
+      var t = roh.trim();
+      if (!t) return;
+      var doppel = t.indexOf(":");
+      var name = doppel > 0 ? t.slice(0, doppel).trim() : "";
+      var rest = doppel > 0 ? t.slice(doppel + 1) : t;
+      var g = bau("div", "ts-sp-gruppe", wohin);
+      if (name) bau("span", "ts-sp-gruppe-name", g).textContent = name;
+      rest.split("\u00b7").forEach(function (stueck) {
+        var e = stueck.trim();
+        if (!e) return;
+        var teil = e.split("|");
+        var pr = bau("span", "ts-sp-taste-paar", g);
+        if (teil.length > 1) {
+          teil[0].trim().split(/\s+/).forEach(function (k) {
+            if (k) bau("kbd", "ts-sp-kappe", pr).textContent = k;
+          });
+          bau("span", "ts-sp-taste-wort", pr).textContent = teil.slice(1).join("|").trim();
+        } else {
+          bau("span", "ts-sp-taste-wort", pr).textContent = e;
+        }
+      });
+    });
+  }
+
   function sprecherSpalten() {
     if (ROLLE !== "speaker" || !LEIB || !PLATZ) return;
     var r = LEIB.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var v = CFG.width / CFG.height;
-    // Gerechnet wird mit der Breite des *Kastens*, nicht mit der von `LEIB`
-    // selbst: weiter unten bekommt `LEIB` eine Hoechstbreite, und wer die
-    // eigene Breite misst, um sie gleich darauf zu beschneiden, schneidet
-    // bei jedem Aufruf ein Stueck mehr ab.
-    var aussen = (LEIB.parentNode && LEIB.parentNode.clientWidth) || r.width;
-    var frei = aussen - 12;                     // ein Spaltenabstand
-    var zeile = ELN.uhrKachel ? ELN.uhrKachel.parentNode : null;
-    if (!zeile) return;
-    // Wie hoch eine Zahlkachel von sich aus ist, weiss nur der Browser: das
-    // haengt an der Schriftgroesse, und die haengt an der Fensterhoehe. Also
-    // die Zeile erst frei stellen und messen, dann rechnen. Ein Kreis
-    // entsteht daraus nicht -- die Hoehe der Zeile haengt an keiner
-    // Spaltenbreite.
+
+    // Das Raster steht jetzt im Stilblatt: Folie ueber die volle Breite,
+    // darunter Notiz und Vorschau, darunter die Werkzeugzeile. Hier bleibt
+    // nur, was der Browser nicht von sich aus weiss -- wie hoch die untere
+    // Zeile wirklich sein will und wie viel Hoehe die Folie danach hat.
+    LEIB.style.maxWidth = "";
+    LEIB.style.gridTemplateColumns = "";
     LEIB.style.gridTemplateRows = "";
-    var natur = zeile.getBoundingClientRect().height;
-    var oben = Math.max(90, r.height - natur - 10);
-    // Was die Kachel der Folie fuer sich selbst braucht: Rand, Polster und
-    // die Zeile mit der Marke und dem Zustand des Saals. Gemessen und nicht
-    // eingetragen -- so bleibt die Rechnung richtig, wenn jemand im
-    // Stilblatt das Polster aendert. Ein Kreis entsteht daraus nicht: der
-    // Betrag haengt an keiner der beiden Groessen, die hier ausgerechnet
-    // werden.
+    var zeile = ELN.uhrKachel ? ELN.uhrKachel.parentNode : null;
+    var natur = zeile ? zeile.getBoundingClientRect().height : 0;
+
+    // Hochkant heisst hier nur noch: die Vorschau passt nicht mehr neben die
+    // Notiz. Die Folie liegt in beiden Faellen oben und quer.
+    LEIB.dataset.form = r.width < 520 ? "hochkant" : "hoch";
+
+    // Was die Notiz bekommt: was nach Folie und Kachelzeile uebrig ist,
+    // gedeckelt, damit sie in einem hohen Fenster nicht die Folie auffrisst.
     var kr = PLATZ.parentNode.getBoundingClientRect();
     var pr = PLATZ.getBoundingClientRect();
     var randX = Math.max(0, kr.width - pr.width);
     var randY = Math.max(0, kr.height - pr.height);
-    // Wie hoch die Kachel steht, wenn die Folie so breit ist.
-    var kachelHoch = function (b) { return (b - randX) / v + randY; };
+    var folieHoch = (r.width - randX) / v + randY;
+    var uebrig = Math.max(0, r.height - natur - 20);
+    folieHoch = Math.min(folieHoch, uebrig * 0.72);
+    var notizHoch = Math.max(0, uebrig - folieHoch);
 
-    // Hochkant oder nicht. Entschieden wird am Ergebnis und nicht am
-    // Seitenverhaeltnis des Fensters: es zaehlt, ob eine Folie ueber die
-    // volle Breite noch eine lesbare Notiz unter sich uebrig laesst.
-    var vollHoch = kachelHoch(frei);
-    if (vollHoch + Math.max(120, oben * 0.24) <= oben) {
-      LEIB.dataset.form = "hochkant";
-      LEIB.style.maxWidth = "";
-      LEIB.style.gridTemplateRows =
-        Math.round(vollHoch) + "px minmax(0,1fr) "
-        + Math.round(zeilenHoehe(natur, oben - vollHoch - 10)) + "px";
-      // Nur die Kachelzeile teilt sich hier noch in Spalten; Folie und
-      // Notiz liegen quer darueber.
+    LEIB.style.gridTemplateRows =
+      Math.round(folieHoch) + "px " + Math.round(notizHoch) + "px auto";
+
+    // Die Vorschauspalte ist so breit, wie ihr Bild bei dieser Zeilenhoehe
+    // sein darf -- dann fuellt es die Kachel ganz, statt oben zu haengen und
+    // darunter Luft zu lassen. Die Notiz bekommt den Rest. Gerechnet nach
+    // dem Setzen der Zeilen, denn erst jetzt steht die Hoehe fest.
+    var vk = ELN.vorBild ? ELN.vorBild.parentNode : null;
+    if (vk) {
+      var vs = getComputedStyle(vk);
+      var vpX = parseFloat(vs.paddingLeft) + parseFloat(vs.paddingRight)
+              + parseFloat(vs.borderLeftWidth) + parseFloat(vs.borderRightWidth);
+      var vpY = parseFloat(vs.paddingTop) + parseFloat(vs.paddingBottom)
+              + parseFloat(vs.borderTopWidth) + parseFloat(vs.borderBottomWidth);
+      var vm = ELN.vorMarke ? ELN.vorMarke.getBoundingClientRect().height : 0;
+      var bildH = Math.max(0, notizHoch - vpY - vm - 4);
+      // Hoechstens die halbe Breite: eine Vorschau, die breiter ist als die
+      // Notiz daneben, dreht das Verhaeltnis der beiden um.
+      var spalte = Math.min(bildH * v + vpX, r.width * 0.5);
       LEIB.style.gridTemplateColumns =
-        Math.round(frei * 0.6) + "px minmax(0,1fr)";
-      vorschauBreite(v);
-      notizNachFenster();
-      notizStand();
-      return;
+        "minmax(0,1fr) " + Math.round(Math.max(120, spalte)) + "px";
     }
 
-    LEIB.dataset.form = "hoch";
-    // So breit duerfte die Folie sein, wenn sie die ganze Zeilenhoehe
-    // ausfuellt -- und so breit darf sie hoechstens werden, damit der Notiz
-    // eine Spalte bleibt, in der ein Satz nicht nach vier Woertern umbricht.
-    var breit = Math.min(frei * 0.63, (oben - randY) * v + randX);
-    breit = Math.max(frei * 0.36, breit);
-    breit = Math.min(breit, frei - 210, frei);
-    // Vier Zahlkacheln stehen unter der Folie und brauchen zusammen eine
-    // Mindestbreite; darunter waere die Zahl in ihnen breiter als ihr Kasten.
-    breit = Math.max(breit, Math.min(frei * 0.55, 380));
-    // Und mehr Breite, als die Notiz brauchen kann, bekommt sie nicht. Die
-    // Folie ist in einem flachen Fenster von der Hoehe begrenzt und wird
-    // durch Breite nicht groesser; die Notiz hoert dort auf, wo eine Zeile
-    // aufhoert, lesbar zu sein. Was dann noch uebrig ist, wird Rand.
-    LEIB.style.maxWidth = Math.round(breit + 12 + NOTIZ_BREIT) + "px";
-    LEIB.style.gridTemplateColumns = Math.round(breit) + "px minmax(0,1fr)";
-    // Die Spalte hat einen Boden, weil vier Zahlkacheln darin nebeneinander
-    // stehen muessen. Die *Folie* hat ihn nicht: in einem sehr flachen
-    // Fenster ist sie von der Hoehe begrenzt und kann die Breite gar nicht
-    // brauchen -- gemessen bei 1600x400 fuellte sie 51,3 % ihrer eigenen
-    // Kachel, rund zweihundert Pixel standen leer daneben. Also hoert ihre
-    // Kachel dort auf, wo die Folie aufhoert; was rechts frei wird, ist
-    // Grund und keine leere Kachel. Dieselbe Regel wie bei der Vorschau.
-    if (ELN.buehne) {
-      var passend = (oben - randY) * v + randX;
-      ELN.buehne.style.maxWidth =
-        passend < breit - 1 ? Math.round(passend) + "px" : "";
-    }
-    // Was die Folie an Hoehe nicht braucht, bekommt die Kachelzeile. Eine
-    // Kachel, die dreissig Pixel zu hoch ist, sieht nach Kachel aus; eine
-    // Folie mit zweihundert Pixeln Luft darueber und darunter sieht nach
-    // Loch aus. Und der Zuwachs geht an die Vorschau, die als einzige
-    // Kachel etwas damit anfangen kann.
-    LEIB.style.gridTemplateRows = "minmax(0,1fr) "
-      + Math.round(zeilenHoehe(natur, r.height - kachelHoch(breit) - 10)) + "px";
     vorschauBreite(v);
-    modusBreite();
     notizNachFenster();
     notizStand();
-  }
-
-  // Das laengere der beiden Woerter gibt der Pille ihr Mass. Einmal
-  // gemessen und dann gemerkt: das Wort wechselt, das Mass nicht.
-  function modusBreite() {
-    var um = ELN.modus;
-    if (!um || um.dataset.breit === "1") return;
-    var jetzt = um.textContent;
-    um.style.minWidth = "";
-    um.textContent = wort("pointer", "pointer");
-    var a = um.getBoundingClientRect().width;
-    um.textContent = wort("pen", "pen");
-    var b = um.getBoundingClientRect().width;
-    um.textContent = jetzt;
-    if (a < 8 && b < 8) return;
-    um.style.minWidth = Math.ceil(Math.max(a, b)) + "px";
-    um.dataset.breit = "1";
   }
 
   // Die Hoehe der Kachelzeile: was sie von sich aus braucht, hoechstens
@@ -4455,42 +4625,33 @@
     if (!ELN.vorBild) return;
     var kachel = ELN.vorBild.parentNode;
     if (!kachel) return;
-    var h = ELN.vorBild.clientHeight;
-    if (h < 8) return;
-
-    // Wie breit die Spalte ist, in der die Kachel steht -- aus dem Raster
-    // gelesen und nicht an der Kachel gemessen. Die Kachel richtet sich
-    // naemlich seit der Verschmaelerung nach ihrem eigenen Inhalt: wer sie
-    // misst, um sie danach zu beschneiden, misst beim naechsten Aufruf sein
-    // eigenes Ergebnis und schneidet wieder etwas ab. Gemessen schrumpfte
-    // das Bild so von 260 auf 146 Pixel, und die Kachel stand am Ende
-    // schmaler da als ihr eigenes Bild.
+    // Gerechnet wird aus dem Platz, den die *Kachel* hat, und nicht aus der
+    // Hoehe des Bildes: seit beide Masse von hier kommen, waere das der eigene
+    // Wert von eben -- beim ersten Mal null, und dann bleibt es null.
+    kachel.style.maxWidth = "";
     var st = getComputedStyle(kachel);
-    var polster = parseFloat(st.paddingLeft) + parseFloat(st.paddingRight)
-                + parseFloat(st.borderLeftWidth) + parseFloat(st.borderRightWidth);
-    var spalten = LEIB ? getComputedStyle(LEIB).gridTemplateColumns.split(" ") : [];
-    var spalte = spalten.length > 1 ? parseFloat(spalten[1]) : 0;
-    var platz = (spalte > 0 ? spalte : kachel.clientWidth + polster) - polster;
-
-    // Nach der Hoehe gerechnet, aber nie breiter als der Platz. Ohne die
-    // zweite Haelfte lief das Bild in einem stehenden Fenster aus seiner
-    // Kachel und aus dem Fenster heraus -- gemessen bei 700x900 ragte es
-    // 93 Pixel hinaus, und `overflow:hidden` schnitt es einfach ab. Ein
-    // angeschnittenes Bild sagt weniger als ein kleineres.
-    var breit = h * v;
-    if (platz > 8 && breit > platz) breit = platz;
+    var pX = parseFloat(st.paddingLeft) + parseFloat(st.paddingRight)
+           + parseFloat(st.borderLeftWidth) + parseFloat(st.borderRightWidth);
+    var pY = parseFloat(st.paddingTop) + parseFloat(st.paddingBottom)
+           + parseFloat(st.borderTopWidth) + parseFloat(st.borderBottomWidth);
+    var kr = kachel.getBoundingClientRect();
+    var marke = ELN.vorMarke ? ELN.vorMarke.getBoundingClientRect().height : 0;
+    var platzB = kr.width - pX;
+    var platzH = kr.height - pY - marke - 4;      // 4 = margin-top des Bildes
+    if (platzB < 24 || platzH < 14) return;
+    // Das groesste 16:9, das in beides passt. Erst die Hoehe ausreizen, und
+    // wo die Breite nicht reicht, von ihr aus zurueckrechnen -- sonst steht
+    // ein zu breites Bild in einem zu schmalen Kasten und das Verhaeltnis
+    // stimmt nicht mehr.
+    var breit = platzH * v, hoch = platzH;
+    if (breit > platzB) { breit = platzB; hoch = platzB / v; }
     ELN.vorBild.style.width = Math.round(breit) + "px";
-
-    // Und die Kachel hoert dort auf, wo ihr Bild aufhoert. Sie stand bisher
-    // ueber die ganze Spalte, waehrend das Bild sich nach der *Hoehe* der
-    // Zeile richtet: gemessen bei 1600x900 ein Bild von 260 Pixeln in einer
-    // Kachel von 579, also 65 % leere Kachel, und bei 1440x500 sogar 93 %.
-    // Breiter kann das Bild nicht werden, ohne hoeher zu werden, und hoeher
-    // darf es nicht, ohne der Folie Platz zu nehmen. Also wird die Kachel
-    // schmaler, und was rechts frei wird, ist Grund und nicht leere Kachel.
-    // Die Marke darueber darf sie trotzdem nicht abschneiden.
-    var marke = ELN.vorMarke ? ELN.vorMarke.scrollWidth : 0;
-    kachel.style.maxWidth = Math.round(Math.max(breit, marke) + polster) + "px";
+    ELN.vorBild.style.height = Math.round(hoch) + "px";
+    // Keine Hoechstbreite mehr von hier: die Spalte ist in `sprecherSpalten`
+    // schon so breit gerechnet, wie das Bild bei dieser Zeilenhoehe sein darf.
+    // Sie hier noch einmal zu beschneiden hiesse, das eigene Ergebnis von
+    // eben zu messen -- die Kachel blieb dann auf 131 Pixeln stehen, und das
+    // Bild fuellte ein Drittel ihrer Hoehe.
   }
 
   function fit() {
@@ -4706,13 +4867,14 @@
           // left edge of its column, and anything outside is clipped away.
           var wo = "left:" + (el.style.left || "0") + ";top:" + (el.style.top || "0") + ";";
           b.style.cssText = "position:absolute;" + wo
-            + "font:700 0.72em/1.3 system-ui,sans-serif;width:1.3em;"
-            + "height:1.3em;border-radius:50%;text-align:center;"
-            // Nicht Weiss auf Orange: das misst 3,41, und eine fette
-            // Elfpunktziffer ist nach WCAG kein grosser Text. Dasselbe
-            // dunkle Grau, das die uebrigen Marken des Pakets tragen, misst
-            // auf demselben Orange 5,31.
+            + "font:700 0.95em/1.5 system-ui,sans-serif;width:1.5em;"
+            + "height:1.5em;border-radius:50%;text-align:center;"
+            // Weiss auf fast schwarz misst 18,08 -- die Ziffer soll man
+            // lesen, nicht suchen. Der Ring drumherum traegt sie auch auf
+            // einer dunklen Folie: dort steht der schwarze Kern sonst auf
+            // schwarzem Grund.
             + "background:" + AD_FLAECHE + ";color:" + AD_SATZ + ";opacity:1;"
+            + "box-shadow:0 0 0 1.5px #ffffff,0 1px 3px #00000059;"
             // Auf den Aufzaehlungspunkt, nicht daneben: die Ziffer nimmt den
             // Platz des Punktes ein, den sie ohnehin ersetzt, und die Zeile
             // rueckt nicht.
@@ -4874,7 +5036,10 @@
     } else if (e.key === "s") {
       hint(attr(SLIDES[STEPS[current].slide], "note") || CFG.words.noNote);
     } else if (e.key === "?") {
-      hint((ROLLE === "speaker" && CFG.words.helpSpeaker) || CFG.words.help);
+      // Im Balken als Fliesstext: die Trennzeichen der Vorlage werden zu
+      // Zwischenraum, der Gruppenname bleibt stehen.
+      hint(String((ROLLE === "speaker" && CFG.words.helpSpeaker)
+                  || CFG.words.help).replace(/\|/g, " ").replace(/\s*\u00a7\s*/g, "   "));
     } else if (e.key === "p") { print(); }
     // The second window. The keypress is at the same time the user
     // gesture, without which the popup blocker would swallow

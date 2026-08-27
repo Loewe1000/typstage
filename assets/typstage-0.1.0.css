@@ -96,12 +96,11 @@ html[data-ts-clock] #ts-clock{display:flex}
    rechnet `uhrOrt` in Bruchteilen der Buehne aus -- in beiden Fenstern ist
    die Buehne verschieden gross, die Stelle auf der Folie aber dieselbe. */
 #ts-clock[data-art="fest"]{position:fixed;inset:auto;background:#000c;
-  border-radius:12px;padding:10px 14px 12px;align-items:center;
+  border-radius:12px;padding:10px 12px;align-items:center;justify-content:center;
   box-shadow:0 6px 24px #0000006b}
-#ts-clock[data-art="fest"] .ts-clock-num{font-size:min(9vh,5.2vw);
-  letter-spacing:-.01em}
-#ts-clock[data-art="fest"] .ts-clock-word{font-size:min(1.9vh,1.1vw);
-  letter-spacing:.14em;margin-bottom:.35em}
+#ts-clock[data-art="fest"] .ts-clock-num{letter-spacing:-.01em}
+#ts-clock[data-art="fest"] .ts-clock-word{letter-spacing:.14em;
+  margin-bottom:.25em;min-height:0}
 /* Am Pult ist sie das, was man anfasst: sie liegt ueber der Folie und
    nimmt den Zeiger an, waehrend daneben weiter gezeichnet wird. */
 html[data-ts-rolle="speaker"] #ts-clock[data-art="fest"]{z-index:75;
@@ -305,9 +304,13 @@ html[data-ts-licht="hell"]{
    aus; eine Notizkachel mit vierhundert leeren Pixeln sieht nach Fehler aus
    -- gemessen bei 1920x600 waren 42,7 % der Ansicht Notizkachel, und fast
    alles davon leer. */
-.ts-sp-leib{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);
-  grid-template-rows:minmax(0,1fr) auto;gap:10px 12px;min-height:0;
-  margin-left:auto;margin-right:auto;width:100%}
+/* Drei Zeilen, eine Spalte fuer die Folie. Die Folie bekommt die ganze
+   Breite -- sie ist das Groesste und zugleich die Zeichenflaeche --, darunter
+   Notiz und naechster Schritt nebeneinander, darunter die Werkzeugzeile aus
+   Kacheln. */
+.ts-sp-leib{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,22rem);
+  grid-template-rows:minmax(0,1fr) minmax(0,auto) auto;gap:10px 12px;
+  min-height:0;margin-left:auto;margin-right:auto;width:100%}
 /* Die Kachel selbst. Eine Flaeche, ein Rand, eine Marke oben. Mehr ist
    es nicht, und mehr braucht es nicht: der Abstand zwischen zwei Kacheln
    trennt sie besser als jede Linie. */
@@ -315,9 +318,14 @@ html[data-ts-licht="hell"]{
   border-radius:10px;box-shadow:var(--sp-schatten);padding:10px 12px;
   min-width:0;min-height:0;display:flex;flex-direction:column;gap:4px;
   position:relative;overflow:hidden}
+/* `flex:0 0 auto`: die Marke ist das Erste, was ein Flexkasten schrumpfen
+   wuerde, wenn der Inhalt darunter eine feste Hoehe hat -- gemessen war sie
+   in der Vorschaukachel auf null Pixel zusammengedrueckt, und das Bild lag
+   ueber ihrer Schrift. Eine Beschriftung, die man nicht mehr lesen kann,
+   ist keine. */
 .ts-sp-marke{font-size:11px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--sp-marke);white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;font-weight:600}
+  text-overflow:ellipsis;font-weight:600;flex:0 0 auto}
 /* Die grosse Zahl einer Kachel. Sie traegt die Rangordnung, damit nicht
    vier gleich laute Zahlen nebeneinander stehen und das Auge sich seinen
    Anker selbst suchen muss. */
@@ -391,8 +399,8 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
    Zahl, Unterzeile --, und was die eine hochschiebt, schiebt alle. Die
    dritte Zeile hat ein Mindestmass, damit auch das nicht mehr passiert:
    sie steht da, ob eine Unterzeile darin steht oder nicht. */
-.ts-sp-uhren{grid-column:1;grid-row:2;display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+.ts-sp-uhren{display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
   grid-template-rows:auto minmax(0,1fr) minmax(clamp(17px,2.2vh,21px),auto);
   gap:10px;min-width:0}
 .ts-sp-uhren > .ts-sp-kachel{
@@ -452,7 +460,7 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
    die Buehne selbst faehrt hierher, statt nachgebaut zu werden. `fit`
    misst `ts-sp-platz` aus und setzt sie darauf. Deshalb hat der Platz
    keine eigene Hoehe -- er nimmt, was die Zeile ihm gibt. */
-.ts-sp-buehne{grid-column:1;grid-row:1;justify-self:start;width:100%}
+.ts-sp-buehne{grid-column:1/3;grid-row:1;width:100%}
 .ts-sp-platz{flex:1;min-height:0;min-width:0}
 /* Die Kopfzeile der Folienkachel traegt rechts den Zustand des Saals.
    Er stand bisher in der Fusszeile, achthundert Pixel von dem Bild
@@ -473,6 +481,18 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
    ist umgedreht (Satzfarbe als Flaeche, 18,13 dunkel / 13,62 hell),
    eingefroren ist offen. Zwei Formen, nicht zwei Woerter in derselben
    Form. */
+/* Die Wahl der Uhrart, in der Kachel der Klassenuhr. Zwei Felder, eines
+   gewaehlt -- dieselbe Sprache wie der Werkzeugschalter darunter. */
+.ts-sp-uhrart{display:flex;gap:4px;margin-top:3px}
+.ts-sp-art{flex:1 1 0;min-width:0;padding:2px 4px;border-radius:5px;
+  border:1px solid var(--sp-rand);background:var(--sp-grund);
+  color:var(--sp-marke);cursor:pointer;font-family:inherit;font-size:9.5px;
+  font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts-sp-art:hover{background:var(--sp-ruhig);color:var(--sp-ruhig-satz)}
+.ts-sp-art[data-an="1"]{background:var(--sp-satz);color:var(--sp-grund);
+  border-color:var(--sp-satz)}
+.ts-sp-art:focus-visible{outline:2px solid var(--sp-marke);outline-offset:1px}
 .ts-sp-lage .ts-sp-dunkel{background:var(--sp-satz);color:var(--sp-grund)}
 .ts-sp-lage .ts-sp-eis{background:none;color:var(--sp-leise);
   box-shadow:inset 0 0 0 1px var(--sp-marke)}
@@ -485,7 +505,7 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
 .ts-sp-buehne[data-saal~="schwarz"][data-saal~="eis"]{border-color:var(--sp-satz)}
 /* Die Notiz: das Einzige, was man wirklich liest. Sie bekommt die ganze
    zweite Spalte statt eines Streifens unter der Folie. */
-.ts-sp-notizkasten{grid-column:2;grid-row:1;overflow:hidden}
+.ts-sp-notizkasten{grid-column:1;grid-row:2;overflow:hidden;min-height:5.5em}
 /* Die Zeile bekommt ein Mass. In einem breiten oder flachen Fenster waere
    die Spalte sonst achthundert Pixel breit, und eine Zeile, die so lang
    ist, findet man nach dem Umbruch nicht wieder. */
@@ -515,11 +535,20 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
 /* Linksbuendig in ihrer Spalte: die Kachel ist nur so breit wie ihr Bild
    (siehe `vorschauBreite`), und was rechts uebrig bleibt, ist Grund und
    nicht leere Kachel. */
-.ts-sp-naechst{grid-column:2;grid-row:2;justify-self:start}
+/* Kein `justify-self:start` mehr: die Spalte ist jetzt genau so breit, wie
+   das Bild bei dieser Zeilenhoehe sein darf, und die Kachel soll sie fuellen.
+   Mit `start` schrumpfte sie auf ihren Inhalt und blieb bei 131 Pixeln
+   stehen, waehrend daneben die Spalte in voller Breite leer stand. */
+.ts-sp-naechst{grid-column:2;grid-row:2}
+.ts-sp-uhren{grid-column:1/3;grid-row:3}
 /* Ein Rand um die Miniatur. Ohne ihn steht eine helle Folie auf einer
    hellen Kachel und niemand sieht, wo das Bild anfaengt. */
-.ts-sp-vorbild{flex:1;min-height:0;align-self:flex-start;border-radius:6px;
-  overflow:hidden;margin-top:4px;box-shadow:0 0 0 1px var(--sp-rand)}
+/* Maße kommen aus `vorschauBreite`, beide: sonst fuellt `flex:1` die Hoehe
+   der Kachel und die Breite folgt daraus, und wo die Breite gedeckelt wird,
+   stimmt das Verhaeltnis nicht mehr. */
+.ts-sp-vorbild{flex:0 0 auto;min-height:0;align-self:flex-start;
+  border-radius:6px;overflow:hidden;margin-top:4px;
+  box-shadow:0 0 0 1px var(--sp-rand)}
 /* Die Miniatur richtet sich sonst nach ihrer Breite; hier gibt die Kachel
    die Hoehe vor, und `sprecherSpalten` rechnet die Breite dazu. */
 .ts-sp-vorbild .ts-mini{cursor:default;height:100%;padding-bottom:0}
@@ -535,74 +564,91 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
    muss nicht auch noch erhoben sein. */
 .ts-sp-fuss{display:flex;gap:16px;align-items:center;flex-wrap:wrap;
   color:var(--sp-leise);font-size:12px;padding:0 2px}
-.ts-sp-stift{display:flex;gap:6px;align-items:center}
-/* Die Beschriftung ist der Schalter, also sieht er aus wie einer: Stift
-   ist der stille Zustand, Zeiger der laute -- im Zeigermodus greift ein
-   Klick in den Saal, und das soll man sehen koennen. */
-/* Nicht als `font`-Kurzform. Die verlangt an letzter Stelle eine
-   Schriftfamilie, und `inherit` ist dort nicht erlaubt: der Browser warf
-   die ganze Deklaration weg, und der einzige Schalter der Ansicht stand in
-   Arial 13,33 px statt in system-ui 11 px. Gemessen an der Wirkung, nicht
-   an der Regel -- eine Regel, die stillschweigend nicht greift, sieht im
-   Stilblatt genauso aus wie eine, die greift. */
-.ts-sp-modus{font-family:inherit;font-weight:600;font-size:11px;line-height:1;
-  letter-spacing:.08em;
-  text-transform:uppercase;padding:6px 10px;border-radius:99px;cursor:pointer;
-  border:1px solid var(--sp-rand);background:var(--sp-kachel);
-  color:var(--sp-leise)}
-.ts-sp-modus[data-modus="zeiger"]{border-color:var(--sp-zeiger);
-  background:var(--sp-zeiger);color:var(--sp-zeiger-satz)}
-/* Im Zeigermodus tut der Stift nichts. Liesse man seine Farben voll
-   stehen, versprachen sie das Gegenteil. */
-.ts-sp-stift[data-modus="zeiger"] .ts-sp-tupf{opacity:.3}
-/* Ein Tupfen braucht eine Kante, sonst steht Weiss auf Papier und Gelb auf
-   Sand: gemessen im hellen Bild 1,12 / 1,18 / 1,57 gegen den Grund. Eine
-   *feste* Randfarbe kann es dafuer nicht geben -- gegen den Grund und gegen
-   alle vier Stiftfarben zugleich kommt keine ueber 3,0, weil Orange genau
-   in der Mitte liegt. Also wird die Kante aus der Farbe selbst gerechnet
-   und vom Grund weggeschoben: hell auf 35 % Tupfen und 65 % Satz, und
-   damit gegen den Grund 4,49 bis 8,35 und gegen den eigenen Tupfen 3,01 bis
-   5,01. Dunkel braucht sie niemand -- dort steht der blasseste Tupfen mit
-   18,13 auf dem Grund --, also steht der Anteil dort auf 100 % und die
-   Kante verschwindet in ihrer Farbe. */
-.ts-sp-tupf{width:19px;height:19px;border-radius:50%;padding:0;cursor:pointer;
-  border:0;background:var(--tupf);
+/* Die Werkzeuge in ihrer Kachel: Schalter, vier Farben, Radierer. Sie
+   umbrechen, wenn die Kachel schmal wird, statt sich hinauszuschieben. */
+/* ── Die Werkzeugkachel ────────────────────────────────────────────────
+   Drei Zeilen, nach dem geordnet, wie oft man sie braucht: zeichnen,
+   berichtigen, einstellen. Alles darin ist eckig -- in einer Ansicht aus
+   Kacheln waeren runde Farbpunkte das einzige Runde weit und breit, und
+   Rundes liest sich als "Schmuck" statt als "Knopf". */
+.ts-sp-stift{display:flex;flex-direction:column;gap:5px;margin-top:auto;
+  min-width:0}
+.ts-sp-zeile{display:flex;gap:5px;align-items:stretch;min-width:0}
+.ts-sp-zeile > *{min-width:0}
+/* Ein Werkzeug: Flaeche, Rand, Zeichen, Wort. Gewaehlt ist es umgedreht --
+   dieselbe Sprache wie die Pille von "schwarz" an der Folienkachel. */
+.ts-sp-wz,.ts-sp-tat{display:flex;align-items:center;justify-content:center;
+  gap:5px;padding:4px 8px;border:1px solid var(--sp-rand);border-radius:6px;
+  background:var(--sp-grund);color:var(--sp-leise);cursor:pointer;
+  font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:1 1 auto}
+.ts-sp-wz:hover,.ts-sp-tat:hover{background:var(--sp-ruhig);
+  color:var(--sp-ruhig-satz)}
+.ts-sp-wz[data-an="1"]{background:var(--sp-satz);color:var(--sp-grund);
+  border-color:var(--sp-satz)}
+.ts-sp-wz:focus-visible,.ts-sp-tat:focus-visible{
+  outline:2px solid var(--sp-marke);outline-offset:1px}
+.ts-sp-wz-bild{font-style:normal;font-size:13px;line-height:1}
+.ts-sp-wz-wort{overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* Die Farben stehen neben dem Stift, in derselben Zeile: was man waehlt und
+   womit, gehoert zusammen. Eckig wie alles andere, und in derselben Hoehe wie
+   der Knopf daneben. */
+.ts-sp-farben{display:flex;gap:5px;align-items:stretch;flex:0 0 auto}
+.ts-sp-tupf{width:26px;padding:0;cursor:pointer;border:0;border-radius:6px;
+  background:var(--tupf);
   box-shadow:0 0 0 1px color-mix(in srgb, var(--tupf) var(--sp-tupf-kante),
                                  var(--sp-satz))}
-/* Die Auswahl war der Satzfarbe gleich -- und die vierte Stiftfarbe ist die
-   Satzfarbe. Kontrast Ring zu Tupfen: 1,00. Wer den weissen Stift waehlte,
-   sah die Auswahl nicht mehr. Jetzt liegt zwischen Tupfen und Ring ein
-   Spalt in der Farbe des Grundes: was auch immer der Tupfen ist, der Ring
-   steht mit 18,13 (dunkel) und 13,62 (hell) auf diesem Spalt. Ein Halo ist
-   ausserdem eine Form und nicht nur eine Farbe -- unter Deuteranopie liegen
-   Orange und Gelb bei 1,45 zueinander, und dann traegt nichts Farbiges
-   mehr. */
+/* Gewaehlt: ein Halo mit einem Spalt in der Farbe der Kachel dazwischen. So
+   steht der Ring auf jedem Tupfen, auch auf dem fast weissen -- der ist
+   naemlich dieselbe Farbe wie der Ring. */
 .ts-sp-tupf[data-an]{
   box-shadow:0 0 0 1px color-mix(in srgb, var(--tupf) var(--sp-tupf-kante),
                                  var(--sp-satz)),
-             0 0 0 3px var(--sp-grund),
+             0 0 0 3px var(--sp-kachel),
              0 0 0 5px var(--sp-satz)}
-/* Der Umriss von vorhin war eine Autorenregel und ueberschrieb den
-   Fokusring des Browsers: die vier Knoepfe hatten keinen sichtbaren
-   Tastaturfokus. Die Kante ist jetzt ein Schatten, der Umriss bleibt frei
-   fuer den Fokus. */
 .ts-sp-tupf:focus-visible{outline:2px solid var(--sp-marke);outline-offset:3px}
-.ts-sp-modus:focus-visible{outline:2px solid var(--sp-marke);outline-offset:2px}
-.ts-sp-hilfe{margin-left:auto;text-align:right;line-height:1.5;font-size:13px;
-  color:var(--sp-leise);white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;min-width:0}
+html[data-ts-rolle="speaker"][data-ts-modus="radier"] #ts-stage{cursor:cell}
+/* Tastenkappen. Eine Taste sieht aus wie eine Taste: eine kleine Flaeche mit
+   Rand und einer staerkeren Kante unten, die sie ein Stueck heraushebt.
+   Daneben steht in gewoehnlicher Schrift, was sie tut -- der Unterschied
+   zwischen Griff und Wirkung ist damit zu sehen, ohne dass ihn jemand
+   erklaeren muss. */
+/* Eine Gruppe ist ein eigener Kasten: Blättern, Saal, Zeit, Zeichnen,
+   Ansicht. Zweiundzwanzig Tasten in einer Reihe sind eine Liste; fuenf
+   Kaesten mit vier bis fuenf Tasten sind eine Ordnung, und man findet die
+   gesuchte, weil man weiss, wonach sie riecht. */
+.ts-sp-gruppe{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:3px 9px;border:1px solid var(--sp-rand);border-radius:8px;
+  background:var(--sp-grund)}
+.ts-sp-gruppe-name{font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--sp-marke);white-space:nowrap}
+.ts-sp-taste-paar{display:inline-flex;align-items:center;gap:4px;
+  white-space:nowrap}
+.ts-sp-kappe{display:inline-flex;align-items:center;justify-content:center;
+  min-width:1.35em;height:1.5em;padding:0 .34em;border-radius:4px;
+  border:1px solid var(--sp-rand);border-bottom-width:2px;
+  background:var(--sp-kachel);color:var(--sp-satz);
+  font-family:inherit;font-size:.85em;font-weight:600;line-height:1}
+.ts-sp-taste-wort{color:var(--sp-marke)}
+/* Die Leiste bricht um, statt abzuschneiden: es sollen *alle* Tasten
+   dastehen, nicht die ersten, die hineinpassen. */
+.ts-sp-hilfe{margin-left:auto;line-height:1.9;font-size:12px;
+  color:var(--sp-leise);min-width:0;display:flex;flex-wrap:wrap;
+  justify-content:flex-end;gap:5px}
 /* Hochkant: in einem schmalen oder stehenden Fenster nebeneinander zu
    stellen hiesse, beides unbrauchbar zu machen. Die Folie legt sich quer
    ueber beide Spalten, die Notiz darunter, die Kacheln zuletzt.
    Ausgerechnet wird die Form in `sprecherSpalten`, aus dem Ergebnis und
    nicht aus dem Seitenverhaeltnis: es zaehlt, ob die Folie die groesste
    Flaeche der Ansicht bleibt. */
-.ts-sp-leib[data-form="hochkant"]{
-  grid-template-rows:auto minmax(0,1fr) auto}
-.ts-sp-leib[data-form="hochkant"] .ts-sp-buehne{grid-column:1/3;grid-row:1}
+/* Hochkant liegt alles ohnehin uebereinander; die Notiz nimmt beide
+   Spalten, die Vorschau ruecken wir neben sie. */
 .ts-sp-leib[data-form="hochkant"] .ts-sp-notizkasten{grid-column:1/3;grid-row:2}
-.ts-sp-leib[data-form="hochkant"] .ts-sp-uhren{grid-column:1;grid-row:3}
-.ts-sp-leib[data-form="hochkant"] .ts-sp-naechst{grid-column:2;grid-row:3}
+.ts-sp-leib[data-form="hochkant"] .ts-sp-naechst{grid-column:1/3;grid-row:3}
+.ts-sp-leib[data-form="hochkant"] .ts-sp-uhren{grid-column:1/3;grid-row:4}
+.ts-sp-leib[data-form="hochkant"]{
+  grid-template-rows:auto minmax(0,1fr) auto auto}
 /* Ein Deck, das auf keiner Folie eine Notiz traegt, bekommt keine
    Notizkachel: ein Viertel der Ansicht fuer die zwei Woerter "no note".
    Fuer das ganze Deck entschieden, nicht je Folie -- eine Buehne, die beim

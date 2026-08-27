@@ -621,7 +621,7 @@ const szeneBild = `(function () {
         sagt("uhr", "die Halle bekam " + uh.pruef.duration + " s statt 300");
       }
       if (uh.sicht !== "flex") sagt("uhr", "die Uhrschicht steht auf " + uh.sicht);
-      if (!/^ ?[45]:[0-9][0-9]$/.test(uh.zeigt)) {
+      if (!/^ ?0[45]:[0-9][0-9] ?$/.test(uh.zeigt)) {
         sagt("uhr", "die Halle zeigt " + JSON.stringify(uh.zeigt) + ", erwartet 5:00 oder knapp darunter");
       }
     }
