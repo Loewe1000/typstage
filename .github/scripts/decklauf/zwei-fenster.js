@@ -627,8 +627,13 @@ const szeneBild = `(function () {
       sagt("uhr", "im Sprecherfenster laeuft die Uhr ebenfalls: " + JSON.stringify(sp0));
     }
     let lz = await sprecher.ev(lage);
-    if (!/^laeuft [45]:[0-9][0-9]$/.test(lz)) {
-      sagt("uhr", "die Uhrkachel sagt " + JSON.stringify(lz) + ", erwartet 'laeuft 4:59'");
+    // Das U+2007 vor der Zahl ist kein Schmutz, sondern die Spalte, in der
+    // spaeter das Plus der Ueberzeit steht. Ohne sie sprangen die Ziffern
+    // beim Umschlag um 19 Pixel nach rechts -- gemessen 64,02 gegen 83,03.
+    // Deshalb wird sie hier verlangt und nicht bloss geduldet.
+    if (!/^laeuft \u2007[45]:[0-9][0-9]$/.test(lz)) {
+      sagt("uhr", "die Uhrkachel sagt " + JSON.stringify(lz)
+        + ", erwartet 'laeuft \u2007" + "4:59' -- mit der Ziffernspalte davor");
     }
     console.log("Uhr: Halle " + JSON.stringify(uh.zeigt) + " · Kachel " + JSON.stringify(lz));
 

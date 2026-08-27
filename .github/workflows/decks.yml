@@ -75,6 +75,18 @@ jobs:
       - name: Die Fernsteuerung mit zwei Fenstern
         run: node .github/scripts/decklauf/zwei-fenster.js
 
+      # Das Kontrastgatter der Sprecherpalette. Ohne Browser und in einer
+      # Sekunde: `contrast()` im Paket bewacht die Folienpaletten, die zwanzig
+      # Farben der Sprecheransicht standen unter keiner Aufsicht.
+      - name: Die Farben der Sprecheransicht
+        run: python3 .github/scripts/pruefe-palette.py
+
+      # Und was die Ansicht im Browser wirklich tut: nichts ragt hinaus, die
+      # vier Zahlen stehen auf einer Grundlinie, die Regeln greifen, Auswahl
+      # und Fokus sind zu sehen. Beides in hell und dunkel.
+      - name: Die Sprecheransicht in beiden Erscheinungsbildern
+        run: node .github/scripts/decklauf/pult.js
+
       - name: Bericht aufheben
         if: always()
         uses: actions/upload-artifact@v4
