@@ -622,6 +622,26 @@
   teile.filter(c => c.func() in (v, h) and type(c.amount) == fraction)
 }
 
+// ── Ein Maß aus Rundungsstaub ist keines ───────────────────────────────────
+//
+// Eine senkrechte `line` misst nicht null breit, sondern 4,898587e-15 pt: der
+// Kosinus von 90° ist in Gleitkomma nicht sauber null, und `measure` reicht
+// den Staub durch. Gedruckt sieht man ihn nie -- `repr()` sagt brav `0pt` --,
+// aber ein Vergleich auf `== 0pt` sagt nein, und daran hängt weiter unten, ob
+// ein Element ohne Fläche Luft um seine Marke bekommt.
+//
+// Ohne Luft bekam die Marke Breite null, die Hülle im Browser `width: 0%`,
+// und ein Ansichtsfenster der Breite null skaliert seinen Inhalt unter
+// `xMidYMid meet` auf null. Die Linie stand im PDF und fehlte im Browser --
+// still, denn es klagte niemand. Gemessen an vier Fällen nebeneinander: die
+// waagerechte Linie (Höhe exakt 0pt) bekam ihre Luft, die um 90° gedrehte
+// nicht, und nur die gedrehte verschwand.
+//
+// Die Schwelle ist ein Hundertstel Punkt. Was dünner ist als das, trägt keine
+// Fläche, die ein Sprite füllen könnte; was dicker ist, hat eine und braucht
+// die Luft nicht.
+#let ohne-mass(l) = l < 0.01pt
+
 /// Does the body consist *only* of such spacers (and empty space)?
 #let nur-fr(body) = {
   let teile = if body == none { () }
@@ -1204,7 +1224,8 @@
       // cannot be measured in Typst. A font's height covers any common
       // stroke width; anything thicker is a drawing and normally brings its
       // own box along.
-      let luft = if m.height == 0pt or m.width == 0pt { text.size } else { 0pt }
+      let luft = if ohne-mass(m.height) or ohne-mass(m.width) { text.size }
+                 else { 0pt }
       // The *original* region travels along. Without it, the body sits in
       // the sprite inside a wrapper of the measured size, and a relative
       // measure resolves there a second time: `p%` becomes `p²%`. Only
