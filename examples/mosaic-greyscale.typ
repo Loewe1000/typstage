@@ -33,9 +33,12 @@
 // That is the honest size of the claim, and it is still mosaic's claim: the
 // deck's own colour lives in one dictionary. The pictures live outside it.
 //
-// What the template cannot do and this deck does: one picture steps out of
-// the contact sheet and becomes the print. And the big number counts itself
-// up instead of standing there.
+// Fifteen slides: the fourteen mosaic keeps of the template, and one that is
+// this deck's own — the section plate, which the template has no equivalent
+// for. Two of the fourteen changed places, because of the one thing the
+// template cannot do and this deck does: the contact sheet now stands before
+// the print, so that one picture can step out of the sheet and become the
+// print. And the big number counts itself up instead of standing there.
 
 #import "@schule/typstage:0.1.0": *
 
