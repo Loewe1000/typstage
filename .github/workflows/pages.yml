@@ -12,8 +12,15 @@ permissions:
   pages: write
   id-token: write
 
+# Deploys nach `main` gehoeren serialisiert -- es gibt nur eine Seite, und der
+# neueste Stand gewinnt. Ein Pull Request braucht dagegen seine eigene Spur:
+# mit einer festen Gruppe verdraengt jeder PR jeden anderen, und was uebrig
+# bleibt, sieht aus wie ein Fehlschlag statt nach einem Abbruch. Zweimal
+# passiert, beide Male eine halbe Stunde Suche.
 concurrency:
-  group: github-pages
+  group: >-
+    ${{ github.event_name == 'push' && 'github-pages'
+        || format('github-pages-{0}', github.ref) }}
   cancel-in-progress: true
 
 jobs:
