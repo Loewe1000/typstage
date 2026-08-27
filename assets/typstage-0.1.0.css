@@ -209,8 +209,15 @@ html[data-ts-licht="hell"]{
    erste Spalte ist, rechnet `sprecherSpalten` aus -- das haengt an der
    Fensterhoehe und nicht allein an der Breite. Beide Zeilen bekommen
    dieselben Spalten, damit die Naht senkrecht durchlaeuft. */
+/* Breiter, als beide Spalten brauchen koennen, wird die Ansicht nicht: was
+   uebrig bleibt, wird Rand. Die Grenze rechnet `sprecherSpalten` aus, weil
+   nur dort steht, wie breit die Folie sein darf. Ein Rand sieht nach Absicht
+   aus; eine Notizkachel mit vierhundert leeren Pixeln sieht nach Fehler aus
+   -- gemessen bei 1920x600 waren 42,7 % der Ansicht Notizkachel, und fast
+   alles davon leer. */
 .ts-sp-leib{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);
-  grid-template-rows:minmax(0,1fr) auto;gap:10px 12px;min-height:0}
+  grid-template-rows:minmax(0,1fr) auto;gap:10px 12px;min-height:0;
+  margin-left:auto;margin-right:auto;width:100%}
 /* Die Kachel selbst. Eine Flaeche, ein Rand, eine Marke oben. Mehr ist
    es nicht, und mehr braucht es nicht: der Abstand zwischen zwei Kacheln
    trennt sie besser als jede Linie. */
@@ -233,6 +240,20 @@ html[data-ts-licht="hell"]{
 /* Marke oben, Wert unten. Dazwischen Luft, und die Luft ist die Aussage:
    eine Kachel liest man von oben nach unten, und unten steht, was zaehlt. */
 .ts-sp-gross{margin-top:auto}
+/* Eine Zahl, die zugleich ein Knopf ist. Sie sieht aus wie ihre drei
+   Nachbarinnen, solange niemand sie anfasst -- die Rangordnung der Zeile
+   soll nicht davon abhaengen, welche Zahl bedienbar ist. Erst der Zeiger,
+   der Umriss beim Ueberfahren und der Fokusring sagen, dass hier etwas
+   geschieht. `align-self:flex-start`, damit der Umriss die Zahl umschliesst
+   und nicht die halbe Kachel. */
+button.ts-sp-knopf{background:none;border:0;padding:2px 6px;margin-left:-6px;
+  font:inherit;font-size:clamp(21px,3.4vh,34px);font-weight:500;
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  color:inherit;text-align:left;cursor:pointer;border-radius:6px;
+  align-self:flex-start;line-height:1.05}
+button.ts-sp-knopf:hover{background:var(--sp-ruhig);color:var(--sp-ruhig-satz)}
+button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
+  outline-offset:1px}
 /* Die zweite Zeile einer Kachel: Zahl zuerst, Wort klein dahinter. */
 .ts-sp-neben{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;
   font-variant-numeric:tabular-nums}
@@ -316,7 +337,10 @@ html[data-ts-licht="hell"]{
    ist, findet man nach dem Umbruch nicht wieder. */
 .ts-sp-notiz{overflow:auto;white-space:pre-wrap;line-height:1.45;
   padding-right:6px;overflow-wrap:break-word;color:var(--sp-satz);flex:1;
-  min-height:0;max-width:34em}
+  min-height:0}
+/* Hochkant liegt die Notiz ueber beide Spalten, und dort braucht die Zeile
+   ihr Mass weiterhin selbst. */
+.ts-sp-leib[data-form="hochkant"] .ts-sp-notiz{max-width:34em}
 /* Kursiv und in der Farbe der Marken: leiser als eine Notiz, aber
    lesbar. Der alte Wert mass 3,19. */
 .ts-sp-notiz[data-leer]{color:var(--sp-marke);font-style:italic}
@@ -385,6 +409,16 @@ html[data-ts-licht="hell"]{
 .ts-sp-leib[data-form="hochkant"] .ts-sp-notizkasten{grid-column:1/3;grid-row:2}
 .ts-sp-leib[data-form="hochkant"] .ts-sp-uhren{grid-column:1;grid-row:3}
 .ts-sp-leib[data-form="hochkant"] .ts-sp-naechst{grid-column:2;grid-row:3}
+/* Ein Deck, das auf keiner Folie eine Notiz traegt, bekommt keine
+   Notizkachel: ein Viertel der Ansicht fuer die zwei Woerter "no note".
+   Fuer das ganze Deck entschieden, nicht je Folie -- eine Buehne, die beim
+   Blaettern die Groesse wechselt, waere schlimmer als der leere Platz. */
+.ts-sp-leib[data-notiz="keine"] .ts-sp-notizkasten{display:none}
+.ts-sp-leib[data-notiz="keine"] .ts-sp-buehne{grid-column:1/3}
+.ts-sp-leib[data-notiz="keine"][data-form="hochkant"]{
+  grid-template-rows:minmax(0,1fr) auto}
+.ts-sp-leib[data-notiz="keine"][data-form="hochkant"] .ts-sp-uhren,
+.ts-sp-leib[data-notiz="keine"][data-form="hochkant"] .ts-sp-naechst{grid-row:2}
 /* Ein Rednerpult-Rechner kann klein sein. Dann ruecken die Kacheln
    zusammen, statt einander hinauszudraengen. */
 @media (max-width:1100px){

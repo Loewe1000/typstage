@@ -2702,6 +2702,11 @@
   var SPW = W.sp || {};
   function wort(k, r) { return SPW[k] || r; }
 
+  // So breit darf die Notizspalte hoechstens werden. Rund 34 Zeichen mal
+  // sechzehn Pixel: eine Zeile, die laenger ist, findet man nach dem
+  // Umbruch nicht wieder.
+  var NOTIZ_BREIT = 544;
+
   var PLATZ = null;        // the box in the frame the stage moves to
   var LEIB = null;         // its grid, whose columns depend on the window
   var ELN = {};            // the displays, looked up once
@@ -2749,6 +2754,24 @@
   // vier gleich laute Zahlen nebeneinander stehen und das Auge sich seinen
   // Anker selbst suchen muss.
   function haupt(k) { return bau("div", "ts-sp-gross", k); }
+  // Dieselbe Zahl, aber als Knopf. Die Trefferflaeche ist die Zahl und nicht
+  // die Kachel: am Pult mit zwei Fenstern ist der haeufigste Mausweg
+  // ueberhaupt der Klick ins Sprecherfenster, damit die Tastatur wieder dort
+  // ankommt. Gemessen lagen darauf zwei Kacheln von 239x187 Pixeln, zusammen
+  // 6,2 % des Fensters, und beide taten stumm etwas Unwiederbringliches.
+  // Ein Knopf sagt ausserdem, dass er einer ist: Zeiger, Umriss beim
+  // Ueberfahren, Fokus, Tabreihenfolge, und hinterher ein Wort im Balken.
+  function hauptKnopf(k, was, tun) {
+    var b = bau("button", "ts-sp-gross ts-sp-knopf", k);
+    b.type = "button";
+    b.title = was;
+    b.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      var sagen = tun();
+      if (sagen) hint(sagen);
+    });
+    return b;
+  }
   // Ein Balken am Fuss einer Kachel. Er sagt ohne Wort, wo man steht, und
   // ist damit das zweite Mittel der Rangordnung neben der Schriftgroesse.
   function balken(k) { return bau("i", "", bau("div", "ts-sp-balken", k)); }
@@ -2966,6 +2989,15 @@
     ELN.notiz = bau("div", "ts-sp-notiz", nk);
     notizNachFenster();
     ELN.notiz.addEventListener("scroll", notizStand);
+    // Traegt das Deck ueberhaupt Notizen? Entschieden wird das *einmal* fuer
+    // das ganze Deck und nicht je Folie. Je Folie waere naeher an der Sache --
+    // die Titelfolie hat selten eine Notiz --, aber eine Buehne, die bei jedem
+    // Blaettern ihre Groesse wechselt, ist schlimmer als der leere Platz, den
+    // sie ersetzt. Ein Deck ohne Notizen bekommt so die Notizkachel gar nicht
+    // erst; gemessen waren das 25,9 % der Ansicht fuer zwei Woerter.
+    var hatNotiz = false;
+    for (var iN = 0; iN < SLIDES.length; iN++) if (notiz(iN)) { hatNotiz = true; break; }
+    if (!hatNotiz) LEIB.dataset.notiz = "keine";
 
     // 3. Die Zahlkacheln.
     var uhren = bau("div", "ts-sp-uhren", LEIB);
@@ -2975,13 +3007,13 @@
     // die viermal je Sekunde zappelt, zieht den Blick, ohne ihn zu belohnen.
     // So macht es reveal.js auch.
     var kZeit = kachel(uhren, "", wort("elapsed", "elapsed"));
-    ELN.zeit = haupt(kZeit);
+    // Ein Klick auf die verstrichene Zeit setzt sie zurueck -- dieselbe
+    // Wirkung wie `r`.
+    ELN.zeit = hauptKnopf(kZeit, wort("resetTip", "reset elapsed"), function () {
+      UHR_START = 0; sprecherUhr();
+      return wort("resetDone", "elapsed reset");
+    });
     ELN.uhr = neben(bau("div", "ts-sp-neben", kZeit), wort("clock", "clock"));
-    // Ein Klick auf die verstrichene Zeit setzt sie zurueck. Jede fremde
-    // Sprecheransicht laesst ihre Zeitanzeige durch Klick auf sich selbst
-    // bedienen; hier war bisher jede Zahl reine Auskunft.
-    kZeit.style.cursor = "pointer";
-    kZeit.addEventListener("click", function () { UHR_START = 0; sprecherUhr(); });
 
     // Folie und Schritt, mit dem Fortschrittsbalken am Fuss der Kachel.
     var kOrt = kachel(uhren, "", wort("slide", "slide"));
@@ -3037,7 +3069,14 @@
     var kUhr = kachel(uhren, "ts-sp-uhrkachel", wort("timer", "class clock"));
     ELN.uhrKachel = kUhr;
     ELN.uhrMarke = kUhr.firstChild;
-    ELN.saal = haupt(kUhr);
+    // Laeuft die Uhr, beendet ein Klick sie; steht sie, klappt er das
+    // Minutenfeld auf. Beides wie ein zweites `t`.
+    ELN.saal = hauptKnopf(kUhr, wort("clockTip", "set or stop the class clock"),
+      function () {
+        if (uhrSaalAus()) return wort("clockDone", "class clock stopped");
+        uhrFeldAuf();
+        return "";
+      });
     // Das Minutenfeld sass in der Fusszeile, damit es nicht neben der
     // Zieldauer stuende. Jetzt sitzt es in der Kachel, um die es geht, und
     // nimmt den Platz der Zahl ein, die es gleich setzt.
@@ -3064,14 +3103,6 @@
     uf.addEventListener("blur", uhrFeldZu);
     ELN.uhrFeld = uf;
     ELN.saalBalken = balken(kUhr);
-    // Ein Klick auf die laufende Uhr beendet sie -- dieselbe Geste wie in
-    // jedem Vergleichssystem, und dieselbe Wirkung wie ein zweites `t`.
-    kUhr.style.cursor = "pointer";
-    kUhr.addEventListener("click", function (ev) {
-      if (ev.target === uf) return;
-      if (!uhrSaalAus()) uhrFeldAuf();
-    });
-
     // 4. Der naechste Schritt, als fuenfte Kachel neben den vier Zahlen.
     //    Die Vorschau ist ein Blick und keine zweite Buehne; sie steht
     //    deshalb nicht mehr in einer eigenen Spalte, deren Rest leer blieb.
@@ -3907,7 +3938,12 @@
     var r = LEIB.getBoundingClientRect();
     if (!r.width || !r.height) return;
     var v = CFG.width / CFG.height;
-    var frei = r.width - 12;                    // ein Spaltenabstand
+    // Gerechnet wird mit der Breite des *Kastens*, nicht mit der von `LEIB`
+    // selbst: weiter unten bekommt `LEIB` eine Hoechstbreite, und wer die
+    // eigene Breite misst, um sie gleich darauf zu beschneiden, schneidet
+    // bei jedem Aufruf ein Stueck mehr ab.
+    var aussen = (LEIB.parentNode && LEIB.parentNode.clientWidth) || r.width;
+    var frei = aussen - 12;                     // ein Spaltenabstand
     var zeile = ELN.uhrKachel ? ELN.uhrKachel.parentNode : null;
     if (!zeile) return;
     // Wie hoch eine Zahlkachel von sich aus ist, weiss nur der Browser: das
@@ -3937,6 +3973,7 @@
     var vollHoch = kachelHoch(frei);
     if (vollHoch + Math.max(120, oben * 0.24) <= oben) {
       LEIB.dataset.form = "hochkant";
+      LEIB.style.maxWidth = "";
       LEIB.style.gridTemplateRows =
         Math.round(vollHoch) + "px minmax(0,1fr) "
         + Math.round(zeilenHoehe(natur, oben - vollHoch - 10)) + "px";
@@ -3960,6 +3997,11 @@
     // Vier Zahlkacheln stehen unter der Folie und brauchen zusammen eine
     // Mindestbreite; darunter waere die Zahl in ihnen breiter als ihr Kasten.
     breit = Math.max(breit, Math.min(frei * 0.55, 380));
+    // Und mehr Breite, als die Notiz brauchen kann, bekommt sie nicht. Die
+    // Folie ist in einem flachen Fenster von der Hoehe begrenzt und wird
+    // durch Breite nicht groesser; die Notiz hoert dort auf, wo eine Zeile
+    // aufhoert, lesbar zu sein. Was dann noch uebrig ist, wird Rand.
+    LEIB.style.maxWidth = Math.round(breit + 12 + NOTIZ_BREIT) + "px";
     LEIB.style.gridTemplateColumns = Math.round(breit) + "px minmax(0,1fr)";
     // Was die Folie an Hoehe nicht braucht, bekommt die Kachelzeile. Eine
     // Kachel, die dreissig Pixel zu hoch ist, sieht nach Kachel aus; eine
@@ -3992,7 +4034,15 @@
     if (!ELN.vorBild) return;
     var h = ELN.vorBild.clientHeight;
     if (h < 8) return;
-    ELN.vorBild.style.width = Math.round(h * v) + "px";
+    // Nach der Hoehe gerechnet, aber nie breiter als der Platz. Ohne die
+    // zweite Haelfte lief das Bild in einem stehenden Fenster aus seiner
+    // Kachel und aus dem Fenster heraus -- gemessen bei 700x900 ragte es
+    // 93 Pixel hinaus, und `overflow:hidden` schnitt es einfach ab. Ein
+    // angeschnittenes Bild sagt weniger als ein kleineres.
+    var platz = ELN.vorBild.parentNode ? ELN.vorBild.parentNode.clientWidth : 0;
+    var breit = h * v;
+    if (platz > 8 && breit > platz) breit = platz;
+    ELN.vorBild.style.width = Math.round(breit) + "px";
   }
 
   function fit() {
