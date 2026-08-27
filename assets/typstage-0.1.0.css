@@ -90,6 +90,27 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
   color:#fff;align-items:center;justify-content:center;flex-direction:column;
   pointer-events:none;--ts-clock-over:#eb5e28}
 html[data-ts-clock] #ts-clock{display:flex}
+/* Die angeheftete Uhr. Sie deckt den Saal nicht zu, sondern steht *auf* der
+   Folie: die Klasse arbeitet an der Aufgabe, die darunter stehen bleibt, und
+   am Pult sieht man schon einmal nach, was danach kommt. Ort und Breite
+   rechnet `uhrOrt` in Bruchteilen der Buehne aus -- in beiden Fenstern ist
+   die Buehne verschieden gross, die Stelle auf der Folie aber dieselbe. */
+#ts-clock[data-art="fest"]{position:fixed;inset:auto;background:#000c;
+  border-radius:12px;padding:10px 14px 12px;align-items:center;
+  box-shadow:0 6px 24px #0000006b}
+#ts-clock[data-art="fest"] .ts-clock-num{font-size:min(9vh,5.2vw);
+  letter-spacing:-.01em}
+#ts-clock[data-art="fest"] .ts-clock-word{font-size:min(1.9vh,1.1vw);
+  letter-spacing:.14em;margin-bottom:.35em}
+/* Am Pult ist sie das, was man anfasst: sie liegt ueber der Folie und
+   nimmt den Zeiger an, waehrend daneben weiter gezeichnet wird. */
+html[data-ts-rolle="speaker"] #ts-clock[data-art="fest"]{z-index:75;
+  pointer-events:auto;cursor:grab;touch-action:none}
+html[data-ts-rolle="speaker"] #ts-clock[data-art="fest"]:active{cursor:grabbing}
+html[data-ts-rolle="speaker"] #ts-clock[data-art="fest"]::after{
+  content:"";position:absolute;inset:-3px;border-radius:15px;
+  box-shadow:0 0 0 2px var(--sp-marke);opacity:0;transition:opacity .15s}
+html[data-ts-rolle="speaker"] #ts-clock[data-art="fest"]:hover::after{opacity:1}
 /* Monospace mit gleichbreiten Ziffern. Ohne `tabular-nums` wandert die Zeile
    bei jedem Sekundenschlag um Bruchteile, und aus der letzten Reihe sieht das
    aus, als zappele die Uhr. Die Ziffern sind Absicht so gross: der Kasten
@@ -336,7 +357,16 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
 /* Die zweite Zeile einer Kachel: Zahl zuerst, Wort klein dahinter. */
 .ts-sp-neben{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;
   font-variant-numeric:tabular-nums}
-.ts-sp-paar{display:inline-flex;gap:4px;align-items:baseline;white-space:nowrap}
+/* Schrumpfen duerfen sie, und wenn es eng wird, hoert das Wort mit einem
+   Auslassungszeichen auf. Vorher stand `nowrap` ohne `min-width:0`: das Paar
+   war breiter als seine Kachel, die Kachel schnitt ab, und in einem
+   stehenden Fenster las man "44:52 REMAININ" -- mitten im Wort, ohne ein
+   Zeichen dafuer, dass da noch etwas fehlt. Die Zahl bleibt ganz; gekuerzt
+   wird das Wort, denn das Wort kann man raten und die Zahl nicht. */
+.ts-sp-paar{display:inline-flex;gap:4px;align-items:baseline;white-space:nowrap;
+  min-width:0;max-width:100%}
+.ts-sp-paar .ts-sp-klein{flex:0 0 auto}
+.ts-sp-paar .ts-sp-wort{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .ts-sp-klein{font-size:clamp(12px,1.6vh,15px);font-weight:500;color:var(--sp-leise)}
 .ts-sp-klein[data-lage="zurueck"]{color:var(--sp-alarm)}
 .ts-sp-klein[data-lage="vor"]{color:var(--sp-vor)}
