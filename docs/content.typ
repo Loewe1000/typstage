@@ -3545,7 +3545,7 @@ In der Argumentschreibweise ist es ein Argument von `slide`:
 Die mitgelieferten Paletten werden gemessen, bevor sie ausgeliefert werden.
 Gerechnet wird der echte WCAG-2-Kontrast: jeder Kanal linearisiert, daraus die
 relative Leuchtdichte $0.2126 R + 0.7152 G + 0.0722 B$, und aus zwei Dichten
-das Verhältnis $(L_"hell" + 0.05) \/ (L_"dunkel" + 0.05)$. Sechs Paarungen
+das Verhältnis $(L_"hell" + 0.05) \/ (L_"dunkel" + 0.05)$. Sieben Paarungen
 werden geprüft:
 
 #table(
@@ -3557,8 +3557,15 @@ werden geprüft:
   [`muted` auf `paper`], [4,5], [Fußzeile, Untertitel, Kopfzeile],
   [`accent` auf `paper`], [3,0], [Striche, Fortschritt, Marke],
   [`accent` auf `ink`], [3,0], [dasselbe auf einer umgedrehten Folie],
+  [`accent` auf Schwarz], [3,0], [die Überzeit der Vollbilduhr],
   [`border` auf `paper`], [1,2], [Haarlinien],
 )
+
+Die letzte fällt aus der Reihe: ihr Grund ist keine Rolle der Palette, sondern
+die Farbe Schwarz selbst. Die Vollbilduhr ist schwarz von Rand zu Rand, was
+immer die Palette des Decks sagt, und ihre Überzeit steht in der Akzentfarbe.
+Die fünf mitgelieferten Paletten messen dagegen 6,16 (`light`), 3,66 (`mono`),
+4,83 (`textbook`), 4,69 (`parchment`) und 5,41 (`dark`).
 
 Geprüft wird jede der fünf Paletten *und* ihre umgedrehte Form, als `assert`
 in `src/palettes.typ`, das beim Laden des Pakets läuft. Eine Farbe, die dort

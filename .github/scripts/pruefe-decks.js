@@ -925,6 +925,28 @@ async function uhrProbe(b, datei) {
     delete document.documentElement.dataset.tsSchwarz;
     await neuesBild();
     aus.wiederDa = getComputedStyle(k).display;
+    // Die dritte Kreuzung, die Druckansicht. Gelesen wird die Regel selbst und
+    // nicht das umgeschaltete Medium: das Medium umzustellen kann nur der eine
+    // der beiden Browser, die dieser Lauf fahren soll. Im @media-print-Block
+    // muss #ts-clock stehen und dort display:none bekommen -- sonst liegt eine
+    // schwarze Countdown-Seite im Handout.
+    aus.druck = (function () {
+      var treffer = 0;
+      for (var i = 0; i < document.styleSheets.length; i++) {
+        var b;
+        try { b = document.styleSheets[i].cssRules; } catch (e) { continue; }
+        for (var j = 0; j < b.length; j++) {
+          var m = b[j];
+          if (!m.media || String(m.media.mediaText).indexOf("print") < 0) continue;
+          for (var n = 0; n < m.cssRules.length; n++) {
+            var t = m.cssRules[n];
+            if (t.selectorText && t.selectorText.indexOf("#ts-clock") >= 0
+                && t.style.display === "none") treffer++;
+          }
+        }
+      }
+      return treffer;
+    })();
     // Und aus.
     typstage.clock.stop();
     await neuesBild();
@@ -987,6 +1009,11 @@ async function uhrProbe(b, datei) {
   }
   if (r.wiederDa !== "flex") {
     klage.push("nach dem Aufheben von schwarz kam die Uhr nicht wieder: " + r.wiederDa);
+  }
+  if (!r.druck) {
+    klage.push("keine Regel blendet `#ts-clock` unter `@media print` aus. Auf "
+      + "Papier gibt es keine Pause, die zu Ende geht; ohne diese Zeile liegt "
+      + "eine schwarze Countdown-Seite im Handout.");
   }
   if (r.ausDanach !== null) klage.push("`stop()` ließ sie stehen: " + JSON.stringify(r.ausDanach));
   if (r.ausSchicht !== "none") klage.push("die Uhrschicht blieb nach `stop()` auf " + r.ausSchicht);

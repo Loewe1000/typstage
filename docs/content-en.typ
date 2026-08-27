@@ -2681,7 +2681,7 @@ In the argument notation it is an argument of `slide`:
 The bundled palettes are measured before they ship. The arithmetic is real
 WCAG 2 contrast: each channel linearised, from those the relative luminance
 $0.2126 R + 0.7152 G + 0.0722 B$, and from two luminances the ratio
-$(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Six pairs are checked:
+$(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Seven pairs are checked:
 
 #table(
   columns: (auto, auto, 1fr),
@@ -2692,8 +2692,15 @@ $(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Six pairs are checked:
   [`muted` on `paper`], [4.5], [footer, subtitle, running head],
   [`accent` on `paper`], [3.0], [rules, progress bar, marker],
   [`accent` on `ink`], [3.0], [the same on an inverted slide],
+  [`accent` on black], [3.0], [the overtime of the full-screen clock],
   [`border` on `paper`], [1.2], [hairlines],
 )
+
+The last one is the odd one out: its ground is not a role of the palette but
+the colour black itself. The full-screen clock is black from edge to edge
+whatever the deck's palette says, and its overtime digits are set in the
+accent. The five bundled palettes measure 6.16 (`light`), 3.66 (`mono`), 4.83
+(`textbook`), 4.69 (`parchment`) and 5.41 (`dark`) against it.
 
 Every one of the five palettes is checked, and its inverted form with it, by an
 assertion in `src/palettes.typ` that runs when the package is loaded. A colour
