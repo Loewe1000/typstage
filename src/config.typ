@@ -92,7 +92,7 @@
 #let runtime-words(lang) = {
   let listen = (
     de: (no-note: "keine Notiz",
-         help: "← → blättern · o Übersicht · f Vollbild · s Notiz · n Sprecheransicht · p Druck",
+         help: "← → blättern · o Übersicht · f Vollbild · n Sprecheransicht",
          help-speaker-short: "← → blättern · b schwarz · e einfrieren · t Klassenuhr · m Stift/Zeiger · l hell/dunkel · ? alle Tasten",
          help-speaker: "Blättern: ← →|Folie · ↑ ↓|Notiz rollen · Pos1|zum Anfang · Ende|zum Schluss · o|Übersicht § Saal: b|schwarz · e|einfrieren · n|Vortrag nach vorn § Zeit: t|Klassenuhr · ⇧t|Uhr auf der Folie · ⇧← ⇧→|eine Minute · d|Zieldauer · r|Stundenzähler zurück § Zeichnen: m|Stift/Zeiger · c|Farbe · z|Strich zurück · x|Folie löschen § Ansicht: l|hell/dunkel · + −|Notizgröße · f|Vollbild · ?|alle Tasten",
          sp: (clock: "Uhrzeit", elapsed: "verstrichen", target: "Ziel (min)",
@@ -117,7 +117,7 @@
               inkCleared: "Folie gelöscht — z holt sie zurück",
               pointerNone: "auf dieser Folie gibt es nichts zu zeigen")),
     en: (no-note: "no note",
-         help: "← → page · o overview · f full screen · s note · n speaker view · p print",
+         help: "← → page · o overview · f full screen · n speaker view",
          help-speaker-short: "← → page · b black · e freeze · t class clock · m pen/pointer · l light/dark · ? all keys",
          help-speaker: "Paging: ← →|slide · ↑ ↓|scroll note · Home|to start · End|to finish · o|overview § Room: b|black · e|freeze · n|raise talk § Time: t|class clock · ⇧t|clock on the slide · ⇧← ⇧→|one minute · d|target · r|reset elapsed § Drawing: m|pen/pointer · c|colour · z|undo stroke · x|clear slide § View: l|light/dark · + −|note size · f|full screen · ?|all keys",
          sp: (clock: "clock", elapsed: "elapsed", target: "target (min)",
@@ -140,7 +140,7 @@
               inkCleared: "slide cleared — z brings it back",
               pointerNone: "nothing to point at on this slide")),
     fr: (no-note: "aucune note",
-         help: "← → naviguer · o aperçu · f plein écran · s note · n vue présentateur · p imprimer",
+         help: "← → naviguer · o aperçu · f plein écran · n vue présentateur",
          help-speaker-short: "← → naviguer · b noir · e figer · t minuterie · m stylo/pointeur · l clair/sombre · ? toutes les touches",
          help-speaker: "Naviguer: ← →|diapo · ↑ ↓|défiler la note · Origine|au début · Fin|à la fin · o|aperçu § Salle: b|noir · e|figer · n|ramener l'exposé § Temps: t|minuterie · ⇧t|minuterie sur la diapo · ⇧← ⇧→|une minute · d|durée visée · r|remettre à zéro § Dessin: m|stylo/pointeur · c|couleur · z|annuler le trait · x|effacer la diapo § Vue: l|clair/sombre · + −|taille de la note · f|plein écran · ?|toutes les touches",
          sp: (clock: "heure", elapsed: "écoulé", target: "durée (min)",

@@ -3104,7 +3104,7 @@
     }
     ELN.uhrMarke.textContent = lage === "ueber"
       ? wort("over", "over") : wort("timer", "class clock");
-    ELN.saal.textContent = lage === "aus" ? "–"
+    ELN.saal.textContent = lage === "aus" ? "–:––"
       : lage === "blind" ? "—"
       // Eine Spalte fuer das Vorzeichen, auch wenn keines dasteht. Ohne sie
       // sprangen die Ziffern beim Umschlag in die Ueberzeit um 19 Pixel nach
@@ -4022,9 +4022,16 @@
     // Ohne Zieldauer gibt es weder einen Rest noch einen Plan. Statt zweimal
     // einen einsamen Punkt neben einer lauten Marke zu zeigen, verschwinden
     // beide Paare, bis eine Dauer gesetzt ist.
-    var zeigen = ZIEL_MIN > 0 && STEPS.length > 0 ? "" : "none";
-    if (ELN.restPaar) ELN.restPaar.style.display = zeigen;
-    if (ELN.taktPaar) ELN.taktPaar.style.display = zeigen;
+    // Statt zu verschwinden: dastehen und einen Strich zeigen. Wer die
+    // Ansicht zum ersten Mal sieht, soll erkennen, *was* dort stehen wird --
+    // ein leerer Platz sagt nichts, ein Strich neben seinem Wort alles.
+    var gesetzt = ZIEL_MIN > 0 && STEPS.length > 0;
+    if (ELN.restPaar) ELN.restPaar.dataset.leer = gesetzt ? "0" : "1";
+    if (ELN.taktPaar) ELN.taktPaar.dataset.leer = gesetzt ? "0" : "1";
+    if (!gesetzt) {
+      if (ELN.rest) ELN.rest.textContent = "\u2013:\u2013\u2013";
+      if (ELN.takt) ELN.takt.textContent = "\u2013";
+    }
     // Ohne Sekunden. Am Pult ist der Sekundenzeiger nie die Frage -- die
     // Frage ist, wie viel Zeit noch bleibt --, und eine Zahl, die viermal
     // je Sekunde neu gezeichnet wird, zieht den Blick, ohne ihn zu
@@ -4517,11 +4524,15 @@
   function tastenzeile(wohin, text) {
     if (!wohin) return;
     while (wohin.firstChild) wohin.removeChild(wohin.firstChild);
-    // Die Vorlage nennt Gruppen, durch `§` getrennt; in jeder steht vor dem
-    // Doppelpunkt ihr Name und danach die Tasten. Der senkrechte Strich
-    // trennt Taste und Bedeutung -- wo die Taste aufhoert, kann man nicht
-    // raten: "Ende zum Schluss" faengt mit einem Wort an, das selbst eine
-    // Taste ist.
+    // Nachgemessen bei 1600 Pixeln: die Leiste hat 1572 Pixel Platz. Mit
+    // Gruppennamen und Bedeutungen braucht sie 2582, ohne Namen immer noch
+    // 2350 -- eine Zeile ist damit nicht zu haben, solange die Bedeutungen
+    // dastehen. Nur die Kappen brauchen 856.
+    //
+    // Also: eine Zeile aus Kappen, nach Gruppen geordnet, und die Bedeutung
+    // haengt an der Taste statt neben ihr -- als Titel beim Ueberfahren, und
+    // vollstaendig hinter `?`. Eine Reihe, die man nach Form ueberfliegt,
+    // statt eines Absatzes, den man liest.
     String(text).split("\u00a7").forEach(function (roh) {
       var t = roh.trim();
       if (!t) return;
@@ -4534,15 +4545,13 @@
         var e = stueck.trim();
         if (!e) return;
         var teil = e.split("|");
+        var tasten = teil.length > 1 ? teil[0].trim() : e;
+        var wozu = teil.length > 1 ? teil.slice(1).join("|").trim() : "";
         var pr = bau("span", "ts-sp-taste-paar", g);
-        if (teil.length > 1) {
-          teil[0].trim().split(/\s+/).forEach(function (k) {
-            if (k) bau("kbd", "ts-sp-kappe", pr).textContent = k;
-          });
-          bau("span", "ts-sp-taste-wort", pr).textContent = teil.slice(1).join("|").trim();
-        } else {
-          bau("span", "ts-sp-taste-wort", pr).textContent = e;
-        }
+        if (wozu) pr.title = tasten + " \u2014 " + wozu;
+        tasten.split(/\s+/).forEach(function (k) {
+          if (k) bau("kbd", "ts-sp-kappe", pr).textContent = k;
+        });
       });
     });
   }
@@ -4561,6 +4570,16 @@
     LEIB.style.gridTemplateColumns = "";
     LEIB.style.gridTemplateRows = "";
     var zeile = ELN.uhrKachel ? ELN.uhrKachel.parentNode : null;
+    // Breit heisst: die Unterzeile passt neben die grosse Zahl statt darunter.
+    // Untereinander verschenkt eine Kachel bei einem breiten Fenster die
+    // halbe Flaeche -- die Zahl steht klein in einem grossen Kasten, und
+    // rechts davon ist nichts. Nebeneinander wird die Zahl groesser und die
+    // Kachel niedriger, und die Folie darueber bekommt, was die Zeile abgibt.
+    if (zeile) {
+      var k1 = zeile.firstElementChild;
+      var breitGenug = k1 && k1.getBoundingClientRect().width >= 215;
+      if (breitGenug) zeile.dataset.breit = "1"; else delete zeile.dataset.breit;
+    }
     var natur = zeile ? zeile.getBoundingClientRect().height : 0;
 
     // Hochkant heisst hier nur noch: die Vorschau passt nicht mehr neben die
@@ -5033,14 +5052,12 @@
     } else if (e.key === "f") {
       if (document.fullscreenElement) document.exitFullscreen();
       else document.documentElement.requestFullscreen();
-    } else if (e.key === "s") {
-      hint(attr(SLIDES[STEPS[current].slide], "note") || CFG.words.noNote);
     } else if (e.key === "?") {
       // Im Balken als Fliesstext: die Trennzeichen der Vorlage werden zu
       // Zwischenraum, der Gruppenname bleibt stehen.
       hint(String((ROLLE === "speaker" && CFG.words.helpSpeaker)
                   || CFG.words.help).replace(/\|/g, " ").replace(/\s*\u00a7\s*/g, "   "));
-    } else if (e.key === "p") { print(); }
+    }
     // The second window. The keypress is at the same time the user
     // gesture, without which the popup blocker would swallow
     // `window.open`.
