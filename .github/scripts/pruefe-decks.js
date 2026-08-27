@@ -312,12 +312,17 @@ const SOLL_HINWEIS = [
 ];
 
 // ── Welche Decks ────────────────────────────────────────────────────────────
-// Die acht Beispiele plus das Prüfdeck. Letzteres steht nicht unter
+// Die neun Beispiele plus das Prüfdeck. Letzteres steht nicht unter
 // `examples/`, weil es nicht auf die Website gehört; es wird hier übersetzt.
 // Es deckt ab, was die anderen nicht anfassen. Nachgezählt in ihren Quellen:
 // `after: "dimmed"` 0x, `stagger(dim: true)` 0x, `invert` 0x, `info()` 0x,
 // `fit` 0x. Ohne das Prüfdeck kann man diese fünf zerstören, ohne dass hier
 // eine Zahl wackelt.
+//
+// `ziehen` ist das einzige Beispiel mit `scene()`. Es trägt drei Szenen und
+// ein Daumenkino und ist deshalb das größte Deck der Reihe: seine Schrittzahl
+// hängt an den Halten der Szenen, nicht an Einblendungen, und eine Szene, die
+// aufhörte, ihre Halte zu zählen, fiele hier als Erstes auf.
 //
 // Die beiden GeoGebra-Decks messen den Rahmen, nicht das Applet. Was hier eine
 // Zahl hat -- Folien, Schritte, Elemente, gezeichnet und gedimmt, Grund, Hash,
@@ -326,7 +331,7 @@ const SOLL_HINWEIS = [
 // eigenen Fenster. Der Lauf ist deshalb nicht vom Netz abhängig: gemessen
 // ergeben beide Decks mit und ohne erreichbares GeoGebra dieselben Zahlen.
 const BEISPIELE = ["tour", "theme-default", "theme-editorial", "theme-lesson",
-                   "theme-night", "theme-plain", "geogebra",
+                   "theme-night", "theme-plain", "ziehen", "geogebra",
                    "geogebra-sprecher"];
 
 // Decks mit einem Applet darin. Sie werden mit abgeklemmtem GeoGebra gefahren,
