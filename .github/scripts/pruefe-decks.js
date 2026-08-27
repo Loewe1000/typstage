@@ -435,6 +435,55 @@ function wanderungProbe() {
     + "dass die Bilder einer Szene verschieden groß sind.";
 }
 
+// Gegenprobe zu `split-body`. `gitter.typ` stellt dieselbe Tabelle viermal
+// hin -- roh, in `text()`, im Inhaltsblock, in einer `box` -- und alle vier
+// müssen gleich viele gestrichene Pfade tragen.
+//
+// Warum das im Browser keine Zahl hat und deshalb hier steht: die Striche
+// entstehen in Typst und stehen im Hintergrund-SVG der Folie. Die Laufzeit
+// sieht sie nie an, kein Element trägt ein `ts-`-Merkmal, und der Sollstand
+// des Prüfdecks bewegte sich keinen Zähler, als die Striche verschwanden --
+// gemessen. Sichtbar wird der Verlust erst, wenn man die vier Fassungen
+// nebeneinanderlegt.
+//
+// Verglichen wird gegen die rohe Fassung und nicht gegen eine feste Zahl:
+// was das Thema selbst zieht, steht auf allen vier Folien gleich und fällt
+// heraus. Die Probe hängt so an keiner Schrift und an keinem Rechner.
+function gitterProbe() {
+  let datei;
+  try { datei = decklaufBauen("gitter"); }
+  catch (e) {
+    return "gitter.typ ließ sich nicht übersetzen: "
+      + String(e.meldung || "").slice(0, 300);
+  }
+  const html = fs.readFileSync(datei, "utf8");
+  // `<defs>` heraus: dort liegen die Glyphenumrisse, und die zählen mit,
+  // sobald ein Titel einen Buchstaben mehr hat als der nächste.
+  const folien = html.split('<section class="ts-slide"').slice(1)
+    .map(s => s.split("</section>")[0].replace(/<defs>[\s\S]*?<\/defs>/g, ""))
+    .map(s => (s.match(/<path[^>]*\sstroke=/g) || []).length);
+  const NAMEN = ["roh", "text()", "Inhaltsblock", "box"];
+  if (folien.length !== NAMEN.length) {
+    return "gitter.typ hat " + folien.length + " Folien statt " + NAMEN.length
+      + ". Die Probe vergleicht vier Verpackungen derselben Tabelle; fehlt "
+      + "eine, vergleicht sie nichts mehr.";
+  }
+  if (folien[0] === 0) {
+    return "schon die rohe Tabelle in gitter.typ trägt keinen gestrichenen "
+      + "Pfad. Dann misst die Probe nicht mehr, was sie messen soll -- "
+      + "vermutlich hat die Tabelle ihr stroke: verloren.";
+  }
+  const abweichend = folien.map((n, i) => [NAMEN[i], n])
+    .filter(([, n]) => n !== folien[0]);
+  if (!abweichend.length) return null;
+  return "dieselbe Tabelle trägt je nach Verpackung verschieden viele "
+    + "Striche: roh " + folien[0] + ", aber "
+    + abweichend.map(([n, z]) => n + " " + z).join(", ")
+    + ". Ein Rumpf ist an einem `children`-Feld zerlegt worden, das keiner "
+    + "Sequenz gehört: die Zellen stehen dann als Geschwister nebeneinander "
+    + "und die Tabelle ist ein Fließabsatz.";
+}
+
 // Und dasselbe Deck noch einmal auf Papier. Der Browser sieht nur den
 // HTML-Zweig, und `build` hat einen zweiten: dort wird nur die letzte Stufe
 // gesetzt, und der Schrittzähler muss trotzdem so weit laufen wie im Browser.
@@ -1212,6 +1261,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (ueberlauf) console.error("ABWEICHUNG ueberlauf: " + ueberlauf);
   const wanderung = wanderungProbe();
   if (wanderung) console.error("ABWEICHUNG wanderung: " + wanderung);
+  const gitter = gitterProbe();
+  if (gitter) console.error("ABWEICHUNG gitter: " + gitter);
   const papier = papierProbe();
   if (papier) console.error("ABWEICHUNG papier: " + papier);
   let pd;
@@ -1662,6 +1713,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   bericht.forEach(z => { if (z.maengel.length) schlecht++; });
   if (ueberlauf) schlecht++;
   if (wanderung) schlecht++;
+  if (gitter) schlecht++;
   if (papier) schlecht++;
   if (ohneStrich) schlecht++;
   if (leiser2) schlecht++;
