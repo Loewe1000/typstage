@@ -1115,13 +1115,22 @@
       + "slide has neither, so there is no place for the marker to go. "
       + "Drop float: true, or put the place outside the "
       + kind + "().")
-    return place(
-      body.at("alignment", default: auto),
-      dx: body.at("dx", default: 0pt),
-      dy: body.at("dy", default: 0pt),
-      track(kind, body.body, at: at, extra: extra, raw-frames: raw-frames,
-            inline: inline, width: width, dim-freiwillig: dim-freiwillig),
-    )
+    let innen = track(kind, body.body, at: at, extra: extra,
+                      raw-frames: raw-frames, inline: inline, width: width,
+                      dim-freiwillig: dim-freiwillig)
+    let dx = body.at("dx", default: 0pt)
+    let dy = body.at("dy", default: 0pt)
+    // Eine nicht genannte Ausrichtung ist nicht dasselbe wie `auto`. Ein
+    // `place(dx: 60pt, …)` ohne Ausrichtung übersetzt anstandslos; dasselbe
+    // `place` mit einem hingeschriebenen `auto` bricht ab, denn `auto` gibt es
+    // nur für ein Gleitobjekt. Das Feld wird darum nur weitergereicht, wenn es
+    // dasteht.
+    let wohin = body.at("alignment", default: none)
+    return if wohin == none or wohin == auto {
+      place(dx: dx, dy: dy, innen)
+    } else {
+      place(wohin, dx: dx, dy: dy, innen)
+    }
   }
   // The `box` has to sit around the *whole* construction, not inside it:
   // `layout()` is block-level, so an inline element that only chooses a `box`

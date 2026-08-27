@@ -38,6 +38,18 @@
   anim(at: 2, line(angle: 90deg, length: 80pt, stroke: 2pt + blue)),
 )
 
+== Ein gesetztes ohne Ausrichtung
+
+// Eine nicht genannte Ausrichtung ist nicht dasselbe wie `auto`: dieses `place`
+// übersetzt anstandslos, dasselbe mit einem hingeschriebenen `auto` bricht ab,
+// denn `auto` gibt es nur für ein Gleitobjekt. Beim Hinausheben ist das der
+// Unterschied zwischen einem Deck und einer Fehlermeldung, und schon einmal war
+// es letzteres.
+
+#block(width: 100%, height: 100pt,
+  anim(at: 2, place(dx: 60pt, dy: 30pt,
+                    rect(width: 20pt, height: 20pt, fill: orange))))
+
 == Drei gesetzte Rechtecke
 
 #block(width: 100%, height: 200pt, {

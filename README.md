@@ -466,6 +466,15 @@ flipbook reads. Five runs at three animation speeds in two browsers produced an
 identical record, down to the ghost counts; the report's header carries the
 duration, the browser and the speed and differs by design.
 
+A third part makes a `cue` slide visible to the run at all. An adaptive group
+is worked by the digit keys, and `goto()` presses none: it moves to a step, but
+an unnamed point stays put far behind the last step of the deck, so a run that
+only pages sees `0/0` on such a slide and takes that for the finding. Measured
+on `vortragen`: 13 of its 44 steps. `ziffer(n)` names a point and `punkt()`
+takes the next in written order, exactly as the digit and the arrow do; the run
+names them in written order, because a speaker may choose any other and a
+written record cannot depend on his mood.
+
 The written record is `.github/scripts/decklauf/soll.json`, rewritten with
 `--neu-soll` and only on purpose. Three of its entries depend on the fonts
 of the machine rather than on the package: the fingerprint of the check deck's

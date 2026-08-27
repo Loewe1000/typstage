@@ -601,9 +601,9 @@ async function schmalProbe(b) {
   })()`);
   const d = JSON.parse(roh);
   if (d.fehler.length) return "schmal.typ meldete: " + d.fehler.join(" | ");
-  if (d.els.length !== 5) {
-    return d.els.length + " verfolgte Elemente statt fünf. Das Deck hält zwei "
-      + "Linien und drei gesetzte Rechtecke.";
+  if (d.els.length !== 6) {
+    return d.els.length + " verfolgte Elemente statt sechs. Das Deck hält zwei "
+      + "Linien, ein gesetztes Rechteck ohne Ausrichtung und drei mit.";
   }
   const leer = d.els.filter(e => !e.w || !e.h);
   if (leer.length) {
