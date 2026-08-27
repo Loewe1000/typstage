@@ -2070,6 +2070,12 @@ per glyph, `"block"` moves the whole thing as one rectangle.
   swarm rather than a movement.
 ]
 
+Whatever stands #emph[above] the flight's destination on the target slide
+stays above it while it flies. Source order decides, at rest and in motion
+alike: what is written after the `morph` lies on top of it, what comes before
+lies below. A caption sitting on the finished picture therefore does not have
+to wait until the picture has landed.
+
 == When the wrong signs fly
 
 Where the pairing goes astray, name the pieces. `pin` marks a piece inside a
