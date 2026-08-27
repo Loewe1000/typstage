@@ -3,8 +3,10 @@
 // Source: the "Photojournalist Portfolio" template by SlidesCarnival
 // (https://www.slidescarnival.com/), CC BY 4.0, adapted; mosaic brought it to
 // Typst first (docs-src/examples/decks/portfolio). The template's photographs
-// are not carried over; grey surfaces drawn in plain Typst stand in their
-// place — a gradient, a horizon, a silhouette.
+// are not carried over — they are credited only in aggregate there, with no
+// per-file provenance. In their place stand nine synthetic greyscale images
+// generated for this deck; model, date and prompts are recorded in
+// `mosaic-bilder/PROVENANCE.md`.
 //
 //   typst compile mosaic-greyscale.typ mosaic-greyscale.html --format html --features html
 //   typst compile mosaic-greyscale.typ mosaic-greyscale.pdf
@@ -23,9 +25,10 @@
 // plate turns vermilion with a blue rule, because its whole ground is
 // `strong`; the rest keeps its look, because textbook's `ink` is very nearly
 // black and its `paper` is white, so the panels and cards land where they
-// already stood. And the grey surfaces further down never move at all: they
-// stand in for photographs and are written in `luma()`, not in roles — a
-// photograph does not turn vermilion because the palette did.
+// already stood. And the pictures further down never move at all: they are
+// photographs, and the greys the chart is drawn in beside them are `luma()`
+// and not roles — a photograph does not turn vermilion because the palette
+// did.
 //
 // That is the honest size of the claim, and it is still mosaic's claim: the
 // deck's own colour lives in one dictionary. The pictures live outside it.
@@ -71,72 +74,41 @@
   border: rgb("#d9d9d9"),
 )
 
-// ── Grey surfaces ──────────────────────────────────────────────────────────
-// In place of the photographs. A gradient gives the depth, two or three dark
-// shapes the statement; a surface that stands in for a photograph without
-// pretending to be one needs no more.
+// ── The plates ─────────────────────────────────────────────────────────────
+// The nine pictures that are photographs in the template. True greyscale —
+// written out of PIL's mode `L`, so red, green and blue are one number —
+// because the claim this deck makes is that a single dictionary colours all
+// of it, and a picture carrying colour would be the one piece that does not
+// follow. Model, date and prompts stand in `mosaic-bilder/PROVENANCE.md`.
+//
+// Typst inlines an image as a `data:` URI once per *use*, not once per file:
+// a plate on three slides sits in the HTML three times. So each file is 820 px
+// on its long edge or the long edge of the largest cell it appears in,
+// whichever is smaller — a plate that is only ever a tile in the contact sheet
+// is stored at tile size. That, and not the picture count, is what keeps the
+// packed deck where it is.
+//
+// `fit: "cover"` and not `"contain"`: a plate fills its cell, and the box cuts
+// away what runs over the edge. Otherwise white strips would stand beside the
+// picture, and the cell would no longer be the surface the layout treats it
+// as.
+#let photos = (
+  photographer: "mosaic-bilder/photographer.webp",  // at work, from behind
+  street: "mosaic-bilder/street.webp",              // wet street, one figure
+  facade: "mosaic-bilder/facade.webp",              // a grid of windows
+  pier: "mosaic-bilder/pier.webp",                  // a pier into the mist
+  darkroom: "mosaic-bilder/darkroom.webp",          // prints on the line
+  hands: "mosaic-bilder/hands.webp",                // hands loading a camera
+  alley: "mosaic-bilder/alley.webp",                // a shaft of light
+  contact: "mosaic-bilder/contact.webp",            // a sheet and a loupe
+  trays: "mosaic-bilder/trays.webp",                // three developing trays
+)
 
-/// One grey surface. `n` picks the composition; all of them fill the same
-/// area.
-#let gplate(n) = block(width: 100%, height: 100%, clip: true, {
-  let i = calc.rem(n, 5)
-  place(top + left, rect(width: 100%, height: 100%,
-    fill: gradient.linear(luma(90%), luma(52%), angle: 90deg)))
-  if i == 0 {
-    // Conifers in fog. Written out by hand rather than computed: a formula
-    // puts the trunks at equal spacing, and what stands evenly looks like a
-    // bar chart and not like a wood. The small tilt is the whole difference:
-    // upright they are bars, a degree off they are trunks.
-    for (x, w, h, tone, tilt) in (
-      (5%, 3.4%, 74%, 20%, -1.2deg), (13%, 2.2%, 58%, 34%, 0.8deg),
-      (22%, 4.0%, 82%, 17%, 1.4deg), (31%, 1.8%, 47%, 44%, -0.6deg),
-      (41%, 3.0%, 66%, 26%, 1.0deg), (52%, 2.4%, 88%, 22%, -1.6deg),
-      (60%, 1.6%, 41%, 48%, 0.5deg), (71%, 3.6%, 70%, 19%, -0.9deg),
-      (83%, 2.0%, 54%, 38%, 1.7deg), (91%, 2.8%, 78%, 29%, -0.7deg),
-    ) {
-      place(bottom + left, dx: x, dy: -6%, rotate(tilt, origin: bottom + center,
-            reflow: false, rect(width: w, height: h, fill: luma(tone))))
-    }
-    // The fog over them, so that the trunks at the back disappear into it.
-    place(bottom + left, rect(width: 100%, height: 46%,
-      fill: gradient.linear(luma(70%).transparentize(100%), luma(74%),
-                            angle: 90deg)))
-  } else if i == 1 {
-    // A horizon with a low sun.
-    place(top + right, dx: -22%, dy: 18%, circle(radius: 26pt, fill: luma(96%)))
-    place(bottom + left, rect(width: 100%, height: 34%, fill: luma(28%)))
-  } else if i == 2 {
-    // A portrait against the light. Cropped, not centred: a centred
-    // silhouette of head and shoulders is a user icon, a cropped one is a
-    // portrait. The pale disc behind it is the light.
-    place(bottom + left, dx: 6%, dy: -12%,
-          ellipse(width: 34%, height: 34%, fill: luma(80%), stroke: none))
-    place(bottom + right, dx: 14%, dy: 12%, rect(
-      width: 58%, height: 52%, fill: luma(16%),
-      radius: (top-left: 52%, top-right: 22%),
-    ))
-    place(bottom + right, dx: -4%, dy: -38%,
-          ellipse(width: 19%, height: 24%, fill: luma(16%), stroke: none))
-  } else if i == 3 {
-    // Dunes, three ridges one behind the other, each lighter than the last.
-    for (dy, w, h, tone) in ((-4%, 150%, 46%, 24%), (-14%, 130%, 40%, 38%),
-                             (-26%, 170%, 34%, 52%)) {
-      place(bottom + center, dy: dy, ellipse(width: w, height: h,
-                                             fill: luma(tone), stroke: none))
-    }
-  } else {
-    // Architecture: a grid of windows.
-    place(top + left, rect(width: 100%, height: 100%, fill: luma(64%)))
-    for a in range(4) {
-      for b in range(5) {
-        place(top + left, dx: 8% + b * 18%, dy: 12% + a * 22%,
-              rect(width: 11%, height: 13%, fill: luma(24%)))
-      }
-    }
-  }
-})
-
-// ── Surfaces ───────────────────────────────────────────────────────────────
+/// One plate, filling its cell. Named and not numbered: which picture goes
+/// into which cell is a decision about its shape — the pier is upright, the
+/// facade lies down — and a number hides that.
+#let photo(name) = block(width: 100%, height: 100%, clip: true,
+  image(photos.at(name), width: 100%, height: 100%, fit: "cover"))
 #let plate(body, fill: none, inset: 0pt, align: top + left) = block(
   width: 100%, height: 100%, fill: fill, inset: inset, clip: true,
   std.align(align, body),
@@ -192,7 +164,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
   place(top + left, block(width: 100%, height: 100%,
     std.align(center + horizon, block(width: 100%, height: 100%, {
       set block(spacing: 0pt)
-      gplate(0)
+      photo("photographer")
     }))))
   place(top + left, rect(width: 100%, height: 100%, fill: t.ink.transparentize(58%)))
   place(top + left, dx: 30pt * k, dy: 26pt * k,
@@ -270,7 +242,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
     #block(width: 100%, height: 100%, {
       place(top + left, bands((0.16fr, 0.64fr, 0.20fr),
         plate([], fill: white),
-        plate(gplate(0)),
+        plate(photo("street")),
         plate([], fill: white),
       ))
       place(top + center, dy: -14pt,
@@ -297,7 +269,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
           #v(10pt)
           #text(size: 10pt)[#lorem]
         ])),
-      plate(gplate(2)),
+      plate(photo("hands")),
     )
   ],
 
@@ -305,7 +277,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
   slide(none)[
     #rows-of((1.05fr, 0.95fr),
       block(width: 100%, height: 100%, {
-        place(top + left, gplate(4))
+        place(top + left, photo("trays"))
         place(left + horizon, dx: 34pt,
               text(size: 34pt, weight: "bold", fill: tp.paper)[ABOUT US])
       }),
@@ -335,7 +307,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
           ],
         )
       ],
-      plate(gplate(0)),
+      plate(photo("hands")),
     )
   ],
 
@@ -347,15 +319,15 @@ veniam, quis nostrud exercitation ullamco laboris.]
                      stands there large, and the way it got there is visible.])[
     #plate(fill: white, inset: 26pt)[
       #grid(columns: (1fr, 1fr), rows: (1fr, 1fr), gutter: 10pt,
-        gplate(2),
+        photo("darkroom"),
         // Exactly one tile carries a name. On the next slide the same name
         // stands around the full-bleed version, and in between the picture
         // flies. `match: "block"`: a surface has no glyphs worth pairing, and
         // per-glyph matching would make a swarm of it rather than a
         // movement.
-        morph(<print>, gplate(1), match: "block"),
-        gplate(4),
-        gplate(3),
+        morph(<print>, photo("street"), match: "block"),
+        photo("facade"),
+        photo("contact"),
       )
     ]
   ],
@@ -366,12 +338,18 @@ veniam, quis nostrud exercitation ullamco laboris.]
                      picture, large.])[
     #block(width: 100%, height: 100%, {
       place(top + left, morph(<print>, block(width: 100%, height: 100%,
-                                             gplate(1)), match: "block"))
+                                             photo("street")), match: "block"))
+      // A tracked element and not ordinary content: the plate above it sits
+      // in a `morph`, and for that the runtime lifts a sprite over the slide.
+      // Anything belonging to the slide itself would lie under that sprite —
+      // visible on paper, covered in the browser. Two sprites, on the other
+      // hand, stand in source order, and this one comes second.
       place(bottom + right, dx: -34pt, dy: -20pt,
-            panel(tp, inset: (x: 26pt, y: 12pt), width: auto,
-                  text(size: 15pt, weight: "bold")[
-                    A PICTURE IS WORTH A THOUSAND WORDS
-                  ]))
+            anim(at: "1-",
+                 panel(tp, inset: (x: 26pt, y: 12pt), width: auto,
+                       text(size: 15pt, weight: "bold")[
+                         A PICTURE IS WORTH A THOUSAND WORDS
+                       ])))
     })
   ],
 
@@ -401,7 +379,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
   slide(none, note: [First a zero stands there. Then ask the room how many
                      they think it is — and only then press.])[
     #block(width: 100%, height: 100%, {
-      place(top + left, gplate(3))
+      place(top + left, photo("photographer"))
       place(top + center, dy: 120pt, block(width: 100%, std.align(center, {
         // `scene` rather than `anim`: the number is not meant to appear, it
         // is meant to run. Two stops, eighteen frames between them, and every
@@ -465,9 +443,10 @@ veniam, quis nostrud exercitation ullamco laboris.]
             text(size: 30pt, weight: "bold", fill: tp.paper)[EXHIBITIONS]),
       plate(fill: tp.ink, inset: (bottom: 0pt),
         grid(columns: (1fr, 1fr, 1fr), column-gutter: 7pt, rows: (100%,),
-          ..(([Project 1], 2), ([Project 2], 4), ([Project 3], 3)).map(p =>
+          ..(([Project 1], "pier"), ([Project 2], "alley"),
+             ([Project 3], "darkroom")).map(p =>
             block(width: 100%, height: 100%, fill: white, {
-              block(width: 100%, height: 68%, gplate(p.last()))
+              block(width: 100%, height: 68%, photo(p.last()))
               pad(x: 11pt, top: 8pt)[
                 #text(size: 12pt, weight: "bold", p.first())
                 #linebreak()
@@ -486,7 +465,7 @@ veniam, quis nostrud exercitation ullamco laboris.]
         #set par(leading: 0.34em)
         #text(size: 58pt, weight: "bold", fill: tp.paper)[THANK\ YOU]
       ],
-      plate(fill: tp.ink, inset: (top: 150pt), gplate(2)),
+      plate(fill: tp.ink, inset: (top: 150pt), photo("facade")),
     )
   ],
 )
