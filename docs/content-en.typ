@@ -2740,7 +2740,8 @@ draws scales along.
 / `side-by-side`: Columns; `split:` gives the widths, `equal: true` makes both
   the height of the taller.
 / `tiles`: A grid that numbers its own reveals, one tile per step, without a
-  hand-counted `at:` on each.
+  hand-counted `at:` on each. `duration:` and `easing:` are those of `anim` and
+  apply to every tile alike: a grid moves as one thing.
 / `statement`: One large sentence, centred, for the slide that carries a single
   claim.
 / `fit`: Scales one block down to the room it has, for content whose size the
@@ -3045,7 +3046,7 @@ six labels under /Media and handout/.
   left for it to reach. Anyone who knows the two spellings as equivalent from
   other packages runs aground here.
 
-  For the 15 type labels the two spellings are equivalent: what sits inside
+  For the 16 type labels the two spellings are equivalent: what sits inside
   the matched element there is the text, and a rule reaches that from within
   as well.
 ]
@@ -3058,10 +3059,10 @@ and every moving piece.
 
 The `style` hook does *not* reach the same. It is wrapped around the slide
 *body*, and header, footer, progress and the title and section slides are
-built beside it, not inside it. Measured, all 37 rules one at a time: from inside
+built beside it, not inside it. Measured, all 38 rules one at a time: from inside
 `style` exactly the 13 that stand in the slide body take effect -- the
 building blocks `ts-card…`, `ts-callout…`, `ts-statement`, and the three
-stand-in surfaces `ts-media-…`. The other 24 stay silent there, without a
+stand-in surfaces `ts-media-…`. The other 25 stay silent there, without a
 warning. `style` remains the right place for typography that concerns the
 whole body; for labels, the place before `#show: presentation` is the one.
 
@@ -3227,6 +3228,9 @@ nothing.
   [`ts-section-slide-title`], [Its title], [`text`],
   [`ts-section-slide-rule`], [The accent stroke; `themes.night` has two,
     `themes.lesson` none], [`rect`],
+  [`ts-section-slide-parent`], [The line above it naming the sections this one
+    hangs under. Only from the second structure level on, so never at
+    `slide-level: 2`], [`text`],
 )
 
 A section slide has no subtitle in typstage, so the list names none.
@@ -3582,6 +3586,44 @@ transition. If that matters for your audience, `transition: "none"` and
   answer is to hand out the PDF as well and to say what is on each slide. The
   PDF from the same source carries real text.
 ]
+
+== A tracked element with no area
+
+A tracked element gets its place in the browser from a rectangle Typst paints
+around it in a signal colour. Where the content has no area, that rectangle
+would have none either, and a sprite given a viewport of zero scales everything
+inside it to nothing: the element stands in the page, with its path and its
+colour, and cannot be seen. On paper it stands.
+
+Two shapes reach that point and both are handled. A vertical rule measures no
+width; like every arealess element it is given a font height of air on each
+side, and the air is placed, so the flow is unchanged. A `place` measures
+nothing in either direction and is not in the flow at all; it moves outward on
+its own and the tracked element moves inside it, so the marker stands where the
+content stands and the flow keeps its zero.
+
+// check: folie
+#show-code(```typ
+#anim(at: 2, place(top + left, dx: 20pt, dy: 50pt,
+                   rect(width: 20pt, height: 20pt)))
+```)
+
+What is left over is said rather than lost. A marker with no width or no
+height, and a marker nested deeper than four tracked elements, which is as far
+as the placing goes: each goes to the browser's console once per element.
+
+#show-code[```
+typstage: the tracked element 3 on slide 4 has a marker with no width.
+Its sprite is given a viewport of that extent, and a viewport of zero
+scales everything inside it to nothing: the element is in the page, with
+its path and its colour, and cannot be seen. On paper it stands. Put it
+in a box with a size, or give the element a width.
+```]
+
+The question cannot be asked at compile time, for the same reason as with
+`draw`: whether content has an area is not a question the document can answer.
+Only in the browser is the rectangle there to be measured. The package's own
+check run reads these messages along.
 
 == Reach
 

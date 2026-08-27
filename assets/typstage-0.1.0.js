@@ -357,6 +357,55 @@
     });
   }
 
+  // ── Eine Marke ohne Ausdehnung ────────────────────────────────────────────
+  //
+  // Das Sprite bekommt seine Huelle aus dem Rechteck der Marke. Misst dieses
+  // Rechteck in einer Richtung null, so bekommt das SVG darin ein
+  // Ansichtsfenster der Breite oder Hoehe null -- und ein solches skaliert
+  // seinen Inhalt unter `xMidYMid meet` mit dem Faktor null. Das Element steht
+  // dann vollstaendig in der Seite, mit Pfad, Farbe und Strichbreite, und ist
+  // trotzdem nicht da: gemessen an einer senkrechten Trennlinie, ueber die
+  // ganze Hoehe kein einziger vom Grund abweichender Bildpunkt. Auf Papier
+  // stand sie.
+  //
+  // Das ist der eine Ausgang, den es nicht geben darf: ein Deck verliert ein
+  // Element, und nichts sagt es. Zur Uebersetzungszeit ist die Frage nicht zu
+  // stellen -- ob ein Inhalt Flaeche hat, weiss Typst im Dokument nicht; es
+  // ist derselbe blinde Fleck, wegen dessen dieses Paket ueberhaupt mit
+  // Rechtecken in Signalfarbe arbeitet. Erst hier liegt das Rechteck da und
+  // laesst sich messen.
+  //
+  // Einmal je Element und ueber `console.warn`, wie `federKlage`: so landet
+  // die Klage in derselben Liste, die `typstage.pruef.fehler()` ausreicht.
+  function folieVon(el) {
+    var f = el.closest(".ts-slide");
+    return f ? SLIDES.indexOf(f) + 1 : 0;
+  }
+  function masslosKlage(el, wo) {
+    if (el.dataset.masslos) return;
+    el.dataset.masslos = "1";
+    console.warn("typstage: the tracked element " + (el.dataset.n || "?")
+      + " on slide " + folieVon(el) + " has a marker with no " + wo + ". Its "
+      + "sprite is given a viewport of that extent, and a viewport of zero "
+      + "scales everything inside it to nothing: the element is in the page, "
+      + "with its path and its colour, and cannot be seen. On paper it "
+      + "stands. Put it in a box with a size, or give the element a width.");
+  }
+
+  // Der zweite Ausgang derselben Art: eine Marke, die gar nicht gefunden wird.
+  // Das Sprite bekommt dann nie einen Ort, bleibt bei `opacity: 0` liegen und
+  // fehlt ebenso still. Vier Runden hat `stelle` dafuer; was danach noch offen
+  // ist, findet auch in einer fuenften nichts.
+  function ohneMarkeKlage(el) {
+    if (el.dataset.markenlos) return;
+    el.dataset.markenlos = "1";
+    console.warn("typstage: the tracked element " + (el.dataset.n || "?")
+      + " on slide " + folieVon(el) + " finds no marker to sit on. It is "
+      + "never placed and stays invisible. Either its marker has no extent at "
+      + "all, or it is nested deeper than four tracked elements, which is as "
+      + "far as the placing goes.");
+  }
+
   // In rounds: a nested element has no mark in the background, the outer
   // element's hide() swallows it, but it has one in the outer element's
   // sprite. That one has to be placed first.
@@ -374,6 +423,12 @@
         var r = karte[+el.dataset.n];
         if (!r) { rest.push(el); return; }
         setzen(el, r);
+        // Gestellt ist es jetzt -- aber wenn das Rechteck in einer Richtung
+        // nichts misst, ist "gestellt" nur ein Wort.
+        if (!r.w || !r.h) {
+          masslosKlage(el, !r.w ? (!r.h ? "width and no height"
+                                        : "width") : "height");
+        }
         if (r.wirt) el.dataset.parent = r.wirt; else delete el.dataset.parent;
         // Corner radius in points, scaled along with the stage.
         if (el.dataset.radius && +el.dataset.radius > 0) {
@@ -430,6 +485,8 @@
       if (rest.length === offen.length) break;
       offen = rest;
     }
+    // Was nach allen Runden keine Marke gefunden hat, bekommt keine mehr.
+    offen.forEach(ohneMarkeKlage);
   }
 
   function vermessen(i) {
@@ -3952,7 +4009,10 @@
     // never do. Measured on the six example decks it costs under one percent
     // of the compressed page.
     pruef: {
-      fassung: 1,
+      // Zwei, seit `ziffer`, `punkt` und `adaptiv` dazugekommen sind. Ein Lauf,
+      // der eine cue-Gruppe bedienen will, muss ein Deck von gestern daran
+      // erkennen koennen -- sonst misst er dort still 0/0 und nennt es heil.
+      fassung: 2,
       bau: CFG.build,
       deck: DECK,
       rolle: ROLLE,
@@ -4000,6 +4060,47 @@
         };
       },
       fehler: function () { return FEHLER.slice(); },
+
+      // ── Eine cue-Gruppe von aussen bedienen ──────────────────────────────
+      //
+      // Die Ziffern einer adaptiven Gruppe liegen an der Tastatur, und ein
+      // Prueflauf hat keine Hand. `goto()` allein loest sie nicht aus: es geht
+      // auf einen Schritt, aber es nennt keinen Punkt, und ein nicht genannter
+      // Punkt steht auf `g.aus` -- weit hinter dem letzten Schritt des Decks.
+      // Eine cue-Folie meldete deshalb im Decklauf durchgehend 0/0, und was an
+      // ihr neu ist, war ungeprueft. Gemessen an examples/vortragen.typ: 13
+      // seiner 44 Schritte sah der Lauf gar nicht.
+      //
+      // Drei Griffe, und alle drei tun genau, was die Tastatur tut.
+      // `ziffer(n)` ist die Zifferntaste: sie nennt den Punkt n der Gruppe auf
+      // der laufenden Folie und geht auf dessen Schritt. `punkt()` ist der
+      // Pfeil: er nimmt den naechsten in geschriebener Reihenfolge. Beide
+      // geben zurueck, ob etwas genannt wurde -- `false` heisst, dass hier
+      // keine Gruppe steht oder der Punkt schon gefallen ist, und dann bleibt
+      // dem Aufrufer das gewoehnliche Weiterblaettern.
+      //
+      // Zuruecknehmen steht hier nicht: das ist das Zurueckblaettern, und
+      // `goto()` besorgt es von selbst (`adRueck`).
+      ziffer: function (n) { return adTaste(+n); },
+      punkt: function () { return adPfeil(); },
+
+      // Was die Gruppen gerade zeigen, damit ein Lauf weiss, ob er zu bedienen
+      // hat und mit welcher Ziffer. `nummern` sind alle Punkte in
+      // geschriebener Reihenfolge, `folge` die schon genannten in der
+      // Reihenfolge, in der sie fielen, `plaetze` die Schritte innerhalb der
+      // Folie, die die Gruppe zu vergeben hat.
+      adaptiv: function () {
+        return Object.keys(AD).map(function (name) {
+          var g = AD[name];
+          return {
+            name: name, folie: g.folie,
+            nummern: Object.keys(g.reihen).map(Number)
+              .sort(function (a, b) { return a - b; }),
+            plaetze: g.plaetze.slice(),
+            folge: g.folge.slice()
+          };
+        });
+      },
 
       // Pin the wall clock, or hand it back with no argument.
       // A number or nothing. Without the check `uhr("abc")` pins the clock to

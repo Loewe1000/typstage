@@ -223,7 +223,26 @@
   kurven.at(name)
 }
 
-/// Plain text out of content, for speaker notes.
+/// Plain text out of content, for speaker notes. A paragraph break becomes a
+/// blank line.
+///
+// Warum eine Leerzeile und nicht ein Leerzeichen: die Notiz reist als
+// HTML-Attribut und ist darum nur eine Zeichenkette, aber sie hat zwei Leser.
+// Das Notizfeld der Sprecheransicht steht auf `white-space: pre-wrap` -- dort
+// wird aus den zwei Umbrüchen die Leerzeile, die jemand geschrieben hat.
+// Die Blase, die die `s`-Taste aufsteigen lässt, steht auf `normal` und
+// faltet dieselben zwei Umbrüche zu einem Leerzeichen; sie bleibt eine Blase.
+// Eine Zeichenkette, und jeder bekommt das Seine. Auf Papier hat das Handout
+// den Absatz ohnehin immer gehabt: dort steht die Notiz als Inhalt.
+//
+// Gar nichts war es bisher, und das war der Fehler. Gemessen kam eine Notiz
+// aus zwei Absätzen als "Erster Absatz.Zweiter Absatz." an -- ohne auch nur
+// ein Leerzeichen dazwischen.
+//
+// Der `linebreak` bleibt draußen, und das ist Absicht: die Leerzeichen um ein
+// `\` herum überleben als `space`, gemessen "Zeile eins.  Zeile zwei.". Das
+// ist kein Verlust von Text, nur einer von Umbruch, und wer ihn hier
+// mitnähme, nähme die beiden Leerzeichen mit in die neue Zeile.
 #let plain-text(c) = {
   if type(c) == str { c } else if type(c) != content { "" } else if c.func() == text {
     c.text
@@ -231,7 +250,7 @@
     c.children.map(plain-text).join("")
   } else if c.has("body") { plain-text(c.body) } else if repr(c.func()) == "space" {
     " "
-  } else { "" }
+  } else if repr(c.func()) == "parbreak" { "\n\n" } else { "" }
 }
 
 /// A speaker note has to carry text, because nothing else reaches the speaker.
@@ -621,6 +640,26 @@
               else if body.has("children") { body.children } else { (body,) }
   teile.filter(c => c.func() in (v, h) and type(c.amount) == fraction)
 }
+
+// ── Ein Maß aus Rundungsstaub ist keines ───────────────────────────────────
+//
+// Eine senkrechte `line` misst nicht null breit, sondern 4,898587e-15 pt: der
+// Kosinus von 90° ist in Gleitkomma nicht sauber null, und `measure` reicht
+// den Staub durch. Gedruckt sieht man ihn nie -- `repr()` sagt brav `0pt` --,
+// aber ein Vergleich auf `== 0pt` sagt nein, und daran hängt weiter unten, ob
+// ein Element ohne Fläche Luft um seine Marke bekommt.
+//
+// Ohne Luft bekam die Marke Breite null, die Hülle im Browser `width: 0%`,
+// und ein Ansichtsfenster der Breite null skaliert seinen Inhalt unter
+// `xMidYMid meet` auf null. Die Linie stand im PDF und fehlte im Browser --
+// still, denn es klagte niemand. Gemessen an vier Fällen nebeneinander: die
+// waagerechte Linie (Höhe exakt 0pt) bekam ihre Luft, die um 90° gedrehte
+// nicht, und nur die gedrehte verschwand.
+//
+// Die Schwelle ist ein Hundertstel Punkt. Was dünner ist als das, trägt keine
+// Fläche, die ein Sprite füllen könnte; was dicker ist, hat eine und braucht
+// die Luft nicht.
+#let ohne-mass(l) = l < 0.01pt
 
 /// Does the body consist *only* of such spacers (and empty space)?
 #let nur-fr(body) = {
@@ -1067,6 +1106,51 @@
   // zehnmal daneben.
   wirkung-pruefen(extra.at("enter", default: none), "enter", kind)
   wirkung-pruefen(extra.at("exit", default: none), "exit", kind)
+  // ── Ein `place` gibt seinen Platz nicht her ───────────────────────────────
+  //
+  // `place` steht außerhalb des Flusses. Gemessen ist es 0x0, und wohin es
+  // seinen Inhalt wirklich setzt -- `dx`, `dy`, die Ausrichtung -- steht in
+  // keinem Maß, das `measure` zurückgeben könnte. Ein verfolgtes Element *um*
+  // ein `place` bekäme deshalb eine Marke am Ort des Flusses und in der Größe
+  // der Luft, die ein Element ohne Fläche bekommt: gemessen 40x40 pt statt
+  // null. Drei davon liefen im Browser eine Treppe hinunter, je 38 px, und
+  // schoben den Text hinter sich mit, während auf Papier alle drei
+  // nebeneinander standen.
+  //
+  // Zu retten ist der Fall, indem das `place` nach *außen* wandert und das
+  // verfolgte Element nach innen -- derselbe Handgriff, zu dem die Decks
+  // bisher von Hand greifen mussten. Danach steht die Marke dort, wo der
+  // Inhalt steht, und der Fluss behält seine Null. Es gilt für jede Art, denn
+  // hier kommen alle durch.
+  //
+  // Ein `float: true` wandert nicht mit. Ein Gleitobjekt sucht sich den Kopf
+  // oder den Fuß der Seite, und eine Folie hat weder das eine noch das andere;
+  // wohin es geriete, wüsste hier niemand. Lieber eine Meldung als eine Marke
+  // an einem geratenen Ort.
+  if type(body) == content and body.func() == place {
+    assert(not body.at("float", default: false), message:
+      "typstage: a tracked element cannot hold a floating place. "
+      + "place(float: true) looks for the top or bottom of a page, and a "
+      + "slide has neither, so there is no place for the marker to go. "
+      + "Drop float: true, or put the place outside the "
+      + kind + "().")
+    let innen = track(kind, body.body, at: at, extra: extra,
+                      raw-frames: raw-frames, inline: inline, width: width,
+                      dim-freiwillig: dim-freiwillig)
+    let dx = body.at("dx", default: 0pt)
+    let dy = body.at("dy", default: 0pt)
+    // Eine nicht genannte Ausrichtung ist nicht dasselbe wie `auto`. Ein
+    // `place(dx: 60pt, …)` ohne Ausrichtung übersetzt anstandslos; dasselbe
+    // `place` mit einem hingeschriebenen `auto` bricht ab, denn `auto` gibt es
+    // nur für ein Gleitobjekt. Das Feld wird darum nur weitergereicht, wenn es
+    // dasteht.
+    let wohin = body.at("alignment", default: none)
+    return if wohin == none or wohin == auto {
+      place(dx: dx, dy: dy, innen)
+    } else {
+      place(wohin, dx: dx, dy: dy, innen)
+    }
+  }
   // The `box` has to sit around the *whole* construction, not inside it:
   // `layout()` is block-level, so an inline element that only chooses a `box`
   // further in would still break the line it sits in.
@@ -1204,7 +1288,8 @@
       // cannot be measured in Typst. A font's height covers any common
       // stroke width; anything thicker is a drawing and normally brings its
       // own box along.
-      let luft = if m.height == 0pt or m.width == 0pt { text.size } else { 0pt }
+      let luft = if ohne-mass(m.height) or ohne-mass(m.width) { text.size }
+                 else { 0pt }
       // The *original* region travels along. Without it, the body sits in
       // the sprite inside a wrapper of the measured size, and a relative
       // measure resolves there a second time: `p%` becomes `p²%`. Only

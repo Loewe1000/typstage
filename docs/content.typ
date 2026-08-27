@@ -1936,6 +1936,39 @@ Höhe, dann gilt dessen Maß.
   `1fr`-Nachbarspalte stehen, statt sie auf null zu drücken.
 ]
 
+*Was gar keine Fläche hat.* Ein senkrechter Strich misst null breit, ein
+`place` misst null in beiden Richtungen und liegt außerdem gar nicht im Fluss.
+Beide sind versorgt. Der Strich bekommt seine Luft wie jedes flächenlose
+Element; das `place` wandert von selbst nach außen und das verfolgte Element
+nach innen, damit die Marke dort steht, wo der Inhalt steht, und im Fluss
+keinen Platz belegt:
+
+// check: folie
+#show-code(```typ
+#anim(at: 2, place(top + left, dx: 20pt, dy: 50pt,
+                   rect(width: 20pt, height: 20pt)))
+```)
+
+*Und wenn doch keines von beidem greift.* Dann sagt es die Laufzeit, statt das
+Element zu verlieren. Zwei Fälle bleiben: eine Marke, die null breit oder null
+hoch misst, und eine, die tiefer als vier verfolgte Elemente ineinander liegt
+und deshalb keinen Ort mehr findet. Beide gehen einmal je Element in die
+Konsole des Browsers:
+
+#show-code[```
+typstage: the tracked element 3 on slide 4 has a marker with no width.
+Its sprite is given a viewport of that extent, and a viewport of zero
+scales everything inside it to nothing: the element is in the page, with
+its path and its colour, and cannot be seen. On paper it stands. Put it
+in a box with a size, or give the element a width.
+```]
+
+Das ist der eine Ausgang, den es nicht geben darf: ein Deck verliert ein
+Element, und nichts sagt es. Warum die Frage erst dort gestellt wird und nicht
+beim Übersetzen, ist dieselbe Antwort wie bei `draw` -- ob ein Inhalt eine
+Fläche hat, weiß Typst im Dokument nicht; erst im Browser liegt das Rechteck da
+und lässt sich messen. Der Prüflauf des Pakets liest auch diese Meldung mit.
+
 = Etwas vorführen statt behaupten
 
 Ziel dieses Kapitels: eine Folie, auf der etwas geschieht, das Typst selbst
@@ -3730,6 +3763,14 @@ Schritten:
 #tiles(stride: 0, stagger: 90, [A], [B], [C], [D])
 ```)
 
+`duration:` und `easing:` sind die von `anim` und gelten für jede Kachel
+gleich: ein Raster bewegt sich als eine Sache. Ohne Angabe gilt die Dauer der
+Präsentation und die Hauskurve.
+
+#show-code(```typ
+#tiles(duration: 500, easing: "out-back", [A], [B], [C])
+```)
+
 === statement -- die große Aussage
 
 #show-example(
@@ -4074,7 +4115,7 @@ steht, sieht man auch nur dort. Das betrifft die sechs Labels unter
   wirken könnte. Wer die beiden Schreibweisen aus anderen Paketen als
   gleichwertig kennt, läuft hier auf.
 
-  Bei den 15 Schrift-Labels sind beide Schreibweisen gleichwertig: dort steckt
+  Bei den 16 Schrift-Labels sind beide Schreibweisen gleichwertig: dort steckt
   im gefundenen Element der Text, und den erreicht eine Regel auch von innen.
 ]
 
@@ -4086,10 +4127,10 @@ Titelfolie und jedes bewegte Element.
 
 Der Haken `style` erreicht *nicht* dasselbe. Er wird um den *Folienrumpf*
 gelegt, und Kopf, Fuß, Fortschritt sowie Titel- und Abschnittsfolie entstehen
-daneben, nicht darin. Gemessen, jede der 37 Regeln einzeln: aus `style`
+daneben, nicht darin. Gemessen, jede der 38 Regeln einzeln: aus `style`
 heraus wirken genau die 13, die im Folienrumpf stehen -- die Bausteine
 `ts-card…`, `ts-callout…`, `ts-statement` und die drei Ersatzflächen
-`ts-media-…`. Die übrigen 24 bleiben dort stumm, ohne Warnung. `style` bleibt richtig für
+`ts-media-…`. Die übrigen 25 bleiben dort stumm, ohne Warnung. `style` bleibt richtig für
 Typografie, die den ganzen Rumpf betrifft; für Labels ist die Stelle vor
 `#show: presentation` die richtige.
 
@@ -4258,6 +4299,9 @@ tut dann nichts.
   [`ts-section-slide-title`], [Ihr Titel], [`text`],
   [`ts-section-slide-rule`], [Die Zierlinie; `themes.night` hat zwei,
     `themes.lesson` keine], [`rect`],
+  [`ts-section-slide-parent`], [Die Zeile darüber, die sagt, unter welchen
+    Abschnitten dieser hängt. Erst ab der zweiten Gliederungsebene, bei
+    `slide-level: 2` also nie], [`text`],
 )
 
 Eine Abschnittsfolie hat in typstage keinen Untertitel, deshalb steht in der
