@@ -403,10 +403,31 @@ const szeneBild = `(function () {
     //
     // Gezogen wird mit dem echten Zeiger und nicht mit einer Nachricht: die
     // Frage ist ja gerade, ob der Zeiger ankommt.
-    const tBuehne = JSON.parse(await sprecher.ev(
-      "JSON.stringify(document.getElementById('ts-stage').getBoundingClientRect())"));
+    const tMasse = JSON.parse(await sprecher.ev(`(function(){
+      var f = document.getElementById('ts-stage').getBoundingClientRect();
+      var k = document.querySelector('.ts-sp-buehne').getBoundingClientRect();
+      return JSON.stringify({ f: {x:f.x,y:f.y,width:f.width,height:f.height},
+                              k: {x:k.x,y:k.y,width:k.width,height:k.height} });})()`));
+    const tBuehne = tMasse.f, tKachel = tMasse.k;
     const tinteZaehlen = "document.querySelectorAll('#ts-ink *').length";
     const tVor = [+await halle.ev(tinteZaehlen), +await sprecher.ev(tinteZaehlen)];
+    // Die Buehne liegt *in* ihrer Kachel. Sie ist nicht deren Kind -- sie
+    // schwebt darueber, weil `display:none` den Morphs ihre Masse naehme --,
+    // und `fit` setzt sie auf den Platz, den die Kachel freihaelt. Verliert
+    // der Platz seine Hoehe, faellt `fit` auf das ganze Fenster zurueck: die
+    // Buehne deckt dann die Kacheln zu, und gezeichnet wird trotzdem noch.
+    // Der Zug allein faende das also nicht.
+    const raus = Math.max(tKachel.x - tBuehne.x, tKachel.y - tBuehne.y,
+      (tBuehne.x + tBuehne.width) - (tKachel.x + tKachel.width),
+      (tBuehne.y + tBuehne.height) - (tKachel.y + tKachel.height));
+    if (raus > 2) {
+      sagt("zeichnen", "die Buehne steht " + Math.round(raus)
+        + " px ausserhalb ihrer Kachel: Buehne "
+        + Math.round(tBuehne.width) + "x" + Math.round(tBuehne.height)
+        + " bei " + Math.round(tBuehne.x) + "," + Math.round(tBuehne.y)
+        + ", Kachel " + Math.round(tKachel.width) + "x" + Math.round(tKachel.height)
+        + " bei " + Math.round(tKachel.x) + "," + Math.round(tKachel.y));
+    }
     if (tBuehne.width < 40 || tBuehne.height < 40) {
       sagt("zeichnen", "die Buehne im Sprecherfenster misst "
         + Math.round(tBuehne.width) + "x" + Math.round(tBuehne.height)
