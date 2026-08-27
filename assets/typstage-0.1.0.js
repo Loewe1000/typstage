@@ -1604,6 +1604,40 @@
     document.documentElement.style.setProperty("--ts-clock-over", CFG.accent);
   }
 
+  // Dieselbe Rechnung wie `contrast()` im Paket, hier fuer die eine Stelle,
+  // an der die Laufzeit selbst eine Farbe waehlen muss.
+  function leuchte(h) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(String(h).trim());
+    if (!m) return null;
+    var v = parseInt(m[1], 16), t = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+    var l = t.map(function (c) {
+      c /= 255;
+      return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2];
+  }
+  function kontrast(a, b) {
+    var x = leuchte(a), y = leuchte(b);
+    if (x === null || y === null) return 0;
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  }
+
+  // Die Farbe der cue-Ziffer. Sie war fest auf die Signalfarbe der Vorgabe
+  // gesetzt -- auf einem Deck mit anderem Akzent ein Fremdkoerper, und
+  // zufaellig dieselbe Farbe wie der erste Stift. Jetzt nimmt sie den Akzent
+  // des Decks, *wenn* darauf eine Ziffer lesbar steht: gepruefte 4,5, sonst
+  // bleibt es bei der eigenen Farbe der Laufzeit, deren 5,31 gemessen sind.
+  // Eine Marke, die man nicht lesen kann, ist keine.
+  var AD_FLAECHE = "#eb5e28", AD_SATZ = "#14161c";
+  (function () {
+    var a = CFG.accent;
+    if (!a || leuchte(a) === null) return;
+    var dunkel = kontrast(a, "#14161c"), hell = kontrast(a, "#ffffff");
+    if (Math.max(dunkel, hell) < 4.5) return;
+    AD_FLAECHE = a;
+    AD_SATZ = dunkel >= hell ? "#14161c" : "#ffffff";
+  })();
+
   var UHR_KNOTEN = document.getElementById("ts-clock");
   var UHR_WORT = UHR_KNOTEN && UHR_KNOTEN.querySelector(".ts-clock-word");
   var UHR_ZAHL = UHR_KNOTEN && UHR_KNOTEN.querySelector(".ts-clock-num");
@@ -2810,8 +2844,21 @@
     while (ELN.lage.firstChild) ELN.lage.removeChild(ELN.lage.firstChild);
     if (GETRENNT) bau("span", "ts-sp-weg", ELN.lage).textContent =
       wort("lost", "no talk window");
-    if (SCHWARZ) bau("span", "", ELN.lage).textContent = wort("black", "black");
-    if (EIS) bau("span", "", ELN.lage).textContent = wort("frozen", "frozen");
+    // Schwarz und eingefroren sahen einander gleich: dieselbe Farbe, dieselbe
+    // Groesse, derselbe Ort, unterschieden allein durch das Wort. Und schwarz
+    // -- der einzige Zustand, in dem die Klasse gar nichts sieht -- wurde auf
+    // 0,061 % der Ansicht gesagt, einundfuenfzigmal leiser als die Ueberzeit.
+    // Jetzt sagt es zusaetzlich die Kachel, um die es geht: sie ist die
+    // Folie, und die ist gerade nicht zu sehen.
+    if (SCHWARZ) bau("span", "ts-sp-dunkel", ELN.lage).textContent =
+      wort("black", "black");
+    if (EIS) bau("span", "ts-sp-eis", ELN.lage).textContent =
+      wort("frozen", "frozen");
+    if (ELN.buehne) {
+      var saal = (SCHWARZ ? "schwarz " : "") + (EIS ? "eis" : "");
+      if (saal.trim()) ELN.buehne.dataset.saal = saal.trim();
+      else delete ELN.buehne.dataset.saal;
+    }
     uhrZeigen();
   }
 
@@ -2837,7 +2884,14 @@
       ? wort("over", "over") : wort("timer", "class clock");
     ELN.saal.textContent = lage === "aus" ? "–"
       : lage === "blind" ? "—"
-      : (lage === "ueber" ? "+" : "") + mmss(Math.abs(SAAL_REST));
+      // Eine Spalte fuer das Vorzeichen, auch wenn keines dasteht. Ohne sie
+      // sprangen die Ziffern beim Umschlag in die Ueberzeit um 19 Pixel nach
+      // rechts -- gemessen 64,02 gegen 83,03 Pixel. Die Vollbilduhr im Saal
+      // haelt diese Spalte seit je frei; die Kachel hielt sie nicht, und
+      // damit standen zwei Darstellungen derselben Zahl nach zwei Regeln.
+      // U+2007 und nicht das gewoehnliche Leerzeichen: es ist so breit wie
+      // eine Ziffer, und nur darauf kommt es an.
+      : (lage === "ueber" ? "+" : "\u2007") + mmss(Math.abs(SAAL_REST));
     // Der Balken laeuft leer, solange sie laeuft, und fuellt sich in der
     // Ueberzeit wieder -- gedeckelt, damit er nicht ueber den Rand hinaus
     // weiterwaechst.
@@ -2976,6 +3030,7 @@
     //    Vortragsfenster. Der stand bisher in der Fusszeile, achthundert
     //    Pixel von dem Bild entfernt, ueber das er etwas aussagt.
     var kb = bau("div", "ts-sp-kachel ts-sp-buehne", LEIB);
+    ELN.buehne = kb;
     var bkopf = bau("div", "ts-sp-buehnenkopf", kb);
     bau("div", "ts-sp-marke", bkopf).textContent = wort("current", "current slide");
     ELN.lage = bau("div", "ts-sp-lage", bkopf);
@@ -3117,6 +3172,11 @@
     // and does not have to know the key first.
     var um = bau("button", "ts-sp-modus", stift);
     um.type = "button";
+    // Beide Woerter sind verschieden lang, und die Pille schob bei jedem
+    // Umschalten die Tupfenreihe seitwaerts. Gemessen wird das laengere,
+    // sobald die Ansicht wirklich steht -- vorher hat der Kasten keine
+    // Breite, und ein Mass von null ist keins.
+    um.dataset.breit = "0";
     um.addEventListener("click", modusUm);
     ELN.modus = um;
     ELN.stiftKasten = stift;
@@ -3124,7 +3184,11 @@
     FARBEN.forEach(function (f, i) {
       var t = bau("button", "ts-sp-tupf", stift);
       t.type = "button";
-      t.style.background = f;
+      // Als Eigenschaft und nicht als Hintergrund: das Stilblatt rechnet aus
+      // ihr die Kante des Tupfens aus, und das geht nur, wenn die Farbe dort
+      // als Wert ankommt.
+      t.style.setProperty("--tupf", f);
+      t.setAttribute("aria-label", wort("pen", "pen") + " " + (i + 1));
       t.addEventListener("click", function () { farbeSetzen(i); });
       ELN.tupf.push(t);
     });
@@ -3182,6 +3246,9 @@
     FARBE = i % FARBEN.length;
     if (!ELN.tupf) return;
     for (var k = 0; k < ELN.tupf.length; k++) {
+      // `aria-pressed` neben dem Halo: die Auswahl steht damit auch dort,
+      // wo niemand hinsieht, sondern zugehoert wird.
+      ELN.tupf[k].setAttribute("aria-pressed", k === FARBE ? "true" : "false");
       if (k === FARBE) ELN.tupf[k].dataset.an = "1";
       else delete ELN.tupf[k].dataset.an;
     }
@@ -3541,7 +3608,9 @@
         ELN.vorMarke.textContent =
           (w.art === "folie" ? wort("nextSlide", "next slide")
                              : wort("nextStep", "next step"))
-          + "   " + (w.slide + 1) + "." + w.step;
+          // Ein Mittelpunkt und nicht drei Leerzeichen: die fasst der Browser
+          // zu einem zusammen, und dann steht da "NEXT SLIDE 5.1" in einem Zug.
+          + " · " + (w.slide + 1) + "." + w.step;
         ELN.vorBild.appendChild(schrittBild(w.slide, w.step));
       }
     }
@@ -4003,6 +4072,18 @@
     // aufhoert, lesbar zu sein. Was dann noch uebrig ist, wird Rand.
     LEIB.style.maxWidth = Math.round(breit + 12 + NOTIZ_BREIT) + "px";
     LEIB.style.gridTemplateColumns = Math.round(breit) + "px minmax(0,1fr)";
+    // Die Spalte hat einen Boden, weil vier Zahlkacheln darin nebeneinander
+    // stehen muessen. Die *Folie* hat ihn nicht: in einem sehr flachen
+    // Fenster ist sie von der Hoehe begrenzt und kann die Breite gar nicht
+    // brauchen -- gemessen bei 1600x400 fuellte sie 51,3 % ihrer eigenen
+    // Kachel, rund zweihundert Pixel standen leer daneben. Also hoert ihre
+    // Kachel dort auf, wo die Folie aufhoert; was rechts frei wird, ist
+    // Grund und keine leere Kachel. Dieselbe Regel wie bei der Vorschau.
+    if (ELN.buehne) {
+      var passend = (oben - randY) * v + randX;
+      ELN.buehne.style.maxWidth =
+        passend < breit - 1 ? Math.round(passend) + "px" : "";
+    }
     // Was die Folie an Hoehe nicht braucht, bekommt die Kachelzeile. Eine
     // Kachel, die dreissig Pixel zu hoch ist, sieht nach Kachel aus; eine
     // Folie mit zweihundert Pixeln Luft darueber und darunter sieht nach
@@ -4011,8 +4092,26 @@
     LEIB.style.gridTemplateRows = "minmax(0,1fr) "
       + Math.round(zeilenHoehe(natur, r.height - kachelHoch(breit) - 10)) + "px";
     vorschauBreite(v);
+    modusBreite();
     notizNachFenster();
     notizStand();
+  }
+
+  // Das laengere der beiden Woerter gibt der Pille ihr Mass. Einmal
+  // gemessen und dann gemerkt: das Wort wechselt, das Mass nicht.
+  function modusBreite() {
+    var um = ELN.modus;
+    if (!um || um.dataset.breit === "1") return;
+    var jetzt = um.textContent;
+    um.style.minWidth = "";
+    um.textContent = wort("pointer", "pointer");
+    var a = um.getBoundingClientRect().width;
+    um.textContent = wort("pen", "pen");
+    var b = um.getBoundingClientRect().width;
+    um.textContent = jetzt;
+    if (a < 8 && b < 8) return;
+    um.style.minWidth = Math.ceil(Math.max(a, b)) + "px";
+    um.dataset.breit = "1";
   }
 
   // Die Hoehe der Kachelzeile: was sie von sich aus braucht, hoechstens
@@ -4032,17 +4131,44 @@
   // waere das Bild in einer flachen Kachel hoeher als sein Platz.
   function vorschauBreite(v) {
     if (!ELN.vorBild) return;
+    var kachel = ELN.vorBild.parentNode;
+    if (!kachel) return;
     var h = ELN.vorBild.clientHeight;
     if (h < 8) return;
+
+    // Wie breit die Spalte ist, in der die Kachel steht -- aus dem Raster
+    // gelesen und nicht an der Kachel gemessen. Die Kachel richtet sich
+    // naemlich seit der Verschmaelerung nach ihrem eigenen Inhalt: wer sie
+    // misst, um sie danach zu beschneiden, misst beim naechsten Aufruf sein
+    // eigenes Ergebnis und schneidet wieder etwas ab. Gemessen schrumpfte
+    // das Bild so von 260 auf 146 Pixel, und die Kachel stand am Ende
+    // schmaler da als ihr eigenes Bild.
+    var st = getComputedStyle(kachel);
+    var polster = parseFloat(st.paddingLeft) + parseFloat(st.paddingRight)
+                + parseFloat(st.borderLeftWidth) + parseFloat(st.borderRightWidth);
+    var spalten = LEIB ? getComputedStyle(LEIB).gridTemplateColumns.split(" ") : [];
+    var spalte = spalten.length > 1 ? parseFloat(spalten[1]) : 0;
+    var platz = (spalte > 0 ? spalte : kachel.clientWidth + polster) - polster;
+
     // Nach der Hoehe gerechnet, aber nie breiter als der Platz. Ohne die
     // zweite Haelfte lief das Bild in einem stehenden Fenster aus seiner
     // Kachel und aus dem Fenster heraus -- gemessen bei 700x900 ragte es
     // 93 Pixel hinaus, und `overflow:hidden` schnitt es einfach ab. Ein
     // angeschnittenes Bild sagt weniger als ein kleineres.
-    var platz = ELN.vorBild.parentNode ? ELN.vorBild.parentNode.clientWidth : 0;
     var breit = h * v;
     if (platz > 8 && breit > platz) breit = platz;
     ELN.vorBild.style.width = Math.round(breit) + "px";
+
+    // Und die Kachel hoert dort auf, wo ihr Bild aufhoert. Sie stand bisher
+    // ueber die ganze Spalte, waehrend das Bild sich nach der *Hoehe* der
+    // Zeile richtet: gemessen bei 1600x900 ein Bild von 260 Pixeln in einer
+    // Kachel von 579, also 65 % leere Kachel, und bei 1440x500 sogar 93 %.
+    // Breiter kann das Bild nicht werden, ohne hoeher zu werden, und hoeher
+    // darf es nicht, ohne der Folie Platz zu nehmen. Also wird die Kachel
+    // schmaler, und was rechts frei wird, ist Grund und nicht leere Kachel.
+    // Die Marke darueber darf sie trotzdem nicht abschneiden.
+    var marke = ELN.vorMarke ? ELN.vorMarke.scrollWidth : 0;
+    kachel.style.maxWidth = Math.round(Math.max(breit, marke) + polster) + "px";
   }
 
   function fit() {
@@ -4264,7 +4390,7 @@
             // Elfpunktziffer ist nach WCAG kein grosser Text. Dasselbe
             // dunkle Grau, das die uebrigen Marken des Pakets tragen, misst
             // auf demselben Orange 5,31.
-            + "background:#eb5e28;color:#14161c;opacity:1;"
+            + "background:" + AD_FLAECHE + ";color:" + AD_SATZ + ";opacity:1;"
             // Auf den Aufzaehlungspunkt, nicht daneben: die Ziffer nimmt den
             // Platz des Punktes ein, den sie ohnehin ersetzt, und die Zeile
             // rueckt nicht.
