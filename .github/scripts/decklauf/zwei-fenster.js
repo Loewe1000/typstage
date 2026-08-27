@@ -584,7 +584,12 @@ const szeneBild = `(function () {
       pruef: window.typstage.pruef.clock(),
       an: !!document.documentElement.dataset.tsClock,
       zeigt: document.querySelector('#ts-clock .ts-clock-num').textContent,
-      sicht: getComputedStyle(document.querySelector('#ts-clock')).display })`;
+      sicht: getComputedStyle(document.querySelector('#ts-clock')).display,
+      art: (document.getElementById('ts-clock').dataset.art || ''),
+      deckt: (() => { const k = document.getElementById('ts-clock').getBoundingClientRect();
+        const b = document.getElementById('ts-stage').getBoundingClientRect();
+        return b.width ? Math.round(k.width * k.height / (b.width * b.height) * 1000) / 10 : 0;
+      })() })`;
     // Die Uhr der Klasse steht in ihrer eigenen Kachel und nicht mehr als
     // vierte Pille in der Zustandszeile. Gelesen wird beides: der Zustand,
     // den die Kachel von sich behauptet, und die Zahl, die darin steht --
@@ -806,6 +811,45 @@ const szeneBild = `(function () {
     if (!JSON.parse(await halle.ev(uhrHalle)).an) {
       sagt("wache", "die Uhr liess sich fuer die Wachprobe nicht stellen");
     }
+    // ── Die angeheftete Uhr ueberlebt das Blaettern ────────────────────────
+    // Der Unterschied zwischen den beiden Uhren ist keine Groesse, sondern
+    // eine Regel: die Vollbilduhr endet beim Blaettern, die angeheftete
+    // nicht. Genau das war der teuerste offene Punkt der Bedienungspruefung,
+    // und genau das kann eine Pruefung in *einem* Fenster nicht sehen.
+    // Erst abraeumen: aus dem Abschnitt davor laeuft noch eine Uhr, und ein
+    // ⇧T auf eine laufende Uhr beendet sie, statt eine neue zu stellen --
+    // gemessen kam danach gar keine angeheftete Uhr zustande, und die
+    // Pruefung meldete das Richtige aus dem falschen Grund.
+    for (let i = 0; i < 3; i++) {
+      if (!JSON.parse(await halle.ev(uhrHalle)).an) break;
+      await sprecher.taste("T", 8); await schlaf(500);
+    }
+    await sprecher.taste("T", 8); await schlaf(300);
+    await sprecher.ev("document.activeElement.value='4'");
+    await sprecher.taste("Enter"); await schlaf(900);
+    const fest0 = JSON.parse(await halle.ev(uhrHalle));
+    if (!fest0.an || fest0.art !== "fest") {
+      sagt("angeheftet", "nach ⇧T steht in der Halle "
+        + JSON.stringify(fest0) + ", erwartet eine angeheftete Uhr.");
+    }
+    const deckte = fest0.deckt;
+    await sprecher.taste("ArrowRight"); await schlaf(800);
+    const fest1 = JSON.parse(await halle.ev(uhrHalle));
+    if (!fest1.an) {
+      sagt("angeheftet", "ein Blaettern hat die angeheftete Uhr beendet. Sie "
+        + "gehoert der Klasse, die gerade arbeitet, und nicht der Folie, die "
+        + "am Pult gerade gesucht wird.");
+    }
+    if (deckte > 25) {
+      sagt("angeheftet", "die angeheftete Uhr deckt " + deckte + " % der "
+        + "Buehne zu. Sie soll auf der Folie stehen und die Aufgabe darunter "
+        + "lesbar lassen.");
+    }
+    await sprecher.taste("T", 8); await schlaf(700);
+    if (JSON.parse(await halle.ev(uhrHalle)).an) {
+      sagt("angeheftet", "ein zweites ⇧T hat die Uhr nicht beendet.");
+    }
+
     await sprecher.ev("window.close()");
     let hoch = -1;
     for (let i = 0; i < 40; i++) {

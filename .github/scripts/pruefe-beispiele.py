@@ -191,6 +191,14 @@ def paketwurzeln(paketpfad):
   # vorhanden, das der Übersetzer nicht sieht.
   if paketpfad:
     return [paketpfad] if os.path.isdir(paketpfad) else []
+  # Ohne `--paketpfad` prueft dieser Lauf die Beispiele gegen das *installierte*
+  # Paket und nicht gegen den Arbeitsbaum. Das ist gelegentlich gewollt und
+  # meistens ein Versehen: wer eben eine Funktion hinzugefuegt hat und sie im
+  # Handbuch benutzt, bekommt hier "unknown variable" und sucht den Fehler an
+  # der falschen Stelle -- gemessen genau so passiert. `build-site.sh` gibt den
+  # Pfad mit; ein Aufruf von Hand tut es oft nicht.
+  print("HINWEIS: ohne --paketpfad wird gegen das installierte Paket geprüft, "
+        "nicht gegen diesen Arbeitsbaum.", file=sys.stderr)
   wurzeln = []
   daten = os.environ.get("XDG_DATA_HOME")
   wurzeln += [
