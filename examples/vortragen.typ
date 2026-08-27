@@ -70,11 +70,14 @@
 
 // One piece of map at its place, and as a layer of the group "map".
 //
-// The `place` stands *outside* and `cue-layer` inside, not the other way round.
-// A tracked element gets its position in the browser from the measurement Typst
-// makes of it, and a `place` inside it takes up no room -- measured, the whole
-// layer then landed in the corner of the box instead of on its street. A point
-// may carry as many layers as it likes, so every piece gets its own `place`.
+// The `place` stands outside and `cue-layer` inside. It no longer has to: the
+// package moves a `place` around a tracked element outward by itself, because
+// a `place` measures nothing in either direction and is not in the flow, so the
+// marker would otherwise stand at the flow's place instead of the content's --
+// measured, the whole layer landed in the corner of the box instead of on its
+// street. Written out here all the same, because it says what is meant: the
+// piece belongs at that spot on the map. A point may carry as many layers as it
+// likes, so every piece gets its own `place`.
 #let on-map(nr, x, y, body, dx: 0pt, dy: 0pt) = place(
   top + left, dx: px(x) + dx, dy: px(y) + dy,
   cue-layer("map", nr, body))

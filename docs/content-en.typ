@@ -3584,6 +3584,44 @@ transition. If that matters for your audience, `transition: "none"` and
   PDF from the same source carries real text.
 ]
 
+== A tracked element with no area
+
+A tracked element gets its place in the browser from a rectangle Typst paints
+around it in a signal colour. Where the content has no area, that rectangle
+would have none either, and a sprite given a viewport of zero scales everything
+inside it to nothing: the element stands in the page, with its path and its
+colour, and cannot be seen. On paper it stands.
+
+Two shapes reach that point and both are handled. A vertical rule measures no
+width; like every arealess element it is given a font height of air on each
+side, and the air is placed, so the flow is unchanged. A `place` measures
+nothing in either direction and is not in the flow at all; it moves outward on
+its own and the tracked element moves inside it, so the marker stands where the
+content stands and the flow keeps its zero.
+
+// check: folie
+#show-code(```typ
+#anim(at: 2, place(top + left, dx: 20pt, dy: 50pt,
+                   rect(width: 20pt, height: 20pt)))
+```)
+
+What is left over is said rather than lost. A marker with no width or no
+height, and a marker nested deeper than four tracked elements, which is as far
+as the placing goes: each goes to the browser's console once per element.
+
+#show-code[```
+typstage: the tracked element 3 on slide 4 has a marker with no width.
+Its sprite is given a viewport of that extent, and a viewport of zero
+scales everything inside it to nothing: the element is in the page, with
+its path and its colour, and cannot be seen. On paper it stands. Put it
+in a box with a size, or give the element a width.
+```]
+
+The question cannot be asked at compile time, for the same reason as with
+`draw`: whether content has an area is not a question the document can answer.
+Only in the browser is the rectangle there to be measured. The package's own
+check run reads these messages along.
+
 == Reach
 
 Measured in Chrome, Firefox 154 and Safari 26 on macOS, and on an iPhone. The
