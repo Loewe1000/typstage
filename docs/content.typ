@@ -3730,6 +3730,14 @@ Schritten:
 #tiles(stride: 0, stagger: 90, [A], [B], [C], [D])
 ```)
 
+`duration:` und `easing:` sind die von `anim` und gelten für jede Kachel
+gleich: ein Raster bewegt sich als eine Sache. Ohne Angabe gilt die Dauer der
+Präsentation und die Hauskurve.
+
+#show-code(```typ
+#tiles(duration: 500, easing: "out-back", [A], [B], [C])
+```)
+
 === statement -- die große Aussage
 
 #show-example(

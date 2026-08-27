@@ -2740,7 +2740,8 @@ draws scales along.
 / `side-by-side`: Columns; `split:` gives the widths, `equal: true` makes both
   the height of the taller.
 / `tiles`: A grid that numbers its own reveals, one tile per step, without a
-  hand-counted `at:` on each.
+  hand-counted `at:` on each. `duration:` and `easing:` are those of `anim` and
+  apply to every tile alike: a grid moves as one thing.
 / `statement`: One large sentence, centred, for the slide that carries a single
   claim.
 / `fit`: Scales one block down to the room it has, for content whose size the

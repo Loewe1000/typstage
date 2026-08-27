@@ -13,10 +13,10 @@
 // That is why the box sits inside a `context`: it lives in the slide body
 // and only learns there under which theme it is set.
 
-#import "elements.typ": anim
+#import "elements.typ": anim-kern
 #import "internal.typ": (fit-faktor, fit-mass, fit-meldung, fit-toleranz,
-                        hat-pause, im-fit, step-cursor, umgebungs-block,
-                        unloesbar, zeilen-hoehe)
+                        hat-pause, im-fit, kurve, step-cursor,
+                        umgebungs-block, unloesbar, zeilen-hoehe)
 #import "config.typ": doc-word
 #import "themes.typ": lesbar, theme-state
 
@@ -273,6 +273,12 @@
 /// `at` behaves as in `anim`: `auto` takes the next free step. `stride: 0`
 /// makes all tiles appear on the same step and staggers only through
 /// `stagger`, in milliseconds; a wave then runs through the grid.
+///
+/// `duration` and `easing` are those of `anim` and apply to every tile alike:
+/// one grid moves as one thing. `auto` is the presentation's duration and the
+/// package's own curve. Without them a deck that wanted a slower tile or a
+/// curve with a swing had to leave the grid and write the `anim`s out by hand,
+/// which is the very work `tiles` exists to save.
 #let tiles(
   ..items,
   columns: auto,
@@ -282,6 +288,8 @@
   stride: 1,
   stagger: 0,
   enter: "fade-up",
+  duration: auto,
+  easing: auto,
   align: top + left,
 ) = context {
   // Asked here rather than left to the `anim`s below, so the message names the
@@ -293,7 +301,7 @@
          message: "typstage: tiles() does not know "
                 + items.named().keys().join(", ")
                 + ". It takes columns, gutter, row-gutter, at, stride, "
-                + "stagger, enter and align.")
+                + "stagger, enter, duration, easing and align.")
   let kacheln = items.pos()
   assert(kacheln.len() > 0, message: "typstage: tiles() wants at least one tile")
   assert(at == auto or type(at) == int,
@@ -302,16 +310,22 @@
   // otherwise `stride: 0` (all on the same step) could not be expressed at
   // all.
   let start = if at == auto { step-cursor.get().first() + 1 } else { at }
+  // Einmal aufgelöst und nicht je Kachel: die Meldung soll `tiles` heißen und
+  // nicht `anim`, und ein Name, den es nicht gibt, ist einmal falsch und nicht
+  // neunmal. Derselbe Handgriff wie in `stagger`.
+  let takt = kurve(easing, "tiles")
   let spalten = if columns == auto { calc.min(kacheln.len(), 3) } else { columns }
   grid(
     columns: if type(spalten) == int { (1fr,) * spalten } else { spalten },
     column-gutter: gutter,
     row-gutter: if row-gutter == auto { gutter } else { row-gutter },
     align: align,
-    ..kacheln.enumerate().map(((i, k)) => anim(
+    ..kacheln.enumerate().map(((i, k)) => anim-kern(
       k,
       at: start + i * stride,
       enter: enter,
+      duration: duration,
+      easing: takt,
       delay: i * stagger,
     )),
   )
