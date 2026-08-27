@@ -25,6 +25,11 @@
 /// state update inside an `html.frame` is readable afterwards.
 #let sprites = state("typstage-sprites", ())
 #let note-state = state("typstage-note", none)
+/// Die im Deck geplante Dauer der angehefteten Klassenuhr, in Minuten.
+/// Wie die Notiz: eine Folie traegt hoechstens eine, und sie steht am Ende
+/// als Zahl an der Folie. Was damit geschieht, entscheidet das Pult -- die
+/// Zahl ist ein Vorschlag und kein Befehl.
+#let clock-state = state("typstage-clock", none)
 #let transition-state = state("typstage-transition", none)
 
 /// Which output is being built.

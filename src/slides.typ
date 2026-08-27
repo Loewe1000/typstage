@@ -1,6 +1,6 @@
 // Slides, sections and what belongs to a single slide.
 
-#import "internal.typ": (deck-info, html-output, note-state, notiz-pruefen,
+#import "internal.typ": (clock-state, deck-info, html-output, note-state, notiz-pruefen,
                         step-cursor, step-jetzt, transition-state)
 
 /// A regular slide.
@@ -230,4 +230,22 @@
 #let speaker-note(body) = {
   notiz-pruefen(body)
   note-state.update(body)
+}
+
+/// Plans a class clock for this slide: how many minutes the work on it is
+/// meant to take.
+///
+/// It starts nothing. `Shift+T` in the presenter view offers the number, the
+/// speaker confirms or changes it, and only then does the clock run -- the
+/// deck knows how long the task was meant to take, the room decides how long
+/// it actually gets. A slide carries at most one; a second call replaces the
+/// first, like a second `speaker-note`.
+#let class-clock(minutes) = {
+  assert(type(minutes) == int or type(minutes) == float,
+         message: "class-clock() wants a number of minutes, got "
+                  + str(type(minutes)))
+  assert(minutes >= 1,
+         message: "class-clock() wants at least one minute, got "
+                  + str(minutes))
+  clock-state.update(calc.round(minutes))
 }

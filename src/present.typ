@@ -777,6 +777,7 @@
         bridge-jobs.update(())
         kamera-liste.update(())
         note-state.update(s.note)
+        clock-state.update(none)
         transition-state.update(s.at("transition", default: none))
         // Only a deck that inverts somewhere writes this per slide. A `card`
         // and a `callout` read their tints out of this state and would
@@ -804,11 +805,14 @@
           context {
             let tr = transition-state.get()
             let note = plain-text(note-state.get()).trim()
+            let geplante-uhr = clock-state.get()
             html.elem("div", attrs: (class: "ts-ov")
               + (if tr != none {
                    ("data-transition": if type(tr) == str { tr } else { json.encode(tr) })
                  } else { (:) })
-              + (if note != "" { ("data-note": note) } else { (:) }),
+              + (if note != "" { ("data-note": note) } else { (:) })
+              + (if geplante-uhr != none { ("data-clock": str(geplante-uhr)) }
+                 else { (:) }),
               sprites.get().enumerate()
                 .map(((i, sp)) => sprite-markup(sp, i + 1, style)).join())
             // For the check at the end of the document, note which morphs
