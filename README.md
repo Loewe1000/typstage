@@ -126,7 +126,7 @@ written.
 | `transition`, `speaker-note` | how this slide comes in, and what only you see |
 | `themes`, `theme` | the five built-in looks, and the builder behind them |
 | `palettes`, `palette:`, `invert` | colour separately from design: five bundled palettes that compose with every theme, a partial override on `presentation`, and one slide set in the palette turned around |
-| `contrast`, `palette-report` | the WCAG contrast of two colours, and the six pairs the bundled palettes are held to |
+| `contrast`, `palette-report` | the WCAG contrast of two colours, and the seven pairs the bundled palettes are held to |
 | `video`, `embed`, `flipbook` | media, arbitrary web content in a sandboxed frame, and animation drawn frame by frame by Typst |
 | `bridge-job`, `bridge-targets` | send step jobs into an embedded document, which is how a companion package drives an applet |
 | `geogebra`, `ggb-run`, `ggb-set`, `ggb-show`, `ggb-hide`, `ggb-style`, `ggb-view`, `ggb-animate`, `ggb-tween` | a GeoGebra applet on the slide and the jobs that drive it step by step; the applet itself is fetched from `geogebra.org` at run time |
@@ -247,6 +247,14 @@ them with you; `x` clears the current slide, `z` takes back the last stroke,
 `c` changes colour. `b` blacks the room out, `e` freezes the projected image
 while you page ahead in private, and both end by themselves if the speaker
 window goes away.
+
+`t` puts a clock on the wall that the class can see: black ground, white
+digits, `m:ss`, large enough for the back row, in place of the slide rather
+than on top of it. It is for the break and the group work — `⇧→` and `⇧←` add
+or take a minute while it runs, `t` again ends it, and so does paging on. Past
+zero it counts up in the deck's accent colour with the word "over" above it,
+capped at the duration and at thirty minutes. Use it when nothing else is on
+the wall; no clock while you are talking.
 
 `m` switches the pointer between pen and embed. In pointer mode the pen rests
 and a click on an embedded frame reaches the projected one instead: the same

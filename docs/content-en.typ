@@ -2266,6 +2266,60 @@ Strokes stick to their slide, so paging away and back brings them with you.
 `x` clears the current slide, `z` takes back the last stroke, `c` changes
 colour.
 
+=== A clock the class can see
+
+`t` asks for a number of minutes, and after that the wall carries nothing but a
+clock: black ground, white digits, `m:ss`, large enough to read from the back
+row. It replaces the slide rather than sitting on it -- the twin of `b`, only
+with something on it.
+
+It is meant for the break, the group work, the experiment being set up: for the
+minutes in which the class is doing something and not listening.
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Key*], [*What it does*]),
+  [`t`], [ask for minutes; `Enter` starts it, `Esc` leaves it],
+  [`t` (while it runs)], [end the clock, the slide is back],
+  [`⇧→`, `⇧←`], [one minute more or less, while it runs as well],
+  [`→` (or any other paging key)], [ends it and uncovers the slide],
+)
+
+The speaker view itself carries no second large clock. It appears there only as
+a small entry in the line beside `black` and `frozen`: `clock 2:41`. Two large
+numbers side by side -- the talk's target duration and the class's clock --
+would mean different things and look the same.
+
+At zero it does not stop, it carries on to `+0:01`, and the digits take the
+deck's accent colour. Above them a word then stands that was not there before:
+"over". Its appearance is the event; nothing blinks and nothing chimes. The
+overtime is capped, at the duration itself and at thirty minutes at the most.
+`+2:47:13` tells nobody anything.
+
+#warning[
+  `t` when nothing else is on the wall. No clock while you are talking.
+
+  A clock running beside a sentence pulls the eye, and it does so for the whole
+  talk -- the same arithmetic as the looping flip book, only without an end. It
+  is therefore expressly not something laid over the slide but its replacement:
+  while it stands there, nothing else is to be seen, and whoever goes on
+  talking presses it away.
+]
+
+#info[
+  "Reduce motion" changes nothing about it, and that is deliberate: the digits
+  only jump once a second anyway, there is no travel that could fall away.
+
+  The clock in the hall is watched by the same guard as black and freeze: if
+  the speaker window goes away, the talk lifts it on its own. In the talk
+  window there is no key against it, and there should not be one either.
+
+  Reload the talk window and it comes back -- further along, not from the
+  start. The seconds the loading cost run with it; the class outside is waiting
+  too.
+]
+
 === The pointer
 
 `m` switches the pointer between the pen and the embedded frame. In pointer
@@ -2627,7 +2681,7 @@ In the argument notation it is an argument of `slide`:
 The bundled palettes are measured before they ship. The arithmetic is real
 WCAG 2 contrast: each channel linearised, from those the relative luminance
 $0.2126 R + 0.7152 G + 0.0722 B$, and from two luminances the ratio
-$(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Six pairs are checked:
+$(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Seven pairs are checked:
 
 #table(
   columns: (auto, auto, 1fr),
@@ -2638,8 +2692,15 @@ $(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Six pairs are checked:
   [`muted` on `paper`], [4.5], [footer, subtitle, running head],
   [`accent` on `paper`], [3.0], [rules, progress bar, marker],
   [`accent` on `ink`], [3.0], [the same on an inverted slide],
+  [`accent` on black], [3.0], [the overtime of the full-screen clock],
   [`border` on `paper`], [1.2], [hairlines],
 )
+
+The last one is the odd one out: its ground is not a role of the palette but
+the colour black itself. The full-screen clock is black from edge to edge
+whatever the deck's palette says, and its overtime digits are set in the
+accent. The five bundled palettes measure 6.16 (`light`), 3.66 (`mono`), 4.83
+(`textbook`), 4.69 (`parchment`) and 5.41 (`dark`) against it.
 
 Every one of the five palettes is checked, and its inverted form with it, by an
 assertion in `src/palettes.typ` that runs when the package is loaded. A colour
@@ -3522,8 +3583,8 @@ The aim of this chapter: getting the talk to where it will be given.
 result is one file that runs from a memory stick, from a download folder, from
 an email attachment. No server, no network, nothing loaded afterwards.
 
-The six example decks measure between 1.2 and 2.1 MB that way, and the runtime
-is about 100 KB of that. What makes up the rest are the slides themselves: the
+The fifteen example decks measure between 0.54 and 3.3 MB that way, and the
+runtime is about 214 KB of it. What makes up the rest are the slides themselves: the
 tour holds 136 SVGs and 6111 glyph references.
 
 == Beside the file
@@ -3540,6 +3601,18 @@ tour holds 136 SVGs and 6111 glyph references.
 That is worth it where many decks are published together, because the browser
 then caches the runtime once for all of them. `assets: "https://…"` points at a
 directory on a server or a CDN.
+
+#info[
+  How much `"split"` saves depends on how large the deck itself is -- and on a
+  small one it is the majority. Measured gzipped: runtime and stylesheet
+  together 78 kB; the smallest example deck weighs 136 kB, so the runtime is
+  **57 % of what goes over the wire**. For `theme-plain` it is 27 %, for `tour`
+  17 %.
+
+  With `"split"` the *first* deck pays those 78 kB and every further one in the
+  same directory pays nothing -- the browser has it cached by then. Publishing
+  many short talks side by side roughly halves what your visitors load.
+]
 
 == Hosting
 
@@ -3665,9 +3738,10 @@ The traps, in roughly the order they are usually hit.
 / `#pause` does nothing: it is inside a grid cell or a table. `#pause` splits
   the body, and there is nothing there to split. `anim` goes anywhere content
   goes.
-/ A transition or an entrance is duller than it was meant to be: an unknown
-  name quietly becomes a cross-fade. Check the spelling against the tables
-  above, since a typo does not stop the build.
+/ A transition or an entrance is refused by name: the package does not know
+  that effect. It used to fall back to a cross-fade without a word, which made
+  a typo look like a deck that simply moved differently than intended. The
+  message names every effect there is.
 / The bullets beside an applet start at step three: an `embed` uses no step,
   but something before it did. Count the reveals, not the elements.
 / A flying equation has the wrong font: typography set with `#set` does not

@@ -81,10 +81,15 @@ async function verbinde(wsUrl, kind, profil) {
     name: "chrome", ruf, ev,
     navigiere: (url) => ruf("Page.navigate", { url }),
     bild: async () => (await ruf("Page.captureScreenshot", { format: "png" })).result.data,
-    taste: (k) => ruf("Input.dispatchKeyEvent", {
-      type: "keyDown", key: k, text: k.length === 1 ? k : undefined,
+    // `mod` sind die Modifikatoren, wie das Protokoll sie zaehlt: 8 ist
+    // Umschalt. Gebraucht wird das fuer `⇧←`/`⇧→`, die die Vollbilduhr
+    // verlaengern -- eine Geste, die sich ohne Umschalt nicht pruefen laesst.
+    taste: (k, mod) => ruf("Input.dispatchKeyEvent", {
+      type: "keyDown", key: k, modifiers: mod || 0,
+      text: k.length === 1 ? k : undefined,
       windowsVirtualKeyCode: k.length === 1 ? k.charCodeAt(0) : undefined
-    }).then(() => ruf("Input.dispatchKeyEvent", { type: "keyUp", key: k })),
+    }).then(() => ruf("Input.dispatchKeyEvent",
+      { type: "keyUp", key: k, modifiers: mod || 0 })),
     ende: async () => {
       try { ws.close(); } catch (e) {}
       if (!kind) return;

@@ -1565,9 +1565,136 @@
   // `null` is the wall clock, a number is a pinned time in milliseconds. A
   // flipbook otherwise shows whatever frame the machine happened to reach, and
   // two runs of the same deck never agree on it.
+  // ── Die Vollbilduhr ───────────────────────────────────────────────────────
+  //
+  // Eine Uhr, die die Klasse sieht: schwarz von Rand zu Rand, `m:ss`. Sie legt
+  // sich nicht ueber die Folie, sie tritt an ihre Stelle -- der Zwilling von
+  // `b schwarz`, nur mit etwas darauf.
+  //
+  // KEINE WEB-ANIMATION. Die billige Bauart waere ein `element.animate()` ueber
+  // die ganze Dauer, nichts je Bild. Gemessen und verworfen: `pruef.ruhig()`
+  // wartet auf jede laufende Animation, und ein Band ueber 300 s liess jeden
+  // `ruhig(4000)` in die Frist laufen, 4143 ms statt 19. Der Decklauf ruft ihn
+  // auf jedem Schritt. Umgekehrt zu `scene`, deren Takt eine Web-Animation
+  // *ist*, damit `ruhig()` darauf warten kann -- und der Unterschied ist der
+  // Sache nach da: eine Szene ist ein begrenzter Uebergang, auf den der Lauf
+  // warten muss, eine Uhr ein Dauerzustand, auf den er nie warten darf.
+  //
+  // ZWEI ZEITBASEN. Buehnenzeit ist `current` aus `beat`, dieselbe, die
+  // `pruef.uhr()` festnagelt; alles Gezeichnete rechnet darin, und nur deshalb
+  // ist die Uhr im Prueflauf beobachtbar. Die Sprecheruhr im Kopf liest
+  // `Date.now() - UHR_START` und ist es deshalb nicht. Die Wanduhr kommt hier
+  // an einer einzigen Stelle vor: die Frist in `sichtMerken`, weil Buehnenzeit
+  // kein Neuladen ueberlebt. Dort beruehren sie sich und sonst nirgends.
+  var UHR = null;
+  var UHR_LAUF = 0;          // laufende Nummer, damit ein wiederholtes
+                             // `sicht` die Uhr nicht neu stempelt
+  var UHR_DECKEL = 1800;     // 30 Minuten. `+2:47:13` sagt niemandem etwas.
+
+  // Die Signalfarbe des Decks, das einzige Stueck Palette, das die Laufzeit
+  // kennt. Ueber die fuenf mitgelieferten Paletten misst sie gegen Schwarz
+  // zwischen 3,66 (mono) und 6,16 (light), ueberall ueber den 3,0 des Vertrags.
+  if (CFG.accent) {
+    document.documentElement.style.setProperty("--ts-clock-over", CFG.accent);
+  }
+
+  var UHR_KNOTEN = document.getElementById("ts-clock");
+  var UHR_WORT = UHR_KNOTEN && UHR_KNOTEN.querySelector(".ts-clock-word");
+  var UHR_ZAHL = UHR_KNOTEN && UHR_KNOTEN.querySelector(".ts-clock-num");
+
+  function uhrZwei(z) { return (z < 10 ? "0" : "") + z; }
+
+  // `m:ss`, und die Vorzeichenspalte ist von Anfang an freigehalten: ein
+  // Leerzeichen ist in einer Monospace so breit wie das `+`, also springen die
+  // Ziffern beim Umschlag nicht seitwaerts. Erstes von drei Signalen der
+  // Ueberzeit -- die anderen sind das Wort und die Farbe, und ein viertes gibt
+  // es nicht: kein Blinken, kein Ton.
+  function uhrText(sek, drueber) {
+    var s = Math.max(0, sek);
+    return (drueber ? "+" : " ") + Math.floor(s / 60) + ":" + uhrZwei(s % 60);
+  }
+
+  // Ein Bild der Uhr, in Buehnenzeit. Steht unmittelbar hinter der Zeile, die
+  // die Pruefuhr einsetzt, und liest nichts als `current`.
+  function uhrTakt(current) {
+    if (!UHR) return;
+    // Der Stempel steht in derselben Zeit, in der abgelesen wird -- derselbe
+    // Griff wie beim Daumenkino. `vor` ist, was vor ihm schon verstrichen war:
+    // frisch 0, nach einem Neuladen die Strecke aus der Wanduhr-Frist.
+    if (UHR.t0 === null) UHR.t0 = current;
+    var rest = UHR.dauer - (UHR.vor + (current - UHR.t0) / 1000);
+    UHR.rest = rest;
+    var drueber = rest < 0;
+    // Gedeckelt bei der Dauer, hoechstens eine halbe Stunde. Danach steht sie
+    // still: eine Zahl, die weiterwaechst, sagt nach einer Weile nichts mehr.
+    var zeig = drueber
+      ? Math.ceil(Math.min(-rest, Math.min(UHR.dauer, UHR_DECKEL)))
+      : Math.floor(rest);
+    var txt = uhrText(zeig, drueber);
+    if (txt === UHR.letztes) return;
+    UHR.letztes = txt;
+    if (UHR_ZAHL) UHR_ZAHL.textContent = txt;
+    // Das Wort war vorher nicht da; sein Erscheinen ist das Ereignis.
+    if (UHR_WORT) UHR_WORT.textContent = drueber ? wort("over", "over") : "";
+    if (drueber) document.documentElement.dataset.tsClockOver = "1";
+    else delete document.documentElement.dataset.tsClockOver;
+  }
+
+  // Wechselt die Uhr die Art -- Wanduhr gegen festgenagelt --, ist der alte
+  // Stempel in der neuen Zeit eine beliebige Zahl, genau wie beim Daumenkino.
+  // Was verstrichen war, rettet sich nach `vor`.
+  function uhrZeitwechsel() {
+    if (!UHR) return;
+    UHR.vor = UHR.dauer - (UHR.rest == null ? UHR.dauer : UHR.rest);
+    UHR.t0 = null;
+    UHR.letztes = null;
+  }
+
+  // Die Uhr stellen. `sek` ist die ganze Dauer, `vor` das davon schon
+  // Gelaufene -- nur beim Wiederherstellen von null verschieden. In der
+  // Sprecheransicht tut das nichts: dort liegt die Sprecherbox darueber, und
+  // eine zweite grosse Uhr dahinter waere ein zweiter Ort, der stimmen muss.
+  function uhrStellen(sek, lauf, vor) {
+    if (ROLLE === "speaker") return;
+    var d = Math.max(1, Math.round(+sek || 0));
+    UHR = { dauer: d, vor: Math.max(0, +vor || 0), t0: null, rest: null,
+            lauf: lauf == null ? ++UHR_LAUF : lauf, letztes: null };
+    document.documentElement.dataset.tsClock = "1";
+    sichtMerken();
+  }
+  function uhrAus() {
+    if (!UHR) return;
+    UHR = null;
+    delete document.documentElement.dataset.tsClock;
+    delete document.documentElement.dataset.tsClockOver;
+    if (UHR_ZAHL) UHR_ZAHL.textContent = "";
+    if (UHR_WORT) UHR_WORT.textContent = "";
+    sichtMerken();
+  }
+  // Die Dauer nachziehen, waehrend sie laeuft: es waechst die Dauer, nicht der
+  // Stempel. Absolut und nicht als Zuwachs, damit eine Nachricht, die zweimal
+  // ankommt, nichts anrichtet -- die Sprecheransicht rechnet, die Buehne
+  // zeichnet.
+  function uhrDauer(sek) {
+    if (!UHR) return;
+    UHR.dauer = Math.max(1, Math.round(+sek || 0));
+    UHR.letztes = null;
+    sichtMerken();
+  }
+  // Was die Uhr zeigt. Fuer die Lagezeile drueben und fuer die Pruefflaeche.
+  function uhrStand() {
+    if (!UHR) return null;
+    var rest = UHR.rest == null ? UHR.dauer - UHR.vor : UHR.rest;
+    return { mode: "full", duration: UHR.dauer, lauf: UHR.lauf,
+             remaining: Math.round(rest * 1000) / 1000,
+             over: rest < 0,
+             text: (UHR.letztes || uhrText(Math.floor(Math.max(0, rest)), false)).trim() };
+  }
+
   var PRUEFUHR = null;
   function beat(current) {
     if (PRUEFUHR !== null) current = PRUEFUHR;
+    uhrTakt(current);
     for (var k = 0; k < ticking.length; k++) {
       var t = ticking[k];
       var n = +t.el.dataset.frames, fps = +t.el.dataset.fps || 30;
@@ -1858,14 +1985,14 @@
     // first press of `b` would switch off something that was not even on
     // anymore, and would freeze the talk again in the process, because both
     // values go together.
-    sichtAbgleichen(d.schwarz, d.frost);
+    sichtAbgleichen(d);
     if (d.sitzung === FERN_SITZUNG) return;
     var warFrisch = FRISCH;
     FERN_SITZUNG = d.sitzung;
     FRISCH = 0;
     if (warFrisch) {
       fernGoto(d.n, true);
-      sichtUebernehmen(d.schwarz, d.frost);
+      sichtUebernehmen(d);
       return;
     }
     // A new partner gets everything that stands here: the view, the step,
@@ -1876,6 +2003,15 @@
     // out the jump before freezing again, and the freeze would silently
     // break on reload. In this order the step lands in `FROST_ZIEL`, where
     // it belongs.
+    //
+    // Mit der Uhr als drittem Wert gilt derselbe Satz aus einem zweiten, neu
+    // durchgerechneten Grund: andersherum bekaeme das frisch geladene
+    // Buehnenfenster erst den Sprung -- einen sichtbaren Blick auf die Folie --
+    // und danach die Uhr, die ihn wieder zudeckt. Genau das Aufblitzen, gegen
+    // das `sichtErinnern` gebaut wurde, nur eine Zehntelsekunde spaeter.
+    //
+    // Dass dieses wiederholte Senden keine laufende Uhr zurueckwirft, liegt an
+    // der Nummer des Laufs, die mitfaehrt: drueben stempelt nur eine neue neu.
     sichtSenden();
     sende("gehe", { n: current });
     if (TINTE_AN) sende("tintestand", { liste: tinteAbschrift() });
@@ -1896,11 +2032,18 @@
     if (e.source) PARTNER = e.source;
     LETZTER_SCHLAG = Date.now();
     if (d.kanal === "hallo") {
+      // `uhrRest` faehrt zurueck, damit die Lagezeile drueben `Uhr 2:41` sagen
+      // kann, ohne eine eigene Uhr zu fuehren: zwei Uhren auf dieselbe Pause
+      // gehen frueher oder spaeter auseinander.
+      var us = uhrStand();
       sende("schritt", { n: current, folien: SLIDES.length,
                          schritte: STEPS.length, rolle: ROLLE,
                          sitzung: SITZUNG,
                          schwarz: document.documentElement.dataset.tsSchwarz ? 1 : 0,
-                         frost: FROST });
+                         frost: FROST,
+                         uhr: us ? us.duration : 0,
+                         uhrLauf: us ? us.lauf : 0,
+                         uhrRest: us ? Math.round(us.remaining) : 0 });
       // The stock only goes to a freshly loaded counterpart. Otherwise the
       // two would keep pushing the same strokes back and forth at the pace
       // of the heartbeat.
@@ -2295,6 +2438,11 @@
       schwarzMedien(false);
     }
     if (FROST) auftauen();
+    // Und die Vollbilduhr. Sie deckt den Saal genauso zu wie schwarz, es
+    // steht nur etwas darauf; ohne diese Zeile waere sie ein neuer Weg,
+    // einen Saal dunkel zurueckzulassen -- und im Buehnenfenster gibt es
+    // keine Taste dagegen, und es soll dort keine geben.
+    uhrAus();
     sichtMerken();
   }
 
@@ -2305,10 +2453,28 @@
   // nothing more is asked of it. The channel remains `postMessage`; this
   // here is only a memory across the load, and if it fails, everything is
   // as before.
+  // Die Uhr kommt als dritter Wert dazu, und sie ist der einzige, der eine Zeit
+  // mitbringt. Buehnenzeit ueberlebt kein Neuladen -- in der neuen Seite faengt
+  // sie wieder bei null an, ein Stempel von vorher ist dort eine beliebige
+  // Zahl. Gemerkt wird deshalb eine WANDUHR-FRIST, `Date.now() + rest*1000`:
+  // der Augenblick, an dem die Uhr ablaufen wird. Beim Wiederherstellen wird
+  // daraus eine Restdauer, mit der sich die Uhr in Buehnenzeit neu spannt. Die
+  // eine Stelle, an der sich die beiden Basen beruehren.
+  //
+  // Unter festgenagelter Uhr ist die Frist Unsinn -- `rest` steht still,
+  // `Date.now()` nicht. Hinnehmbar: ein Prueflauf laedt nicht neu, und
+  // ausserhalb eines Prueflaufs ist nichts festgenagelt.
   function sichtMerken() {
     try {
+      var u = "";
+      if (UHR) {
+        var rest = UHR.rest == null ? UHR.dauer - UHR.vor : UHR.rest;
+        u = ":" + Math.round(Date.now() + rest * 1000) + "," + UHR.dauer
+              + "," + UHR.lauf;
+      }
       sessionStorage.setItem("ts-sicht:" + DECK,
-        (document.documentElement.dataset.tsSchwarz ? "1" : "0") + (FROST ? "1" : "0"));
+        (document.documentElement.dataset.tsSchwarz ? "1" : "0")
+          + (FROST ? "1" : "0") + u);
     } catch (x) {}
   }
   function sichtErinnern() {
@@ -2321,6 +2487,19 @@
       schwarzMedien(true);
     }
     if (alt.charAt(1) === "1") FROST = 1;
+    // Aus der Frist wieder eine Dauer. Was das Laden gekostet hat, ist der Uhr
+    // abgezogen: die Klasse draussen wartet ja auch. Abgelaufen heisst nicht
+    // abgeschaltet -- sie kommt in ihrer Ueberzeit wieder.
+    var st = alt.indexOf(":") > 0 ? alt.slice(alt.indexOf(":") + 1).split(",") : null;
+    if (st && st.length === 3) {
+      var dauer = +st[1], verstrichen = dauer - (+st[0] - Date.now()) / 1000;
+      // Eine Frist jenseits des Deckels hat niemand mehr im Blick -- der
+      // Rechner stand ueber Nacht. Dann bleibt die Uhr aus.
+      if (isFinite(dauer) && isFinite(verstrichen)
+          && verstrichen < dauer + UHR_DECKEL) {
+        uhrStellen(dauer, +st[2], verstrichen);
+      }
+    }
     // The guard lifts that again right away if no one is there anymore: a
     // memory without a partner is exactly the case it was built for.
     wacheAn();
@@ -2341,7 +2520,10 @@
       var jetzt = Date.now();
       var eigenerVerzug = jetzt - WACHE_SCHLAG;
       WACHE_SCHLAG = jetzt;
-      if (!FROST && !document.documentElement.dataset.tsSchwarz) {
+      // `UHR` steht mit in dieser Bedingung, sonst liefe die Wache bei einer
+      // blossen Vollbilduhr gar nicht erst -- und dann waere sie das einzige,
+      // was einen Saal ohne Sprecherfenster zugedeckt zuruecklaesst.
+      if (!FROST && !document.documentElement.dataset.tsSchwarz && !UHR) {
         clearInterval(WACHE); WACHE = 0; return;
       }
       // What is measured is the partner, not the clock. `closed` on the
@@ -2372,7 +2554,18 @@
     if (d.frost != null) {
       if (d.frost) FROST = 1; else if (FROST) auftauen();
     }
-    if (FROST || document.documentElement.dataset.tsSchwarz) wacheAn();
+    // Der dritte Wert. `uhr` ist die ganze Dauer in Sekunden, 0 heisst aus,
+    // `uhrLauf` die Nummer des Laufs. An ihr allein haengt, ob neu gestempelt
+    // wird: kaeme dieselbe Nachricht ein zweites Mal, etwa weil ein Partner
+    // sich neu anmeldet, spraenge die Uhr sonst mitten in der Pause auf ihren
+    // Anfang. Gleicher Lauf heisst nur nachziehen. Das ist der Unterschied zu
+    // `schwarz` und `frost`, die keine Zeit mitbringen.
+    if (d.uhr != null) {
+      if (!d.uhr) uhrAus();
+      else if (!UHR || UHR.lauf !== d.uhrLauf) uhrStellen(d.uhr, d.uhrLauf, 0);
+      else uhrDauer(d.uhr);
+    }
+    if (FROST || document.documentElement.dataset.tsSchwarz || UHR) wacheAn();
     sichtMerken();
   });
 
@@ -2509,6 +2702,12 @@
   var gebaut = 0;
   var UHR_START = 0;       // since when counting runs, 0 = not started yet
   var ZIEL_MIN = 0;        // planned duration in minutes, 0 = no plan
+  // Die Vollbilduhr, von hier aus gesehen. `SAAL_SEK` ist die Dauer, die
+  // drueben laeuft (0 = aus), `SAAL_NR` die laufende Nummer des Laufs, und
+  // `SAAL_REST` das, was das Buehnenfenster zuletzt zurueckgemeldet hat.
+  // Diese Ansicht fuehrt die Uhr nicht, sie liest sie ab: zwei Uhren, die
+  // dieselbe Pause zaehlen, gehen frueher oder spaeter auseinander.
+  var SAAL_SEK = 0, SAAL_NR = 0, SAAL_REST = 0;
   var NOTIZ_PX = 21;
   var SCHWARZ = 0, EIS = 0;
   var VORSCHAU = "";
@@ -2573,6 +2772,14 @@
       wort("lost", "no talk window");
     if (SCHWARZ) bau("span", "", ELN.lage).textContent = wort("black", "black");
     if (EIS) bau("span", "ts-sp-eis", ELN.lage).textContent = wort("frozen", "frozen");
+    // Die Vollbilduhr steht hier und nur hier: ein kleiner Eintrag neben
+    // `schwarz` und `eingefroren`. Eine zweite grosse Uhr im Kopf stuende neben
+    // der Zieldauer, und die beiden zeigten verschiedene Zahlen.
+    if (SAAL_SEK) {
+      bau("span", "ts-sp-saal", ELN.lage).textContent =
+        (SAAL_REST < 0 ? wort("over", "over") : wort("timer", "timer"))
+        + " " + mmss(Math.abs(SAAL_REST));
+    }
   }
 
   // If no one on the other side answers anymore, that has to be visible.
@@ -2591,28 +2798,37 @@
   function sichtSenden() {
     if (ROLLE !== "speaker") return;
     SICHT_GESENDET = Date.now();
-    sende("sicht", { schwarz: SCHWARZ, frost: EIS });
+    sende("sicht", { schwarz: SCHWARZ, frost: EIS,
+                     uhr: SAAL_SEK, uhrLauf: SAAL_NR });
     lageZeigen();
   }
   // What holds on the other side also holds here, continuously and not
   // only at the handshake. A reply sent off before our own keypress knows
   // nothing of it yet; shortly after a command of our own, our own value
   // therefore wins, and the next beat confirms it anyway.
-  function sichtAbgleichen(schwarz, frost) {
-    if (ROLLE !== "speaker" || schwarz == null) return;
+  function sichtAbgleichen(d) {
+    if (ROLLE !== "speaker" || d.schwarz == null) return;
     if (Date.now() - SICHT_GESENDET < 1500) return;
-    var s = schwarz ? 1 : 0, f = frost ? 1 : 0;
-    if (s === SCHWARZ && f === EIS) return;
-    SCHWARZ = s; EIS = f;
-    lageZeigen();
+    var s = d.schwarz ? 1 : 0, f = d.frost ? 1 : 0;
+    var u = +d.uhr || 0, n = +d.uhrLauf || 0, r = +d.uhrRest || 0;
+    // Verglichen wird die angezeigte Sekunde und nicht der rohe Rest: sonst
+    // baute die Lagezeile sich viermal je Sekunde neu auf.
+    var neu = (s !== SCHWARZ || f !== EIS || u !== SAAL_SEK || n !== SAAL_NR
+               || Math.round(r) !== Math.round(SAAL_REST));
+    SCHWARZ = s; EIS = f; SAAL_SEK = u; SAAL_NR = n; SAAL_REST = r;
+    if (neu) lageZeigen();
   }
   // What holds on the other side holds here. A freshly opened view would
   // otherwise claim "bright and thawed" while the hall is black, and the
   // first press of `b` would make it worse instead of better.
-  function sichtUebernehmen(schwarz, frost) {
+  function sichtUebernehmen(d) {
     if (ROLLE !== "speaker") return;
-    SCHWARZ = schwarz ? 1 : 0;
-    EIS = frost ? 1 : 0;
+    SCHWARZ = d.schwarz ? 1 : 0;
+    EIS = d.frost ? 1 : 0;
+    // Und die Uhr, mit ihrer Nummer: ohne sie bekaeme eine frisch geladene
+    // Ansicht beim ersten `sichtSenden` einen neuen Lauf, und die Pause im Saal
+    // spraenge auf ihren Anfang zurueck.
+    SAAL_SEK = +d.uhr || 0; SAAL_NR = +d.uhrLauf || 0; SAAL_REST = +d.uhrRest || 0;
     lageZeigen();
   }
 
@@ -2705,6 +2921,31 @@
       ELN.tupf.push(t);
     });
     ELN.lage = bau("div", "ts-sp-lage", fuss);
+    // Das Minutenfeld der Vollbilduhr, neben der Lagezeile und nicht im Kopf:
+    // dort sitzt die Zieldauer, und zwei Minutenfelder nebeneinander waeren
+    // zwei Zahlen, die dasselbe zu meinen scheinen. Verborgen, bis `t` es holt.
+    var uf = document.createElement("input");
+    uf.type = "number"; uf.min = "1"; uf.step = "1";
+    uf.className = "ts-sp-uhrfeld";
+    uf.style.display = "none";
+    fuss.appendChild(uf);
+    uf.addEventListener("keydown", function (ev) {
+      // Enter nimmt den Wert, Escape laesst ihn liegen; beide geben die
+      // Tastatur zurueck. `stopPropagation`, damit Escape nicht nebenbei die
+      // Uebersicht aufklappt -- derselbe Ausweg wie beim Zielfeld.
+      // Ein leeres Feld ist ein Ruecktritt und keine Uhr ueber eine Minute:
+      // wer die Zahl loescht und die Eingabetaste drueckt, meint nichts.
+      if (ev.key === "Enter") {
+        if (+uf.value > 0) uhrStarten(+uf.value);
+        uhrFeldZu();
+      }
+      else if (ev.key === "Escape") { uhrFeldZu(); }
+      else return;
+      ev.preventDefault();
+      ev.stopPropagation();
+    });
+    uf.addEventListener("blur", uhrFeldZu);
+    ELN.uhrFeld = uf;
     ELN.hilfe = bau("div", "ts-sp-hilfe", fuss);
     ELN.hilfe.textContent = W.helpSpeakerShort || W.helpSpeaker || W.help || "";
 
@@ -2801,6 +3042,47 @@
     notizStand();
   }
 
+  // ── Die Vollbilduhr, von der Sprecheransicht aus ──────────────────────────
+  //
+  // Hier steht nur die Rechnung: eine Dauer und eine Nummer, beide ueber den
+  // `sicht`-Kanal. Gezaehlt wird drueben, in Buehnenzeit; diese Ansicht liest
+  // nur die Zahl ab, die zurueckkommt.
+  function uhrStarten(min) {
+    var m = Math.max(1, Math.round(+min || 0));
+    SAAL_SEK = m * 60;
+    // Eine neue Nummer heisst drueben: neu stempeln. Nur hier wird sie erhoeht.
+    SAAL_NR++;
+    SAAL_REST = SAAL_SEK;
+    sichtSenden();
+  }
+  function uhrSaalAus() {
+    if (!SAAL_SEK) return false;
+    SAAL_SEK = 0; SAAL_REST = 0;
+    sichtSenden();
+    return true;
+  }
+  // Eine Minute mehr oder weniger. Gesendet wird die neue ganze Dauer und nicht
+  // der Zuwachs: eine Nachricht, die zweimal ankommt, richtet dann nichts an.
+  function uhrSaalMehr(sek) {
+    if (!SAAL_SEK) return false;
+    SAAL_SEK = Math.max(60, SAAL_SEK + sek);
+    SAAL_REST += sek;
+    sichtSenden();
+    return true;
+  }
+  function uhrFeldAuf() {
+    if (!ELN.uhrFeld) return;
+    ELN.uhrFeld.style.display = "";
+    ELN.uhrFeld.value = ELN.uhrFeld.value || "5";
+    ELN.uhrFeld.focus();
+    ELN.uhrFeld.select();
+  }
+  function uhrFeldZu() {
+    if (!ELN.uhrFeld) return;
+    ELN.uhrFeld.style.display = "none";
+    ELN.uhrFeld.blur();
+  }
+
   // ── The speaker view's keys ───────────────────────────────────────────────
   //
   // A receiver of its own, only registered during setup: in the talk
@@ -2812,6 +3094,27 @@
       var k = e.key;
       if (k === "ArrowRight" || k === "ArrowLeft" || k === "PageDown" ||
           k === "PageUp" || k === " " || k === "Home" || k === "End") {
+        // Umschalt und Pfeil verlaengern die laufende Uhr.
+        //
+        // Der Entwurf sah `t` gehalten dafuer vor; verworfen. Eine gehaltene
+        // Buchstabentaste ist ein Zustand, den nur ein `keyup` aufhebt, und
+        // beim Fensterwechsel -- am Rednerpult die haeufigste Handbewegung --
+        // kommt keines mehr an. Danach staende `t` fuer immer als gedrueckt da
+        // und die Pfeile blaetterten nicht mehr: der eine Tastendruck, der
+        // immer sitzen muss. Umschalt faehrt im selben Ereignis mit, also gibt
+        // es den Zustand nicht. Und die Geste kostet nichts: solange die Uhr
+        // laeuft, ist der blosse Pfeil ohnehin vergeben, er beendet sie.
+        //
+        // Ausgefuehrt wird sie eine Ebene tiefer, in der gemeinsamen Steuerung:
+        // beide Empfaenger haengen am selben `window`, `stopPropagation` haelt
+        // den anderen also nicht auf, und die Reihenfolge der Anmeldung haengt
+        // daran, wann die Ansicht aufgebaut war. Hier steht nur, was hier
+        // nicht geschehen soll.
+        if (e.shiftKey && SAAL_SEK
+            && (k === "ArrowRight" || k === "ArrowLeft")) return;
+        // Blaettern beendet die Vollbilduhr und deckt die Folie auf. Was man
+        // nach der Pause tut, ist weitermachen.
+        uhrSaalAus();
         uhrAn(); return;
       }
       // Up and down are free in the shared control and scroll the note
@@ -2819,8 +3122,20 @@
       if (k === "ArrowDown") { notizRollen(1); e.preventDefault(); return; }
       if (k === "ArrowUp") { notizRollen(-1); e.preventDefault(); return; }
       if (k === "b") { SCHWARZ = SCHWARZ ? 0 : 1; sichtSenden(); }
+      // `t` wie timer. Laeuft sie, beendet derselbe Druck sie -- wie `b` und
+      // `e`, nur mit einer Frage davor. `Shift+t` bleibt ausdruecklich frei:
+      // dort soll spaeter die angeheftete Uhr liegen, die das Vollbild
+      // erzwingt. Sie ist noch nicht gebaut, und der Platz wartet auf sie.
+      else if (k === "t" && !e.shiftKey) {
+        if (!uhrSaalAus()) uhrFeldAuf();
+        e.preventDefault();
+      }
       else if (k === "e") { EIS = EIS ? 0 : 1; sichtSenden(); }
-      else if (k === "t") { if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); } }
+      // Die Zieldauer sass auf `t` und zog auf `d` um -- duration, Dauer,
+      // duree, in allen drei Sprachen derselbe Buchstabe. Der gute Buchstabe
+      // gehoert dem, was man oft drueckt: die Zieldauer wird einmal je Vortrag
+      // gesetzt, die Klassenuhr mehrmals je Stunde.
+      else if (k === "d") { if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); } }
       else if (k === "r") { UHR_START = 0; sprecherUhr(); }
       else if (k === "m") { modusUm(); }
       else if (k === "c") { farbeSetzen(FARBE + 1); }
@@ -3820,6 +4135,14 @@
 
   addEventListener("keydown", function (e) {
     if (tippt(e)) return;
+    // Umschalt und Pfeil verlaengern die laufende Vollbilduhr, statt zu
+    // blaettern. `uhrSaalMehr` gibt `false`, wenn keine laeuft -- im
+    // Buehnenfenster nie eine, gefuehrt wird sie drueben --, und dann faellt
+    // die Zeile durch: Umschalt und Pfeil blaettern wie eh und je.
+    if (e.shiftKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")
+        && uhrSaalMehr(e.key === "ArrowRight" ? 60 : -60)) {
+      e.preventDefault(); return;
+    }
     if (/^[1-9]$/.test(e.key) && adTaste(+e.key)) { e.preventDefault(); return; }
     if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
       if (!adPfeil()) goto(current + 1);
@@ -3965,6 +4288,11 @@
     // above the stage in the talk window where outside content may be drawn.
     rolle: ROLLE,
     box: SPRECHERBOX,
+    // Die Vollbilduhr von aussen, in Sekunden. An der Tastatur haengt sie in
+    // der Sprecheransicht; wer sie ohne zweites Fenster stellen will -- ein
+    // Prueflauf, ein eigenes Knopfwerk neben dem Deck --, nimmt diese drei.
+    clock: { start: function (sek) { uhrStellen(sek); },
+             stop: uhrAus, set: uhrDauer },
     ink: INK,
     miniatur: miniatur,
     notiz: notiz,
@@ -4012,7 +4340,12 @@
       // Zwei, seit `ziffer`, `punkt` und `adaptiv` dazugekommen sind. Ein Lauf,
       // der eine cue-Gruppe bedienen will, muss ein Deck von gestern daran
       // erkennen koennen -- sonst misst er dort still 0/0 und nennt es heil.
-      fassung: 2,
+      //
+      // Drei, seit `clock` dazugekommen ist, aus demselben Grund: ein Lauf,
+      // der die Vollbilduhr misst, faende an einem Deck von gestern schlicht
+      // `undefined` vor und koennte das nicht von einer Uhr unterscheiden,
+      // die nicht laeuft.
+      fassung: 3,
       bau: CFG.build,
       deck: DECK,
       rolle: ROLLE,
@@ -4060,6 +4393,19 @@
         };
       },
       fehler: function () { return FEHLER.slice(); },
+
+      // Was die Vollbilduhr zeigt, oder `null`, wenn keine laeuft.
+      //
+      // `remaining` sind Sekunden und darf negativ sein -- das ist die
+      // Ueberzeit. `text` ist, was an der Wand steht, ohne die freigehaltene
+      // Vorzeichenspalte: `2:41` oder `+1:11`. Beide kommen aus `beat`, also
+      // faellt die Uhr unter `pruef.uhr()` still und derselbe Zeitpunkt gibt in
+      // zwei Laeufen dieselbe Zahl.
+      clock: function () {
+        var u = uhrStand();
+        return u && { mode: u.mode, duration: u.duration,
+                      remaining: u.remaining, over: u.over, text: u.text };
+      },
 
       // ── Eine cue-Gruppe von aussen bedienen ──────────────────────────────
       //
@@ -4120,6 +4466,7 @@
         }
         if ((vorher === null) !== (PRUEFUHR === null)) {
           ticking.forEach(function (t) { t.t0 = null; t.letztes = -1; });
+          uhrZeitwechsel();
         }
         return PRUEFUHR;
       },

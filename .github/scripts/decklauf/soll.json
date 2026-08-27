@@ -155,6 +155,14 @@
   "wachsen darf --, und pruefdeck/satz und pruefdeck/satzBytes stehen deshalb",
   "nur noch fuer darwin da.",
   "",
+  "Die Vollbilduhr hat sprecher in allen 16 Decks um genau eins gehoben: sie",
+  "legt ein Minutenfeld in den Fuss der Sprecherbox, und ein DOM-Knoten haengt",
+  "an keiner Schrift. Die beiden geteilten Werte sind deshalb hier mit +1",
+  "nachgezogen und nicht entfernt worden. pruefdeck/satz und satzBytes haben",
+  "sich um 3073 Bytes verschoben -- die Uhrschicht, ihr Stil und die drei neuen",
+  "Hilfstexte --, und ihre linux-Werte sind entfernt; der naechste CI-Lauf",
+  "nennt die neuen.",
+  "",
   "Dieser Absatz stand einmal von Hand in soll.json und war nach dem ersten",
   "--neu-soll fort: was hier nicht steht, ueberlebt keine Neuaufnahme."
  ],
@@ -169,7 +177,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 79,
+   "sprecher": 80,
    "grund": [
     "#ffffff",
     "#ffffff",
@@ -323,7 +331,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 102,
+   "sprecher": 103,
    "grund": [
     "#fafafa",
     "#23303f",
@@ -403,7 +411,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "1/0",
-   "sprecher": 531,
+   "sprecher": 532,
    "grund": [
     "#f7f2e6",
     "#f7f2e6",
@@ -493,7 +501,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "3/0",
-   "sprecher": 103,
+   "sprecher": 104,
    "grund": [
     "#ffffff",
     "#e6f0f6",
@@ -584,8 +592,8 @@
    "hash": 8,
    "hashStand": "3/0",
    "sprecher": {
-    "darwin": 1079,
-    "linux": 1078
+    "darwin": 1080,
+    "linux": 1079
    },
    "grund": [
     "#0f1319",
@@ -682,7 +690,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 88,
+   "sprecher": 89,
    "grund": [
     "#ffffff",
     "#ffffff",
@@ -771,7 +779,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 92,
+   "sprecher": 93,
    "grund": [
     "#fafafa",
     "#23303f",
@@ -874,7 +882,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "4/0",
-   "sprecher": 348,
+   "sprecher": 349,
    "grund": [
     "#fafafa",
     "#fafafa",
@@ -919,8 +927,8 @@
    "hash": 8,
    "hashStand": "5/0",
    "sprecher": {
-    "darwin": 836,
-    "linux": 840
+    "darwin": 837,
+    "linux": 841
    },
    "grund": [
     "#ffffff",
@@ -970,7 +978,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 72,
+   "sprecher": 73,
    "grund": [
     "#f5f3ee",
     "#20372c",
@@ -1056,7 +1064,7 @@
    "federRueck": 6,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 106,
+   "sprecher": 107,
    "grund": [
     "#ffffff",
     "#c1361c",
@@ -1210,7 +1218,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "4/3",
-   "sprecher": 90,
+   "sprecher": 91,
    "grund": [
     "#ffffff",
     "#e6f0f6",
@@ -1331,7 +1339,7 @@
    "federRueck": 2,
    "hash": 8,
    "hashStand": "4/0",
-   "sprecher": 165,
+   "sprecher": 166,
    "grund": [
     "#f2eee5",
     "#f2eee5",
@@ -1393,7 +1401,7 @@
    "federRueck": 2,
    "hash": 8,
    "hashStand": "2/0",
-   "sprecher": 118,
+   "sprecher": 119,
    "grund": [
     "#fffcf9",
     "#fffcf9",
@@ -1468,7 +1476,7 @@
    "federRueck": 0,
    "hash": 8,
    "hashStand": "1/0",
-   "sprecher": 201,
+   "sprecher": 202,
    "grund": [
     "#111111",
     "#f7f7f5",
@@ -1529,7 +1537,7 @@
    "federRueck": 3,
    "hash": 8,
    "hashStand": "1/0",
-   "sprecher": 67,
+   "sprecher": 68,
    "grund": [
     "#0f1319",
     "#0c2733",
@@ -1696,12 +1704,12 @@
    "zeichnung": "3+3 Pfade · hinein/heraus · 0>1 · 0/0 offen · Sprung 0/1/6",
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
-    "darwin": "698d7f482c4beac0",
-    "linux": "c5c3dbc5e1e6e996"
+    "darwin": "bff4919dbfdbe52c",
+    "linux": "2fea5c8216ce8863"
    },
    "satzBytes": {
-    "darwin": 1285510,
-    "linux": 1162834
+    "darwin": 1288583,
+    "linux": 1165907
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",
    "kino": "at 1- 0/0/0/12/23 · at 3- 0/0/0/12/23",

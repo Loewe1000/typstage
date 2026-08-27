@@ -867,6 +867,14 @@
       // the speaker view.
       html.elem("div", attrs: (id: "ts-ink"), [])
     })
+    // Die Vollbilduhr. Leer und ausserhalb der Buehne, weil sie die Buehne
+    // nicht zeigt, sondern ersetzt -- wie `b schwarz`, nur dass hier etwas
+    // an ihre Stelle tritt. Die Laufzeit fuellt die beiden Kaesten; auf
+    // Papier steht die Schicht nicht (siehe `@media print`).
+    html.elem("div", attrs: (id: "ts-clock"), {
+      html.elem("div", attrs: (class: "ts-clock-word"), [])
+      html.elem("div", attrs: (class: "ts-clock-num"), [])
+    })
     // A delayed morph is not yet present on the first step of its slide.
     // That is harmless as long as the slide before it does not carry a morph
     // of the same name. Otherwise the flight between the two is lost, and
@@ -941,6 +949,12 @@
         + ",\"transitionDuration\":" + str(transition-duration)
         + ",\"width\":" + str(geo.width.pt())
         + ",\"height\":" + str(geo.height.pt())
+        // Die Signalfarbe, das einzige Stueck Palette, das die Laufzeit
+        // kennt. Die Ueberzeit der Vollbilduhr steht darin, und sie soll
+        // dem Deck gehoeren und nicht dem Stilblatt. Immer die helle Form:
+        // die Uhr steht auf Schwarz, egal was die Folie darunter tut, und
+        // `invert-palette` traegt den Akzent ohnehin unveraendert weiter.
+        + ",\"accent\":" + json.encode(rgb(thema-hell.accent).to-hex())
         // The runtime displays two sentences itself. Which language is
         // decided by the slide's `text.lang`, not the runtime, which does
         // not know the document. English is the fallback.

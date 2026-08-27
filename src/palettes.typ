@@ -111,12 +111,21 @@
 /// `accent on ink` is the odd one and the reason it is in here: on an inverted
 /// slide the ink is what ends up behind the accent, so an accent tuned for one
 /// ground alone would go dim there without a word.
+///
+/// `accent on black` is the second of that kind, and its ground is not a role
+/// at all: `grund` names a colour outright. The full-screen clock is black
+/// from edge to edge whatever the palette says, and its overtime digits are
+/// set in the accent. Without this pair a palette with a deep accent would
+/// pass everything here and still leave a room full of people squinting at a
+/// number they cannot read.
 #let vertrag = (
   (a: "ink", b: "paper", min: 4.5, was: "body text on the slide"),
   (a: "ink", b: "surface", min: 4.5, was: "body text in a card"),
   (a: "muted", b: "paper", min: 4.5, was: "footer, subtitle, running head"),
   (a: "accent", b: "paper", min: 3.0, was: "rules, progress bar, marker"),
   (a: "accent", b: "ink", min: 3.0, was: "the same on an inverted slide"),
+  (a: "accent", b: "black", grund: black, min: 3.0,
+   was: "the overtime of the full-screen clock, which stands on black"),
   (a: "border", b: "paper", min: 1.2, was: "hairlines"),
 )
 
@@ -137,7 +146,10 @@
 /// either. Four of the five do not pass it, and that is deliberate rather than
 /// overlooked. See the manual.
 #let palette-report(p) = vertrag.map(v => {
-  let r = contrast(p.at(v.a), p.at(v.b))
+  // `grund` is a colour named outright, for a ground that is not a role of the
+  // palette. Only `accent on black` uses it so far.
+  let hinter = v.at("grund", default: none)
+  let r = contrast(p.at(v.a), if hinter == none { p.at(v.b) } else { hinter })
   (pair: v.a + " on " + v.b, ratio: r, min: v.min, ok: r >= v.min, role: v.was)
 })
 
