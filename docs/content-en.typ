@@ -3045,7 +3045,7 @@ six labels under /Media and handout/.
   left for it to reach. Anyone who knows the two spellings as equivalent from
   other packages runs aground here.
 
-  For the 15 type labels the two spellings are equivalent: what sits inside
+  For the 16 type labels the two spellings are equivalent: what sits inside
   the matched element there is the text, and a rule reaches that from within
   as well.
 ]
@@ -3058,10 +3058,10 @@ and every moving piece.
 
 The `style` hook does *not* reach the same. It is wrapped around the slide
 *body*, and header, footer, progress and the title and section slides are
-built beside it, not inside it. Measured, all 37 rules one at a time: from inside
+built beside it, not inside it. Measured, all 38 rules one at a time: from inside
 `style` exactly the 13 that stand in the slide body take effect -- the
 building blocks `ts-card…`, `ts-callout…`, `ts-statement`, and the three
-stand-in surfaces `ts-media-…`. The other 24 stay silent there, without a
+stand-in surfaces `ts-media-…`. The other 25 stay silent there, without a
 warning. `style` remains the right place for typography that concerns the
 whole body; for labels, the place before `#show: presentation` is the one.
 
@@ -3227,6 +3227,9 @@ nothing.
   [`ts-section-slide-title`], [Its title], [`text`],
   [`ts-section-slide-rule`], [The accent stroke; `themes.night` has two,
     `themes.lesson` none], [`rect`],
+  [`ts-section-slide-parent`], [The line above it naming the sections this one
+    hangs under. Only from the second structure level on, so never at
+    `slide-level: 2`], [`text`],
 )
 
 A section slide has no subtitle in typstage, so the list names none.

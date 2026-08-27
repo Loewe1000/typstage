@@ -223,7 +223,26 @@
   kurven.at(name)
 }
 
-/// Plain text out of content, for speaker notes.
+/// Plain text out of content, for speaker notes. A paragraph break becomes a
+/// blank line.
+///
+// Warum eine Leerzeile und nicht ein Leerzeichen: die Notiz reist als
+// HTML-Attribut und ist darum nur eine Zeichenkette, aber sie hat zwei Leser.
+// Das Notizfeld der Sprecheransicht steht auf `white-space: pre-wrap` -- dort
+// wird aus den zwei Umbrüchen die Leerzeile, die jemand geschrieben hat.
+// Die Blase, die die `s`-Taste aufsteigen lässt, steht auf `normal` und
+// faltet dieselben zwei Umbrüche zu einem Leerzeichen; sie bleibt eine Blase.
+// Eine Zeichenkette, und jeder bekommt das Seine. Auf Papier hat das Handout
+// den Absatz ohnehin immer gehabt: dort steht die Notiz als Inhalt.
+//
+// Gar nichts war es bisher, und das war der Fehler. Gemessen kam eine Notiz
+// aus zwei Absätzen als "Erster Absatz.Zweiter Absatz." an -- ohne auch nur
+// ein Leerzeichen dazwischen.
+//
+// Der `linebreak` bleibt draußen, und das ist Absicht: die Leerzeichen um ein
+// `\` herum überleben als `space`, gemessen "Zeile eins.  Zeile zwei.". Das
+// ist kein Verlust von Text, nur einer von Umbruch, und wer ihn hier
+// mitnähme, nähme die beiden Leerzeichen mit in die neue Zeile.
 #let plain-text(c) = {
   if type(c) == str { c } else if type(c) != content { "" } else if c.func() == text {
     c.text
@@ -231,7 +250,7 @@
     c.children.map(plain-text).join("")
   } else if c.has("body") { plain-text(c.body) } else if repr(c.func()) == "space" {
     " "
-  } else { "" }
+  } else if repr(c.func()) == "parbreak" { "\n\n" } else { "" }
 }
 
 /// A speaker note has to carry text, because nothing else reaches the speaker.

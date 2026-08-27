@@ -439,6 +439,79 @@ def gelesene_dateien():
   return raus
 
 
+# Die Etikettenzeilen des Verzeichnisses: [`ts-…`], [was es ist], [`regel`].
+# Der mittlere Teil darf selbst Klammern tragen -- `themes.night` steht dort in
+# Rückstrichen --, deshalb wird er als Ganzes übersprungen und nicht gelesen.
+ETIKETT_ZEILE = re.compile(
+  r"\[`(ts-[a-z0-9-]+)`\][^\[]*\[(?:[^\[\]]|\[[^\]]*\])*\]\s*,?\s*\[`([a-z]+)`\]")
+ETIKETT_QUELLE = re.compile(r"<(ts-[a-z0-9-]+)>")
+# Die drei Zahlen des Satzes über `style:`, in beiden Handbüchern derselbe Satz.
+ETIKETT_SATZ = re.compile(
+  r"(?:Gemessen, jede der|Measured, all) (\d+) (?:Regeln|rules)"
+  r".{0,240}?(?:genau die|exactly the) (\d+)"
+  r".{0,320}?(?:Die übrigen|The other) (\d+)", re.S)
+ETIKETT_SCHRIFT = re.compile(r"(?:Bei den|For the) (\d+) (?:Schrift-Labels|type labels)")
+
+
+def etiketten_pruefen():
+  """Das Etikettenverzeichnis der Handbücher gegen `src/`.
+
+  Warum das hier steht und nicht im Decklauf: die Etiketten entstehen in Typst
+  und haben im Browser keine Zahl. Was hier geprüft wird, ist auch keine
+  Ausgabe, sondern eine Behauptung -- „gemessen, jede der 38 Regeln einzeln".
+  Ein Verzeichnis, das ein Etikett nicht nennt, führt niemanden zu ihm hin,
+  und eine Zahl daneben, die nicht mehr stimmt, ist schlimmer als keine:
+  gemessen fehlte `ts-section-slide-parent` in beiden Handbüchern, in der
+  Liste und in allen drei Zahlen.
+
+  Die 13, die aus `style:` heraus wirken, sind hier nicht nachzurechnen -- das
+  ist eine Messung im Satz und keine Eigenschaft der Quelle. Festgehalten wird
+  stattdessen, dass die drei Zahlen zueinander passen: wirksam plus stumm ist
+  die Gesamtzahl, und die steht in `src/`."""
+  klagen = []
+  quelle = set()
+  for name in sorted(os.listdir(os.path.join(WURZEL, "src"))):
+    if name.endswith(".typ"):
+      quelle |= set(ETIKETT_QUELLE.findall(
+        open(os.path.join(WURZEL, "src", name), encoding="utf-8").read()))
+  for name in HANDBUECHER:
+    text = open(os.path.join(WURZEL, name), encoding="utf-8").read()
+    zeilen = ETIKETT_ZEILE.findall(text)
+    genannt = {n for n, _ in zeilen}
+    fehlt = sorted(quelle - genannt)
+    zuviel = sorted(genannt - quelle)
+    if fehlt:
+      klagen.append("%s: das Etikettenverzeichnis nennt %s nicht. Wer das "
+                    "Etikett nicht findet, kann es nicht benutzen."
+                    % (name, ", ".join(fehlt)))
+    if zuviel:
+      klagen.append("%s: das Etikettenverzeichnis nennt %s, aber src/ vergibt "
+                    "es nicht mehr." % (name, ", ".join(zuviel)))
+    schrift = sum(1 for _, r in zeilen if r == "text")
+    m = ETIKETT_SCHRIFT.search(text)
+    if not m:
+      klagen.append("%s: der Satz über die Schrift-Labels ist nicht mehr zu "
+                    "finden. Ohne ihn prüft hier niemand seine Zahl." % name)
+    elif int(m.group(1)) != schrift:
+      klagen.append("%s: der Satz spricht von %s Schrift-Labels, das "
+                    "Verzeichnis führt %d." % (name, m.group(1), schrift))
+    m = ETIKETT_SATZ.search(text)
+    if not m:
+      klagen.append("%s: der Satz über `style:` mit seinen drei Zahlen ist "
+                    "nicht mehr zu finden. Ohne ihn prüft hier niemand, ob "
+                    "sie noch stimmen." % name)
+      continue
+    gesamt, wirksam, stumm = (int(x) for x in m.groups())
+    if gesamt != len(quelle):
+      klagen.append("%s: der Satz spricht von %d Regeln, src/ führt %d "
+                    "Etiketten." % (name, gesamt, len(quelle)))
+    if wirksam + stumm != gesamt:
+      klagen.append("%s: %d wirksame und %d stumme Regeln ergeben %d, der "
+                    "Satz nennt aber %d als Gesamtzahl."
+                    % (name, wirksam, stumm, wirksam + stumm, gesamt))
+  return klagen
+
+
 def haupt():
   s = argparse.ArgumentParser(add_help=True)
   s.add_argument("--leise", action="store_true", help="nur die Bilanz ausgeben")
@@ -500,6 +573,7 @@ def haupt():
                        "stand": "gut" if geklappt else "fehler",
                        "meldung": meldung})
 
+  etiketten = etiketten_pruefen()
   gut = [e for e in ergebnisse if e["stand"] == "gut"]
   aus = [e for e in ergebnisse if e["stand"] == "aus"]
   fehler = [e for e in ergebnisse if e["stand"] == "fehler"]
@@ -514,11 +588,13 @@ def haupt():
   if andere:
     print("nicht geprüft, weil andere Zaunsprache: "
           + ", ".join("%dx %s" % (n, k) for k, n in sorted(andere.items())))
+  for z in etiketten:
+    print("--- FEHLER Etikettenverzeichnis: " + z)
   print("\nBeispiele: %d übersetzt · %d als „soll fehlschlagen\" geprüft · "
         "%d übersprungen · %d Fehler"
         % (len(gut), gegen, len(aus), len(fehler)))
   shutil.rmtree(wegwerf, ignore_errors=True)
-  return 1 if fehler else 0
+  return 1 if (fehler or etiketten) else 0
 
 
 if __name__ == "__main__":

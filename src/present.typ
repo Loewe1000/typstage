@@ -125,7 +125,20 @@
 /// loses those styles, because it leaves the run. A `#set heading` after the
 /// show rule therefore does not reach slide titles.
 #let split-body(body, wrap) = {
-  let parts = if body.has("children") { body.children } else { (body,) }
+  // Nur eine echte Sequenz wird zerlegt. `table`, `grid`, `list`, `enum` und
+  // `stack` führen ebenfalls ein `children`-Feld, und wer die aufbricht,
+  // verteilt eine Tabelle in ihre nackten Zellen: Striche fort, sieben Zeilen
+  // zu einem Fließabsatz verklebt. Erwischt hat es nur den Weg durch
+  // `styled` -- `text(fill: …, table(…))` reicht die Tabelle selbst als
+  // `child` herunter, während ein Inhaltsblock eine Sequenz dazwischenlegt
+  // und ein `box` gar nicht erst zerlegt wird. Die Schleife unten kennt die
+  // Regel seit jeher; diese Zeile hatte sie vergessen.
+  //
+  // Eine Überschrift kann ohnehin nur im Fluss stehen, also in einer Sequenz.
+  // Es gibt darum keinen Rumpf, der hier zerlegt werden müsste und keine ist.
+  let parts = if repr(body.func()) == "sequence" and body.has("children") {
+    body.children
+  } else { (body,) }
   let out = ()
   let run = ()
   for c in parts {
