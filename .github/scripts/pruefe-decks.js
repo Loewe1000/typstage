@@ -261,6 +261,13 @@ const SOLL_HINWEIS = [
   "von 9 Decks und ihren rund 20 Feldern wichen genau diese drei ab, jedes",
   "andere Feld nannte auf macOS und auf Ubuntu dieselbe Zahl.",
   "",
+  "Die drei mosaic-Decks sind auf darwin aufgenommen worden und stehen darum",
+  "mit einer schlichten Zahl da und nicht mit einem Woerterbuch je System.",
+  "Das ist kein Versehen, sondern dieselbe Regel wie oben: geteilt wird erst,",
+  "wenn eine Abweichung belegt ist. Weicht der erste Ubuntu-Lauf bei",
+  "mosaic-editorial/sprecher, mosaic-manifesto/sprecher oder",
+  "mosaic-greyscale/sprecher ab, nennt er die Zahl, und dann wird geteilt.",
+  "",
   "Wer ein Deck aendert, dessen Satz sich dabei verschiebt, macht die",
   "linux-Werte ungueltig und muss sie entfernen statt sie stehenzulassen. Der",
   "naechste CI-Lauf meldet die neuen und nennt sie.",
@@ -270,12 +277,18 @@ const SOLL_HINWEIS = [
 ];
 
 // ── Welche Decks ────────────────────────────────────────────────────────────
-// Die acht Beispiele plus das Prüfdeck. Letzteres steht nicht unter
+// Die elf Beispiele plus das Prüfdeck. Letzteres steht nicht unter
 // `examples/`, weil es nicht auf die Website gehört; es wird hier übersetzt.
 // Es deckt ab, was die anderen nicht anfassen. Nachgezählt in ihren Quellen:
-// `after: "dimmed"` 0x, `stagger(dim: true)` 0x, `invert` 0x, `info()` 0x,
-// `fit` 0x. Ohne das Prüfdeck kann man diese fünf zerstören, ohne dass hier
-// eine Zahl wackelt.
+// `invert` 0x, `info()` 0x, `fit` 0x. Ohne das Prüfdeck kann man diese drei
+// zerstören, ohne dass hier eine Zahl wackelt.
+//
+// Zwei standen einmal mit in dieser Reihe und stehen es nicht mehr:
+// `after: "dimmed"` und `stagger(dim: true)`. Seit `mosaic-manifesto` die
+// drei Fragen seiner Vision-Folie einzeln vortreten und zurücktreten lässt,
+// hängen sie an einem Beispiel, dessen `sichtbar`-Reihe die gedimmten
+// getrennt zählt. Das Prüfdeck behält sie trotzdem: dort stehen sie allein,
+// hier stehen sie zwischen anderem.
 //
 // Die beiden GeoGebra-Decks messen den Rahmen, nicht das Applet. Was hier eine
 // Zahl hat -- Folien, Schritte, Elemente, gezeichnet und gedimmt, Grund, Hash,
@@ -285,7 +298,8 @@ const SOLL_HINWEIS = [
 // ergeben beide Decks mit und ohne erreichbares GeoGebra dieselben Zahlen.
 const BEISPIELE = ["tour", "theme-default", "theme-editorial", "theme-lesson",
                    "theme-night", "theme-plain", "geogebra",
-                   "geogebra-sprecher"];
+                   "geogebra-sprecher", "mosaic-editorial", "mosaic-manifesto",
+                   "mosaic-greyscale"];
 
 // Decks mit einem Applet darin. Sie werden mit abgeklemmtem GeoGebra gefahren,
 // siehe `ohneGeoGebra`.
