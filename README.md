@@ -248,6 +248,14 @@ them with you; `x` clears the current slide, `z` takes back the last stroke,
 while you page ahead in private, and both end by themselves if the speaker
 window goes away.
 
+`t` puts a clock on the wall that the class can see: black ground, white
+digits, `m:ss`, large enough for the back row, in place of the slide rather
+than on top of it. It is for the break and the group work — `⇧→` and `⇧←` add
+or take a minute while it runs, `t` again ends it, and so does paging on. Past
+zero it counts up in the deck's accent colour with the word "over" above it,
+capped at the duration and at thirty minutes. Use it when nothing else is on
+the wall; no clock while you are talking.
+
 `m` switches the pointer between pen and embed. In pointer mode the pen rests
 and a click on an embedded frame reaches the projected one instead: the same
 spot, the same gesture, in whatever size that window happens to have. Where the

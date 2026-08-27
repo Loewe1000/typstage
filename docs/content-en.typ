@@ -2266,6 +2266,60 @@ Strokes stick to their slide, so paging away and back brings them with you.
 `x` clears the current slide, `z` takes back the last stroke, `c` changes
 colour.
 
+=== A clock the class can see
+
+`t` asks for a number of minutes, and after that the wall carries nothing but a
+clock: black ground, white digits, `m:ss`, large enough to read from the back
+row. It replaces the slide rather than sitting on it -- the twin of `b`, only
+with something on it.
+
+It is meant for the break, the group work, the experiment being set up: for the
+minutes in which the class is doing something and not listening.
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Key*], [*What it does*]),
+  [`t`], [ask for minutes; `Enter` starts it, `Esc` leaves it],
+  [`t` (while it runs)], [end the clock, the slide is back],
+  [`⇧→`, `⇧←`], [one minute more or less, while it runs as well],
+  [`→` (or any other paging key)], [ends it and uncovers the slide],
+)
+
+The speaker view itself carries no second large clock. It appears there only as
+a small entry in the line beside `black` and `frozen`: `clock 2:41`. Two large
+numbers side by side -- the talk's target duration and the class's clock --
+would mean different things and look the same.
+
+At zero it does not stop, it carries on to `+0:01`, and the digits take the
+deck's accent colour. Above them a word then stands that was not there before:
+"over". Its appearance is the event; nothing blinks and nothing chimes. The
+overtime is capped, at the duration itself and at thirty minutes at the most.
+`+2:47:13` tells nobody anything.
+
+#warning[
+  `t` when nothing else is on the wall. No clock while you are talking.
+
+  A clock running beside a sentence pulls the eye, and it does so for the whole
+  talk -- the same arithmetic as the looping flip book, only without an end. It
+  is therefore expressly not something laid over the slide but its replacement:
+  while it stands there, nothing else is to be seen, and whoever goes on
+  talking presses it away.
+]
+
+#info[
+  "Reduce motion" changes nothing about it, and that is deliberate: the digits
+  only jump once a second anyway, there is no travel that could fall away.
+
+  The clock in the hall is watched by the same guard as black and freeze: if
+  the speaker window goes away, the talk lifts it on its own. In the talk
+  window there is no key against it, and there should not be one either.
+
+  Reload the talk window and it comes back -- further along, not from the
+  start. The seconds the loading cost run with it; the class outside is waiting
+  too.
+]
+
 === The pointer
 
 `m` switches the pointer between the pen and the embedded frame. In pointer

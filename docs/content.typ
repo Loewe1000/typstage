@@ -183,6 +183,61 @@ den letzten Strich zurück, `c` wechselt die Farbe. `b` schaltet den Saal
 schwarz, `e` friert das Bild auf der Leinwand ein, während man bei sich schon
 weiterblättert.
 
+=== Eine Uhr, die die Klasse sieht
+
+`t` fragt nach einer Zahl in Minuten, und danach steht auf der Leinwand nichts
+als eine Uhr: schwarze Fläche, weiße Ziffern, `m:ss`, so groß, dass sie aus der
+letzten Reihe zu lesen ist. Sie ersetzt die Folie, sie liegt nicht darüber --
+der Zwilling von `b`, nur mit etwas darauf.
+
+Gedacht ist sie für die Pause, die Gruppenarbeit, den Versuchsaufbau: für die
+Minuten, in denen die Klasse etwas tut und nicht zuhört.
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Taste*], [*Wirkung*]),
+  [`t`], [nach Minuten fragen; `Eingabe` startet, `Esc` lässt es],
+  [`t` (während sie läuft)], [Uhr beenden, Folie wieder da],
+  [`⇧→`, `⇧←`], [eine Minute mehr oder weniger, auch während sie läuft],
+  [`→` (oder jede andere Blättertaste)], [beendet sie und deckt die Folie auf],
+)
+
+In der Sprecheransicht selbst steht keine zweite große Uhr. Sie erscheint dort
+nur als kleiner Eintrag in der Zeile neben `schwarz` und `eingefroren`:
+`Uhr 2:41`. Zwei große Zahlen nebeneinander -- die Zieldauer des Vortrags und
+die Uhr der Klasse -- meinten Verschiedenes und sähen gleich aus.
+
+Bei null hört sie nicht auf, sie geht auf `+0:01` weiter, und die Ziffern
+nehmen die Signalfarbe des Decks an. Über den Ziffern steht dann ein Wort, das
+vorher nicht da war: „Überzeit". Sein Erscheinen ist das Ereignis; es blinkt
+nichts und es klingelt nichts. Die Überzeit ist gedeckelt, bei der Dauer selbst
+und höchstens bei dreißig Minuten. `+2:47:13` sagt niemandem etwas.
+
+#warning[
+  `t`, wenn sonst nichts an der Wand steht. Keine Uhr, solange Sie reden.
+
+  Eine Uhr, die neben einem Satz läuft, zieht den Blick, und zwar den ganzen
+  Vortrag lang -- dieselbe Rechnung wie beim schleifenden Daumenkino, nur ohne
+  Ende. Sie ist deshalb ausdrücklich kein Aufsatz auf die Folie, sondern deren
+  Ersatz: solange sie steht, ist nichts anderes zu sehen, und wer weiterredet,
+  drückt sie weg.
+]
+
+#info[
+  „Bewegung reduzieren" ändert an ihr nichts, und das ist Absicht: die Ziffern
+  springen ohnehin nur sekündlich, es gibt keinen Weg, der wegfallen könnte.
+
+  Über die Uhr im Saal wacht dieselbe Vorkehrung wie über Schwarz und
+  Einfrieren: fällt das Sprecherfenster weg, hebt der Vortrag sie von selbst
+  auf. Im Vortragsfenster gibt es keine Taste gegen sie, und es soll dort keine
+  geben.
+
+  Wird das Vortragsfenster neu geladen, kommt sie wieder -- und zwar weiter,
+  nicht von vorn. Die Sekunden, die das Laden gekostet hat, laufen mit; die
+  Klasse draußen wartet ja auch.
+]
+
 `m` schaltet den Zeiger zwischen Stift und Einbettung um. Im Zeigermodus ruht
 der Stift, und ein Klick auf einen eingebetteten Rahmen landet stattdessen im
 Vortragsfenster: dieselbe Stelle, dieselbe Geste, in der Größe, die das andere

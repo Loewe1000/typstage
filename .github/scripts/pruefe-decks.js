@@ -853,10 +853,151 @@ async function leiserProbe(b, datei) {
   return null;
 }
 
+// Die Vollbilduhr, unter festgenagelter Uhr.
+//
+// Sie ist der Grund, warum sie aus `beat` gezeichnet wird und nicht aus
+// `Date.now()`: nur so gibt derselbe Zeitpunkt in zwei Läufen dieselbe Zahl.
+// Die vorhandene Sprecheruhr liest die Wanduhr und ist deshalb nicht prüfbar
+// -- sie steht in keinem Sollstand, und das ist keine Nachlässigkeit, sondern
+// die Folge der Bauart.
+//
+// Geprüft wird an drei Zeitpunkten, an der Schwelle bei null, über einen
+// Folienwechsel und einen Sprung hinweg, und dazu die drei Kreuzungen, an
+// denen die Uhr auf einen anderen Bühnenzustand trifft. Und dass `ruhig()`
+// zurückkommt: eine Uhr, die als Web-Animation gebaut wäre, ließe jeden
+// Aufruf in die Frist laufen -- gemessen, 4143 ms statt 19 --, und der Lauf
+// ruft ihn auf jedem Schritt.
+async function uhrProbe(b, datei) {
+  await laden(b, "about:blank");
+  if (!await laden(b, "file://" + datei)) return "das Prüfdeck lud nicht";
+  const roh = await b.ev(`(async function () {
+    var p = typstage.pruef;
+    if (!typstage.clock) return JSON.stringify({ fehlt: "typstage.clock fehlt" });
+    function bei(ms) { p.uhr(ms); return neuesBild(); }
+    // Ein Bild abwarten: gezeichnet wird in beat, und beat haengt am
+    // Bildtakt des Browsers. Sofort danach zu fragen laese die vorige Zahl
+    // lesen -- ein Wettlauf, der auf einem schnellen Rechner heil aussieht.
+    function neuesBild() {
+      return new Promise(function (f) {
+        requestAnimationFrame(function () { requestAnimationFrame(f); });
+      });
+    }
+    var aus = {};
+    typstage.goto(0, true);
+    p.uhr(0);
+    typstage.clock.start(300);
+    await neuesBild();
+    aus.start = p.clock();
+    await bei(60000);  aus.eineMinute = p.clock().text;
+    await bei(299000); aus.letzteSekunde = p.clock().text;
+    await bei(300000); aus.schwelle = p.clock();
+    aus.spalteVorher = document.querySelector("#ts-clock .ts-clock-num").textContent;
+    await bei(300001); aus.knappDrueber = p.clock();
+    aus.wort = document.querySelector("#ts-clock .ts-clock-word").textContent;
+    aus.spalte = document.querySelector("#ts-clock .ts-clock-num").textContent;
+    await bei(371000); aus.ueberzeit = p.clock().text;
+    // Gedeckelt bei der Dauer, hoechstens einer halben Stunde.
+    await bei(300000 + 900000); aus.deckel = p.clock().text;
+    // Festgenagelt heisst still: dieselbe Frage, eine Sekunde Wanduhr spaeter.
+    var a = p.clock().text;
+    await new Promise(function (f) { setTimeout(f, 1100); });
+    aus.still = [a, p.clock().text];
+    // Ueber einen Folienwechsel und einen Sprung hinweg.
+    await bei(120000);
+    typstage.goto(1); await p.ruhig(4000);
+    aus.nachFolienwechsel = p.clock().text;
+    typstage.goto(typstage.steps.length - 1, true); await p.ruhig(4000);
+    aus.nachSprung = p.clock().text;
+    typstage.goto(0, true); await p.ruhig(4000);
+    aus.nachSprungZurueck = p.clock().text;
+    // Und ruhig() kommt zurueck, ohne in die Frist zu laufen.
+    var t0 = Date.now();
+    aus.ruhig = await p.ruhig(4000);
+    aus.ruhigMs = Date.now() - t0;
+    // Die drei Kreuzungen.
+    var k = document.getElementById("ts-clock");
+    aus.zUhr = +getComputedStyle(k).zIndex;
+    aus.zUebersicht = +getComputedStyle(document.getElementById("ts-overview")).zIndex;
+    aus.zHinweis = +getComputedStyle(document.getElementById("ts-hint")).zIndex;
+    document.documentElement.dataset.tsSchwarz = "1";
+    await neuesBild();
+    aus.unterSchwarz = getComputedStyle(k).opacity;
+    delete document.documentElement.dataset.tsSchwarz;
+    await neuesBild();
+    aus.wiederDa = getComputedStyle(k).display;
+    // Und aus.
+    typstage.clock.stop();
+    await neuesBild();
+    aus.ausDanach = p.clock();
+    aus.ausSchicht = getComputedStyle(k).display;
+    aus.fehler = p.fehler();
+    p.uhr();
+    return JSON.stringify(aus);
+  })()`);
+  const r = JSON.parse(roh);
+  if (r.fehlt) return r.fehlt;
+  const klage = [];
+  const gleich = (was, ist, soll) => {
+    if (JSON.stringify(ist) !== JSON.stringify(soll)) {
+      klage.push(was + ": " + JSON.stringify(ist) + " statt " + JSON.stringify(soll));
+    }
+  };
+  gleich("beim Stellen", [r.start.text, r.start.duration, r.start.over],
+         ["5:00", 300, false]);
+  gleich("nach einer Minute", r.eineMinute, "4:00");
+  gleich("die letzte Sekunde", r.letzteSekunde, "0:01");
+  gleich("an der Schwelle", [r.schwelle.text, r.schwelle.over], ["0:00", false]);
+  gleich("eine Millisekunde darüber", [r.knappDrueber.text, r.knappDrueber.over],
+         ["+0:01", true]);
+  // Das Wort war vorher nicht da; sein Erscheinen ist das Ereignis.
+  if (!r.wort) klage.push("in der Überzeit steht kein Wort über den Ziffern");
+  // Die Vorzeichenspalte: in der Überzeit trägt sie das `+`, davor ein
+  // Leerzeichen. Ohne das springen die Ziffern beim Umschlag seitlich weg.
+  if (r.spalte.charAt(0) !== "+") {
+    klage.push("die Vorzeichenspalte trägt in der Überzeit " + JSON.stringify(r.spalte));
+  }
+  if (r.spalteVorher.charAt(0) !== " ") {
+    klage.push("vor der Überzeit ist die Vorzeichenspalte nicht freigehalten: "
+      + JSON.stringify(r.spalteVorher) + ". Ohne das freie Zeichen springen die "
+      + "Ziffern beim Umschlag um eine Spalte zur Seite.");
+  }
+  gleich("in der Überzeit", r.ueberzeit, "+1:11");
+  gleich("am Deckel", r.deckel, "+5:00");
+  gleich("festgenagelt heißt still", r.still, [r.still[0], r.still[0]]);
+  gleich("nach einem Folienwechsel", r.nachFolienwechsel, "3:00");
+  gleich("nach einem Sprung nach hinten", r.nachSprung, "3:00");
+  gleich("nach einem Sprung nach vorn", r.nachSprungZurueck, "3:00");
+  if (r.ruhig !== "ruhig") {
+    klage.push("pruef.ruhig() gab " + r.ruhig + " zurück und nicht \"ruhig\" -- "
+      + "die Uhr wartet auf etwas, oder sie ist eine Web-Animation geworden");
+  }
+  if (r.ruhigMs > 1500) {
+    klage.push("pruef.ruhig() brauchte " + r.ruhigMs + " ms. Der Lauf ruft ihn "
+      + "auf jedem Schritt; eine Uhr, auf die er wartet, ist kein Aufpreis, "
+      + "sondern ein Bruch.");
+  }
+  if (!(r.zUhr < r.zUebersicht && r.zUhr < r.zHinweis)) {
+    klage.push("die Uhr liegt auf " + r.zUhr + ", die Übersicht auf "
+      + r.zUebersicht + ", der Hinweis auf " + r.zHinweis + ". Sie muss unter "
+      + "beiden liegen, sonst ist `o` blind.");
+  }
+  if (r.unterSchwarz !== "0") {
+    klage.push("unter `b schwarz` steht die Uhr auf Deckkraft " + r.unterSchwarz
+      + ". Wer schwarz drückt, will nichts sehen. Schwarz gewinnt.");
+  }
+  if (r.wiederDa !== "flex") {
+    klage.push("nach dem Aufheben von schwarz kam die Uhr nicht wieder: " + r.wiederDa);
+  }
+  if (r.ausDanach !== null) klage.push("`stop()` ließ sie stehen: " + JSON.stringify(r.ausDanach));
+  if (r.ausSchicht !== "none") klage.push("die Uhrschicht blieb nach `stop()` auf " + r.ausSchicht);
+  if (r.fehler.length) klage.push("Laufzeitfehler: " + r.fehler.join(" | "));
+  return klage.length ? klage.join("; ") : null;
+}
+
 // ── Der Durchlauf, als ein Stück Seitencode ─────────────────────────────────
 const DURCHLAUF = `(async function () {
   var p = typstage.pruef, S = typstage.steps;
-  if (p.fassung !== 2) return JSON.stringify({ fassungFehler: p.fassung });
+  if (p.fassung !== 3) return JSON.stringify({ fassungFehler: p.fassung });
   p.uhr(${UHR});
   var vor = [], zurueck = [], fristen = 0, flyDom = 0, flyDomRueck = 0;
   var FLY = document.getElementById("ts-fly");
@@ -1578,7 +1719,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
     }
     const r = JSON.parse(await b.ev(DURCHLAUF));
     if (r.fassungFehler) {
-      z.maengel.push("Messfläche in Fassung " + r.fassungFehler + ", erwartet 2");
+      z.maengel.push("Messfläche in Fassung " + r.fassungFehler + ", erwartet 3");
       bericht.push(z); schlecht++; continue;
     }
 
@@ -1892,6 +2033,8 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (schmal) console.error("ABWEICHUNG schmal: " + schmal);
   const ohneFlaeche = await ohneFlaecheProbe(b);
   if (ohneFlaeche) console.error("ABWEICHUNG ohne-flaeche: " + ohneFlaeche);
+  const uhr2 = await uhrProbe(b, pd);
+  if (uhr2) console.error("ABWEICHUNG uhr: " + uhr2);
   // Zuletzt, weil sie die Seite verbiegt, auf der sie läuft.
   const leiser2 = await leiserProbe(b, pd);
   if (leiser2) console.error("ABWEICHUNG leiser: " + leiser2);
@@ -1988,6 +2131,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
   if (ohneStrich) schlecht++;
   if (schmal) schlecht++;
   if (ohneFlaeche) schlecht++;
+  if (uhr2) schlecht++;
   if (leiser2) schlecht++;
   bericht.forEach(z => z.maengel.forEach(m =>
     process.stderr.write("ABWEICHUNG " + z.deck + ": " + m + "\n")));
