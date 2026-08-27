@@ -116,6 +116,12 @@
   var ROLLE = (location.hash.slice(1).split(/[&=]/)[0] || "").toLowerCase()
               === "speaker" ? "speaker" : "stage";
   if (ROLLE === "speaker") document.documentElement.dataset.tsRolle = "speaker";
+  // Und gleich mit der Rolle das Erscheinungsbild. Hier und nicht erst beim
+  // Aufbau der Ansicht: die Farben der Sprecherbox haengen samt und sonders
+  // an `data-ts-licht`, und fehlte es fuer die Dauer eines Bildes, staende
+  // die Ansicht einen Wimpernschlag lang farblos da. Siehe `lichtHorchen`,
+  // wo begruendet steht, woran die Wahl sich richtet.
+  if (ROLLE === "speaker") lichtHorchen();
 
   // ── Defusing duplicate SVG ids ────────────────────────────────────────────
   //
@@ -2932,7 +2938,6 @@
 
   function sprecherAufbau() {
     if (ROLLE !== "speaker" || !SPRECHERBOX) return;
-    lichtHorchen();
 
     // Der Leib traegt vier Kacheln in zwei Zeilen: oben die laufende Folie
     // und die Notiz -- was man liest --, unten die vier Zahlkacheln und der
