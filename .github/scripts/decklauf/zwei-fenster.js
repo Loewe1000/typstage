@@ -393,6 +393,98 @@ const szeneBild = `(function () {
         + " in beiden Fenstern");
     }
 
+    // ── Hell und dunkel ───────────────────────────────────────────────────
+    //
+    // Die Ansicht gibt es in zwei Erscheinungsbildern, und die Zusage lautet:
+    // beide sind vollstaendig. Eine Farbe, die nur in einem der beiden Bloecke
+    // steht, faellt im anderen auf den ererbten Wert zurueck -- meist auf
+    // Schwarz auf Schwarz --, und das sieht niemand, der nur in seinem eigenen
+    // Erscheinungsbild arbeitet. Also wird es hier gezaehlt: dieselben Namen,
+    // keiner leer, und die beiden Bloecke duerfen nicht dieselben Werte
+    // tragen.
+    const zeichenSatz = `(function(){
+      var hell = {}, dunkel = {};
+      [].forEach.call(document.styleSheets, function (b) {
+        var rs; try { rs = b.cssRules; } catch (e) { return; }
+        [].forEach.call(rs, function (r) {
+          if (!r.selectorText) return;
+          var z = /data-ts-licht="hell"/.test(r.selectorText) ? hell
+                : /data-ts-licht="dunkel"/.test(r.selectorText) ? dunkel : null;
+          if (!z) return;
+          for (var i = 0; i < r.style.length; i++) {
+            var n = r.style[i];
+            if (n.indexOf("--sp-") === 0) z[n] = r.style.getPropertyValue(n).trim();
+          }
+        });
+      });
+      return JSON.stringify({ hell: hell, dunkel: dunkel });
+    })()`;
+    const pal = JSON.parse(await sprecher.ev(zeichenSatz));
+    const nH = Object.keys(pal.hell), nD = Object.keys(pal.dunkel);
+    if (!nH.length || !nD.length) {
+      sagt("licht", "eines der beiden Erscheinungsbilder nennt gar keine Farbe: "
+        + nH.length + " hell, " + nD.length + " dunkel");
+    }
+    const nurEins = nH.filter(n => nD.indexOf(n) < 0)
+      .concat(nD.filter(n => nH.indexOf(n) < 0));
+    if (nurEins.length) {
+      sagt("licht", "diese Farben stehen nur in einem der beiden Bloecke: "
+        + nurEins.join(", "));
+    }
+    const leer = nH.filter(n => !pal.hell[n]).concat(nD.filter(n => !pal.dunkel[n]));
+    if (leer.length) sagt("licht", "diese Farben sind leer: " + leer.join(", "));
+    const gleich = nH.filter(n => pal.hell[n] === pal.dunkel[n]);
+    if (gleich.length > nH.length / 2) {
+      sagt("licht", "hell und dunkel tragen dieselben Werte, " + gleich.length
+        + " von " + nH.length + " -- ein Block ist eine Kopie des anderen");
+    }
+
+    // Und die Wahl selbst: die Systemeinstellung entscheidet, `l`
+    // widerspricht ihr. Gemessen wird nicht das Attribut allein, sondern die
+    // Farbe, die dabei herauskommt -- ein Attribut, das niemand liest, waere
+    // dieselbe Zeile Arbeit und keine Aussage.
+    const grundVon = `(function(){ return document.documentElement.dataset.tsLicht
+      + " " + getComputedStyle(document.getElementById("ts-speaker")).backgroundColor; })()`;
+    await sprecher.ruf("Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-color-scheme", value: "light" }] });
+    await schlaf(400);
+    const l1 = await sprecher.ev(grundVon);
+    await sprecher.ruf("Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-color-scheme", value: "dark" }] });
+    await schlaf(400);
+    const l2 = await sprecher.ev(grundVon);
+    if (!/^hell /.test(l1) || !/^dunkel /.test(l2)) {
+      sagt("licht", "die Systemeinstellung greift nicht durch: hell gibt "
+        + JSON.stringify(l1) + ", dunkel gibt " + JSON.stringify(l2));
+    }
+    if (l1.split(" ")[1] === l2.split(" ")[1]) {
+      sagt("licht", "beide Erscheinungsbilder stehen auf demselben Grund: "
+        + l1.split(" ")[1]);
+    }
+    await sprecher.taste("l"); await schlaf(400);
+    const l3 = await sprecher.ev(grundVon);
+    if (!/^hell /.test(l3)) {
+      sagt("licht", "`l` hat dem dunklen Bild nicht widersprochen: "
+        + JSON.stringify(l3));
+    }
+    // Und der Widerspruch haelt, wenn das System danach noch einmal wechselt.
+    await sprecher.ruf("Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-color-scheme", value: "light" }] });
+    await schlaf(300);
+    await sprecher.ruf("Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-color-scheme", value: "dark" }] });
+    await schlaf(300);
+    const l4 = await sprecher.ev(grundVon);
+    if (l4 !== l3) {
+      sagt("licht", "die Systemeinstellung hat die Wahl von `l` ueberfahren: "
+        + JSON.stringify(l3) + " -> " + JSON.stringify(l4));
+    }
+    await sprecher.taste("l"); await schlaf(300);
+    await sprecher.ruf("Emulation.setEmulatedMedia", { features: [] });
+    await schlaf(300);
+    console.log("Licht: " + nH.length + " Farben in beiden · " + l1 + " · " + l2
+      + " · nach `l` " + l3);
+
     // ── Die Kachel der laufenden Folie ist die Zeichenflaeche ─────────────
     //
     // Sie sieht nach Verschwendung aus -- die Wand zeigt dasselbe --, und sie
