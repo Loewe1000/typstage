@@ -393,6 +393,182 @@ const szeneBild = `(function () {
         + " in beiden Fenstern");
     }
 
+    // ── Und die Vollbilduhr, ferngesteuert ────────────────────────────────
+    //
+    // Sie ist der einzige Zustand, den das Pult setzt und den die Halle
+    // *fuehrt*: schwarz und Frost sind Schalter, die Uhr zaehlt. Deshalb ist
+    // sie in einem Fenster nicht zu pruefen -- dort gibt es weder die Taste
+    // noch den Kanal, und die Nummer des Laufs, an der alles haengt, wird nie
+    // ueber die Leitung getragen.
+    //
+    // Steht am Ende, weil die letzte Probe das Sprecherfenster schliesst.
+    const uhrHalle = `JSON.stringify({
+      pruef: window.typstage.pruef.clock(),
+      an: !!document.documentElement.dataset.tsClock,
+      zeigt: document.querySelector('#ts-clock .ts-clock-num').textContent,
+      sicht: getComputedStyle(document.querySelector('#ts-clock')).display })`;
+    const lage = `(function(){ var l = document.querySelector('.ts-sp-saal');
+      return l ? l.textContent : ""; })()`;
+
+    await sprecher.taste("t");
+    await schlaf(300);
+    const feldAuf = await sprecher.ev(
+      "document.activeElement && document.activeElement.className");
+    if (feldAuf !== "ts-sp-uhrfeld") {
+      sagt("uhr", "`t` hat das Minutenfeld nicht geholt, der Blick liegt auf "
+        + JSON.stringify(feldAuf));
+    }
+    // Die Uhr darf im Sprecherfenster nicht auch angehen: dort stuende sie
+    // hinter der Sprecherbox und waere ein zweiter Ort, der stimmen muss.
+    await sprecher.ev("document.activeElement.value='5'");
+    await sprecher.taste("Enter");
+    await schlaf(700);
+    let uh = JSON.parse(await halle.ev(uhrHalle));
+    if (!uh.an || !uh.pruef) {
+      sagt("uhr", "nach `t` 5 Enter laeuft in der Halle keine Uhr: " + JSON.stringify(uh));
+    } else {
+      if (uh.pruef.duration !== 300) {
+        sagt("uhr", "die Halle bekam " + uh.pruef.duration + " s statt 300");
+      }
+      if (uh.sicht !== "flex") sagt("uhr", "die Uhrschicht steht auf " + uh.sicht);
+      if (!/^ ?[45]:[0-9][0-9]$/.test(uh.zeigt)) {
+        sagt("uhr", "die Halle zeigt " + JSON.stringify(uh.zeigt) + ", erwartet 5:00 oder knapp darunter");
+      }
+    }
+    const sp0 = JSON.parse(await sprecher.ev(
+      `JSON.stringify({ uhr: window.typstage.pruef.clock(),
+                        an: !!document.documentElement.dataset.tsClock })`));
+    if (sp0.uhr || sp0.an) {
+      sagt("uhr", "im Sprecherfenster laeuft die Uhr ebenfalls: " + JSON.stringify(sp0));
+    }
+    let lz = await sprecher.ev(lage);
+    if (!/^\S+ [45]:[0-9][0-9]$/.test(lz)) {
+      sagt("uhr", "die Lagezeile sagt " + JSON.stringify(lz) + ", erwartet etwas wie 'Uhr 4:59'");
+    }
+    console.log("Uhr: Halle " + JSON.stringify(uh.zeigt) + " · Lagezeile " + JSON.stringify(lz));
+
+    // `⇧→` verlaengert, ohne die Uhr neu zu stempeln. Der Rest muss um rund
+    // 60 s wachsen -- waere sie neu gestempelt, staende er wieder bei 360.
+    const vorMehr = uh.pruef.remaining;
+    await sprecher.taste("ArrowRight", 8);
+    await schlaf(600);
+    uh = JSON.parse(await halle.ev(uhrHalle));
+    if (uh.pruef.duration !== 360) {
+      sagt("uhr", "`⇧→` machte aus 300 s nicht 360, sondern " + uh.pruef.duration);
+    }
+    const zuwachs = uh.pruef.remaining - vorMehr;
+    if (!(zuwachs > 58 && zuwachs < 61)) {
+      sagt("uhr", "`⇧→` liess den Rest um " + zuwachs.toFixed(1)
+        + " s wachsen; 60 waren gemeint, und ein Sprung auf 360 hiesse neu gestempelt");
+    }
+    // Und es hat nicht geblaettert.
+    const wo = JSON.parse(await halle.ev(stand));
+    await sprecher.taste("ArrowLeft", 8);
+    await schlaf(600);
+    uh = JSON.parse(await halle.ev(uhrHalle));
+    if (uh.pruef.duration !== 300) {
+      sagt("uhr", "`⇧←` machte aus 360 s nicht wieder 300, sondern " + uh.pruef.duration);
+    }
+    const wo2 = JSON.parse(await halle.ev(stand));
+    if (wo2.schritt !== wo.schritt) {
+      sagt("uhr", "`⇧←` hat nebenbei geblaettert: Schritt " + wo.schritt
+        + " -> " + wo2.schritt);
+    }
+    console.log("Uhr: ⇧→ 300 -> 360 -> 300, Schritt " + wo2.schritt + " unbewegt");
+
+    // Blaettern beendet sie und deckt die Folie auf.
+    await sprecher.taste("ArrowRight");
+    await schlaf(700);
+    uh = JSON.parse(await halle.ev(uhrHalle));
+    if (uh.an || uh.pruef) {
+      sagt("uhr", "ein Schritt weiter hat die Uhr nicht beendet: " + JSON.stringify(uh));
+    }
+    const wo3 = JSON.parse(await halle.ev(stand));
+    if (wo3.schritt !== wo2.schritt + 1) {
+      sagt("uhr", "der Schritt, der die Uhr beendete, hat nicht geblaettert: "
+        + wo2.schritt + " -> " + wo3.schritt);
+    }
+    lz = await sprecher.ev(lage);
+    if (lz) sagt("uhr", "die Lagezeile traegt die Uhr noch: " + JSON.stringify(lz));
+    console.log("Uhr: ein Schritt beendet sie, Folie wieder da");
+
+    // Und `t` beendet sie ebenfalls.
+    await sprecher.taste("t"); await schlaf(250);
+    await sprecher.ev("document.activeElement.value='2'");
+    await sprecher.taste("Enter"); await schlaf(600);
+    if (!JSON.parse(await halle.ev(uhrHalle)).an) {
+      sagt("uhr", "die Uhr liess sich kein zweites Mal stellen");
+    }
+    await sprecher.taste("t"); await schlaf(600);
+    if (JSON.parse(await halle.ev(uhrHalle)).an) {
+      sagt("uhr", "ein zweites `t` hat die Uhr nicht beendet");
+    }
+    console.log("Uhr: `t` stellt sie und `t` beendet sie");
+
+    // ── Und ueber ein Neuladen hinweg ─────────────────────────────────────
+    //
+    // Buehnenzeit ueberlebt kein Neuladen: `performance.now()` faengt in der
+    // neuen Seite wieder bei null an. Gemerkt wird deshalb eine Wanduhr-Frist,
+    // und beim Wiederherstellen wird daraus eine Restdauer. Die Probe misst
+    // genau die Naht: die Uhr muss wiederkommen, und sie muss *weiter* sein,
+    // nicht wieder am Anfang stehen.
+    await sprecher.taste("t"); await schlaf(250);
+    await sprecher.ev("document.activeElement.value='7'");
+    await sprecher.taste("Enter"); await schlaf(500);
+    const vorLaden = JSON.parse(await halle.ev(uhrHalle)).pruef;
+    await schlaf(2200);
+    await halle.ev("location.reload()");
+    await schlaf(2600);
+    const nachLaden = JSON.parse(await halle.ev(uhrHalle));
+    if (!nachLaden.an || !nachLaden.pruef) {
+      sagt("neuladen", "die Uhr kam nach dem Neuladen nicht wieder: "
+        + JSON.stringify(nachLaden));
+    } else {
+      if (nachLaden.pruef.duration !== 420) {
+        sagt("neuladen", "die Dauer kam als " + nachLaden.pruef.duration
+          + " s wieder statt als 420");
+      }
+      const weg = vorLaden.remaining - nachLaden.pruef.remaining;
+      // Ein Neuladen kostet ein paar Sekunden, und die laufen mit: die Klasse
+      // draussen wartet ja auch. Wieder am Anfang zu stehen waere der Fehler.
+      if (!(weg > 1.5 && weg < 20)) {
+        sagt("neuladen", "die Uhr sprang beim Neuladen um " + weg.toFixed(1)
+          + " s; erwartet war die Zeit, die das Laden gekostet hat");
+      }
+      console.log("Neuladen: " + vorLaden.remaining.toFixed(1) + " s -> "
+        + nachLaden.pruef.remaining.toFixed(1) + " s, Dauer "
+        + nachLaden.pruef.duration + " s");
+    }
+
+    // ── Der Wach-Vertrag ──────────────────────────────────────────────────
+    //
+    // Im Buehnenfenster gibt es keine Taste gegen die Uhr, und es soll dort
+    // keine geben. Faellt das Pult weg, muss die Halle sie von selbst
+    // aufheben -- sonst waere sie ein neuer Weg, einen Saal zugedeckt
+    // zurueckzulassen. Zuletzt, weil danach kein Sprecherfenster mehr da ist.
+    // Aus der Probe davor laeuft noch eine; der erste `t` beendet sie, der
+    // zweite holt das Feld. Genau die Reihenfolge, die auch am Pult gilt.
+    await sprecher.taste("t"); await schlaf(400);
+    await sprecher.taste("t"); await schlaf(250);
+    await sprecher.ev("document.activeElement.value='9'");
+    await sprecher.taste("Enter"); await schlaf(600);
+    if (!JSON.parse(await halle.ev(uhrHalle)).an) {
+      sagt("wache", "die Uhr liess sich fuer die Wachprobe nicht stellen");
+    }
+    await sprecher.ev("window.close()");
+    let hoch = -1;
+    for (let i = 0; i < 40; i++) {
+      await schlaf(250);
+      if (!JSON.parse(await halle.ev(uhrHalle)).an) { hoch = i * 250; break; }
+    }
+    if (hoch < 0) {
+      sagt("wache", "das Sprecherfenster ist zu, und die Halle steht nach "
+        + "10 s immer noch unter der Uhr. Ein Saal, den niemand mehr "
+        + "aufdecken kann.");
+    } else {
+      console.log("Wache: Uhr nach " + hoch + " ms von selbst aufgehoben");
+    }
+
     await sprecher.ende();
   } catch (e) {
     sagt("lauf", e.message);
