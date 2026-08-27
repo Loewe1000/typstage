@@ -186,8 +186,10 @@
   } else {
     let r = calc.sqrt(z * z - 1.0)
     // Clipped like the curve next door: a root running out of the frame would
-    // open the canvas up and set the whole picture travelling.
-    ((calc.max(-7.1, (-z + r) * UNIT), 0.0), (calc.max(-7.1, (-z - r) * UNIT), 0.0))
+    // open the canvas up and set the whole picture travelling. The bound sits
+    // clear of the furthest stop -- at ζ = 2 the far root wants -7.13, and a
+    // bound that caught it would move the one number this scale was built for.
+    ((calc.max(-7.4, (-z + r) * UNIT), 0.0), (calc.max(-7.4, (-z - r) * UNIT), 0.0))
   }
   for pk in poles {
     line((pk.at(0), 0), pk,
