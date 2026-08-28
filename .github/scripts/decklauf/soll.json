@@ -604,7 +604,7 @@
    "hashStand": "3/0",
    "sprecher": {
     "darwin": 1193,
-    "linux": 1086
+    "linux": 1192
    },
    "grund": [
     "#0f1319",
@@ -939,7 +939,7 @@
    "hashStand": "5/0",
    "sprecher": {
     "darwin": 950,
-    "linux": 848
+    "linux": 954
    },
    "grund": [
     "#ffffff",
@@ -1722,11 +1722,11 @@
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
     "darwin": "3c34089f880b9a83",
-    "linux": "5a32b92841b1d97a"
+    "linux": "da0405ea95d02712"
    },
    "satzBytes": {
     "darwin": 1321718,
-    "linux": 1187179
+    "linux": 1199042
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",
    "kino": "at 1- 0/0/0/12/23 · at 3- 0/0/0/12/23",
