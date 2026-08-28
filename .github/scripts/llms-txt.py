@@ -28,13 +28,15 @@ WURZEL = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # <h2 id="…">Titel<a class="anker" …>#</a></h2> und der Absatz darunter.
 #
-# ACHTUNG, wenn das Handbuch je Kapitel in eine eigene Datei geschrieben wird:
-# heute sind die Kapitel `<h2>`, weil alle auf einer Seite stehen und `<h1>` der
-# Titel des Handbuchs ist. Auf einer Seite je Kapitel wird das Kapitel zum
-# `<h1>` und die Abschnitte werden zu `<h2>` -- derselbe Ausdruck liest dann
-# eine Ebene tiefer. Am Prototyp gemessen: 12 Treffer statt der erwarteten
-# Kapitel. Wer aufteilt, passt hier die Ebene an; die Dateiliste darunter
-# stimmt bereits.
+# Der Ausdruck trägt beide Bauweisen. Auf einer Seite steht je Kapitel ein
+# `<h2>` mit einem Absatz darunter; auf einer Seite je Kapitel wird daraus ein
+# `<h2>` je Datei -- und damit genau ein Eintrag je Kapitel, mit einer eigenen
+# Adresse statt eines Ankers. Nachgezählt am geteilten Bau: alle zwölf
+# deutschen Kapitel, in der richtigen Reihenfolge, mit dem Kapiteltitel.
+#
+# Verlangt wird dabei der Absatz *unmittelbar* nach der Überschrift. Ein
+# Kapitel, das mit einer Abbildung oder einer Aufzählung anfängt, fiele hier
+# heraus -- bisher tut das keines.
 KAPITEL = re.compile(
   r'<h2 id="([^"]+)">(.*?)(?:<a class="anker".*?</a>)?</h2>\s*<p>(.*?)</p>',
   re.S)

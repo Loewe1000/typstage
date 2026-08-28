@@ -4,7 +4,7 @@
 //
 // Der Inhalt steht in `content.typ` und ist für beide Ausgaben derselbe.
 
-#import "@schule/schuldocs:0.2.0": *
+#import "@schule/schuldocs:0.3.0": *
 
 #let pkg = toml("../typst.toml")
 
@@ -15,6 +15,15 @@
 
 #show: docs.with(
   toml: pkg,
+  // Eine Seite je Kapitel statt einer Seite von 1,06 MB. Das Inhaltsverzeichnis
+  // steht auf jeder davon vollstaendig da und fuehrt ueber die Dateigrenzen
+  // hinweg; `alles.html` bleibt als eine Seite daneben liegen, fuer Strg-F und
+  // zum Drucken. Das PDF entsteht unveraendert aus dem ungeteilten Koerper.
+  //
+  // Nur fuer das deutsche Handbuch. Das englische traegt dieselben
+  // Kapitelnamen -- zweimal `geogebra.html` waere eine Kollision --, und ein
+  // Unterverzeichnis dafuer hat `schuldocs` noch nicht.
+  split: true,
   authors: pkg.package.authors,
   abstract: [
     `typstage` setzt Präsentationen mit Typst und bewegt sie im Browser. Jede
