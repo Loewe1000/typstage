@@ -536,6 +536,219 @@ Beide Schreibweisen führen zu derselben Ausgabe; `presentation` erkennt an dem,
 was es bekommt, welche gemeint ist. Die Form mit Überschriften liest sich wie
 ein Dokument und ist der Normalfall.
 
+= Ein Deck von Anfang bis Ende
+
+Die übrigen Kapitel zeigen je ein Mittel. Dieses zeigt einen Vortrag: eine
+einzige Datei, von der leeren Zeile bis zum Handout, und jeder Schritt fügt
+genau eine Sache hinzu. Wer es einmal durchgeht, hat alles benutzt, was ein
+gewöhnliches Deck braucht.
+
+Der Stoff ist eine Aufgabe aus der Mittelstufe: *Wie hoch ist der Turm?* Ein
+Stab von 1,20 m wirft 0,90 m Schatten, der Turm wirft 21 m. Gesucht ist seine
+Höhe.
+
+== Die leere Datei
+
+Zwei Zeilen sind ein Deck. Die erste holt das Paket, die zweite sagt, dass
+dieses Dokument eine Präsentation ist.
+
+// check: dokument
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+#show: presentation.with(title: [Wie hoch ist der Turm?])
+```]
+
+Übersetzt wird das zweimal, aus derselben Datei:
+
+```bash
+typst compile turm.typ turm.html --format html --features html
+typst compile turm.typ turm.pdf
+```
+
+Die HTML öffnet man im Browser und blättert mit den Pfeiltasten. Bis hierhin
+gibt es nur die Titelfolie -- `title:` genügt, damit sie entsteht.
+
+== Die erste Folie
+
+Eine Überschrift der zweiten Ebene ist eine Folie, der Text darunter ihr Rumpf.
+Eine Überschrift der ersten Ebene ist eine Abschnittsfolie.
+
+// check: folgen
+#show-code[```typ
+= Die Frage
+
+== Ein Stab und ein Turm
+
+Ein Stab von 1,20 m wirft einen Schatten von 0,90 m.
+Der Turm wirft 21 m. Wie hoch ist er?
+```]
+
+Mehr Struktur braucht es nicht. Wer lieber Funktionen aufruft als Überschriften
+zu schreiben, findet die zweite Schreibweise im Kapitel davor; beide ergeben
+dasselbe Deck.
+
+== Was nacheinander erscheinen soll
+
+Drei Beobachtungen, eine nach der anderen. `stagger` zerlegt eine Aufzählung an
+ihren Punkten und gibt jedem einen eigenen Schritt.
+
+// check: folgen
+#show-code[```typ
+== Was wir sehen
+
+#stagger[
+  - Die Sonne steht für beide gleich hoch.
+  - Also ist der Winkel derselbe.
+  - Also sind die Dreiecke ähnlich.
+]
+```]
+
+Jetzt hat die Folie vier Schritte: den Rumpf und drei Punkte. Die Fußzeile
+zählt weiter Folien, die Adresszeile zählt Schritte.
+
+== Ein Kasten, der hängen bleibt
+
+Der Satz, auf den es ankommt, gehört nicht in die Aufzählung. `callout` setzt
+ihn mit einem Balken an der linken Seite ab.
+
+// check: folgen
+#show-code[```typ
+== Was wir sehen
+
+#stagger[
+  - Die Sonne steht für beide gleich hoch.
+  - Also ist der Winkel derselbe.
+  - Also sind die Dreiecke ähnlich.
+]
+
+#callout[
+  In ähnlichen Dreiecken stehen entsprechende Seiten im selben Verhältnis.
+]
+```]
+
+Die Überschrift des Kastens folgt der Sprache des Dokuments -- auf Deutsch
+"Merke". `title:` ändert sie, `title: none` lässt sie weg.
+
+== Die Formel, die sich selbst umschreibt
+
+Hier kommt das eine Mittel, das dieses Paket von einem PDF-Vortrag
+unterscheidet. Dieselbe Formel steht auf zwei Folien an zwei Stellen, und
+dazwischen fliegt sie -- Zeichen für Zeichen, soweit sie sich wiedererkennen.
+
+Beide Folien nennen sie beim selben Namen. Der Name ist ein Label, und mehr ist
+dafür nicht zu tun.
+
+// check: folgen
+#show-code[```typ
+== Das Verhältnis
+
+#align(center, morph(<turm>, $ h / 21 = 1.2 / 0.9 $))
+
+== Nach h aufgelöst
+
+#align(center, morph(<turm>, $ h = 21 dot 1.2 / 0.9 $))
+```]
+
+Im Browser wandern `h`, der Bruchstrich und die Zahlen an ihre neue Stelle,
+statt zu verschwinden und wiederzukommen. Auf dem Papier steht auf jeder Folie,
+was auf ihr steht -- aus der Kette wird dort die Rechnung.
+
+== Eine Notiz, die nur du siehst
+
+`speaker-note` gehört zur Folie und erscheint nirgends auf der Leinwand.
+
+// check: folgen
+#show-code[```typ
+== Das Ergebnis
+
+#statement[$ h = 28 "m" $]
+
+#speaker-note[
+  Erst rechnen lassen, dann zeigen. Wer 28 sagt, hat gerundet -- 28,0 ist
+  genauer, als die Messung hergibt.
+]
+```]
+
+Zu sehen ist sie in der Sprecheransicht, die `n` in einem zweiten Fenster
+öffnet, und im Handout neben ihrer Folie.
+
+== Das Handout
+
+Ein Argument macht aus dem Foliensatz ein Blatt zum Mitschreiben: drei Folien
+je Seite, die Notiz daneben, und wo keine steht, Linien.
+
+// check: dokument
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+#show: presentation.with(
+  title: [Wie hoch ist der Turm?],
+  handout: 3,
+)
+```]
+
+Die Folien werden dabei nicht neu gesetzt, sondern verkleinert. Das Handout
+kann deshalb nicht von dem abweichen, was auf der Leinwand stand.
+
+== Der ganze Quelltext
+
+Fünfundvierzig Zeilen, und nichts darin, das nicht oben erklärt wurde.
+
+// check: dokument
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+
+#show: presentation.with(
+  title: [Wie hoch ist der Turm?],
+  author: [Klasse 9b],
+  theme: themes.lesson,
+)
+
+= Die Frage
+
+== Ein Stab und ein Turm
+
+Ein Stab von 1,20 m wirft einen Schatten von 0,90 m.
+Der Turm wirft 21 m. Wie hoch ist er?
+
+== Was wir sehen
+
+#stagger[
+  - Die Sonne steht für beide gleich hoch.
+  - Also ist der Winkel derselbe.
+  - Also sind die Dreiecke ähnlich.
+]
+
+#callout[
+  In ähnlichen Dreiecken stehen entsprechende Seiten im selben Verhältnis.
+]
+
+= Die Rechnung
+
+== Das Verhältnis
+
+#align(center, morph(<turm>, $ h / 21 = 1.2 / 0.9 $))
+
+== Nach h aufgelöst
+
+#align(center, morph(<turm>, $ h = 21 dot 1.2 / 0.9 $))
+
+== Das Ergebnis
+
+#statement[$ h = 28 "m" $]
+
+#speaker-note[
+  Erst rechnen lassen, dann zeigen. Wer 28 sagt, hat gerundet -- 28,0 ist
+  genauer, als die Messung hergibt.
+]
+```]
+
+#tip[
+  Von hier aus lohnt sich als Nächstes ein Blick auf `side-by-side` -- eine
+  Zeichnung links, der Text rechts ist der häufigste Folienbau überhaupt -- und
+  auf `theme:`, denn ein anderes Theme ändert das Aussehen, ohne dass eine
+  Zeile des Inhalts sich rührt.
+]
+
 = Eine Folie Schritt für Schritt aufdecken
 
 Ziel dieses Kapitels: eine Folie, die sich vor der Klasse entfaltet, statt

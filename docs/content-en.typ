@@ -243,6 +243,216 @@ decisions later in this manual look stricter than they need to.
 Arrow keys page. `?` shows every key, `o` opens the overview, `f` goes full
 screen, and `n` opens the speaker view in a second window.
 
+= One deck, from start to finish
+
+The other chapters each show one tool. This one shows a talk: a single file,
+from the empty line to the handout, and every step adds exactly one thing.
+Whoever walks through it once has used everything an ordinary deck needs.
+
+The subject is a school exercise: *How tall is the tower?* A pole 1.20 m high
+casts a shadow of 0.90 m, the tower casts 21 m. Its height is wanted.
+
+== The empty file
+
+Two lines are a deck. The first fetches the package, the second says that this
+document is a presentation.
+
+// check: dokument
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+#show: presentation.with(title: [How tall is the tower?])
+```]
+
+It is compiled twice, from the same file:
+
+```bash
+typst compile tower.typ tower.html --format html --features html
+typst compile tower.typ tower.pdf
+```
+
+Open the HTML in a browser and page with the arrow keys. So far there is only
+the title slide -- `title:` is enough to bring it about.
+
+== The first slide
+
+A second-level heading is a slide, the text below it its body. A first-level
+heading is a section slide.
+
+// check: folgen
+#show-code[```typ
+= The question
+
+== A pole and a tower
+
+A pole 1.20 m high casts a shadow of 0.90 m.
+The tower casts 21 m. How tall is it?
+```]
+
+No more structure than that is needed. Whoever would rather call functions than
+write headings finds the second spelling in the chapter before; both give the
+same deck.
+
+== What is to appear one after another
+
+Three observations, one after the other. `stagger` takes a bullet list apart at
+its items and gives each one a step of its own.
+
+// check: folgen
+#show-code[```typ
+== What we see
+
+#stagger[
+  - The sun stands equally high for both.
+  - So the angle is the same.
+  - So the triangles are similar.
+]
+```]
+
+The slide now has four steps: the body and three points. The footer goes on
+counting slides, the address bar counts steps.
+
+== A box that has to stick
+
+The sentence that matters does not belong in the list. `callout` sets it apart,
+with a bar down its left side.
+
+// check: folgen
+#show-code[```typ
+== What we see
+
+#stagger[
+  - The sun stands equally high for both.
+  - So the angle is the same.
+  - So the triangles are similar.
+]
+
+#callout[
+  In similar triangles corresponding sides stand in the same ratio.
+]
+```]
+
+The caption of the box follows the document language. `title:` changes it,
+`title: none` leaves it off.
+
+== The formula that rewrites itself
+
+Here comes the one tool that sets this package apart from a PDF talk. The same
+formula stands on two slides in two places, and between them it flies -- glyph
+by glyph, as far as they recognise one another.
+
+Both slides call it by the same name. The name is a label, and there is nothing
+else to do for it.
+
+// check: folgen
+#show-code[```typ
+== The ratio
+
+#align(center, morph(<tower>, $ h / 21 = 1.2 / 0.9 $))
+
+== Solved for h
+
+#align(center, morph(<tower>, $ h = 21 dot 1.2 / 0.9 $))
+```]
+
+In the browser `h`, the fraction bar and the numbers travel to their new place
+instead of vanishing and coming back. On paper each slide carries what stands
+on it -- there the chain becomes the calculation.
+
+== A note only you see
+
+`speaker-note` belongs to the slide and appears nowhere on the screen.
+
+// check: folgen
+#show-code[```typ
+== The result
+
+#statement[$ h = 28 "m" $]
+
+#speaker-note[
+  Let them work it out first, then show it. Anyone saying 28 has rounded --
+  28.0 is more precise than the measurement allows.
+]
+```]
+
+It is to be seen in the speaker view, which `n` opens in a second window, and
+in the handout beside its slide.
+
+== The handout
+
+One argument turns the slide deck into a sheet to write on: three slides per
+page, the note beside them, and ruled lines where there is none.
+
+// check: dokument
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+#show: presentation.with(
+  title: [How tall is the tower?],
+  handout: 3,
+)
+```]
+
+The slides are not re-set for it, only shrunk. The handout therefore cannot
+drift away from what stood on the screen.
+
+== The whole source
+
+Forty-five lines, and nothing in them that was not explained above.
+
+// check: dokument
+#show-code[```typ
+#import "@schule/typstage:0.1.0": *
+
+#show: presentation.with(
+  title: [How tall is the tower?],
+  author: [Year 9],
+  theme: themes.lesson,
+)
+
+= The question
+
+== A pole and a tower
+
+A pole 1.20 m high casts a shadow of 0.90 m.
+The tower casts 21 m. How tall is it?
+
+== What we see
+
+#stagger[
+  - The sun stands equally high for both.
+  - So the angle is the same.
+  - So the triangles are similar.
+]
+
+#callout[
+  In similar triangles corresponding sides stand in the same ratio.
+]
+
+= The calculation
+
+== The ratio
+
+#align(center, morph(<tower>, $ h / 21 = 1.2 / 0.9 $))
+
+== Solved for h
+
+#align(center, morph(<tower>, $ h = 21 dot 1.2 / 0.9 $))
+
+== The result
+
+#statement[$ h = 28 "m" $]
+
+#speaker-note[
+  Let them work it out first, then show it. Anyone saying 28 has rounded --
+  28.0 is more precise than the measurement allows.
+]
+```]
+
+#tip[
+  From here the next thing worth a look is `side-by-side` -- a drawing on the
+  left, the words on the right is the commonest slide there is -- and `theme:`,
+  because another theme changes the look without a line of the content moving.
+]
+
 = Revealing a slide step by step
 
 The aim of this chapter: a slide that unfolds in front of the room instead of
