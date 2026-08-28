@@ -2699,7 +2699,8 @@ cyan `#5ec8f2` carries the title on night's own ground at 9.77 to 1, and on
 the ground an inverted slide lays behind it at 1.59. A colour that holds on
 both would have to sit between roughly 0.13 and 0.23 relative luminance; the
 cyan sits at 0.52. So `palettes.dark` takes a deeper blue that holds on both,
-and `themes.night` keeps the cyan it was designed around.
+and `themes.night` keeps the cyan it was designed around -- a design decision,
+and a measured one rather than an oversight.
 
 #warning[
   Two colours of a theme are not palette entries: `title-fill` and
@@ -2713,12 +2714,6 @@ and `themes.night` keeps the cyan it was designed around.
   under every palette. That is deliberate: a colour someone named out loud is
   not swapped behind their back.
 ]
-
-And `themes.night` stays a theme all the same. Its cyan `#5ec8f2` measures
-9.77 to 1 on the dark ground, which is why it glows there, but only 1.59 to 1
-on its own text colour, and that is exactly what an inverted slide puts behind
-it. `palettes.dark` therefore takes a deeper tone. The theme keeps its own; it
-is a design decision, and a measured one rather than an oversight.
 
 == Inverting one slide
 
@@ -3667,9 +3662,9 @@ The aim of this chapter: getting the talk to where it will be given.
 result is one file that runs from a memory stick, from a download folder, from
 an email attachment. No server, no network, nothing loaded afterwards.
 
-The fifteen example decks measure between 0.54 and 3.3 MB that way, and the
-runtime is about 214 KB of it. What makes up the rest are the slides themselves: the
-tour holds 136 SVGs and 6111 glyph references.
+The seventeen example decks measure between 0.61 and 3.44 MB that way, and the
+runtime is about 324 KB of it. What makes up the rest are the slides themselves:
+the tour holds 134 SVGs and 5830 glyph references.
 
 == Beside the file
 
@@ -3683,17 +3678,19 @@ tour holds 136 SVGs and 6111 glyph references.
 ```]
 
 That is worth it where many decks are published together, because the browser
-then caches the runtime once for all of them. `assets: "https://…"` points at a
-directory on a server or a CDN.
+then caches the runtime once for all of them. `assets: (cdn: "https://…")`
+points at a directory on a server or a CDN -- a dictionary, not a bare string:
+a string falls through unread, and the page then links names that are not
+there.
 
 #info[
   How much `"split"` saves depends on how large the deck itself is -- and on a
   small one it is the majority. Measured gzipped: runtime and stylesheet
-  together 78 kB; the smallest example deck weighs 136 kB, so the runtime is
-  **57 % of what goes over the wire**. For `theme-plain` it is 27 %, for `tour`
-  17 %.
+  together 108 kB; the smallest example deck weighs 173 kB, so the runtime is
+  **63 % of what goes over the wire**. For `theme-plain` it is 33 %, for `tour`
+  21 %.
 
-  With `"split"` the *first* deck pays those 78 kB and every further one in the
+  With `"split"` the *first* deck pays those 108 kB and every further one in the
   same directory pays nothing -- the browser has it cached by then. Publishing
   many short talks side by side roughly halves what your visitors load.
 ]
@@ -3733,10 +3730,10 @@ keyboard, and the full key list is one press of `?` away. Colour and contrast
 are the theme's and therefore yours to set, and `themes.plain` is the darkest
 of the five on white.
 
-What does not work yet: `prefers-reduced-motion` is not honoured. A viewer who
-has asked their system for less motion still gets every fade, flight and slide
-transition. If that matters for your audience, `transition: "none"` and
-`enter: "none"` are the manual way to the same place.
+A viewer who has asked their system for less motion gets a deck that listens:
+`prefers-reduced-motion` is read at run time, and the chapter above says in
+detail what stays and what goes. Where you want the same for everyone,
+`transition: "none"` and `enter: "none"` say it in the source.
 
 #warning[
   If the room includes someone who reads with a screen reader, the honest

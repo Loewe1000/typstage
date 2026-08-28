@@ -745,8 +745,8 @@ wer den Schritt vertauscht, bewegt beide. Man kann an einen Punkt hängen, so
 viel man will.
 
 Die Gruppe muss im Quelltext *vor* ihren Schichten stehen -- eine Schicht liest
-nach, welchen Schritt ihr Punkt bekommen hat. Steht sie davor, sagt das Paket
-es, statt still nichts zu tun.
+nach, welchen Schritt ihr Punkt bekommen hat. Steht sie dahinter, sagt das
+Paket es, statt still nichts zu tun.
 
 #tip[
   Für eine CeTZ-Zeichnung, die mit den Punkten wächst, zeichnet man das
@@ -3339,11 +3339,11 @@ Laufzeitumgebung, die die Bewegung ausführt. Wo sie herkommen, sagt `assets`:
 #info[
   Wie viel `"split"` spart, hängt daran, wie groß das Deck selbst ist -- und bei
   einem kleinen ist es die Mehrheit. Gepackt gemessen: Laufzeit und Stilvorlage
-  zusammen 78 kB; das kleinste Beispieldeck wiegt 136 kB, die Laufzeit ist also
-  **57 % dessen, was über die Leitung geht**. Bei `theme-plain` sind es 27 %,
-  bei `tour` 17 %.
+  zusammen 108 kB; das kleinste Beispieldeck wiegt 173 kB, die Laufzeit ist
+  also **63 % dessen, was über die Leitung geht**. Bei `theme-plain` sind es
+  33 %, bei `tour` 21 %.
 
-  Mit `"split"` zahlt das *erste* Deck diese 78 kB, und jedes weitere im selben
+  Mit `"split"` zahlt das *erste* Deck diese 108 kB, und jedes weitere im selben
   Ordner nichts mehr -- der Browser hat sie dann im Zwischenspeicher. Wer viele
   kurze Vorträge nebeneinander veröffentlicht, halbiert damit ungefähr, was
   seine Besucher laden.
@@ -3400,8 +3400,8 @@ sind mitgeliefert, `theme:` wählt eines aus:
   table.header([*Theme*], [*Anlass*]),
   [`themes.default`], [Der Vortrag im hellen Saal -- dunkler Titelbalken,
     wachsender Fortschrittsbalken. Die Vorgabe.],
-  [`themes.lesson`], [Der Unterricht: größere Schrift, kein Balken, der Titel
-    über einem kräftigen Strich, unten eine wandernde Marke.],
+  [`themes.lesson`], [Der Unterricht: größere Schrift, kein Balken, statt einer
+    Fußzeile ein laufender Kopf mit Nummer und Abschnitt, wie im Schulbuch.],
   [`themes.night`], [Der abgedunkelte Raum: tiefer Grund, heller Satz, kühler
     Akzent, Fortschritt als dünne Linie an der Oberkante.],
   [`themes.plain`], [So wenig wie möglich: keine Fläche, kein Fortschritt,
@@ -3526,7 +3526,7 @@ auf dem Grund, den eine umgedrehte Folie dahinterlegt, mit 1,59. Eine Farbe,
 die auf beiden hält, müsste bei etwa 0,13 bis 0,23 relativer Leuchtdichte
 liegen; das Zyan liegt bei 0,52. Also nimmt `palettes.dark` ein tieferes Blau,
 das auf beiden hält, und `themes.night` behält das Zyan, um das herum es
-entworfen wurde.
+entworfen wurde -- eine Gestaltungsentscheidung, gemessen und nicht übersehen.
 
 #warning[
   Zwei Farben eines Themes sind keine Paletteneinträge: `title-fill` und
@@ -3541,13 +3541,6 @@ entworfen wurde.
   ist Absicht: eine Farbe, die jemand ausdrücklich genannt hat, wird nicht
   hinter seinem Rücken getauscht.
 ]
-
-Und `themes.night` bleibt trotzdem ein Theme. Sein Zyan `#5ec8f2`
-misst 9,77 zu 1 auf dem dunklen Grund und deshalb leuchtet es dort, aber nur
-1,59 zu 1 auf seiner eigenen Schriftfarbe -- und genau die liegt hinter dem
-Akzent, sobald eine Folie umgedreht wird. `palettes.dark` nimmt darum einen
-tieferen Ton. Das Theme behält seinen; es ist eine Gestaltungsentscheidung,
-und sie ist gemessen, nicht übersehen.
 
 == Die Farben eines Themes
 
