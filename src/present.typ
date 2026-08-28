@@ -428,6 +428,17 @@
   assert(drift in ("none", "error", "record"), message:
     "typstage: drift is \"error\" (the default), \"record\" or \"none\", not "
     + repr(drift))
+  // Beide Zeiten gehen in die Konfiguration, die die Laufzeit als erstes
+  // liest. Eine negative oder eine Nicht-Zahl kaeme dort als kaputtes JSON an
+  // und truege die ganze Datei zu Grabe, ohne ein Wort. Lieber hier ein Satz.
+  assert(type(duration) == int and duration >= 0, message:
+    "typstage: duration is the planned length of the talk in minutes, a "
+    + "whole number from 0 upwards; 0 turns the pace off. Not "
+    + repr(duration))
+  assert(type(transition-duration) == int and transition-duration >= 0,
+    message: "typstage: transition-duration is how long a slide change takes "
+    + "in milliseconds, a whole number from 0 upwards; 0 switches without an "
+    + "animation. Not " + repr(transition-duration))
   // 16:9 on an A4-width canvas unless told otherwise. 4:3 is
   // `width: 800pt, height: 600pt`; everything the theme draws scales along.
   let geo = canvas(width: width, height: height, margin: margin)
@@ -602,6 +613,16 @@
     }
     raus
   }
+
+  // Ein Deck ohne eine einzige Folie uebersetzte frueher wortlos und ergab
+  // eine Seite, auf der die Laufzeit sofort starb: `goto` griff auf den
+  // Schritt null zu, den es nicht gab, und `window.typstage` entstand nie.
+  // Nachgemessen im Browser: 0 Folien im DOM, API `undefined`.
+  assert(all.len() > 0, message:
+    "typstage: this deck has no slides. A deck needs at least one -- in the "
+    + "heading notation a slide begins with a heading of depth "
+    + str(slide-level) + " or deeper, and a title page appears as soon as "
+    + "`title:` is given.")
 
   // The theme with the palette laid over it, once for the deck and once
   // turned around. Both are worked out here rather than per slide: they are
@@ -946,13 +967,18 @@
     html.elem("div", attrs: (id: "ts-speaker"), [])
     let worte = runtime-words(text.lang)
     html.elem("script", attrs: (id: "ts-cfg", type: "application/json"),
-      "{\"duration\":" + str(duration)
+      // `json.encode` und nicht `str`: Typsts `str(-5)` schreibt U+2212 MINUS
+      // SIGN, kein ASCII-Minus. Das ist kein gueltiges JSON, und `JSON.parse`
+      // steht als erste Anweisung der Laufzeit -- eine einzige negative Zahl
+      // hier hat frueher die ganze Datei stumm gemacht: Folien im DOM, aber
+      // kein `window.typstage`. Nachgemessen am Byte: e2 88 92.
+      "{\"duration\":" + json.encode(duration)
         + ",\"transition\":" + (if type(transition) == str {
             json.encode((kind: transition))
           } else { json.encode(transition) })
-        + ",\"transitionDuration\":" + str(transition-duration)
-        + ",\"width\":" + str(geo.width.pt())
-        + ",\"height\":" + str(geo.height.pt())
+        + ",\"transitionDuration\":" + json.encode(transition-duration)
+        + ",\"width\":" + json.encode(geo.width.pt())
+        + ",\"height\":" + json.encode(geo.height.pt())
         // Die Signalfarbe, das einzige Stueck Palette, das die Laufzeit
         // kennt. Die Ueberzeit der Vollbilduhr steht darin, und sie soll
         // dem Deck gehoeren und nicht dem Stilblatt. Immer die helle Form:
