@@ -4846,7 +4846,8 @@ Medien und Brücke, zuletzt die Maße und Farben.
 // innen, `lib.typ` reicht es nicht hinaus. Dasselbe gilt für die zwei
 // Handlanger von `scene`.
 #show-module(read("../src/elements.typ"), name: "typstage",
-             exclude: ("anim-kern", "szene-messbar", "szene-zwischen"))
+             exclude: ("anim-kern", "szene-drift", "szene-messbar",
+                       "szene-zwischen"))
 
 == Layouts
 

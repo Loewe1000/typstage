@@ -525,6 +525,34 @@
             enter: enter)
 }
 
+/// Several things, one after another, one step apart.
+///
+/// ```typ
+/// #stagger[
+///   - The first point
+///   - The second
+///   - And the third
+/// ]
+/// ```
+///
+/// A bullet list is taken apart at its items; anything else is taken as it
+/// comes, one piece per argument. Where a list would be wrong -- three cards
+/// side by side, say -- hand the pieces over instead:
+///
+/// ```typ
+/// #stagger(card[One], card[Two], card[Three])
+/// ```
+///
+/// `start` is the step the first piece stands on, `auto` the next free one.
+/// `stride` is how many steps lie between two pieces: `2` leaves one out,
+/// and `0` puts them all on the same step, staggered only by `stagger`, which
+/// is the delay in milliseconds between one piece and the next. The two
+/// belong together -- with `stride: 0` and `stagger: 60` a list arrives as a
+/// wave rather than as a sequence of keypresses.
+///
+/// `dim` leaves the pieces already shown standing, dimmed, instead of at full
+/// strength. `spacing` is the gap between them, `enter`, `duration` and
+/// `easing` are handed on to every piece unchanged.
 #let stagger(
   ..items,
   start: auto,

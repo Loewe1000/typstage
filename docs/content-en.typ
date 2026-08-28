@@ -3952,7 +3952,8 @@ then media and the bridge, and last the measurements and colours.
 // within, and `lib.typ` does not hand it out. The same
 // holds for the two helpers of `scene`.
 #show-module(read("../src/elements.typ"), name: "typstage",
-             exclude: ("anim-kern", "szene-messbar", "szene-zwischen"))
+             exclude: ("anim-kern", "szene-drift", "szene-messbar",
+                       "szene-zwischen"))
 
 == Layouts
 
