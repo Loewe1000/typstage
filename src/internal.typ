@@ -273,7 +273,12 @@
   if type(c) == str { c } else if type(c) != content { "" } else if c.func() == text {
     c.text
   } else if c.func() == raw { c.text } else if c.has("children") {
-    c.children.map(plain-text).join("")
+    // `.sum(default: "")` und nicht `.join("")`: Typsts `join` gibt auf einer
+    // leeren Liste `none` zurueck, nicht die leere Zeichenkette. Ein Inhalt
+    // ohne Kinder -- ein leeres `[]` etwa -- liess damit jede Aufrufstelle
+    // auflaufen, die danach `.trim()` ruft, und das tun fast alle. Gemessen an
+    // einem Handbuchbeispiel: "type none has no method `trim`".
+    c.children.map(plain-text).sum(default: "")
   } else if c.has("body") { plain-text(c.body) } else if repr(c.func()) == "space" {
     " "
   } else if repr(c.func()) == "parbreak" { "\n\n" }

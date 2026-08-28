@@ -204,7 +204,8 @@
     // `==`. The body then moves up and gets the height the bar would
     // otherwise have occupied, since otherwise a titleless slide would be
     // smaller than one with a title.
-    // `plain-text` returns `none` for an empty heading, not "".
+    // `plain-text` used to return `none` for an empty heading rather than "";
+    // it no longer does, and the `!= none` below is the belt beside the braces.
     let roh = if s.title == none { none } else { plain-text(s.title) }
     let titel = roh != none and roh.trim() != ""
     let bar = t.band-height * k
