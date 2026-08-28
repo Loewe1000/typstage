@@ -198,6 +198,27 @@
 #let wirkungen = ("fade", "fade-up", "fade-down", "fade-left", "fade-right",
                   "scale", "scale-down", "blur", "rise", "none", "hold", "draw")
 
+/// The twelve slide transitions, kept here so an unknown name is an error at
+/// compile time. The runtime falls back to `fade` when it does not recognise
+/// one -- silently, like `enter:` once did, and a talk is the worst place to
+/// discover that a name was a typo. Whoever adds a transition adds it in both
+/// places; `TRANSITION` in the runtime is the other one.
+#let uebergaenge = ("none", "fade", "slide", "push", "cover", "uncover",
+                    "zoom", "blur", "iris", "wipe", "flip", "cube")
+
+/// Complain about a transition the package does not know.
+#let uebergang-pruefen(spec, wo) = if spec != none and spec != auto {
+  let art = if type(spec) == str { spec } else if type(spec) == dictionary {
+    spec.at("kind", default: "fade")
+  } else { none }
+  assert(art != none, message:
+    "typstage: " + wo + "(transition: " + repr(spec) + ") -- a transition is a "
+    + "name, or a dictionary with `kind:` and its options.")
+  assert(art in uebergaenge, message:
+    "typstage: " + wo + "(transition: " + repr(art) + ") -- the package does "
+    + "not know that transition. The names are: " + uebergaenge.join(", ") + ".")
+}
+
 /// Complain about an effect name the package does not know.
 ///
 /// The runtime used to fall back to `fade` without a word. A typo then looked
@@ -255,7 +276,20 @@
     c.children.map(plain-text).join("")
   } else if c.has("body") { plain-text(c.body) } else if repr(c.func()) == "space" {
     " "
-  } else if repr(c.func()) == "parbreak" { "\n\n" } else { "" }
+  } else if repr(c.func()) == "parbreak" { "\n\n" }
+  // Zwei Elemente, die Typsts Textsatz aus gewoehnlichem Markup macht und die
+  // hier bisher in den leeren Zweig fielen. Gemessen: aus "am meisten -- sie
+  // schauen hoch" wurde "am meisten  sie schauen hoch", mit zwei Leerzeichen
+  // da, wo der Gedankenstrich stand, und aus "lie" wurde lie. Das traf jede
+  // Notiz jedes Decks, in der ein -- oder ein " vorkam.
+  //
+  // `symbol` traegt sein Zeichen selbst. `smartquote` nicht: es weiss nur, ob
+  // es ein doppeltes ist, und welche Form die Sprache verlangt, entschiede
+  // erst der Satz. Die gerade Form ist hier die ehrliche -- die Notiz ist eine
+  // Zeichenkette in einem Attribut und kein Satzbild.
+  else if repr(c.func()) == "symbol" { c.text }
+  else if repr(c.func()) == "smartquote" { if c.double { "\"" } else { "'" } }
+  else { "" }
 }
 
 /// A speaker note has to carry text, because nothing else reaches the speaker.
@@ -612,6 +646,27 @@
 /// - `"2-"`, `"1-2"`, `"2,4"`, `"-2"`, `"3"` stay as they are.
 ///
 /// `auto` is *not* resolved here. It needs the cursor and hence a context.
+#let platz-pruefen(at, feld, wo) = if at != auto {
+  let heil = if type(at) == int { at >= 1 } else if type(at) == array {
+    at.len() > 0 and at.all(x => (type(x) == int and x >= 1)
+                                 or (type(x) == str and x.trim() != ""))
+  } else if type(at) == str {
+    // Erlaubt ist, was `data-at` in der Laufzeit lesen kann: Zahlen, Bereiche
+    // mit einem Bindestrich, beides mit Komma gereiht. Mindestens eine Zahl
+    // muss darin stehen, und keine davon darf null sein -- gezaehlt wird ab 1.
+    let zahlen = at.matches(regex("\\d+")).map(m => int(m.text))
+    (at.matches(regex("^[0-9,\\-\\s]+$")).len() == 1
+     and zahlen.len() > 0
+     and zahlen.all(z => z >= 1))
+  } else { false }
+  assert(heil, message:
+    "typstage: " + wo + "(" + feld + ": " + repr(at) + ") -- a place is a whole "
+    + "number from 1 upwards, a list of them, or a range like \"2-\", "
+    + "\"1-3\" or \"2,4\". Steps are counted from 1, so 0 is never a place. "
+    + "An unreadable one used to make the element vanish for the whole slide "
+    + "without a word.")
+}
+
 #let selector(at) = {
   if type(at) == int { str(at) + "-" }
   else if type(at) == array {
