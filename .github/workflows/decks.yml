@@ -81,6 +81,13 @@ jobs:
       - name: Was während eines Fluges übereinander liegt
         run: node .github/scripts/decklauf/flug-hoehe.js
 
+      # Und was ein Sprung hinterlässt, der mitten in eine laufende Bewegung
+      # fällt. `finishTransitionNow()` hing einmal allein an `fly()`, und `fly`
+      # läuft bei einem `instant` nicht: die alte Animation lief mit
+      # `fill: "both"` weiter, über die Folie hinweg, auf die gesprungen wurde.
+      - name: Ein Sprung mitten in einem Übergang
+        run: node .github/scripts/decklauf/sprung.js
+
       # Das Kontrastgatter der Sprecherpalette. Ohne Browser und in einer
       # Sekunde: `contrast()` im Paket bewacht die Folienpaletten, die zwanzig
       # Farben der Sprecheransicht standen unter keiner Aufsicht.
