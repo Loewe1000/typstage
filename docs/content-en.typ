@@ -188,6 +188,37 @@ in the heading notation, and there it is not one slide that is missing, there
 are none. Second, all of this applies to the heading notation only; whoever
 passes slides as arguments writes every body out anyway.
 
+== When the slides are computed
+
+Headings that only come into being while the document is set become slides too.
+A loop over a list gives one slide per entry:
+
+#show-code[```typ
+#for element in ("Water", "Air", "Earth") [
+  == #element
+  Something about #element.
+]
+```]
+
+Where the slides come entirely out of data, they can be handed over one by one
+instead. Each slide is then a function call, and a list of slides passes on
+with `..` like any other array:
+
+// check: dokument
+#show-code[```typ
+#presentation(
+  title-slide(title: [The Pythagorean Theorem], author: [A. Schulz]),
+  section[The proof],
+  slide([The dissection], note: [Show the square first.])[
+    The text of the slide.
+  ],
+)
+```]
+
+Both spellings lead to the same output; `presentation` tells from what it gets
+which one is meant. The heading form reads like a document and is the ordinary
+case.
+
 == Two compilations
 
 The same file yields two outputs, and which one you get depends on the flags:
@@ -2538,6 +2569,37 @@ take its place. Which of the two depends on the count. A 16:9 slide beside a
 column of notes is wide and low, and at up to two slides per page most of the
 portrait page would stay empty. Up to two the notes therefore stand *below* and
 the slide takes the full width; from three on they stand *beside*.
+
+== What the paper leaves out — and what to plan for
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*On the slide*], [*On paper*]),
+  [`anim`, `stagger`, `#pause`],
+  [everything visible, in the same place and the same room],
+  [`alternatives`],
+  [the last version only, in the shared box],
+  [`morph`],
+  [the content of each slide -- the chain becomes the calculation],
+  [`embed`, `geogebra`],
+  [`fallback`, otherwise a placeholder with `label`; `link` below it],
+  [`video`],
+  [the `poster`, otherwise a grey panel],
+  [`flipbook`],
+  [a single picture: `still` or `render(0.0)`],
+  [`scene`],
+  [a single picture: `still` or the last stop],
+  [`speaker-note`],
+  [beside its slide in the handout, nothing in the plain slide deck],
+  [`transition`, `bridge-job`],
+  [nothing -- they belong to the motion alone],
+)
+
+#tip[
+  Whoever knows a handout will come sets `fallback` and `link` while writing the
+  slide. Afterwards every embedded place has to be visited a second time.
+]
 
 == All three in one run
 
