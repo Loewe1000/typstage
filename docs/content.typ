@@ -14,6 +14,52 @@ Daraus folgt der Rest. Eine Folie ist eine Folie und kein Stapel von
 Zwischenständen; die PDF hat eine Seite je Folie, nicht eine je Schritt; und
 was allein zur Bewegung gehört, fällt auf dem Papier von selbst weg.
 
+== Fünf Wörter, die dieses Handbuch benutzt
+
+Auf die Begriffe kommt es hier mehr an als bei einem Paket, das Seiten zählt --
+denn eines davon bedeutet nicht, was es sonst bedeutet.
+
+/ Folie: Ein Bild, von Typst einmal gesetzt. Es ist eine Seite der PDF und ein
+  `.ts-slide` in der HTML.
+/ Schritt: Ein Druck auf die Pfeiltaste. Eine Folie kann mehrere davon halten.
+  Vorwärtsblättern innerhalb einer Folie deckt mehr von ihr auf; an ihrem Ende
+  führt der nächste Druck zur nächsten Folie. Die Adresszeile zählt Schritte,
+  die Fußzeile zählt Folien.
+/ Element: Ein Stück Folie, das die Laufzeit anfassen darf. Es wird an Ort und
+  Stelle gesetzt, mit `hide()` zurückgehalten und über eine Marke gemalt, die
+  sagt, wohin es gehört. `anim`, `stagger`, `alternatives`, `morph`, `embed`,
+  `video` und `flipbook` erzeugen je eines.
+/ Morph: Dasselbe benannte Element auf zwei Folien. Dazwischen fliegt es,
+  Zeichen für Zeichen, wo es kann.
+/ Sprecheransicht: Dieselbe Datei ein zweites Mal geöffnet, mit `#speaker` in
+  der Adresse. Sie trägt die Notiz, die Uhr und den nächsten Schritt, und man
+  zeichnet darin auf die Folie, die der Raum sieht.
+
+== Wo es zwischen den anderen steht
+
+Typst hat gute Präsentationspakete, und die meisten machen PDF. `touying` und
+`polylux` sind ausgereift, haben weit mehr Themes und stehen auf Universe. Wer
+einen gewöhnlichen PDF-Vortrag will, nimmt eines davon.
+
+Was dieses Paket kann und jene nicht, ist die vierte von vier Stufen: Ein
+benanntes Stück steht auf Folie n an einer Stelle und auf Folie n+1 woanders --
+und fliegt dorthin, im besten Fall Zeichen für Zeichen, sodass sich eine
+Gleichung sichtbar selbst umschreibt. Die anderen Stufen sind eine Seite, die
+umblättert, ein Betrachter, der zwischen zwei Seiten überblendet, und ganze
+Folien, die ein Skript umherschiebt.
+
+Die andere Vergleichsgruppe heißt `reveal.js`, `Slidev` und `Quarto`. Sie
+animieren im Browser und tun das gut, aber der Satz ist HTMLs, nicht Typsts.
+Hier ist der Satz auf den Punkt Typsts, und der Preis dafür steht auf der
+übernächsten Seite.
+
+#warning[
+  Der Preis, damit er vor der ersten Zeile Code steht und nicht nach dem ersten
+  Vortrag: Die Folien sind SVG-Umrisse. Nichts im Browser ist auswählbar oder
+  durchsuchbar, und ein Bildschirmleser sieht überhaupt nichts. Weiter unten
+  steht ein Kapitel dazu, und für manche Vorträge ist der Preis zu hoch.
+]
+
 Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
 
 + *Die erste Präsentation* -- von der leeren Datei zur laufenden HTML
@@ -24,6 +70,9 @@ Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
 + *Eine Rechnung entwickeln* -- Magic Move über mehrere Folien
 + *Aus einer Quelle drei Ausgaben* -- Präsentation, Foliensatz, Handout
 + *Das eigene Aussehen* -- Themes, Farben, Leinwand, Bausteine
++ *Weitergeben* -- wo die Datei liegt, Barrierefreiheit, Größe
++ *Wenn nichts passiert* -- die Stolpersteine, in der Reihenfolge, in der man
+  über sie fällt
 + *API-Referenz* -- vollständige Funktionsdokumentation
 
 #info[
@@ -4821,6 +4870,122 @@ eine bauen will, setzt die `=` also zwischen die Folien, nicht in sie hinein;
   darauf -- dieselbe Auskunft, ohne dass jemand ein Dokument durchsuchen muss,
   das so nicht gebaut ist.
 ]
+
+= Weitergeben
+
+Das Ziel dieses Kapitels: den Vortrag dorthin bringen, wo er gehalten wird.
+
+== Wo die Datei liegen kann
+
+Die HTML-Datei ist statisch. Was Dateien ausliefert, liefert auch sie aus:
+GitHub Pages, ein Webplatz der Hochschule, ein S3-Eimer. Zweierlei ist dabei zu
+beachten.
+
+Medien reisen neben der Datei. `video("clip.mp4")` verweist auf eine Datei, die
+neben der HTML liegen muss; ein Deck, das örtlich läuft, zeigt nach dem
+Hochladen ohne sie ein leeres Videofenster.
+
+Ein Deck, das aus `file://` geöffnet wird, verhält sich wie eines von einem
+Server, samt Sprecheransicht -- hier geht alles über `postMessage`. Das ist die
+eine Stelle, an der dieses Paket es leichter hat als die browsereigenen
+Werkzeuge, die genau dafür einen Server brauchen.
+
+== Barrierefreiheit
+
+Das ist die härteste Grenze, und sie folgt unmittelbar aus der Entscheidung auf
+der ersten Seite.
+
+Die Folien sind SVG-Umrisse. Text darin ist als Pfad und Zeichenverweis
+gezeichnet, nicht als Text. Nichts im Browser ist auswählbar, nichts
+durchsuchbar, und ein Bildschirmleser findet nichts zu lesen. Es gibt keine
+Textalternative dahinter und keine Lesereihenfolge.
+
+Was hingegen geht: Das Dokument trägt aus `text.lang` ein `lang`-Attribut, die
+Seite sagt ihre Sprache also an. Die Navigation ist vollständig über die
+Tastatur bedienbar, und die ganze Tastenliste ist einen Druck auf `?` entfernt.
+Farbe und Kontrast gehören dem Theme und damit dir; `themes.plain` ist das
+dunkelste der fünf auf Weiß.
+
+Wer sein System um weniger Bewegung gebeten hat, bekommt ein Deck, das zuhört:
+`prefers-reduced-motion` wird zur Laufzeit gelesen, und das Kapitel weiter oben
+sagt im Einzelnen, was bleibt und was geht. Wo dasselbe für alle gelten soll,
+sagen es `transition: "none"` und `enter: "none"` in der Quelle.
+
+#warning[
+  Sitzt jemand im Raum, der mit einem Bildschirmleser liest, ist die ehrliche
+  Antwort, zusätzlich die PDF auszugeben und zu sagen, was auf jeder Folie
+  steht. Die PDF aus derselben Quelle trägt echten Text.
+]
+
+== Größe und Tempo
+
+Eine Folie wird so oft gesetzt, wie sie Zustände hat, und jedes verfolgte
+Element noch einmal in einem eigenen Rahmen. Die Übersetzungszeit wächst also
+mit den Schritten, nicht mit den Folien, und `flipbook` wächst mit den Bildern.
+
+Das größte der siebzehn Beispieldecks übersetzt in wenigen Sekunden und wiegt
+3,44 MB. Ein Deck aus hundert Folien mit je einem Daumenkino wäre eine andere
+Sache, und der ehrliche Rat lautet: messen statt schätzen.
+
+= Wenn nichts passiert
+
+Die Stolpersteine, ungefähr in der Reihenfolge, in der man über sie fällt.
+
+/ Keine HTML-Ausgabe: `--features html` fehlt. Der Export ist auf Typsts Seite
+  noch im Bau, nicht auf der dieses Pakets.
+/ Das Deck besteht nur aus der Titelfolie: die beiden Schreibweisen sind
+  vermischt. In der Überschriftenform schreibt man `= …` und `== …`, in der
+  Argumentform ruft man `slide(...)` und übergibt die Folien an `presentation`.
+  Ein `slide(...)` im Rumpf einer Show-Regel ergibt keine Folie und auch keinen
+  Fehler. An einer Probe gemessen: eine Folie statt dreier, und kein Wort dazu.
+/ Der erste Absatz fehlt: Inhalt vor der ersten Überschrift gehört zu keiner
+  Folie. Trägt er Text, bricht die Übersetzung dort ab und sagt es -- siehe
+  "Text, der zu keiner Folie gehört". Trägt er keinen, etwa ein Bild, geht er
+  wortlos verloren.
+/ Die Folientitel übergehen ein `#set heading`: es steht nach der Show-Regel
+  und sie haben deren Geltungsbereich längst verlassen. `style:` erreicht sie.
+/ `#pause` tut nichts: es steht in einer Rasterzelle oder in einer Tabelle.
+  `#pause` zerlegt den Rumpf, und dort ist nichts zu zerlegen. `anim` geht
+  überall dorthin, wo Inhalt hingeht.
+/ Ein Übergang oder eine Wirkung wird beim Namen abgewiesen: das Paket kennt
+  sie nicht. Früher fiel es wortlos auf die Blende zurück, und ein Tippfehler
+  sah dann aus wie ein Deck, das sich eben anders bewegt als gedacht. Die
+  Meldung nennt alle Namen, die es gibt.
+/ Die Stichpunkte neben einem Applet fangen bei Schritt drei an: ein `embed`
+  verbraucht keinen Schritt, aber etwas davor hat es getan. Gezählt werden die
+  Aufdeckungen, nicht die Elemente.
+/ Eine fliegende Formel hat die falsche Schrift: Typografie, die mit `#set`
+  gesetzt ist, erreicht ein verfolgtes Element nicht -- das wird in einem
+  eigenen Rahmen gesetzt. `style:` an `presentation` erreicht beides.
+/ Ein eingebetteter Rahmen bleibt leer und bekommt keine Aufträge: das Dokument
+  darin hat sich nicht mit `postMessage({typstage: 1, ready: 1})` gemeldet.
+/ Ein Applet-Rahmen bleibt leer: das Applet wird von `geogebra.org` geladen,
+  ohne Netz gibt es also nichts zu laden. `codebase` zeigt auf eine örtliche
+  Kopie.
+/ Ein `ggb-run`-Befehl bleibt wirkungslos: er ist einer von GeoGebras
+  Skriptbefehlen, die `evalCommand` nicht annimmt. `ggb-set`, `ggb-style`,
+  `ggb-show` und `ggb-hide` greifen zur Schnittstelle, die das kann.
+/ Der Bau bricht ab und nennt zwei Applets: zwei Rahmen auf einer Folie und
+  kein `target`. Hier wird mit Absicht nichts geraten.
+/ Die Farben des Applets ändern sich nach dem Zurückblättern: GeoGebra vergibt
+  beim Neuaufbau die nächste Farbe seiner Palette. Die Farbe auf `"1-"`
+  festlegen.
+/ Ein Kreis im Applet ist eine Ellipse: der x-Bereich und der y-Bereich von
+  `ggb-view` passen nicht zur Form des Kastens.
+/ Eine Tween läuft nicht: sie steht auf Schritt 1, wo die Laufzeit Tweens auf
+  ihren Zielwert setzt statt sie zu fahren, oder sie hat einen Bereich statt
+  einer Schrittnummer bekommen.
+/ Zwei Schieber liegen übereinander: `position` zählt bei einem mit `Slider`
+  gebauten Schieber in Pixeln, nicht in Koordinaten.
+/ Ein Punkt lässt sich in der Sprecheransicht nicht ziehen: er ist mit
+  `Point(k, 0.3)` gebaut und an diesen Parameter geheftet.
+/ Ein Rahmen ist auf dem Projektor winzig, auf dem Laptop richtig: sein Inhalt
+  ist in Pixeln bemessen statt in `em`. In einem gezoomten Rahmen ist ein
+  CSS-Pixel ein Punkt der Folie.
+/ "constructing a document is only supported in the bundle target": die Datei
+  benutzt `bundle` und braucht deshalb `--format bundle`.
+/ Die Sprecheransicht öffnet nicht: `window.open` braucht einen echten
+  Tastendruck, und ein Skript kann die Geste nicht ersetzen.
 
 = API-Referenz
 

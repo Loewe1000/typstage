@@ -3678,6 +3678,52 @@ than replacing it.
 ]
 
 
+=== `deck-outline()`: how the deck is cut
+
+`info()` says *where* you stand. It does not say how the whole thing is
+divided -- and anyone building a navigation bar needs exactly that: which
+slides belong to which section. `deck-outline()` hands it over, one entry per
+section, in the order they come:
+
+// check: folie
+#show-code[```typ
+#context for a in deck-outline() [
+  - #a.number. #a.title -- slides #a.first to #a.last (#a.count)
+]
+```]
+
+On a deck with `slide-level: 3` and two parts of two sub-sections each, the
+first part covers slides 1 to 3, its two sub-sections 1 to 2 and 3 to 3, and
+the second part 4 to 7.
+
+`first`, `last` and `count` are **transitive**: a depth-1 section counts the
+slides of its sub-sections too. A bar that counted only the immediate ones
+would show a zero for every top-level heading. A section with nothing under it
+has `none` for `first` and `last`, and `0` for `count`.
+
+Only document-level headings count -- the ones standing *between* slides and
+cutting the deck. A heading *inside* a slide -- `slide(none)[= Every map
+lies]` -- is a slide title and opens no section. A deck that writes its
+structure exclusively that way gets an empty list back, and an empty
+navigation bar with it. So put the `=` between the slides, not into them;
+`examples/gliedern.typ` shows how.
+
+#info[
+  It reads only what every slide already carries -- no `query`, no second walk
+  over the document, the same answer in both outputs. Measured: `tour`,
+  `theme-editorial` and `geogebra` are byte-identical with and without this
+  call, in HTML as in PDF.
+]
+
+#warning[
+  A foreign package looking for the structure through `query(heading)` finds
+  nothing: the heading notation splits the body at its headings and copies
+  `depth` and `body` out, dropping the element itself. That holds in *both*
+  outputs, not only in the browser. `deck-outline()` is the answer to it --
+  the same information, without anyone having to search a document that is not
+  built that way.
+]
+
 = Handing it on
 
 The aim of this chapter: getting the talk to where it will be given.
@@ -3821,8 +3867,8 @@ A slide is typeset as often as it has states, and every tracked element is
 typeset once more in a frame of its own. Compile time therefore grows with
 steps, not with slides, and `flipbook` grows with frames.
 
-The largest of the six example decks compiles in a few seconds and weighs
-2.1 MB. A deck of a hundred slides with a flip book on each would be a
+The largest of the seventeen example decks compiles in a few seconds and
+weighs 3.44 MB. A deck of a hundred slides with a flip book on each would be a
 different matter, and the honest advice is to measure rather than to guess.
 
 = When nothing happens
@@ -3881,52 +3927,6 @@ The traps, in roughly the order they are usually hit.
   uses `bundle` and therefore needs `--format bundle`.
 / The speaker view does not open: `window.open` needs a real keypress, and a
   script cannot stand in for the gesture.
-
-=== `deck-outline()`: how the deck is cut
-
-`info()` says *where* you stand. It does not say how the whole thing is
-divided -- and anyone building a navigation bar needs exactly that: which
-slides belong to which section. `deck-outline()` hands it over, one entry per
-section, in the order they come:
-
-// check: folie
-#show-code[```typ
-#context for a in deck-outline() [
-  - #a.number. #a.title -- slides #a.first to #a.last (#a.count)
-]
-```]
-
-On a deck with `slide-level: 3` and two parts of two sub-sections each, the
-first part covers slides 1 to 3, its two sub-sections 1 to 2 and 3 to 3, and
-the second part 4 to 7.
-
-`first`, `last` and `count` are **transitive**: a depth-1 section counts the
-slides of its sub-sections too. A bar that counted only the immediate ones
-would show a zero for every top-level heading. A section with nothing under it
-has `none` for `first` and `last`, and `0` for `count`.
-
-Only document-level headings count -- the ones standing *between* slides and
-cutting the deck. A heading *inside* a slide -- `slide(none)[= Every map
-lies]` -- is a slide title and opens no section. A deck that writes its
-structure exclusively that way gets an empty list back, and an empty
-navigation bar with it. So put the `=` between the slides, not into them;
-`examples/gliedern.typ` shows how.
-
-#info[
-  It reads only what every slide already carries -- no `query`, no second walk
-  over the document, the same answer in both outputs. Measured: `tour`,
-  `theme-editorial` and `geogebra` are byte-identical with and without this
-  call, in HTML as in PDF.
-]
-
-#warning[
-  A foreign package looking for the structure through `query(heading)` finds
-  nothing: the heading notation splits the body at its headings and copies
-  `depth` and `body` out, dropping the element itself. That holds in *both*
-  outputs, not only in the browser. `deck-outline()` is the answer to it --
-  the same information, without anyone having to search a document that is not
-  built that way.
-]
 
 = API reference
 
