@@ -13,7 +13,7 @@
 // runner on it. Only the root locus is its own drawing, and it is the second
 // view of the same number.
 
-#import "@preview/cetz:0.4.2"
+#import "@preview/cetz:0.5.2"
 #import "@schule/typstage:0.1.0": *
 
 #let t = themes.default

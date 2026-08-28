@@ -3,7 +3,9 @@ name = "typstage"
 version = "0.1.0"
 compiler = "0.15.0"
 entrypoint = "src/lib.typ"
-authors = ["Alexander Schulz"]
+# Das Handle in spitzen Klammern, wie die Sammlung es vorsieht: "Each author can
+# provide an email address, homepage, or GitHub handle in angle brackets."
+authors = ["Alexander Schulz <@Loewe1000>"]
 license = "MIT"
 repository = "https://github.com/Loewe1000/typstage"
 homepage = "https://loewe1000.github.io/typstage/"
@@ -13,7 +15,11 @@ homepage = "https://loewe1000.github.io/typstage/"
 # Ende; das steht jetzt allein im README, wo es hingehoert.
 description = "Animated HTML talks and a PDF handout from one source."
 keywords = ["presentation", "slides", "animation", "html", "geogebra"]
-categories = ["presentation"]
+# Bis zu drei sind erlaubt. `integration` steht in der Liste der Sammlung für
+# "Integrations with third-party tools and formats" -- die Brücke in ein
+# eingebettetes Dokument und das GeoGebra-Applet sind genau das. `visualization`
+# wäre daneben: das Paket zeichnet keine Daten, es setzt Folien.
+categories = ["presentation", "integration"]
 disciplines = ["education", "mathematics"]
 
 # Nicht mitausliefern: die Beispieldateien sind zum Ausprobieren da,

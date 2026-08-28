@@ -7,7 +7,7 @@
 // with the package (see `exclude` in typst.toml).
 
 #import "@schule/typstage:0.1.0": *
-#import "@preview/cetz:0.4.2"
+#import "@preview/cetz:0.5.2"
 
 #let card(fill: luma(96%), body) = block(
   fill: fill, inset: 12pt, radius: 6pt, width: 100%, body,
