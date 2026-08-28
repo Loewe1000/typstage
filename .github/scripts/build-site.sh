@@ -122,9 +122,19 @@ done
 [[ ${#namen[@]} -gt 0 ]] || { echo "FEHLER: keine Beispiele gebaut" >&2; exit 1; }
  # Medien neben einem Beispiel reisen mit: `video("demo.mp4")` verweist
  # auf eine Datei, die neben der HTML-Seite liegen muss.
+ #
+ # `cp -R` und nicht `cp`: hier stand einmal `[ -f "$bei" ] && cp …`, und das
+ # sprang über jedes Verzeichnis hinweg -- wortlos, denn eine fehlgeschlagene
+ # `&&`-Liste als letzter Befehl im Schleifenrumpf beendet auch unter `set -e`
+ # nichts. Vier Unterordner in `examples/` wurden so übersprungen. Folgenlos
+ # war das nur, weil `image()` von Typst als `data:`-URI eingebettet wird und
+ # die einzige `video()`-Datei oben liegt; ein `video("medien/clip.mp4")`
+ # hätte auf der Seite ein leeres Videofenster ergeben, ohne eine Meldung im
+ # Bau. `render.typ` schreibt den Pfad wörtlich in die HTML, und der Browser
+ # löst ihn relativ zur Seite auf.
  for bei in "$WURZEL/examples"/*; do
    case "$bei" in *.typ) continue;; esac
-   [ -f "$bei" ] && cp "$bei" "$ZIEL/beispiele/"
+   cp -R "$bei" "$ZIEL/beispiele/"
  done
 
 BSP_PAKET="typstage" BSP_VERSION="$VERSION" BSP_NAMEN="${namen[*]}" \
