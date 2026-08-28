@@ -5,8 +5,8 @@
                         fit-meldung, fit-verbot, html-output, im-deck,
                         im-fit, kamera-index, kamera-liste, kurve, max-step,
                         name-of, offenes-ende, pin-index, pin-index-buch,
-                        pin-marker, selector, step-cursor, szene-gruppen,
-                        track, will-fuellen)
+                        pin-marker, platz-pruefen, selector, step-cursor,
+                        szene-gruppen, track, will-fuellen)
 
 /// What `anim` does once its arguments have been checked.
 ///
@@ -89,6 +89,7 @@
   delay: 0,
   easing: auto,
 ) = {
+  platz-pruefen(at, "at", "anim")
   assert(after in ("hidden", "dimmed"), message:
     "typstage: anim(after: ...) is \"hidden\" or \"dimmed\", not \""
     + str(after) + "\".")
@@ -127,15 +128,18 @@
 ///
 /// Under `prefers-reduced-motion: reduce` nothing flies. The slide changes the
 /// way it would change without a morph. See the manual.
-#let morph(name, body, at: "1-", duration: 900, match: "auto", inline: true) = track(
-  "morph", body, at: at, inline: inline,
-  // `fly`, not `duration`: this is the duration of the *flight*, and the
-  // runtime used to read the same attribute for the fade-in too. A morph
-  // with `at:` therefore faded in over 900ms while the card next to it
-  // finished after 520ms: the same motion, visibly pulled apart.
-  extra: (name: name-of(name), match: match,
-          fly: if duration == auto { none } else { duration }),
-)
+#let morph(name, body, at: "1-", duration: 900, match: "auto", inline: true) = {
+  platz-pruefen(at, "at", "morph")
+  track(
+    "morph", body, at: at, inline: inline,
+    // `fly`, not `duration`: this is the duration of the *flight*, and the
+    // runtime used to read the same attribute for the fade-in too. A morph
+    // with `at:` therefore faded in over 900ms while the card next to it
+    // finished after 520ms: the same motion, visibly pulled apart.
+    extra: (name: name-of(name), match: match,
+            fly: if duration == auto { none } else { duration }),
+  )
+}
 
 /// Several versions of the same thing, each replacing the one before.
 ///
@@ -464,6 +468,10 @@
     "typstage: cue() does not know "
     + items.named().keys().join(", ") + ". It takes start and spacing.")
   assert(im-fit.get() == 0, message: fit-meldung("cue"))
+  // Eine 0 war hier schlimmer als anderswo: die Ziffer meldete Erfolg und
+  // bewirkte nichts, weil der Schritt 0 der Folie in `STEPS` nicht vorkommt.
+  assert(start == auto or (type(start) == int and start >= 1), message:
+    "typstage: cue(start: …) counts from 1, not 0. Not " + repr(start))
   let gegeben = items.pos()
   assert(gegeben.len() > 0, message: "typstage: cue() wants something to reveal")
   // A single piece can be a list: then its items are the points. The same
@@ -532,6 +540,17 @@
   // function the deck actually wrote. An assertion, not a placed `fit-verbot`,
   // because the list branch below leaves through a `return`.
   assert(im-fit.get() == 0, message: fit-meldung("stagger"))
+  // Wie bei `alternatives`: Schritte werden ab 1 gezaehlt. Eine 0 nahm der
+  // Staffelung einen Takt -- die ersten beiden Punkte standen dann zugleich da,
+  // und nichts sagte es.
+  assert(start == auto or (type(start) == int and start >= 1), message:
+    "typstage: stagger(start: …) counts from 1, not 0. Not " + repr(start))
+  // Null ist erlaubt und dokumentiert: alle Punkte auf einem Schritt, gestaffelt
+  // nur ueber `stagger`. Negativ ist es nie.
+  assert(type(stride) == int and stride >= 0, message:
+    "typstage: stagger(stride: …) is how many steps lie between two items, a "
+    + "whole number from 0 upwards; 0 puts them all on the same step. Not "
+    + repr(stride))
   let start = if start == auto { step-cursor.get().first() + 1 } else { start }
   // `..items` would otherwise swallow any named argument without a word: a
   // typo in `stride:` would stagger on the default and say nothing.

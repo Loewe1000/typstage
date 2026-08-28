@@ -66,6 +66,21 @@
     assert(k in palette-keys, message:
       "typstage: a palette has no entry \"" + k + "\". It takes "
       + palette-keys.join(", ") + ".")
+    // Nur die Schluessel wurden geprueft, die Werte nicht. Ein
+    // `(accent: "blau")` brach dann tief drinnen mit "color string contains
+    // non-hexadecimal letters" ab, und der Nutzer sah in die Innereien.
+    if k == "inverted" {
+      // Der einzige Eintrag, der keine Farbe ist: er sagt, ob die Palette
+      // bereits die umgedrehte ist.
+      assert(type(p.inverted) == bool, message:
+        "typstage: palette.inverted says whether this palette is already the "
+        + "turned-around one: true or false. Not " + repr(p.inverted))
+    } else {
+      assert(type(p.at(k)) == color, message:
+        "typstage: palette." + k + " is a colour, written as a colour and not "
+        + "as a string: `rgb(\"#1a3d5c\")`, `black`, `luma(40%)`. Not "
+        + repr(p.at(k)))
+    }
   }
   p
 }
@@ -241,7 +256,7 @@
 // another language would be the likeliest place for the two to disagree.
 //
 // What it costs, measured: it is one pass of arithmetic over 5 palettes times
-// 2 forms times 6 pairs. Ten builds of the `theme-default` deck, three rounds
+// 2 forms times 7 pairs. Ten builds of the `theme-default` deck, three rounds
 // alternating with the version before this file existed, came to 0.196 to
 // 0.198 seconds per build without it and 0.198 to 0.201 with it. That is
 // inside the spread of the measurement, not a cost that shows.

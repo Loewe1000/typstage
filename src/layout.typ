@@ -304,8 +304,14 @@
                 + "stagger, enter, duration, easing and align.")
   let kacheln = items.pos()
   assert(kacheln.len() > 0, message: "typstage: tiles() wants at least one tile")
-  assert(at == auto or type(at) == int,
-         message: "typstage: tiles() takes a step number or auto")
+  assert(at == auto or (type(at) == int and at >= 1),
+         message: "typstage: tiles(at: …) takes a step number from 1 upwards, "
+           + "or auto. Steps are counted from 1. Not " + repr(at))
+  // Null ist hier gewollt -- alle Kacheln auf einem Schritt -- negativ nie.
+  assert(type(stride) == int and stride >= 0, message:
+    "typstage: tiles(stride: …) is how many steps lie between two tiles, a "
+    + "whole number from 0 upwards; 0 puts them all on the same step. Not "
+    + repr(stride))
   // Resolved once and then incremented, not `auto` per tile, since
   // otherwise `stride: 0` (all on the same step) could not be expressed at
   // all.

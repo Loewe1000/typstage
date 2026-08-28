@@ -1,6 +1,7 @@
 // Slides, sections and what belongs to a single slide.
 
 #import "internal.typ": (clock-state, deck-info, html-output, note-state, notiz-pruefen,
+                        uebergang-pruefen,
                         step-cursor, step-jetzt, transition-state)
 
 /// A regular slide.
@@ -109,7 +110,15 @@
 ///
 /// Under `prefers-reduced-motion: reduce` every kind but `"none"` becomes the
 /// cross-fade, over the same duration. See the manual.
-#let transition(kind, ..spec) = transition-state.update((kind: kind) + spec.named())
+#let transition(kind, ..spec) = {
+  // Positionsargumente wurden hier wortlos verworfen: `#transition("slide",
+  // "links")` uebersetzte und tat nichts. Alle Geschwister sagen es.
+  assert(spec.pos().len() == 0, message:
+    "typstage: transition() takes the name and then named options, for "
+    + "example `#transition(\"slide\", direction: \"left\")`.")
+  uebergang-pruefen(kind, "transition")
+  transition-state.update((kind: kind) + spec.named())
+}
 
 /// What the deck knows about itself, read from inside a slide.
 ///
