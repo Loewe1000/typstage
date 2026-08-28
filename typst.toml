@@ -6,7 +6,12 @@ entrypoint = "src/lib.typ"
 authors = ["Alexander Schulz"]
 license = "MIT"
 repository = "https://github.com/Loewe1000/typstage"
-description = "Animierte HTML-Präsentationen aus einer einzigen Typst-Datei — und aus derselben Quelle ein PDF-Handout. Typst setzt, der Browser bewegt: Magic-Move-Morphing, gestaffelte Einblendungen, Folienübergänge, Medien und GeoGebra-Applets, die den Schritten der Folie folgen. GeoGebra ist nicht mit dabei: ein gesetztes Applet lädt zur Laufzeit von geogebra.org nach und steht unter GeoGebras Bedingungen."
+homepage = "https://loewe1000.github.io/typstage/"
+# Ein englischer Satz, und ein kurzer: das hier ist die Zeile, die im Index der
+# Paketsammlung steht, und die Vorgabe nennt 40 bis 60 Zeichen. Was vorher hier
+# stand, waren 397 Zeichen Deutsch mit einem Absatz GeoGebra-Lizenzrecht am
+# Ende; das steht jetzt allein im README, wo es hingehoert.
+description = "Animated HTML talks and a PDF handout from one source."
 keywords = ["presentation", "slides", "animation", "html", "geogebra"]
 categories = ["presentation"]
 disciplines = ["education", "mathematics"]
@@ -21,5 +26,9 @@ disciplines = ["education", "mathematics"]
 # nähme dem ausgelieferten Paket auch die Laufzeitdateien -- Stilvorlage und
 # Skript liest `config.typ` beim Übersetzen, das Bootskript des Applets
 # `applet.typ`. Ein Paket ohne sie übersetzt überhaupt nicht mehr.
-exclude = ["example.typ", "examples", "docs",
+#
+# `.github/` gehoert ebenso wenig ins Buendel: das sind Pruefskripte und
+# Bauwerkzeuge, allein `pruefe-decks.js` 112 KiB. Gemessen macht es den
+# Unterschied zwischen 0,97 MiB und 0,66 MiB.
+exclude = ["example.typ", "examples", "docs", ".github", ".gitignore",
            "assets/handout.png", "assets/slide.png", "assets/themes.png"]

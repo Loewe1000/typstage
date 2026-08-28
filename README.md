@@ -38,7 +38,7 @@ One source, three outputs:
 This file compiles, as it stands, with both commands above.
 
 ```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #show: presentation.with(
   title: [The Pythagorean Theorem],
@@ -356,8 +356,15 @@ do in the same run.
 
 ## Installation
 
-The package lives in the local `@schule` namespace and is **not on Typst
-Universe**. Clone it under the package path:
+Nothing to install. Import it and Typst fetches the package on the first
+compile:
+
+```typ
+#import "@preview/typstage:0.1.0": *
+```
+
+To work on the package itself, clone it under the local package path instead
+and import it from `@schule`:
 
 ```bash
 git clone https://github.com/Loewe1000/typstage \
@@ -390,10 +397,8 @@ else, no Node, no bundler.
   runs in the frame is under GeoGebra's terms rather than this package's MIT
   licence. `codebase` points the frame somewhere else, at a local copy for
   instance. The PDF fetches nothing.
-- **Not on Universe**, so `@preview` will not find it and there is no version
-  resolution: you install it by hand, as above.
-- **German in places.** The manual is German throughout and the API comments
-  are mixed German and English. The two strings the runtime shows for itself,
+- **German in places.** The manual is fuller in German than in English, and
+  the API comments are mixed German and English. The two strings the runtime shows for itself,
   the `?` help line and the note of a slide that has none, follow the
   document language and exist in German, English and French; anything else
   falls back to English.
