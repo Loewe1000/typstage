@@ -984,12 +984,12 @@ async function uhrProbe(b, datei) {
     }
   };
   gleich("beim Stellen", [r.start.text, r.start.duration, r.start.over],
-         ["5:00", 300, false]);
-  gleich("nach einer Minute", r.eineMinute, "4:00");
-  gleich("die letzte Sekunde", r.letzteSekunde, "0:01");
-  gleich("an der Schwelle", [r.schwelle.text, r.schwelle.over], ["0:00", false]);
+         ["05:00", 300, false]);
+  gleich("nach einer Minute", r.eineMinute, "04:00");
+  gleich("die letzte Sekunde", r.letzteSekunde, "00:01");
+  gleich("an der Schwelle", [r.schwelle.text, r.schwelle.over], ["00:00", false]);
   gleich("eine Millisekunde darüber", [r.knappDrueber.text, r.knappDrueber.over],
-         ["+0:01", true]);
+         ["+00:01", true]);
   // Das Wort war vorher nicht da; sein Erscheinen ist das Ereignis.
   if (!r.wort) klage.push("in der Überzeit steht kein Wort über den Ziffern");
   // Die Vorzeichenspalte: in der Überzeit trägt sie das `+`, davor ein
@@ -1002,12 +1002,12 @@ async function uhrProbe(b, datei) {
       + JSON.stringify(r.spalteVorher) + ". Ohne das freie Zeichen springen die "
       + "Ziffern beim Umschlag um eine Spalte zur Seite.");
   }
-  gleich("in der Überzeit", r.ueberzeit, "+1:11");
-  gleich("am Deckel", r.deckel, "+5:00");
+  gleich("in der Überzeit", r.ueberzeit, "+01:11");
+  gleich("am Deckel", r.deckel, "+05:00");
   gleich("festgenagelt heißt still", r.still, [r.still[0], r.still[0]]);
-  gleich("nach einem Folienwechsel", r.nachFolienwechsel, "3:00");
-  gleich("nach einem Sprung nach hinten", r.nachSprung, "3:00");
-  gleich("nach einem Sprung nach vorn", r.nachSprungZurueck, "3:00");
+  gleich("nach einem Folienwechsel", r.nachFolienwechsel, "03:00");
+  gleich("nach einem Sprung nach hinten", r.nachSprung, "03:00");
+  gleich("nach einem Sprung nach vorn", r.nachSprungZurueck, "03:00");
   if (r.ruhig !== "ruhig") {
     klage.push("pruef.ruhig() gab " + r.ruhig + " zurück und nicht \"ruhig\" -- "
       + "die Uhr wartet auf etwas, oder sie ist eine Web-Animation geworden");

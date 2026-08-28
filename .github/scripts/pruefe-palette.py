@@ -47,6 +47,12 @@ def kontrast(a, b):
     return (hi + 0.05) / (lo + 0.05)
 
 # (Satz, Fläche, Schwelle, was es ist)
+# `--sp-zeiger`/`--sp-zeiger-satz` sind fort. Sie gehoerten dem alten
+# Zeigerschalter, der als farbige Pille dastand. Der Schalter ist jetzt eines
+# von drei gleich aussehenden Feldern einer Auswahlgruppe: welches Werkzeug
+# gilt, sagt die Form -- Flaeche, Satzfarbe, eine staerkere Kante unten --,
+# und nicht, welche Farbe das Werkzeug hat. Ein Zeiger, der als einziger
+# bunt waere, hiesse: die drei sind nicht dasselbe.
 PAARE = [
     ("--sp-satz",        "--sp-kachel",        4.5, "Satz auf Kachel"),
     ("--sp-satz",        "--sp-grund",         4.5, "Satz auf Grund"),
@@ -60,15 +66,18 @@ PAARE = [
     ("--sp-alarm",       "--sp-alarm-flaeche", 4.5, "Überzeit auf ihrer Fläche"),
     ("--sp-pille-satz",  "--sp-pille",         4.5, "Satz auf der Signalpille"),
     ("--sp-ruhig-satz",  "--sp-ruhig",         4.5, "Satz auf der ruhigen Pille"),
-    ("--sp-zeiger-satz", "--sp-zeiger",        4.5, "Satz auf dem Zeigerschalter"),
     ("--sp-grund",       "--sp-satz",          4.5, "die umgedrehte Pille: schwarz"),
+    # Die Werkzeugleiste. Das gewaehlte Werkzeug ist eine ruhige Flaeche mit
+    # Satzfarbe und einer staerkeren Kante unten -- kein weisser Klotz mehr.
+    ("--sp-satz",        "--sp-ruhig",         4.5, "Satz auf dem gewählten Werkzeug"),
+    ("--sp-marke",       "--sp-ruhig",         3.0, "Kante des gewählten Werkzeugs"),
     ("--sp-uhr",         "--sp-spur",          3.0, "Uhrbalken in seiner Spur"),
     ("--sp-leise",       "--sp-spur",          3.0, "Fortschrittsbalken in seiner Spur"),
     ("--sp-pille",       "--sp-kachel",        3.0, "Signalpille auf Kachel"),
-    ("--sp-zeiger",      "--sp-grund",         3.0, "Zeigerschalter auf Grund"),
     ("--sp-folienrand",  "--sp-kachel",        3.0, "die Kante der Folie"),
     ("--sp-kachel",      "--sp-grund",         1.2, "Kachel gegen Grund"),
     ("--sp-rand",        "--sp-grund",         1.2, "Rand auf Grund"),
+    ("--sp-rand",        "--sp-kachel",        1.2, "Rand eines Knopfes auf der Kachel"),
     ("--sp-spur",        "--sp-kachel",        1.2, "Spur auf Kachel"),
     ("--sp-alarm-flaeche", "--sp-kachel",      1.2, "Überzeitfläche auf Kachel"),
     ("--sp-ruhig",       "--sp-kachel",        1.2, "ruhige Pille auf Kachel"),
