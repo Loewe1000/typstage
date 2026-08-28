@@ -21,8 +21,7 @@
 // any design. `mit-palette` at the bottom of this file is where the two meet.
 
 #import "config.typ": margins
-#import "palettes.typ": (contrast, invert-palette, palette-keys, palette-pruefen,
-                        palettes)
+#import "palettes.typ": contrast, invert-palette, palette-keys
 
 /// The first of the given colors that is readable on `grund`, measured.
 ///

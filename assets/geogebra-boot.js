@@ -297,6 +297,5 @@ p.appletOnLoad=function(a){
   // route, which is right for a document that cannot do this.
   try{parent.postMessage({typstage:1,ready:__ID__,spiegel:1},"*");}catch(e){}});
 };
-__CODEBASE__
 new GGBApplet(p,true).inject("ts-ggb");
 })();

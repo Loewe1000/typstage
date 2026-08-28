@@ -31,14 +31,12 @@
     let a = (frameborder: "0", sandbox: "allow-scripts allow-same-origin")
     if s.extra.url != none { a.insert("src", s.extra.url) }
     if s.extra.doc != none { a.insert("srcdoc", s.extra.doc) }
-    // A bridged frame is marked so the runtime finds it and can post the jobs
-    // of the current step into it.
-    // Only the opt out has to travel; zooming is the default.
-    if s.extra.at("zoom", default: true) == false {
-      attrs.insert("data-zoom", "0")
-    }
+    // `data-zoom` und `data-bridge` schreibt die Schleife oben laengst -- beide
+    // stehen in `extra`. Hier stand beides ein zweites Mal, mit demselben
+    // Wert, und ein Kommentar dazu, nur der Verzicht reise mit; in `tour`
+    // steht zweimal `data-zoom="1"`. Uebrig bleibt, was die Schleife nicht
+    // kann: die Klasse, an der die Laufzeit den gebrueckten Rahmen findet.
     if s.extra.at("bridge", default: none) != none {
-      attrs.insert("data-bridge", s.extra.bridge)
       attrs.insert("class", "ts-el ts-embed ts-bridged")
     }
     html.elem("div", attrs: attrs, html.elem("iframe", attrs: a, []))

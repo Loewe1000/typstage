@@ -1,9 +1,8 @@
 // Video, embedded documents and Typst-drawn animation, plus what takes their
 // place on paper.
 
-#import "internal.typ": (track, bridge-jobs, fit-verbot, html-output, im-deck,
-                         name-of, schritt-vorruecken,
-                         step-cursor, slide-counter)
+#import "internal.typ": (track, fit-verbot, html-output, im-deck, name-of,
+                         schritt-vorruecken, slide-counter)
 #import "config.typ": doc-word
 
 /// The box that stands in for a moving element in the PDF.

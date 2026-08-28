@@ -4950,17 +4950,6 @@
     notizStand();
   }
 
-  // Die Hoehe der Kachelzeile: was sie von sich aus braucht, hoechstens
-  // aber, was uebrig bleibt, und nie mehr als das Doppelte -- sonst waere
-  // eine einzelne Zahl in einem Kasten von halber Fensterhoehe.
-  function zeilenHoehe(natur, uebrig) {
-    // Der Boden bei 96 steht wegen der Vorschau: darunter ist das Bild
-    // kleiner als eine Briefmarke und sagt nichts mehr. In einem sehr
-    // flachen Fenster kostet das die Folie ein paar Pixel Hoehe -- ein
-    // Bild, das man erkennt, ist mehr wert als zwanzig Pixel Folie.
-    return Math.max(natur, 96, Math.min(natur * 2.1, uebrig));
-  }
-
   // Die Vorschau ist ein Blick und keine zweite Buehne. Sie steht in einer
   // Kachel, die ihre Hoehe vorgibt; die Breite folgt daraus. Anders herum --
   // Breite vorgeben, Hoehe folgen lassen, wie bei jeder anderen Miniatur --

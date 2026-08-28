@@ -1,6 +1,5 @@
 // The applet document that goes into the frame.
 
-#import "config.typ": paper
 
 /// Colour as three 0…255 components, the way the GeoGebra API wants it.
 #let rgb255(c) = {
@@ -50,7 +49,6 @@
   let boot-js = boot
     .replace("__PARAMS__", json.encode(params))
     .replace("__ID__", json.encode(name))
-    .replace("__CODEBASE__", "")
     .replace("__SCHRIFT__", str(calc.round(font-size)))
     .replace("__BOOTVIEW__", if seamless {
       "try{a.setGraphicsOptions(1,{bgColor:" + json.encode(background.to-hex()) + "});}catch(e){}"
