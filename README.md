@@ -3,6 +3,11 @@
 **Animated HTML presentations from a single Typst file, and the slide set and
 the handout as PDF from that same file.**
 
+[![Manual](https://img.shields.io/badge/docs-manual-green)](https://loewe1000.github.io/typstage/)
+[![Example decks](https://img.shields.io/badge/demo-seventeen%20decks-blue)](https://loewe1000.github.io/typstage/beispiele/)
+[![Changelog](https://img.shields.io/badge/changelog-0.1.0-lightgrey)](CHANGELOG.md)
+![License](https://img.shields.io/github/license/Loewe1000/typstage)
+
 ```bash
 typst compile deck.typ deck.html --format html --features html   # the animated talk
 typst compile deck.typ deck.pdf                                  # slides and handout
@@ -10,7 +15,7 @@ typst compile deck.typ deck.pdf                                  # slides and ha
 
 ![A slide of a typstage deck in the browser, halfway through its reveals](assets/slide.png)
 
-**Try it without installing anything:** [seventeen example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos: a tour of the package itself, how GPS finds you, why the four margins of a book are unequal, a school lesson on completing the square, a night of rolling deployments, and Simpson's paradox. Four more were built around what the package learned to do last: a pendulum that beats seconds, drawing its own geometry and growing its diagrams a stage at a time; a door that slams, sticks or settles, pulled from one damping value to the next; John Snow's cholera map, where the class calls out what it sees and the lecturer reveals it in the order it is named; and one about dressing a deck, which computes every contrast ratio it quotes. Three are rebuilt from the [mosaic](https://github.com/vincentarelbundock/mosaic) package's own decks, to see what carries across. Two show GeoGebra: one where the slides drive the applet, one where a hand drives it from the speaker window. And two came last: a Fermi question worked through in four bursts, where every working slide carries the minutes it was planned for, and a talk on map projections whose contents slide builds itself from the deck and so cannot drift from it.
+**Try it without installing anything:** [seventeen example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos — a school lesson, a night of rolling deployments, John Snow's cholera map, a Fermi question worked through in four bursts. Each one links its source.
 
 ## Typst sets, the browser moves
 
@@ -105,6 +110,29 @@ Slides may also be handed over as arguments, `presentation(title-slide(…),
 section([…]), slide([Title])[…])`, for decks that are generated rather than
 written.
 
+## Installation
+
+Nothing to install. Import it and Typst fetches the package on the first
+compile:
+
+```typ
+#import "@preview/typstage:0.1.0": *
+```
+
+To work on the package itself, clone it under the local package path instead
+and import it from `@schule`:
+
+```bash
+git clone https://github.com/Loewe1000/typstage \
+  ~/Library/Application\ Support/typst/packages/schule/typstage/0.1.0
+```
+
+On Linux that path is `~/.local/share/typst/packages/schule/…`, on Windows
+`%APPDATA%\typst\packages\schule\…`.
+
+Needs Typst 0.15. The HTML target additionally needs `--features html`; nothing
+else, no Node, no bundler.
+
 ## The building blocks
 
 | | |
@@ -161,44 +189,23 @@ is an error, not a silent default.
 
 A theme is a dictionary: colours, fonts, sizes, and one word each for the few
 built shapes (`header`, `footer`, `progress`, `box`). That is why `+` is enough
-to bend one, and `theme(…)` builds a new one from scratch. `header: "run"`
-gives a slide the running head of a textbook page, slide number on the left and
-the current section on the right; `box: "label"` builds cards the way a
-textbook does, a tinted panel with its label inside rather than a coloured bar
-above. Only the title slide
+to bend one, and `theme(…)` builds a new one from scratch. Only the title slide
 and the section slide are functions in it: they are whole pictures, not
 variations of one another.
 
 ## Palettes and the contrast contract
 
-Colour is a thing of its own. `palette:` takes a flat dictionary over the eight
-colour entries and overwrites *partially*, so `palette: (accent: blue)` moves
-the accent alone. Five ship with the package, `light`, `mono`, `textbook`,
-`parchment` and `dark`, and each composes with each theme: darkness is a
-palette rather than a design, and `themes.lesson` under `palettes.dark` is
-still the lesson design, only dark. `themes.night` stays a theme all the same,
-because its cyan is tuned to its own ground -- it measures 9.77 to 1 there and
-1.59 to 1 on the ground an inverted slide puts behind it.
-
-Reading `themes.X.title-fill` or `.rule-fill` no longer gives a colour: they
-are now functions of the palette, or `none` for "the accent". Writing them
-(`themes.X + (title-fill: red)`) works as before.
-
-`invert` sets one slide in the palette turned around, for the slide that
-carries a single number: the ground becomes the palette's text colour and the
-text becomes its ground, `muted`, `border` and `surface` are mixed from those
-two, and `strong` and `accent` carry over unchanged. The running head, the
-footer and the progress bar follow.
+Colour is a thing of its own. `palette:` overwrites *partially*, so
+`palette: (accent: blue)` moves the accent alone. Five ship with the package,
+and each composes with each theme: darkness is a palette rather than a design,
+and `themes.lesson` under `palettes.dark` is still the lesson design, only dark.
 
 The five bundled palettes, and their inverted forms with them, are held to a
-measured contrast contract: real WCAG 2 arithmetic over seven pairs, enforced by
-an assertion that runs when the package is loaded. **Your own palettes face no
-such gate**, and neither do the bundled *themes*: run over those, the contract
-finds `muted` at 4.25 in `lesson`, at 3.35 in `plain` and at 3.51 in
-`editorial` against the 4.5 body text wants, `accent` at 2.84 in `editorial`
-against 3.0, and `accent` on `ink` at 1.59 in `night` and 1.27 in `plain`. Only
-`themes.default` passes all seven. Those colours were left alone; the manual says
-why, and `palette-report(…)` hands the same measurement back for any palette.
+**measured contrast contract**: real WCAG 2 arithmetic over seven pairs,
+enforced by an assertion that runs when the package is loaded. Your own
+palettes face no such gate, and neither do the bundled *themes* — the manual
+lists which of them fall short of which pair, and why those colours were left
+alone. `palette-report(…)` hands the same measurement back for any palette.
 
 ## In the browser
 
@@ -234,44 +241,28 @@ second window. Put that one on your laptop and the first one on the projector.
 The two talk to each other with `postMessage`, which works between two local
 files as well, so this needs no server either.
 
-The speaker view is a lectern made of tiles. Two large ones on top: the running
-slide on the left, the note on the right. Below them four small ones — elapsed
-time with the time of day under it, slide and step with the progress bar,
-target duration with remaining and pace, and the clock the class sees — and one
-wide one for the next **step** (not the next slide: a deck that counts in steps
-has to answer what the next keypress does). The state of the hall, `black`,
-`frozen`, `no talk window`, stands in the slide tile, above the picture it is
-about.
+It is a lectern made of tiles: the running slide and the note on top, below
+them elapsed time, slide and step, the planned length, the clock the class
+sees, and the next **step** — not the next slide, because a deck that counts in
+steps has to answer what the next keypress does.
 
-It follows the machine's light or dark setting, and `l` overrides that for the
-session. Not the deck's palette: that says what the wall looks like, and the
-lectern is a tool rather than a talk.
-
-You can draw on the running slide there, and the strokes appear on the
-projected one. Strokes stick to their slide, so paging away and back brings
-them with you; `x` clears the current slide, `z` takes back the last stroke,
-`c` changes colour. `b` blacks the room out, `e` freezes the projected image
-while you page ahead in private, and both end by themselves if the speaker
-window goes away.
-
-`t` puts a clock on the wall that the class can see: black ground, white
-digits, `m:ss`, large enough for the back row, in place of the slide rather
-than on top of it. It is for the break and the group work — `⇧→` and `⇧←` add
-or take a minute while it runs, `t` again ends it, and so does paging on. Past
-zero it counts up in the deck's accent colour with the word "over" above it,
-capped at the duration and at thirty minutes; at the lectern the whole tile
-turns over into the warning colour in the same moment, so you do not learn
-about the overtime later than the class does. Use it when nothing else is on
-the wall; no clock while you are talking.
-
-`m` switches the pointer between pen and embed. In pointer mode the pen rests
-and a click on an embedded frame reaches the projected one instead: the same
-spot, the same gesture, in whatever size that window happens to have. Where the
-embedded document can mirror itself, as a GeoGebra applet does, you operate the
-live one in front of you and the projected copy follows.
-
+You can draw on the running slide, and the strokes appear on the projected one.
+`b` blacks the room out, `e` freezes the projected image while you page ahead
+in private, and `t` puts a clock on the wall for the break or the group work.
 Steering works from either window, and either one may be reloaded: they find
 each other again and the strokes come back.
+
+A deck can order less of it:
+
+```typ
+#show: presentation.with(speaker-view: (
+  clock: false,                              // no class clock
+  pen: (colors: (red, green, blue)),         // your own pen colours
+))
+```
+
+A tile that is switched off takes its keys with it, and they leave the key bar
+with them.
 
 ## On paper
 
@@ -299,83 +290,33 @@ place.
 ### All three in one run
 
 Typst 0.15 can write several files from one compile, which suits a package
-where talk, slide set and handout come from the same source and differ only in
-their target:
-
-```typ
-#bundle(
-  theme: themes.lesson,
-  title: [Completing the Square],
-  handout: "handout.pdf",
-)[
-  = A section
-  == A slide
-  Text.
-]
-```
+where talk, slide set and handout come from the same source:
 
 ```bash
 typst compile --features bundle,html --format bundle talk.typ out
 ```
 
-The counters start again for each output, so the slide set numbers its slides
-from one rather than carrying on where the HTML left off. Two things to know:
-bundle export is experimental in Typst and needs the feature flag, and a file
-that calls `bundle` can only be compiled with `--format bundle`. To keep both
-routes open, put the body in a `#let` and call `presentation` yourself.
+`bundle(…)` takes the deck and the names of the outputs, and the counters start
+again for each one. Bundle export is experimental in Typst and a file that
+calls `bundle` can only be compiled with `--format bundle`; the manual shows
+how to keep both routes open.
 
-## The canvas
+## Canvas and runtime files
+
+```typ
+#show: presentation.with(width: 800pt, height: 600pt)   // 4:3 instead of 16:9
+#show: presentation.with(assets: "split")               // css and js beside the html
+```
 
 16:9 on an A4-width canvas by default, so a slide and a handout page carry text
-at the same physical size. Any other shape is one to three arguments:
+at the same physical size. Everything the theme draws is measured on that canvas
+and scales with the width, so a narrower deck looks the same, only smaller.
 
-```typ
-#show: presentation.with(width: 800pt, height: 600pt)   // 4:3
-#show: presentation.with(margin: 48pt)                  // more air
-```
-
-Everything the theme draws, the title band, the type sizes, the rules, is
-measured on the default canvas and scaled with the width, so a narrower deck
-looks the same, only smaller. Only the *ratio* really changes the layout, and
-the browser follows it, stage, overview thumbnails and printed pages alike.
-
-## CSS and JavaScript
-
-```typ
-#show: presentation.with(assets: "inline")                          // default
-#show: presentation.with(assets: "split")
-#show: presentation.with(assets: (cdn: "https://cdn.example.org/ts/"))
-```
-
-`"inline"` puts both files into the HTML, one file that can be mailed, put on
-a stick and opened without a network. `"split"` links `typstage-0.1.0.css` and
-`.js` next to the HTML, a CDN the same names under the given address; the names
-carry the version so several releases can live side by side. Typst creates no
-files: write the two out once from `runtime-files`, which the bundle export can
-do in the same run.
-
-## Installation
-
-Nothing to install. Import it and Typst fetches the package on the first
-compile:
-
-```typ
-#import "@preview/typstage:0.1.0": *
-```
-
-To work on the package itself, clone it under the local package path instead
-and import it from `@schule`:
-
-```bash
-git clone https://github.com/Loewe1000/typstage \
-  ~/Library/Application\ Support/typst/packages/schule/typstage/0.1.0
-```
-
-On Linux that path is `~/.local/share/typst/packages/schule/…`, on Windows
-`%APPDATA%\typst\packages\schule\…`.
-
-Needs Typst 0.15. The HTML target additionally needs `--features html`; nothing
-else, no Node, no bundler.
+`assets: "inline"` (the default) puts stylesheet and runtime into the HTML: one
+file that can be mailed, put on a stick and opened without a network. `"split"`
+links them beside it and `(cdn: "…")` under an address of your own, which is
+worth it where many decks are published together — the browser then caches the
+runtime once for all of them. The manual has the numbers.
 
 ## What it cannot do
 
@@ -422,123 +363,15 @@ The German source is `docs/content.typ`, the English one `docs/content-en.typ`.
 | English | [en.html](https://loewe1000.github.io/typstage/en.html) | [typstage-en.pdf](https://loewe1000.github.io/typstage/typstage-en.pdf) |
 | German | [index](https://loewe1000.github.io/typstage/) | [typstage.pdf](https://loewe1000.github.io/typstage/typstage.pdf) |
 
-One run gives the printed manual, the website and its stylesheet:
-
-```bash
-typst compile docs/docs.typ build --format bundle --features bundle,html --root .
-```
-
 The site build also writes [llms.txt](https://loewe1000.github.io/typstage/llms.txt),
-one line per chapter with its title and first sentence, in both languages. It is
-generated from the built pages, so its anchors cannot go stale.
+one line per chapter with its title and first sentence, in both languages,
+generated from the built pages so its anchors cannot go stale.
 
-`example.typ` in the repository is a deck that exercises everything: reveals,
-magic move, an embedded live canvas, a CeTZ flipbook. It is not shipped with
-the package, so build it from a clone.
-
-### The examples in the manual are compiled
-
-Every `typ` listing in both manuals is compiled against the real package before
-the site is built, so a renamed function or a changed signature cannot leave a
-listing behind:
-
-```bash
-python3 .github/scripts/pruefe-beispiele.py
-```
-
-Most listings are fragments rather than whole files, so the run wraps each one
-in a deck and a slide before compiling it. That is what it checks: that the
-code compiles in such a wrapper, not that the slide looks right. Where a
-fragment needs more than the wrapper gives it, a `// check:` line above the
-listing says so; the header of the script lists the words it takes. Listings
-that show what does *not* work are marked, have to keep failing, and say what
-they have to fail at -- a listing that breaks for some other reason is a failed
-check, not a passed one. The build runs this first and stops on it.
-
-What it does not reach: the prose beside a listing, listings in `bash` or
-`json` (it names how many it left alone), the paged output, and anything that
-compiles without doing what it claims -- a show rule on a label that no longer
-exists still compiles.
-
-### The decks are driven in a browser
-
-Compiling proves nothing about motion. A second run loads the seventeen example
-decks and an eighteenth check deck into a real browser, pages through every step
-forward and backward, and holds the numbers against a written record:
-
-```bash
-bash .github/scripts/build-site.sh          # the decks it measures
-node .github/scripts/pruefe-decks.js
-```
-
-No npm and no Playwright. Chrome is reached over the DevTools protocol and
-Firefox over WebDriver BiDi, with what node 22 already brings; the two drivers
-together are 175 lines. Whether this package can be checked should not
-depend on a several hundred megabyte download. Playwright may be put beside it
-for WebKit or for the two window case; it is not a prerequisite.
-
-The runtime carries the surface the run reads, `window.typstage.pruef`, and it
-is always there rather than behind a build switch: a switch would mean checking
-a runtime that is not the one shipped. Measured over the six decks without an
-applet it costs between 0.47 and 0.84 percent of the compressed page. Two parts of it are what
-make the run repeatable. `ruhig()` resolves when no animation is running
-anymore and replaces every fixed wait, and `uhr(ms)` pins the wall clock a
-flipbook reads. Five runs at three animation speeds in two browsers produced an
-identical record, down to the ghost counts; the report's header carries the
-duration, the browser and the speed and differs by design.
-
-A third part makes a `cue` slide visible to the run at all. An adaptive group
-is worked by the digit keys, and `goto()` presses none: it moves to a step, but
-an unnamed point stays put far behind the last step of the deck, so a run that
-only pages sees `0/0` on such a slide and takes that for the finding. Measured
-on `vortragen`: 13 of its 44 steps. `ziffer(n)` names a point and `punkt()`
-takes the next in written order, exactly as the digit and the arrow do; the run
-names them in written order, because a speaker may choose any other and a
-written record cannot depend on his mood.
-
-The written record is `.github/scripts/decklauf/soll.json`, rewritten with
-`--neu-soll` and only on purpose. Three of its entries depend on the fonts
-of the machine rather than on the package: the fingerprint of the check deck's
-typeset output, its length, and the node count of the speaker preview. The same
-commit measures a different length on macOS than on an Ubuntu runner, and
-`theme-night` renders its preview with one glyph fewer there. Step counts,
-element counts, ghost counts and ground colours are identical to the character
-on both.
-
-Those three are split by platform only where a platform has actually been shown
-to differ — today that is `theme-night`'s preview and the check deck's
-fingerprint. Everywhere else a single number stands and is compared across
-platforms, because splitting a value the platforms agree on would check each
-side against itself and let a future divergence pass. Where a split value has no
-entry for the running platform, the run says so and fails, rather than quietly
-checking nothing. It holds per deck the slide and step counts,
-how many elements are marked as drawn and as dimmed on every step, the
-number of ghosts a magic move produces, re entry through the hash, the speaker
-view, the ground colour of every slide and the runtime's own error list.
-
-The eighteenth deck, `.github/scripts/decklauf/pruefdeck.typ`, exists because
-the examples leave gaps. `invert`, `info()` and `fit` appear in none of the
-seventeen; `after: "dimmed"` in one and `stagger(dim: true)` in two, all of them
-added late. Counted in their sources. The dim lookup was once deliberately
-broken and nothing in the examples of the day moved. The check deck is not under
-`examples/`, so it stays off the website and the published decks keep their
-pages unchanged. Beside it, `ueberlauf.typ` and `wanderung.typ` are decks that have to *fail* to
-compile, so that the overflow check and the drift check are caught when they
-stop finding anything.
-
-What it does not reach: how a slide looks. No images are compared, no sizes and
-no positions are measured. And it reads *attributes*, not what the eye sees --
-measured, a runtime that sets every element to zero opacity while still marking
-it as drawn passes, and so does one where `after: "dimmed"` stops dimming but
-keeps its attribute. What `fit`, `info()`, `invert` and the palettes do is
-worked out in Typst and has no number in the browser; for those the run keeps a
-fingerprint of the check deck's typeset output and the ground colour of every
-slide, which catches a change but does not say the result is right. Outside it
-altogether: keyboard, mouse, pointer gestures, the ink layer, the flipbook's
-own picture, the overview, the blackout, an embedded document, video, and two
-real windows talking to each other. Ghosts are counted as they appear and never
-as they are cleared away, so a magic move that forgets to tidy up goes
-unnoticed.
+**Every example in the manual is compiled on every build** — 201 of them, plus
+fifteen that are checked for failing as they should. The example decks are then
+driven through a real browser, step by step, and compared against recorded
+values. [`CONTRIBUTING.md`](CONTRIBUTING.md) describes how, and how to build
+the manual and the site yourself.
 
 ## GeoGebra
 
@@ -553,17 +386,9 @@ unnoticed.
 GeoGebra builds the construction, the slides supply the dramaturgy: jobs sit on
 steps, so a value changes, an object appears or the viewport moves when the
 presenter pages. `ggb-run`, `-set`, `-show`, `-hide`, `-style`, `-view`,
-`-animate` and `-tween` all take the same step selector as `anim`. Paging back
-replays the run from its start, so a job has to be repeatable. With one applet
-on the slide no command has to name it. From the speaker view the applet in
-front of you is the live one, and the projected copy follows what your hand
-does to it.
-
-This was `typstage-geogebra`, a package of its own, and it still goes the way a
-foreign package would: `embed(bridge: …)` and `bridge-job`, nothing else. A
-deck that never calls `geogebra` therefore carries none of it — measured, such
-a deck is the same size to the byte as it was before the two packages became
-one.
+`-animate` and `-tween` all take the same step selector as `anim`. From the
+speaker view the applet in front of you is the live one, and the projected copy
+follows what your hand does to it.
 
 **Where the applet comes from.** This package does not ship GeoGebra. `geogebra`
 puts a frame on the slide, and the browser fetches what runs inside it from
