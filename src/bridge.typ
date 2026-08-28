@@ -40,10 +40,28 @@
 /// `typstage: 1` before it ever looks at `ready`. Miss this and the jobs simply
 /// never arrive. There is no error, the applet just sits there.
 #let bridge-job(target, payload, at: "1-") = {
-  if at == auto { step-cursor.step() }
+  // `payload` wird ungelesen durchgereicht -- aber nicht ungeprueft. Ohne das
+  // hier brach ein `bridge-job(<a>, "hallo")` mit "cannot add dictionary and
+  // string" aus dem Inneren ab, und schlimmer: ein `payload` mit den
+  // Schluesseln `t` oder `at` ueberschrieb Ziel oder Selektor, weil bei `+`
+  // der rechte Operand gewinnt. Der Auftrag ging dann kaputt los, ohne ein
+  // Wort. Fuer ein Fremdpaket, dem die Doku ausdruecklich freie Hand bei
+  // `payload` zusagt, war das eine Falle.
+  assert(type(payload) == dictionary, message:
+    "typstage: bridge-job() takes a dictionary as its payload, not "
+    + str(type(payload)) + ".")
+  assert("t" not in payload and "at" not in payload, message:
+    "typstage: bridge-job() reserves the payload keys `t` and `at` for the "
+    + "target and the step; a payload carrying them would overwrite the job "
+    + "itself. Rename them.")
   context {
+    // Der Zeiger wird *nicht* vorgerueckt, und das ist Absicht: die Tween
+    // eines Applets und der Stichpunkt, der sie erklaert, gehoeren auf
+    // denselben Schritt. `auto` heisst darum "der naechste freie", nicht "und
+    // dann ist er verbraucht". Vorher stand hier ein `step-cursor.step()`,
+    // das dem Docstring darueber widersprach.
     let sel = if at == auto {
-      str(step-cursor.get().first()) + "-"
+      str(step-cursor.get().first() + 1) + "-"
     } else { selector(at) }
     bridge-jobs.update(a => a + ((t: name-of(target), at: sel) + payload,))
   }

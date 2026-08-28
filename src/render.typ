@@ -8,8 +8,15 @@
 /// needs to know about it as data attributes.
 #let sprite-markup(s, n, template) = {
   let attrs = (class: "ts-el ts-" + s.kind, "data-n": str(n), "data-at": s.at)
+  // Drei Schlüssel reisen als richtige Attribute weiter unten -- `srcdoc` und
+  // `src` am Rahmen, `src` am Video -- und werden von der Laufzeit nie als
+  // `data-` gelesen. Ohne diese Sperre schrieb die Schleife das *ganze*
+  // eingebettete Dokument ein zweites Mal auf das umgebende `div`: bei einem
+  // GeoGebra-Applet reiste das 14-KB-Bootskript doppelt. Nachgezählt an der
+  // Laufzeit: `dataset.doc`, `dataset.url`, `dataset.src` -- null Treffer.
+  let nur-attribut = ("doc", "url", "src")
   for (k, v) in s.extra {
-    if v != none and v != auto {
+    if v != none and v != auto and k not in nur-attribut {
       attrs.insert("data-" + k,
         if type(v) == bool { if v { "1" } else { "0" } } else { str(v) })
     }

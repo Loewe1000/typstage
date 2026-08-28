@@ -15,7 +15,7 @@
 
 #import "bridge.typ": bridge-job, bridge-targets
 #import "media.typ": embed
-#import "config.typ": paper
+#import "themes.typ": theme-state
 #import "applet.typ": applet-document, rgb255
 
 /// The name of the applet a command is meant for.
@@ -104,7 +104,12 @@
          message: "typstage: geogebra() takes at most a name")
   let id = if name.pos().len() == 1 { name.pos().first() } else { id }
   let id = if type(id) == label { str(id) } else { id }
-  let bg = if background == auto { paper } else { background }
+  // Die Farbe der *Folie*, nicht die Konstante aus `config.typ`. Die Zusage
+  // oben lautet "puts its drawing area in the slide's colour"; gelesen wurde
+  // aber `paper`, also #fafafa. Unter `themes.night` bekam das Applet damit
+  // eine fast weisse Flaeche auf schwarzer Folie -- genau der Rahmen, den
+  // `seamless` wegnehmen soll. `geogebra()` ist ohnehin ein `context`.
+  let bg = if background == auto { theme-state.get().paper } else { background }
   // The size the applet is injected at is a placeholder and nothing more. Its
   // real one is the frame's inner viewport, which the applet takes for itself
   // once the slide has been laid out, and again whenever the box changes.

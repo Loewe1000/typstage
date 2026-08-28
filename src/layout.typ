@@ -194,9 +194,17 @@
       // intended 6. As blocks with `above`/`below` set, only what is
       // written here counts.
       if title != none {
+        // Versalien nur da, wo die Karte sie auch nimmt. `upper` stand hier
+        // fest, waehrend der Kartentitel dem Theme folgt -- in der
+        // Beschriftungsform (`themes.lesson`) standen Karte und Kasten
+        // nebeneinander und konnten nie zusammenpassen: "It travels" gegen
+        // "IT DOES NOT LAST", obwohl beide gleich geschrieben sind.
+        let stil = t.at("box", default: "bar")
+        let beschriftet = if stil == "label" { title } else { upper(title) }
         block(above: 0pt, below: 0pt,
           text(size: 0.62em, weight: "bold", fill: beschriftung,
-               tracking: 0.6pt, [#upper(title) <ts-callout-title>]))
+               tracking: if stil == "label" { 0pt } else { 0.6pt },
+               [#beschriftet <ts-callout-title>]))
       }
       // Relative to the text size, so the spacing is right at every theme
       // size: fixed points would look too airy at 15pt and cramped at 31pt.
