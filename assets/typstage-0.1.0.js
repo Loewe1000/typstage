@@ -4271,6 +4271,13 @@
   var current = -1;
 
   function goto(n, instant) {
+    // Ein Deck ohne Folien hat keinen Schritt, und `Math.max(0, -1)` machte
+    // daraus trotzdem die Null: `STEPS[0]` war `undefined`, und drei Zeilen
+    // spaeter starb die ganze Laufzeit an `SLIDES[dst.slide]`. Das Handbuch
+    // zeigt an 22 Stellen einen `presentation`-Aufruf fuer sich allein, um
+    // eine Einstellung zu erklaeren -- daraus wird eine gueltige leere Seite,
+    // und die soll leer sein, nicht tot.
+    if (!STEPS.length) return;
     n = Math.max(0, Math.min(STEPS.length - 1, n));
     var prev = current < 0 ? null : STEPS[current];
     var dst = STEPS[n];
@@ -4887,7 +4894,12 @@
       B.style.left = (r.left + (r.width - bw) / 2) + "px";
       B.style.top = (r.top + (r.height - bw / v) / 2) + "px";
     }
-    if (current >= 0) stelle(STEPS[current].slide);
+    // Die Schranke, die die Schwesterstelle im ResizeObserver schon hat: ein
+    // Deck ohne Folien hat keinen Schritt null. Das Handbuch zeigt an 22
+    // Stellen einen `presentation`-Aufruf fuer sich allein, um eine
+    // Einstellung zu erklaeren -- daraus wird eine gueltige, leere Seite, und
+    // die darf nicht mit einem Zugriff auf `undefined` sterben.
+    if (current >= 0 && STEPS[current]) stelle(STEPS[current].slide);
   }
   addEventListener("resize", fit);
 
