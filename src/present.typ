@@ -435,12 +435,26 @@
     "typstage: duration is the planned length of the talk in minutes, a "
     + "whole number from 0 upwards; 0 turns the pace off. Not "
     + repr(duration))
+  // `theme: "lesson"` statt `theme: themes.lesson` ist der wahrscheinlichste
+  // Anfaengerfehler des Pakets, und er endete bisher mit "expected integer,
+  // found string" aus dem Inneren von `themes.typ`.
+  assert(type(theme) == dictionary, message:
+    "typstage: theme takes a theme, not " + str(type(theme)) + ". The bundled "
+    + "ones live in `themes`: themes.default, themes.editorial, themes.lesson, "
+    + "themes.night, themes.plain -- written without quotes.")
+  uebergang-pruefen(transition, "presentation")
   assert(type(transition-duration) == int and transition-duration >= 0,
     message: "typstage: transition-duration is how long a slide change takes "
     + "in milliseconds, a whole number from 0 upwards; 0 switches without an "
     + "animation. Not " + repr(transition-duration))
   // 16:9 on an A4-width canvas unless told otherwise. 4:3 is
   // `width: 800pt, height: 600pt`; everything the theme draws scales along.
+  // Der Name der Registerkarte, und zugleich der Titel im PDF. Ohne ihn hiess
+  // jedes Deck im Browser nach seinem Dateipfad, obwohl `title:` laengst
+  // uebergeben war, und das PDF trug ueberhaupt keinen. Typst hebt ein
+  // `title`-Element aus dem Rumpf *nicht* in den Kopf -- `set document` tut es.
+  set document(title: title) if title != none
+
   let geo = canvas(width: width, height: height, margin: margin)
   let given = slides.pos()
   // A single piece of content means: this is the body of a show rule, and that
@@ -613,16 +627,6 @@
     }
     raus
   }
-
-  // Ein Deck ohne eine einzige Folie uebersetzte frueher wortlos und ergab
-  // eine Seite, auf der die Laufzeit sofort starb: `goto` griff auf den
-  // Schritt null zu, den es nicht gab, und `window.typstage` entstand nie.
-  // Nachgemessen im Browser: 0 Folien im DOM, API `undefined`.
-  assert(all.len() > 0, message:
-    "typstage: this deck has no slides. A deck needs at least one -- in the "
-    + "heading notation a slide begins with a heading of depth "
-    + str(slide-level) + " or deeper, and a title page appears as soon as "
-    + "`title:` is given.")
 
   // The theme with the palette laid over it, once for the deck and once
   // turned around. Both are worked out here rather than per slide: they are
