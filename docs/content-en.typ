@@ -2741,6 +2741,55 @@ and a measured one rather than an oversight.
   not swapped behind their back.
 ]
 
+== The colours of a theme
+
+Six roles carry a theme: `paper` the ground of the slide, `ink` the body text,
+`strong` the carrying dark colour, `accent` the signal colour, `muted` the
+incidental, `surface` the ground of a card. With `border` and `inverted` they
+are the same eight entries a palette carries. The bundled themes fill them
+differently:
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": themes
+    let feld(c) = block(width: 1.5cm, height: 0.8cm, fill: c,
+                        stroke: 0.4pt + luma(70%), radius: 2pt)
+    table(
+      columns: (auto, auto, auto, auto, auto),
+      stroke: none,
+      align: (left + horizon, center, center, center, center),
+      inset: 5pt,
+      table.header([], raw("paper"), raw("strong"), raw("accent"), raw("muted")),
+      ..("default", "lesson", "night", "plain", "editorial").map(n => {
+        let t = themes.at(n)
+        (raw(n), feld(t.paper), feld(t.strong), feld(t.accent), feld(t.muted))
+      }).flatten(),
+    )
+  },
+  source: ```typ
+  #import "@schule/typstage:0.1.0": themes
+  #themes.night.accent      // the theme's signal colour, as a colour
+  ```,
+  width: 12cm,
+)
+
+`card` and `callout` take their colours from the running theme by themselves; a
+change of theme recolours them with it. Where one card is to look different, it
+takes `color:` and `fill:`.
+
+#tip[
+  A colour of your own that carries meaning — blue for the function, orange for
+  its slope — is best fixed once at the top of the file and then handed on
+  wherever it belongs: `card(color: …)`, `callout(color: …)`,
+  `ggb-style(color: …)`. Coloured meaning held to across a whole talk carries
+  more than any transition.
+]
+
+Independently of the theme the package hands out four colour constants —
+`dark`, `accent`, `paper` and `muted` — the palette of the default look. They
+are handy where a slide needs a shade and the theme is not being changed;
+whoever swaps the theme is better served by its own entries.
+
 == Inverting one slide
 
 For the slide that carries a single number there is `invert`. The ground
@@ -2912,6 +2961,149 @@ draws scales along.
   claim.
 / `fit`: Scales one block down to the room it has, for content whose size the
   deck does not set itself.
+
+=== card: the named box
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": card
+    card(title: [Power function])[$f(x) = x^n$ with $n in NN$.]
+  },
+  source: ```typ
+  #card(title: [Power function])[$f(x) = x^n$ with $n in NN$.]
+  ```,
+  width: 11cm,
+)
+
+`number:` puts a numbered disc in front of it as well — for the running order
+where the number belongs to the matter. `color:` tints the bar, `fill:` the
+panel.
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": card
+    card(number: 2, title: [Second step])[Differentiate, then substitute.]
+  },
+  source: ```typ
+  #card(number: 2, title: [Second step])[Differentiate, then substitute.]
+  ```,
+  width: 11cm,
+)
+
+=== callout: the one that has to stick
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": callout
+    callout[The exponent decides the symmetry.]
+  },
+  source: ```typ
+  #callout[The exponent decides the symmetry.]
+  ```,
+  width: 11cm,
+)
+
+`title:` changes the caption (it follows the document language by default),
+`color:` its colour, and `title: none` leaves it off.
+
+=== side-by-side: two columns
+
+The usual case for a slide with something to look at: the drawing or the applet
+on the left, the words on the right.
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": *
+    side-by-side(
+      card(title: [Even exponent])[Symmetric about the $y$ axis.],
+      stagger[
+        - $f(-x) = f(x)$
+        - Range $W = [0; oo[$
+      ],
+    )
+  },
+  source: ```typ
+  #side-by-side(
+    card(title: [Even exponent])[Symmetric about the $y$ axis.],
+    stagger[
+      - $f(-x) = f(x)$
+      - Range $W = [0; oo[$
+    ],
+  )
+  ```,
+  width: 13cm,
+)
+
+`split:` takes the column widths; the default gives the first column a little
+more, because that is usually where the picture goes. More than two columns are
+allowed — they then share the width equally, unless `split:` names as many
+values.
+
+`equal: true` makes every column the height of the tallest. Without it each box
+stands as tall as its own text, and two cards side by side look differently
+weighted when they are not. The row is measured once, its largest height fixed,
+and `card` and `callout` fill it.
+
+#warning[
+  A `height: 100%` inside the box would not do it. A percentage resolves
+  against the *region* and not against the grid row; measured, two boxes then
+  both became page-high instead of equally high. That is why `side-by-side`
+  hands the measured length on, and why `equal` reaches `card` and `callout`
+  rather than arbitrary content.
+]
+
+=== tiles: the grid that numbers its own reveals
+
+Each tile appears one step after the one before. That is what the function is
+for: by hand it would be an `anim` per tile with a number counted up.
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": *
+    tiles(
+      card(title: [one])[Observe],
+      card(title: [two])[Conjecture],
+      card(title: [three])[Justify],
+    )
+  },
+  source: ```typ
+  #tiles(
+    card(title: [one])[Observe],
+    card(title: [two])[Conjecture],
+    card(title: [three])[Justify],
+  )
+  ```,
+  width: 13cm,
+)
+
+`columns:` sets how many there are (up to three by default). `stride: 0` puts
+them all on the same step and staggers only through `stagger`, in
+milliseconds — a wave runs through the grid then, instead of a sequence of
+keypresses:
+
+#show-code(```typ
+#tiles(stride: 0, stagger: 90, [A], [B], [C], [D])
+```)
+
+`duration:` and `easing:` are those of `anim` and apply to every tile alike: a
+grid moves as one thing. Given neither, the presentation's duration and the
+house curve apply.
+
+=== statement: the large claim
+
+#show-example(
+  rendered: {
+    import "../src/lib.typ": statement
+    statement[$ a^2 + b^2 = c^2 $]
+  },
+  source: ```typ
+  #statement[$ a^2 + b^2 = c^2 $]
+  ```,
+  width: 11cm,
+)
+
+`statement` asks for the full width explicitly and centres within it — exactly
+what a bare `align(center, …)` inside a tracked element fails to do.
 
 === fit: working content into the room it has
 
@@ -3170,6 +3362,22 @@ does not travel.
   right and downwards does not move its ink, yet still measures differently.
   That is exactly what `steady: false` on the scene is for.
 ]
+
+=== Slides without a title
+
+A bare `==` leaves the title band off; the body then starts at the top and gets
+the height the band would have taken. This is the slide for the one large
+formula — and the target of a morph that is to fly into the middle:
+
+#show-code(```typ
+==
+#place(center + horizon, morph(<derivative>, text(size: 2.4em)[
+  $f'(x) = lim_(h -> 0) (f(x+h) - f(x)) / h$
+]))
+```)
+
+In the argument form all three spellings are allowed: `slide[body]` without a
+title, `slide(none)[body]` explicitly without, `slide([Title])[body]` with.
 
 == Labels: reaching every shape the package builds
 
