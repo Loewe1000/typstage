@@ -481,7 +481,10 @@
   ],
 
   slide(
-    title: [The board at 03:11],
+    // Not "at 03:11". The print fallback deliberately renders the whole run,
+    // and the narration beside it ends at 03:40 -- a title naming one instant
+    // sat over five timestamps and a note headed 03:40.
+    title: [The board, 03:02 to 03:40],
     note: [This is the second monitor on the on-call desk. Let it stand for a
            moment at the red step. People read it, and the point of the whole
            talk is that a machine noticed this before a human did.],

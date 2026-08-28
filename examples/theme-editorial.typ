@@ -407,8 +407,12 @@ Read the same four across the leaf instead of along the list.
     v(10pt)
     // Fixed under the changing figure, and in a box as wide as the figure so
     // it sits under its middle rather than under the column's.
+    //
+    // "whichever point you pick" and not "in all three": the caption stands
+    // outside the `alternatives`, so on paper only the last figure is left
+    // and a sentence counting three of them has nothing to count.
     block(width: spread-w, align(center,
-      text(size: 0.8em, fill: t.accent)[2 : 3 : 4 : 6, in all three]))
+      text(size: 0.8em, fill: t.accent)[2 : 3 : 4 : 6, whichever point you pick]))
   },
   [
     Slide the point along the diagonal and the block changes size. It does not

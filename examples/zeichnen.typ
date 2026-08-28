@@ -187,7 +187,9 @@ A pendulum keeps time. Something about it must decide how fast.
   // Stage 3: what the points actually do.
   lq.plot(fein, bogen, color: from(3, modell), mark: none,
           stroke: from(3, 1.6pt + modell),
-          label: from(3, [$T tilde sqrt(L)$])),
+          // The vinculum of the root rises above the line box lilaq gives the
+          // legend row, and without this it underlines the row above it.
+          label: from(3, box(inset: (top: 2.5pt))[$T tilde sqrt(L)$])),
 ), steps: 3))
 
 #anim[At $L = 0.20$ the straight line asks for $0.40$ s and the stopwatch said
@@ -214,7 +216,8 @@ A pendulum keeps time. Something about it must decide how fast.
              label: [measured]),
   lq.plot(stuetze, stuetze.map(x => 2.010 * x), color: from(2, modell),
           mark: none, stroke: from(2, 1.6pt + modell),
-          label: from(2, [$T = k dot sqrt(L)$])),
+          // Same as on the slide before: room for the root's overbar.
+          label: from(2, box(inset: (top: 2.5pt))[$T = k dot sqrt(L)$])),
   // Stage 3: the slope, read off the line the way it is read off in a book.
   lq.plot((0.55, 0.95, 0.95), (1.106, 1.106, 1.910),
           color: from(3, p.ink), mark: none,
