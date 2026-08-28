@@ -36,5 +36,8 @@ disciplines = ["education", "mathematics"]
 # `.github/` gehoert ebenso wenig ins Buendel: das sind Pruefskripte und
 # Bauwerkzeuge, allein `pruefe-decks.js` 112 KiB. Gemessen macht es den
 # Unterschied zwischen 0,97 MiB und 0,66 MiB.
+# `CONTRIBUTING.md` steht beim `.github`: es sagt, wie man am Paket arbeitet,
+# nicht wie man es benutzt. Wer das sucht, ist im Repo, nicht im Buendel.
 exclude = ["example.typ", "examples", "docs", ".github", ".gitignore",
+           "CONTRIBUTING.md",
            "assets/handout.png", "assets/slide.png", "assets/themes.png"]
