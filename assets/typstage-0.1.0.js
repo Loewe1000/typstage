@@ -57,6 +57,10 @@
   var HINT = document.getElementById("ts-hint");
   var SLIDES = [].slice.call(document.querySelectorAll(".ts-slide"));
   var CFG = JSON.parse(document.getElementById("ts-cfg").textContent);
+  // Was die Sprecheransicht zeigen soll. Was nicht dasteht, ist an: ein Deck,
+  // das nichts sagt, bekommt die ganze Ansicht. Der Vergleich ist ueberall
+  // `=== false` und nicht `!`, damit eine fehlende Angabe nicht als Nein zaehlt.
+  var SPV = CFG.speakerView || {};
   // Die eine Kurve, die dieses Paket faehrt -- als vier Zahlen, nicht als
   // Zeichenkette. Die Zeichenkette geht an die Web Animations API, die Zahlen
   // an `kurve()`: eine Szene laeuft nicht als Animation, sondern als Folge
@@ -1350,7 +1354,45 @@
     B.style.perspective = "";
   }
 
-  function fly(fromSlide, toSlide, fallback) {
+  // Die zwei Wege in einen Flug. Beide sammeln nur ein, was fliegen soll, und
+  // reichen es an `fly` weiter -- was dort geschieht, ist in beiden Faellen
+  // dasselbe.
+
+  // Von Folie zu Folie: Quelle ist, was gerade steht, Ziel ist jedes `morph`
+  // der Zielfolie. Welches davon dort sichtbar wird, entscheidet `stelle`
+  // gleich danach; ein Ziel ohne Partner faellt in `fly` von selbst heraus.
+  function flugFolie(vonFolie, nachFolie, fallback) {
+    var quellen = {};
+    SLIDES[vonFolie].querySelectorAll(".ts-morph").forEach(function (e) {
+      if (e.dataset.on === "1") quellen[e.dataset.name] = e;
+    });
+    return fly(quellen, SLIDES[nachFolie].querySelectorAll(".ts-morph"),
+               SLIDES[nachFolie], fallback);
+  }
+
+  // Innerhalb einer Folie, von Schritt zu Schritt. Hier steht die Zielfolie
+  // schon da, `dataset.on` sagt also nur, was *jetzt* sichtbar ist -- gefragt
+  // ist, was auf dem naechsten Schritt sichtbar sein wird. Dafuer gibt es
+  // `zustand`, dieselbe Auskunft, die `stelle` selbst benutzt.
+  //
+  // Ohne das hier morphte ein Deck nur ueber Folienraender hinweg. Zwei
+  // Fassungen derselben Formel auf zwei Schritten einer Folie -- der
+  // haeufigste Fall ueberhaupt, und genau das, wofuer `alternatives` da ist --
+  // wechselten hart. Nachgemessen: null Geister auf `#ts-fly` beim
+  // Schrittwechsel, sechs beim Folienwechsel.
+  function flugSchritt(folie, vonSchritt, nachSchritt, fallback) {
+    var f = SLIDES[folie];
+    var quellen = {}, ziele = [];
+    f.querySelectorAll(".ts-morph").forEach(function (e) {
+      if (zustand(e, vonSchritt) > 0) quellen[e.dataset.name] = e;
+    });
+    f.querySelectorAll(".ts-morph").forEach(function (e) {
+      if (zustand(e, nachSchritt) > 0) ziele.push(e);
+    });
+    return fly(quellen, ziele, f, fallback);
+  }
+
+  function fly(quellen, ziele, umfeld, fallback) {
     // Magic move is travel and nothing but travel: the point of it is that
     // the eye follows a shape from where it stood to where it now stands.
     // Asked for less motion there is nothing left of it worth keeping, so
@@ -1367,16 +1409,16 @@
     document.querySelectorAll(".ts-el[data-hold]").forEach(function (e) {
       delete e.dataset.hold;
     });
-    var sources = {};
-    SLIDES[fromSlide].querySelectorAll(".ts-morph").forEach(function (e) {
-      if (e.dataset.on === "1") sources[e.dataset.name] = e;
-    });
     var stage = B.getBoundingClientRect();
     var any = false;
 
-    SLIDES[toSlide].querySelectorAll(".ts-morph").forEach(function (dst) {
-      var src = sources[dst.dataset.name];
-      if (!src) return;
+    ziele.forEach(function (dst) {
+      var src = quellen[dst.dataset.name];
+      // Dasselbe Element auf beiden Seiten heisst: es steht auf beiden
+      // Schritten und geht nirgendwohin. Beim Folienwechsel kann das nicht
+      // vorkommen, innerhalb einer Folie sehr wohl -- ein `morph` mit
+      // `at: "1-"` waere sonst seine eigene Quelle und sein eigenes Ziel.
+      if (!src || src === dst) return;
       any = true;
       var d = +dst.dataset.fly || +src.dataset.fly || fallback;
       var qr = src.getBoundingClientRect(), zr = dst.getBoundingClientRect();
@@ -1408,7 +1450,7 @@
         right: Math.max(qr.right, zr.right), bottom: Math.max(qr.bottom, zr.bottom)
       };
       var danach = false;
-      SLIDES[toSlide].querySelectorAll(".ts-el").forEach(function (el) {
+      umfeld.querySelectorAll(".ts-el").forEach(function (el) {
         if (el === dst) { danach = true; return; }
         if (!danach || el.dataset.hold === "1") return;
         if (NACHZUEGLER.indexOf(el) >= 0) return;
@@ -2292,7 +2334,12 @@
   // geraeumte Zeichnung zurueck. Der Korb steht in beiden Fenstern gleich:
   // beide fuehren dieselben Ereignisse aus.
   var PAPIERKORB = [];
-  var FARBEN = ["#eb5e28", "#ffd166", "#4cc9f0", "#f4f4f5"];
+  // Die vier Vorgabefarben der Feder. Ein Deck kann eigene setzen -- ein
+  // Tafelbild in Schulfarben etwa, oder zwei statt vier, wenn die Leiste
+  // schmal bleiben soll.
+  var FARBEN = (SPV.pen && SPV.pen.colors && SPV.pen.colors.length)
+    ? SPV.pen.colors.slice()
+    : ["#eb5e28", "#ffd166", "#4cc9f0", "#f4f4f5"];
   var STRICH_PT = 3.2;    // stroke width in points of the stage, scaled with it
 
   function tinteListe(i) { return TINTE[i] || (TINTE[i] = []); }
@@ -3701,6 +3748,25 @@
     // das sagt, was dabei geschieht.
     tastenzeile(ELN.hilfe, W.helpSpeaker || W.helpSpeakerShort || W.help || "");
 
+    // ── Was das Deck abbestellt hat ─────────────────────────────────────
+    //
+    // Gebaut wird alles, entfernt wird danach. Der Grund ist Buchhaltung: an
+    // der Uhrkachel haengen dreissig Schreibzugriffe, an der Zielkachel elf,
+    // und keiner davon fragt, ob es sie gibt. Wuerde die Kachel gar nicht
+    // erst entstehen, muessten alle einundvierzig eine Schranke bekommen --
+    // einundvierzig Gelegenheiten, eine zu vergessen. So schreiben sie
+    // weiter, nur in einen Knoten, der an keinem Dokument mehr haengt: das
+    // kostet nichts und kann nicht schiefgehen.
+    //
+    // Die Tasten gehen mit. Eine Uhr, die man nicht sieht, aber mit ⇧T
+    // starten kann, waere schlimmer als gar keine.
+    if (SPV.clock === false) ELN.uhrKachel.remove();
+    if (SPV.target === false && ELN.ziel) {
+      var zk = ELN.ziel.closest(".ts-sp-kachel");
+      if (zk) zk.remove();
+    }
+    if (SPV.tools === false) ELN.wzTraeger.remove();
+
     // The sound belongs in the hall, not at the speaker's seat: the stage
     // runs along here in full, video included. Seeing it is desired,
     // hearing it twice is not.
@@ -3969,9 +4035,7 @@
       if (k === "ArrowUp") { notizRollen(-1); e.preventDefault(); return; }
       if (k === "b") { SCHWARZ = SCHWARZ ? 0 : 1; sichtSenden(); }
       // `t` wie timer. Laeuft sie, beendet derselbe Druck sie -- wie `b` und
-      // `e`, nur mit einer Frage davor. `Shift+t` bleibt ausdruecklich frei:
-      // dort soll spaeter die angeheftete Uhr liegen, die das Vollbild
-      // erzwingt. Sie ist noch nicht gebaut, und der Platz wartet auf sie.
+      // `e`, nur mit einer Frage davor.
       // `⇧t` ist die angeheftete Uhr: dieselbe Frage nach den Minuten, aber
       // sie deckt den Saal nicht zu und ueberlebt das Blaettern. Der Platz
       // war seit dem Einbau der Vollbilduhr dafuer freigehalten.
@@ -3980,7 +4044,9 @@
       // meldet der Browser `"T"`, und ein Vergleich auf das kleine `t`
       // ginge fuer die angeheftete Uhr nie auf -- gemessen startete `⇧t`
       // das Vollbild.
-      else if (k === "t" || k === "T") {
+      // Eine abbestellte Kachel nimmt ihre Tasten mit. Eine Uhr, die man
+      // nicht sieht, aber mit ⇧T starten kann, waere schlimmer als keine.
+      else if ((k === "t" || k === "T") && SPV.clock !== false) {
         if (!uhrSaalAus()) uhrFeldAuf(e.shiftKey ? "fest" : "voll");
         e.preventDefault();
       }
@@ -3989,7 +4055,9 @@
       // duree, in allen drei Sprachen derselbe Buchstabe. Der gute Buchstabe
       // gehoert dem, was man oft drueckt: die Zieldauer wird einmal je Vortrag
       // gesetzt, die Klassenuhr mehrmals je Stunde.
-      else if (k === "d") { if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); } }
+      else if (k === "d" && SPV.target !== false) {
+        if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); }
+      }
       // Sagt, was es getan hat. `r` liegt auf einer Tastatur neben `t` und
       // `z`, und es loeschte den Stundenzaehler ohne ein Wort.
       else if (k === "r") {
@@ -3997,9 +4065,11 @@
         hint(wort("resetDone", "elapsed reset"));
       }
       else if (k === "l") { lichtUm(); }
-      else if (k === "m") { modusUm(); }
-      else if (k === "c") { farbeSetzen(FARBE + 1); }
-      else if (k === "z") { tinteSenden({ b: "weg", s: tinteFolie() }); }
+      else if (k === "m" && SPV.tools !== false) { modusUm(); }
+      else if (k === "c" && SPV.tools !== false) { farbeSetzen(FARBE + 1); }
+      else if (k === "z" && SPV.tools !== false) {
+        tinteSenden({ b: "weg", s: tinteFolie() });
+      }
       else if (k === "x") {
         tinteSenden({ b: "loesch", s: tinteFolie() });
         hint(wort("inkCleared", "slide cleared — z brings it back"));
@@ -4278,6 +4348,17 @@
     // eine Einstellung zu erklaeren -- daraus wird eine gueltige leere Seite,
     // und die soll leer sein, nicht tot.
     if (!STEPS.length) return;
+    // Ein Sprung raeumt auf, bevor er springt. `finishTransitionNow` haengt
+    // sonst allein an `fly`, und `fly` laeuft bei `instant` nicht: Pos1, Ende,
+    // ein Wechsel der Adresse oder Vor/Zurueck im Browser gingen daran vorbei.
+    // Die alte Animation laeuft mit `fill: "both"` weiter, und sie trifft
+    // unter Umstaenden genau die Folie, auf die gesprungen wurde.
+    //
+    // Nachgestellt, 300 ms nach einem Pos1 mitten in einem Uebergang: die
+    // Zielfolie stand bei `translateX(-13.8px)` und 0,70 Deckkraft, die alte
+    // lag mit 0,30 darueber, beide noch in Bewegung -- bis der Zeitgeber des
+    // alten Uebergangs ablief und es an seinen Platz sprang.
+    if (instant) finishTransitionNow();
     n = Math.max(0, Math.min(STEPS.length - 1, n));
     var prev = current < 0 ? null : STEPS[current];
     var dst = STEPS[n];
@@ -4292,7 +4373,14 @@
     if (changed) stelle(dst.slide);
 
     var hasMorph = false;
-    if (changed && prev && !instant) hasMorph = fly(prev.slide, dst.slide, CFG.duration);
+    if (changed && prev && !instant) {
+      hasMorph = flugFolie(prev.slide, dst.slide, CFG.duration);
+    } else if (!changed && prev && !instant && prev.step !== dst.step) {
+      // Derselbe Flug, nur ohne Folienwechsel. `hasMorph` bleibt hier
+      // unberuehrt: es entscheidet allein, ob der *Folien*uebergang zur Blende
+      // wird, und einen Folienuebergang gibt es auf diesem Weg nicht.
+      flugSchritt(dst.slide, prev.step, dst.step, CFG.duration);
+    }
 
     if (changed && prev) {
       mediaOff(prev.slide);
@@ -4608,31 +4696,63 @@
   // slide anyway is therefore taken along, otherwise the thumbnails would
   // have no page number. What the thumbnail does not show are the animated
   // parts: it always stands at the first step of its slide.
+  // Der letzte Schritt einer Folie -- der einzige, auf dem alles steht, was sie
+  // ueberhaupt zeigt.
+  function letzterSchritt(i) {
+    var s = 1;
+    for (var k = 0; k < STEPS.length; k++) {
+      if (STEPS[k].slide === i && STEPS[k].step > s) s = STEPS[k].step;
+    }
+    return s;
+  }
+
+  // Das Standbild einer Folie fuer die Uebersicht.
+  //
+  // Frueher stand hier eine eigene, aermere Fassung: sie kopierte `.ts-bg` und
+  // sonst nichts. Ein verfolgtes Element haelt dort aber nur seinen Platz --
+  // sichtbar wird es erst als Sprite in `.ts-ov` --, und so fehlte in der
+  // Uebersicht alles, was `anim`, `stagger`, `morph`, `tiles` oder `scene`
+  // beitragen. Auf einer Folie, die im Wesentlichen daraus besteht, blieb eine
+  // fast leere Flaeche uebrig, und zwischen zwanzig fast leeren Flaechen
+  // findet niemand etwas.
+  //
+  // `schrittBild` kann das alles laengst -- es baut die Vorschau der
+  // Sprecheransicht. Gefragt wird nach dem *letzten* Schritt: die Uebersicht
+  // beantwortet "was steht auf dieser Folie", nicht "wo bin ich gerade".
   function miniatur(i) {
-    var f = SLIDES[i];
-    var m = document.createElement("div");
-    m.className = "ts-mini";
-    if (!f) return m;
-    var cp = f.querySelector(".ts-chromep");
-    m.innerHTML = f.querySelector(".ts-bg").innerHTML + (cp ? cp.innerHTML : "");
-    // Auch hier: derselbe Name zweimal im Dokument, und die Verweise des
-    // Standbildes zeigen auf die laufende Folie.
-    namenEindeutig(m);
-    return m;
+    return schrittBild(i, letzterSchritt(i));
   }
 
   var minis = [];
   function buildOverview() {
     if (minis.length) return;
     SLIDES.forEach(function (f, i) {
+      var fach = document.createElement("figure");
+      fach.className = "ts-mini-fach";
       var m = miniatur(i);
-      m.addEventListener("click", function () {
+      fach.appendChild(m);
+      // Nummer und Titel darunter. Ohne den Namen unterscheiden sich zwei
+      // aehnliche Folien im Standbild kaum, und die Nummer ist ohnehin das,
+      // wonach im Vortrag gegriffen wird.
+      var schild = document.createElement("figcaption");
+      schild.className = "ts-mini-schild";
+      var nr = document.createElement("b");
+      nr.textContent = String(i + 1);
+      schild.appendChild(nr);
+      var titel = f && f.dataset.titel;
+      if (titel) {
+        var t = document.createElement("span");
+        t.textContent = titel;
+        schild.appendChild(t);
+      }
+      fach.appendChild(schild);
+      fach.addEventListener("click", function () {
         OVERVIEW.removeAttribute("data-on");
         for (var k = 0; k < STEPS.length; k++) {
           if (STEPS[k].slide === i) { goto(k, true); return; }
         }
       });
-      OVERVIEW.appendChild(m);
+      OVERVIEW.appendChild(fach);
       minis.push(m);
     });
   }
@@ -4684,6 +4804,21 @@
     // haengt an der Taste statt neben ihr -- als Titel beim Ueberfahren, und
     // vollstaendig hinter `?`. Eine Reihe, die man nach Form ueberfliegt,
     // statt eines Absatzes, den man liest.
+    // Tasten, die zu einer abbestellten Kachel gehoeren, stehen hier nicht.
+    // Eine Leiste, die `⇧t` bewirbt, waehrend die Uhr abbestellt ist,
+    // erzaehlt dem Vortragenden etwas, das nicht stimmt -- und sie tut es an
+    // der einen Stelle, an der er nachsieht, wenn er unsicher ist.
+    //
+    // Verglichen wird die Beschriftung, wie sie im Hilfetext steht: `⇧← ⇧→`
+    // ist *ein* Eintrag mit zwei Tasten, nicht zwei Eintraege.
+    var still = {};
+    if (SPV.clock === false) {
+      still["t"] = 1; still["⇧t"] = 1; still["⇧← ⇧→"] = 1;
+    }
+    if (SPV.target === false) still["d"] = 1;
+    if (SPV.tools === false) {
+      still["m"] = 1; still["c"] = 1; still["z"] = 1; still["x"] = 1;
+    }
     String(text).split("\u00a7").forEach(function (roh) {
       var t = roh.trim();
       if (!t) return;
@@ -4698,6 +4833,7 @@
         var teil = e.split("|");
         var tasten = teil.length > 1 ? teil[0].trim() : e;
         var wozu = teil.length > 1 ? teil.slice(1).join("|").trim() : "";
+        if (still[tasten]) return;
         var pr = bau("span", "ts-sp-taste-paar", g);
         if (wozu) pr.title = tasten + " \u2014 " + wozu;
         tasten.split(/\s+/).forEach(function (k) {
@@ -4736,7 +4872,11 @@
     // standen, und sie blieb so.
     LEIB.dataset.wz = r.width < 780 ? "schmal" : "weit";
 
-    var zeile = ELN.uhrKachel ? ELN.uhrKachel.parentNode : null;
+    // Die Zahlenzeile selbst gesucht und nicht ueber eine ihrer Kacheln. Ein
+    // Deck kann die Uhr abbestellen; ihre Kachel haengt dann an keinem
+    // Dokument mehr, `parentNode` ist `null`, und die ganze Hoehenrechnung
+    // hier fiel aus. Gemessen: das Werkzeugband ragte 29 px aus dem Fenster.
+    var zeile = LEIB ? LEIB.querySelector(".ts-sp-uhren") : null;
     // Breit heisst: die Unterzeile passt neben die grosse Zahl statt darunter.
     // Untereinander verschenkt eine Kachel bei einem breiten Fenster die
     // halbe Flaeche -- die Zahl steht klein in einem grossen Kasten, und

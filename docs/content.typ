@@ -186,6 +186,33 @@ Tastenbelegung. Der Zustand des Saals -- `schwarz`, `eingefroren`, `kein
 Vortragsfenster` -- steht oben rechts *in* der Folienkachel, also über dem
 Bild, über das er etwas aussagt.
 
+=== Was die Ansicht zeigen soll
+
+Nicht jeder braucht alles. Wer nie mit der Klassenuhr arbeitet, hat ihre
+Kachel trotzdem im Blick, und sie nimmt Platz, der der Notiz fehlt.
+`speaker-view` bestellt ab, was nicht gebraucht wird:
+
+// check: dokument
+#show-code[```typ
+#show: presentation.with(speaker-view: (
+  clock: false,                             // keine Klassenuhr
+  target: false,                            // keine geplante Dauer
+  pen: (colors: (red, green, rgb("#FF99DD"))),   // eigene Stiftfarben
+))
+```]
+
+Was nicht dasteht, ist an: ein Deck, das nichts sagt, bekommt die ganze
+Ansicht. `tools: false` nimmt die Werkzeugzeile weg.
+
+Eine abbestellte Kachel nimmt ihre Tasten mit. Mit `clock: false` tun `t` und
+`⇧t` nichts mehr, und sie stehen auch nicht mehr in der Tastenzeile: eine
+Leiste, die eine Taste bewirbt, die nichts tut, erzählt dem Vortragenden etwas
+Falsches -- und zwar an der einen Stelle, an der er nachsieht, wenn er unsicher
+ist.
+
+Die Farben sind Typst-Farben, keine Zeichenketten, und es dürfen mehr oder
+weniger als vier sein. `c` geht der Reihe nach durch sie hindurch.
+
 === Hell oder dunkel
 
 Die Ansicht folgt der Systemeinstellung des Rechners, an dem sie steht

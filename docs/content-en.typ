@@ -2271,6 +2271,32 @@ Below that the tool row: pen or pointer, the four colours, the key help. The
 state of the hall -- `black`, `frozen`, `no talk window` -- stands at the top
 right *inside* the slide tile, that is, above the picture it is talking about.
 
+=== What the view should show
+
+Not everyone needs all of it. Someone who never uses the class clock still has
+its tile in front of them, and it takes room the note could use.
+`speaker-view` cancels what is not wanted:
+
+// check: dokument
+#show-code[```typ
+#show: presentation.with(speaker-view: (
+  clock: false,                                  // no class clock
+  target: false,                                 // no planned length
+  pen: (colors: (red, green, rgb("#FF99DD"))),   // your own pen colours
+))
+```]
+
+What is not named is on: a deck that says nothing gets the whole view.
+`tools: false` takes the drawing bar away.
+
+A tile that is switched off takes its keys with it. With `clock: false`, `t`
+and `⇧t` do nothing and no longer stand in the key bar either: a bar that
+advertises a key which does nothing tells the speaker something untrue, and it
+does so at the one place they look when they are unsure.
+
+The colours are Typst colours, not strings, and there may be more or fewer
+than four. `c` steps through them in turn.
+
 === Light or dark
 
 The view follows the system setting of the machine it stands on

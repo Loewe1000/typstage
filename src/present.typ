@@ -328,6 +328,22 @@
 /// color and now gives a function, and `rule-fill` gives `none` where it gave
 /// the accent. Writing them, `themes.X + (title-fill: red)`, is unchanged.
 ///
+/// `speaker-view` says what the presenter view shows. Everything is on unless
+/// switched off, so a deck that says nothing gets the whole thing:
+///
+/// ```typ
+/// #show: presentation.with(speaker-view: (
+///   clock: false,                       // no class clock
+///   target: false,                      // no planned length
+///   pen: (colors: (red, green, blue)),  // the drawing bar's colours
+/// ))
+/// ```
+///
+/// A tile that is switched off takes its keys with it: with `clock: false`,
+/// `t` and `⇧t` do nothing and no longer stand in the key bar. A view that
+/// advertises a key which does nothing is worse than one that is missing it.
+/// `tools: false` removes the drawing bar the same way.
+///
 /// The PDF is a handout: one page per slide, every tracked element in its
 /// final state. What belongs only to the motion, the notes, the slide transitions,
 /// the bridge jobs, are state updates without output and fall away by themselves.
@@ -398,6 +414,7 @@
   theme: themes.default,
   palette: (:),
   transition: "slide",
+  speaker-view: (:),
   transition-duration: 420,
   duration: 520,
   style: it => it,
@@ -416,8 +433,8 @@
     "typstage: presentation() does not know "
     + slides.named().keys().join(", ")
     + ". It takes title, subtitle, author, date, assets, theme, palette, "
-    + "transition, transition-duration, duration, style, width, height, "
-    + "margin, handout, overflow, drift and slide-level.")
+    + "transition, transition-duration, duration, speaker-view, style, width, "
+    + "height, margin, handout, overflow, drift and slide-level.")
   assert(type(slide-level) == int and slide-level >= 1, message:
     "typstage: slide-level is the heading depth at which a heading becomes a "
     + "slide, an integer from 1 upwards; 2 is the default. Not "
@@ -442,6 +459,35 @@
     "typstage: theme takes a theme, not " + str(type(theme)) + ". The bundled "
     + "ones live in `themes`: themes.default, themes.editorial, themes.lesson, "
     + "themes.night, themes.plain -- written without quotes.")
+  // Was die Sprecheransicht zeigen soll. Ein Deck, das keine Klassenuhr
+  // braucht, soll ihre Kachel nicht sehen -- sie nimmt Platz, der der Notiz
+  // fehlt. Vorgabe ist ueberall `true`: wer nichts sagt, bekommt alles.
+  assert(type(speaker-view) == dictionary, message:
+    "typstage: speaker-view takes a dictionary, not " + str(type(speaker-view))
+    + ". It knows clock, target, tools and pen.")
+  for k in speaker-view.keys() {
+    assert(k in ("clock", "target", "tools", "pen"), message:
+      "typstage: speaker-view has no entry \"" + k + "\". It takes clock "
+      + "(the class clock), target (the planned length), tools (the drawing "
+      + "bar) and pen.")
+    if k != "pen" {
+      assert(type(speaker-view.at(k)) == bool, message:
+        "typstage: speaker-view." + k + " is true or false, not "
+        + repr(speaker-view.at(k)))
+    }
+  }
+  if "pen" in speaker-view {
+    let stift = speaker-view.pen
+    assert(type(stift) == dictionary and stift.keys().all(k => k == "colors"),
+      message: "typstage: speaker-view.pen takes a dictionary with `colors`, "
+        + "a list of colours for the drawing bar. Not " + repr(stift))
+    if "colors" in stift {
+      assert(type(stift.colors) == array and stift.colors.len() > 0
+             and stift.colors.all(f => type(f) == color), message:
+        "typstage: speaker-view.pen.colors is a non-empty list of colours, "
+        + "written as colours and not as strings. Not " + repr(stift.colors))
+    }
+  }
   uebergang-pruefen(transition, "presentation")
   assert(type(transition-duration) == int and transition-duration >= 0,
     message: "typstage: transition-duration is how long a slide change takes "
@@ -811,11 +857,23 @@
         // Order is everything here: the frame has to come BEFORE the `context`
         // that reads the sprite list. Otherwise nothing that only registers
         // while the frame is laid out would be entered any more.
-        html.elem("section", attrs: (class: "ts-slide"), {
+        // Der Titel reist als Attribut mit. Die Uebersicht (Taste `o`) hatte
+        // bis dahin nur Bilder und keine Namen: auf einem Deck mit dreissig
+        // Folien sucht man darin, statt zu finden. Das Standbild allein sagt
+        // zu wenig, gerade wenn zwei Folien einander aehnlich sehen.
+        //
+        // `plain-text` und nicht der Inhalt: ein Attribut ist eine
+        // Zeichenkette. Was an Auszeichnung darin steckt, faellt weg -- fuer
+        // eine Zeile unter einem Standbild ist das gerade recht.
+        let name = if s.at("title", default: none) != none {
+          plain-text(s.title).trim()
+        } else { "" }
+        html.elem("section", attrs: (class: "ts-slide")
+                    + (if name != "" { (data-titel: name) } else { (:) }), {
           html.elem("div", attrs: (class: "ts-bg"),
                     html.frame(slide-body(s, style, geo, thema(s), chrome: false,
                                           overflow: overflow)))
-          // Second chrome, only for the print view (key `p`). There each
+          // Second chrome, only for the browser's own print view. There each
           // slide stands on its own page, there is no transition. And the
           // layer above the stage cannot travel along there, because the
           // slides stand one below another. On screen this one stays
@@ -989,6 +1047,16 @@
         // die Uhr steht auf Schwarz, egal was die Folie darunter tut, und
         // `invert-palette` traegt den Akzent ohnehin unveraendert weiter.
         + ",\"accent\":" + json.encode(rgb(thema-hell.accent).to-hex())
+        // Was die Sprecheransicht zeigt. Farben werden hier zu Hex-Zeichen-
+        // ketten: die Laufzeit kennt keine Typst-Farben, und `json.encode`
+        // einer Farbe waere ein Wort, mit dem der Browser nichts anfaengt.
+        + ",\"speakerView\":" + json.encode(
+            speaker-view.pairs().map(((k, v)) => (
+              k,
+              if k == "pen" and "colors" in v {
+                (colors: v.colors.map(f => rgb(f).to-hex()))
+              } else { v },
+            )).to-dict())
         // The runtime displays two sentences itself. Which language is
         // decided by the slide's `text.lang`, not the runtime, which does
         // not know the document. English is the fallback.
