@@ -63,6 +63,23 @@
       align: horizon,
       geogebra(app: "classic", perspective: "G",
                grid: false, axes: false, width: 100%, height: 240pt,
+               // The last step of the run, drawn by hand: the circle the point
+               // has traced, and the radius where the trace was stopped. An
+               // empty grey box would say nothing to a reader on paper.
+               fallback: cetz.canvas(length: 1cm, {
+                 import cetz.draw: *
+                 line((-2.9, 0), (2.9, 0), stroke: luma(70%))
+                 line((0, -2.9), (0, 2.9), stroke: luma(70%))
+                 line(..range(0, 65).map(i => {
+                   let a = i * 2 * calc.pi / 64
+                   (2 * calc.cos(a), 2 * calc.sin(a))
+                 }), stroke: luma(55%) + 1pt)
+                 let a = 1.047
+                 let px = 2 * calc.cos(a)
+                 let py = 2 * calc.sin(a)
+                 line((0, 0), (px, py), stroke: dark + 3pt)
+                 circle((px, py), radius: 0.11, fill: accent, stroke: none)
+               }),
                link: live),
       stagger[
         - 1 — the construction
@@ -89,6 +106,21 @@
       align: horizon,
       geogebra(app: "classic", perspective: "G",
                grid: false, axes: false, width: 100%, height: 240pt,
+               // What the three steps have drawn once they are done: the
+               // segment, the arc it swung, and the triangle that closes on
+               // them. The arc as a polyline, because which of the two halves
+               // `arc` makes of a pair of angles has to be looked up.
+               fallback: cetz.canvas(length: 1cm, {
+                 import cetz.draw: *
+                 line(..range(0, 25).map(i => {
+                   let a = i * 1.047 / 24
+                   (2.6 * calc.cos(a), 2.6 * calc.sin(a))
+                 }), stroke: (paint: luma(55%), thickness: 1.5pt,
+                              dash: "dashed"))
+                 line((0, 0), (4, 0), (1.5, 2.6), close: true,
+                      fill: accent.transparentize(82%), stroke: accent + 2pt)
+                 line((0, 0), (4, 0), stroke: dark + 3pt)
+               }),
                link: live),
       stagger[
         - the segment grows

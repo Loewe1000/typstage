@@ -155,17 +155,23 @@
 // −3.73, and it should stand in the picture rather than cling to its edge.
 // The unit falls out of that, and the frame out of the unit -- not the other
 // way round.
+//
+// The frame is shifted, not widened: it used to leave that far root 7 % of the
+// width from the edge, close enough to the slide margin that the dot read as
+// about to fall off. Now it sits at 10 %. The width stays what it was, because
+// the drawing already fills its column -- the room comes from the right, where
+// nothing stands beyond the imaginary axis but the `Re` label.
 #let UNIT = 1.91   // one unit of the complex plane
-#let ROOT-FRAME = ((-7.75, -3.215), (0.9, 3.215))
+#let ROOT-FRAME = ((-8.05, -3.215), (0.6, 3.215))
 
 #let root-locus(z) = cetz.canvas(length: 1.59cm, {
   import cetz.draw: *
 
   rect(..ROOT-FRAME, stroke: rgb(0, 0, 0, 0))
 
-  line((-7.3, 0), (0.7, 0), stroke: 0.7pt + guide)
+  line((-7.6, 0), (0.45, 0), stroke: 0.7pt + guide)
   line((0, -2.55), (0, 2.55), stroke: 0.7pt + guide)
-  content((0.7, -0.1), text(size: 8pt, fill: quiet)[Re], anchor: "north-east")
+  content((0.45, -0.1), text(size: 8pt, fill: quiet)[Re], anchor: "north-east")
   content((0.12, 2.55), text(size: 8pt, fill: quiet)[Im], anchor: "north-west")
   for m in (1, 2, 3) {
     line((-m * UNIT, -0.12), (-m * UNIT, 0.12), stroke: 0.7pt + guide)
