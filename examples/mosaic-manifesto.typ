@@ -163,7 +163,10 @@ They can inform, persuade, teach, or spark discussion.]
 #presentation(
   theme: t,
   title: [Manifesto\ Presentation.],
-  subtitle: [Nineteen white pages and one red],
+  // Keine Zahl mehr. Es stand "Nineteen white pages and one red" ueber einem
+  // Deck aus dreizehn Blaettern, von denen drei von Rand zu Rand rot sind --
+  // die erste Zeile, die ein Besucher liest, und in beiden Zahlen falsch.
+  subtitle: [White plates, and red where it interrupts],
   author: [after SlidesCarnival],
   date: [27 August 2026],
   margin: 0pt,
@@ -191,8 +194,6 @@ They can inform, persuade, teach, or spark discussion.]
         + Introduction
         + About us
         + Our projects
-        + Chapter title
-        + Chapter title
       ]
     ]
   ],

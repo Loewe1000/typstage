@@ -191,13 +191,13 @@ two, and `strong` and `accent` carry over unchanged. The running head, the
 footer and the progress bar follow.
 
 The five bundled palettes, and their inverted forms with them, are held to a
-measured contrast contract: real WCAG 2 arithmetic over six pairs, enforced by
+measured contrast contract: real WCAG 2 arithmetic over seven pairs, enforced by
 an assertion that runs when the package is loaded. **Your own palettes face no
 such gate**, and neither do the bundled *themes*: run over those, the contract
 finds `muted` at 4.25 in `lesson`, at 3.35 in `plain` and at 3.51 in
 `editorial` against the 4.5 body text wants, `accent` at 2.84 in `editorial`
 against 3.0, and `accent` on `ink` at 1.59 in `night` and 1.27 in `plain`. Only
-`themes.default` passes all six. Those colours were left alone; the manual says
+`themes.default` passes all seven. Those colours were left alone; the manual says
 why, and `palette-report(…)` hands the same measurement back for any palette.
 
 ## In the browser
@@ -211,8 +211,6 @@ three steps, and `→` goes to the next one wherever it is.
 | `Home`, `End` | first and last step, without motion |
 | `o`, `Esc` | overview of all slides |
 | `f` | full screen |
-| `s` | the speaker note for this slide |
-| `p` | print view: one slide per page, everything visible |
 | `n` | open the speaker view in a second window |
 | `?` | the key map |
 

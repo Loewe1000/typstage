@@ -135,8 +135,6 @@ derselben oder auf der nächsten Folie liegt.
   [`Ende`], [zum letzten Schritt, ohne Bewegung],
   [`o`, `Esc`], [Übersicht aller Folien ein- und ausschalten],
   [`f`], [Vollbild],
-  [`s`], [Notiz zur laufenden Folie kurz einblenden],
-  [`p`], [Druckansicht: eine Folie je Seite, alles sichtbar],
   [`n`], [die Sprecheransicht in einem zweiten Fenster öffnen],
   [`?`], [die Tastenbelegung einblenden],
 )
@@ -1881,8 +1879,8 @@ alles Übrige von selbst:
   *Auf Papier gibt es keine Kamera.* Das Handout setzt jede Folie ganz, wie es
   sie ohne Fahrt setzte -- und das ist die einzige richtige Antwort: ein Blatt
   zeigt alle Schritte auf einmal, und ein Ausschnitt darauf wäre ein Blatt, auf
-  dem die Hälfte fehlt. Auch die Druckansicht des Browsers (Taste `p`) setzt
-  jede Folie ganz zurück.
+  dem die Hälfte fehlt. Auch die Druckansicht des Browsers setzt jede Folie
+  ganz zurück.
 
   Daraus folgt eine Pflicht für das Deck: *die Folie muss ohne die Fahrt
   vollständig und lesbar sein.* Wer das Detail nur im Ausschnitt beschriftet
@@ -3228,10 +3226,9 @@ Angabe `note` an `slide`:
 ]
 ```]
 
-Im Browser holt die Taste `s` die Notiz der laufenden Folie für gut zwei
-Sekunden an den unteren Rand -- sichtbar auf dem Bildschirm, der gerade
-vorführt, und darum eher ein Stichwort als ein Manuskript. In die Einblendung
-geht nur der reine Text ein; Auszeichnungen fallen weg.
+Die Notiz steht in der Sprecheransicht, auf dem Bildschirm, den nur der
+Vortragende sieht. In die Ansicht geht nur der reine Text ein; Auszeichnungen
+fallen weg.
 
 Im Handout steht dieselbe Notiz bei ihrer Folie. Eine Notiz erfüllt damit zwei
 Zwecke auf einmal: Gedächtnisstütze beim Vortrag und Erläuterung auf dem Blatt,
@@ -3664,7 +3661,8 @@ werden geprüft:
   [`border` auf `paper`], [1,2], [Haarlinien],
 )
 
-Die letzte fällt aus der Reihe: ihr Grund ist keine Rolle der Palette, sondern
+Die vorletzte fällt aus der Reihe: ihr Grund ist keine Rolle der Palette,
+sondern
 die Farbe Schwarz selbst. Die Vollbilduhr ist schwarz von Rand zu Rand, was
 immer die Palette des Decks sagt, und ihre Überzeit steht in der Akzentfarbe.
 Die fünf mitgelieferten Paletten messen dagegen 6,16 (`light`), 3,66 (`mono`),
@@ -3698,7 +3696,7 @@ stillschweigend weggefärbt zu werden:
   columns: (auto, 1fr),
   stroke: 0.5pt + luma(180),
   table.header([*Theme*], [*Was durchfällt*]),
-  [`themes.default`], [nichts, alle sechs Paarungen halten],
+  [`themes.default`], [nichts, alle sieben Paarungen halten],
   [`themes.lesson`], [`muted` auf `paper` misst 4,25 statt 4,5],
   [`themes.night`], [`accent` auf `ink` misst 1,59 statt 3,0],
   [`themes.plain`], [`muted` auf `paper` misst 3,35 statt 4,5;

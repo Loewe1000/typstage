@@ -1377,7 +1377,7 @@ from that on its own:
   *On paper there is no camera.* The handout sets every slide whole, exactly as
   it would without a move -- and that is the only right answer: a page shows
   every step at once, and a crop on it would be a page with half of it
-  missing. The browser's print view (key `p`) puts every slide back whole too.
+  missing. The browser's own print view puts every slide back whole too.
 
   A duty for the deck follows from that: *the slide has to be complete and
   legible without the move.* Whoever labels the detail only for the crop -- a
@@ -2194,9 +2194,7 @@ the last slide, including the second window.
   [`Home` `End`], [to the first or the last step],
   [`o` `Esc`], [the overview, and a click there goes to that slide],
   [`f`], [full screen],
-  [`s`], [the note of the current slide, in the bar],
   [`?`], [every key],
-  [`p`], [print],
   [`n`], [open the speaker view, or bring the talk forward],
 )
 
@@ -2565,8 +2563,8 @@ argument `note` on `slide`:
 #speaker-note[Show the dissection first, then the formula.]
 ```]
 
-The note appears in the speaker view, on `s` in the bar, and on the handout. It
-produces nothing in the deck PDF.
+The note appears in the speaker view and on the handout. It produces nothing in
+the deck PDF.
 
 A note has to carry text. The speaker view transports it as a string and the
 handout prints it where there is text, so a note built purely out of layout --
@@ -2781,7 +2779,8 @@ $(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Seven pairs are checked:
   [`border` on `paper`], [1.2], [hairlines],
 )
 
-The last one is the odd one out: its ground is not a role of the palette but
+The second to last is the odd one out: its ground is not a role of the palette
+but
 the colour black itself. The full-screen clock is black from edge to edge
 whatever the deck's palette says, and its overtime digits are set in the
 accent. The five bundled palettes measure 6.16 (`light`), 3.66 (`mono`), 4.83
@@ -2815,7 +2814,7 @@ coloured away:
   columns: (auto, 1fr),
   stroke: 0.5pt + luma(180),
   table.header([*Theme*], [*What falls short*]),
-  [`themes.default`], [nothing, all six pairs hold],
+  [`themes.default`], [nothing, all seven pairs hold],
   [`themes.lesson`], [`muted` on `paper` measures 4.25 against 4.5],
   [`themes.night`], [`accent` on `ink` measures 1.59 against 3.0],
   [`themes.plain`], [`muted` on `paper` measures 3.35 against 4.5;

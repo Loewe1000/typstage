@@ -34,6 +34,12 @@
     columns: (auto, 1fr, auto),
     column-gutter: 18pt,
     row-gutter: 14pt,
+    // The count is set smaller than the row it belongs to, and a grid puts
+    // every cell at the top of its row. Left alone, "3 slides" floated a
+    // dozen pixels above the baseline of its own line; `bottom` puts it back
+    // on it. Right-aligned as well, so the column has an edge instead of a
+    // ragged one.
+    align: (auto, auto, right + bottom),
     ..teile
       .map(a => {
         let da = jetzt != none and a.number == jetzt

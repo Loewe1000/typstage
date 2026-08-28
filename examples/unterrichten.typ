@@ -55,6 +55,10 @@
 #anim(at: "2-")[
   Nobody in this room knows. Nobody is going to look it up.
 ]
+
+// The blank line matters. Without it the two blocks are one paragraph in
+// Typst's eyes, and on paper the two sentences ran together into a single
+// wrapping line -- two lines in the browser, one in the handout.
 #anim(at: "3-")[
   And by the end of the hour we will have a number, and it will be close
   enough to argue about.

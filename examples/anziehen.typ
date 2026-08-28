@@ -40,7 +40,7 @@
 // What the deck actually runs on: the theme's eight with those five laid over.
 // `palette-report` measures a whole palette and the deck hands `presentation`
 // only a part, so the merge is written out here -- it is the same one the
-// package makes internally, and slide "Six pairs, one contract" measures it.
+// package makes internally, and slide "Seven pairs, one contract" measures it.
 #let merged = (
   paper: themes.default.paper, ink: themes.default.ink,
   strong: themes.default.strong, accent: themes.default.accent,
@@ -198,7 +198,7 @@
 
 #v(1fr)
 
-=== Six pairs, one contract
+=== Seven pairs, one contract
 
 #speaker-note[
   This table is computed while the deck is built. If someone in the room
@@ -236,7 +236,7 @@
 
 #anim(callout(title: [A report, not a gate])[
   It measures and changes nothing. Only the five bundled palettes are held to
-  these six pairs, by an assertion in the package. Four of the five bundled
+  these seven pairs, by an assertion in the package. Four of the five bundled
   *themes* do not pass them, and that is deliberate.
 ], at: 2, enter: "fade-up")
 
