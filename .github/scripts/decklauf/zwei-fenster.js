@@ -381,9 +381,22 @@ const szeneBild = `(function () {
       await sprecher.taste("ArrowRight");
       await schlaf(1600);
       const nah = [await halle.ev(kameraStreckung), await sprecher.ev(kameraStreckung)];
-      if (nah[0] !== nah[1]) {
+      // Verglichen mit einer Toleranz und nicht auf die Stelle genau. Die
+      // Streckung rechnet sich aus dem Rechteck einer Marke, und das misst
+      // jedes Fenster in seiner eigenen Buehnengroesse -- die zwei Ergebnisse
+      // sind derselbe Faktor, nur verschieden gerundet. Auf dem Ubuntu-Laeufer
+      // fielen sie auf 7,89 und 7,90 und damit auf zwei Seiten derselben
+      // Rundungsgrenze; hier fielen sie zusammen. Ein Hundertstel ist keine
+      // Abweichung, die jemand sieht.
+      //
+      // Was die Pruefung weiterhin faengt, ist alles, wofuer sie da ist: eine
+      // Kamera, die drueben gar nicht faehrt (1 gegen 7,9), und eine, die
+      // woandershin faehrt. Ein Prozent laesst dafuer keinen Raum.
+      const spanne = Math.abs(nah[0] - nah[1]) / Math.max(nah[0], nah[1], 1);
+      if (spanne > 0.01) {
         sagt("kamera", "nach einem Schritt steht die Halle auf Streckung "
-          + nah[0] + ", das Sprecherfenster auf " + nah[1]);
+          + nah[0] + ", das Sprecherfenster auf " + nah[1]
+          + " -- das sind " + Math.round(spanne * 1000) / 10 + " % Unterschied.");
       }
       if (!(nah[0] > 1)) {
         sagt("kamera", "ein Schritt im Sprecherfenster hat die Kamera in der "
