@@ -62,6 +62,13 @@
   let m = margins(geo)
   let inner = geo.width - m.left - m.right
   block(width: geo.width, height: geo.height, {
+    // Die Schrift des Themes, ausdruecklich. Auf dem Papier liegt die Zier
+    // in der Seite und erbt sie von `slide-body`; im Browser ist sie eine
+    // eigene Ebene ueber der Buehne und damit ausserhalb jenes Geltungs-
+    // bereichs. Ohne diese Zeile fielen laufender Kopf und Foliennummer dort
+    // auf Typsts Vorgabeserife zurueck -- in jedem Deck mit einer Grotesk,
+    // also fast allen, und nur im HTML. Nachgemessen an `unterrichten`.
+    set text(..font-args(t.font))
     // The textbook's running header: page number on the left, chapter on
     // the right, a hairline underneath. It belongs to the layer above the
     // stage, not to the slide. It stays in place while paging, as does
