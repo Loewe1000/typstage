@@ -3883,6 +3883,13 @@ slides of its sub-sections too. A bar that counted only the immediate ones
 would show a zero for every top-level heading. A section with nothing under it
 has `none` for `first` and `last`, and `0` for `count`.
 
+Only document-level headings count -- the ones standing *between* slides and
+cutting the deck. A heading *inside* a slide -- `slide(none)[= Every map
+lies]` -- is a slide title and opens no section. A deck that writes its
+structure exclusively that way gets an empty list back, and an empty
+navigation bar with it. So put the `=` between the slides, not into them;
+`examples/gliedern.typ` shows how.
+
 #info[
   It reads only what every slide already carries -- no `query`, no second walk
   over the document, the same answer in both outputs. Measured: `tour`,

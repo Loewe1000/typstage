@@ -355,7 +355,13 @@ const BEISPIELE = ["tour", "theme-default", "theme-editorial",
                    "theme-lesson", "theme-night", "theme-plain", "ziehen",
                    "geogebra", "geogebra-sprecher", "anziehen", "zeichnen",
                    "vortragen", "mosaic-editorial", "mosaic-manifesto",
-                   "mosaic-greyscale"];
+                   "mosaic-greyscale", "unterrichten", "gliedern"];
+
+// Kein Beispiel darf hier fehlen. Diese Liste war einmal von Hand gepflegt,
+// und zwei frisch gebaute Decks sind dabei stillschweigend durchgerutscht:
+// gefahren wurde, was hier stand, gemeldet wurde nichts, der Lauf war grün.
+// Darum wird jetzt gegengelesen, was `build-site.sh` tatsächlich abgelegt hat.
+const NICHT_DECK = ["index"];
 
 // Decks mit einem Applet darin. Sie werden mit abgeklemmtem GeoGebra gefahren,
 // siehe `ohneGeoGebra`.
@@ -1701,6 +1707,14 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
       { console.error("FEHLER: " + d.datei + " fehlt. Erst build-site.sh laufen lassen."); }
   });
   if (decks.some(d => !fs.existsSync(d.datei))) process.exit(2);
+  const gebaut = fs.readdirSync(deckDir).filter(f => f.endsWith(".html"))
+    .map(f => f.slice(0, -5)).filter(n => NICHT_DECK.indexOf(n) < 0);
+  const vergessen = gebaut.filter(n => BEISPIELE.indexOf(n) < 0);
+  if (vergessen.length) {
+    console.error("FEHLER: gebaut, aber ungeprueft: " + vergessen.join(", ")
+      + "\n  In BEISPIELE eintragen (pruefe-decks.js) und Sollstand aufnehmen.");
+    process.exit(2);
+  }
   decks.forEach(d => {
     if (MIT_APPLET.indexOf(d.name) >= 0) d.datei = ohneGeoGebra(d.datei);
   });
@@ -2163,8 +2177,16 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
       if (!z) { process.stderr.write("ABWEICHUNG " + n + " fehlt im Lauf\n"); schlecht++; return; }
       vergleiche(soll.decks[n], jetzt[n], n, z.maengel, PLATTFORM, proPlattform);
     });
+    // Ein Deck ohne Sollstand wurde zwar gefahren, aber gegen nichts geprüft.
+    // Das war einmal nur eine Zeile auf stderr, und der Lauf ging mit 0 durch;
+    // wer sie überlas, hielt ein ungeprüftes Deck für geprüft.
     Object.keys(jetzt).forEach(n => {
-      if (!soll.decks[n]) process.stderr.write("neu, kein Sollstand: " + n + "\n");
+      if (!soll.decks[n]) {
+        process.stderr.write("ABWEICHUNG " + n + ": kein Sollstand."
+          + " Mit --neu-soll aufnehmen (und nur die neuen Einträge übernehmen,"
+          + " sonst fallen die plattformgeteilten Werte weg).\n");
+        schlecht++;
+      }
     });
   }
   bericht.forEach(z => { if (z.maengel.length) schlecht++; });

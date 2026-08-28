@@ -4780,6 +4780,14 @@ die unmittelbar eigenen zählte, zeigte für jede Oberüberschrift eine Null. Ei
 Abschnitt ohne Folien unter sich hat `none` bei `first` und `last` und `0` bei
 `count`.
 
+Gezählt werden nur Überschriften auf Dokumentebene, also die, die *zwischen*
+den Folien stehen und das Deck schneiden. Eine Überschrift *in* einer Folie --
+`slide(none)[= Jede Karte lügt]` -- ist ein Folientitel und eröffnet keinen
+Abschnitt. Ein Deck, das seine Gliederung ausschließlich so schreibt, bekommt
+eine leere Liste zurück und wundert sich über eine leere Navigationsleiste. Wer
+eine bauen will, setzt die `=` also zwischen die Folien, nicht in sie hinein;
+`examples/gliedern.typ` macht genau das vor.
+
 #info[
   Gelesen wird nur, was jede Folie ohnehin mit sich trägt -- kein `query`, kein
   zweiter Gang durch das Dokument, dieselbe Antwort in beiden Ausgaben.
