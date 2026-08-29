@@ -39,4 +39,9 @@
 // as any other, and a deck that never calls `geogebra` carries nothing of it.
 #import "geogebra.typ": (geogebra, ggb-animate, ggb-hide, ggb-run, ggb-set,
                          ggb-show, ggb-style, ggb-tween, ggb-view)
+// Desmos geht denselben Weg über die Brücke. Ein Deck, das keines von beiden
+// ruft, trägt von beidem nichts.
+#import "desmos.typ": (desmos, demo-key, dsm-animate, dsm-expr, dsm-hide,
+                       dsm-remove, dsm-set, dsm-show, dsm-style, dsm-tween,
+                       dsm-view)
 #import "present.typ": presentation, bundle

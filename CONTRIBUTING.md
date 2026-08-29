@@ -44,6 +44,14 @@ AGGREGAT=/path/to/Typst-Schule bash .github/scripts/build-site.sh
 | `pruefe-palette.py` | the contrast contract of the speaker palette |
 | `pruefe-rundgang.py` | every export is demonstrated in `tour.typ` |
 | `pruefe-ueberlauf.py` | no example deck runs over its slide |
+| `pruefe-desmos.js` | the Desmos bridge, by hand (see below) |
+
+`pruefe-desmos.js` is run by hand too, and for the same kind of reason: it
+loads Desmos' script from desmos.com and needs an API key. Neither belongs
+in a run that has to be green on every push. It builds its own deck, drives
+it in a browser and checks that the frame announces itself, that the opening
+picture stands, that a tween runs and arrives, that it does *not* run again
+on the next step, and that hiding an expression keeps it in the calculator.
 
 Two images in the README are generated, not drawn: `assets/logo.png`/`.svg`
 from `assets/logo.typ`, and `assets/themes.png` from `assets/themes.typ` via

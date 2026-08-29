@@ -4227,6 +4227,11 @@ Medien und Brücke, zuletzt die Maße und Farben.
 #show-module(read("../src/geogebra.typ"), name: "typstage",
              exclude: ("resolve-target", "no-stray-target"))
 
+// Dieselbe Brücke, ein anderer Rechner. `boot` und `resolve-target` gehören
+// zum Innenleben.
+#show-module(read("../src/desmos.typ"), name: "typstage",
+             exclude: ("resolve-target", "boot"))
+
 == Maße, Farben, Laufzeitdateien
 
 // Nur, was `lib.typ` auch hinausreicht.

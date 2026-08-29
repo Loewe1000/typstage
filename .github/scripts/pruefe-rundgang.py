@@ -46,6 +46,9 @@ WERT = ("slide-width", "slide-height", "slide-margin", "dark", "accent",
         "palettes")
 
 # Was dieser Rundgang nicht aufrufen kann, und warum nicht.
+DESMOS_GRUND = (
+    "Desmos gibt sein Skript nur gegen einen API-Schlüssel heraus. Der Rundgang steht auf der Projektseite; eine Folie damit trüge den Schlüssel öffentlich mit sich und warnte bei jedem Aufruf in der Konsole. Geprüft wird die Desmos-Seite deshalb mit einem eigenen Deck, das niemand veröffentlicht")
+
 ZITAT = {
     "bundle": "eine Datei, die bundle benutzt, übersetzt nur mit "
               "--format bundle; der Rundgang muss als HTML und als PDF "
@@ -55,6 +58,17 @@ ZITAT = {
     "section": "Überschriftennotation: = ist dieser Aufruf",
     "title-slide": "die Titelfolie entsteht aus presentation(title: …); die "
                    "Aufrufform steht im Listing daneben",
+    "desmos": DESMOS_GRUND,
+    "demo-key": DESMOS_GRUND,
+    "dsm-animate": DESMOS_GRUND,
+    "dsm-expr": DESMOS_GRUND,
+    "dsm-hide": DESMOS_GRUND,
+    "dsm-remove": DESMOS_GRUND,
+    "dsm-set": DESMOS_GRUND,
+    "dsm-show": DESMOS_GRUND,
+    "dsm-style": DESMOS_GRUND,
+    "dsm-tween": DESMOS_GRUND,
+    "dsm-view": DESMOS_GRUND,
 }
 
 def arg(name, vorgabe):

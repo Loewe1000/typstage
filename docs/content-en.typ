@@ -3699,6 +3699,11 @@ measurements and colours.
 #show-module(read("../src/geogebra.typ"), name: "typstage",
              exclude: ("resolve-target", "no-stray-target"))
 
+// The same bridge, a different calculator. `boot` and `resolve-target` are
+// internals.
+#show-module(read("../src/desmos.typ"), name: "typstage",
+             exclude: ("resolve-target", "boot"))
+
 == Measurements, colours, runtime files
 
 // Only what `lib.typ` hands out as well.
