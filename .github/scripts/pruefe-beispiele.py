@@ -454,11 +454,17 @@ ETIKETT_ZEILE = re.compile(
   r"\[`(ts-[a-z0-9-]+)`\][^\[]*\[(?:[^\[\]]|\[[^\]]*\])*\]\s*,?\s*\[`([a-z]+)`\]")
 ETIKETT_QUELLE = re.compile(r"<(ts-[a-z0-9-]+)>")
 # Die drei Zahlen des Satzes über `style:`, in beiden Handbüchern derselbe Satz.
+# Die Sätze stehen umbrochen im Fließtext, und wo eine Zeile bricht, ist eine
+# Frage des Satzspiegels und nicht der Aussage. Ein Lektoratslauf hat genau
+# hier zugeschlagen: "Bei den 16 Schrift-Labels" war noch da, aber zwischen
+# "16" und "Schrift-Labels" lag ein Umbruch, und die Probe meldete den Satz
+# als verschwunden. Deshalb `\s+` statt eines Leerzeichens.
 ETIKETT_SATZ = re.compile(
-  r"(?:Gemessen, jede der|Measured, all) (\d+) (?:Regeln|rules)"
-  r".{0,240}?(?:genau die|exactly the) (\d+)"
-  r".{0,320}?(?:Die übrigen|The other) (\d+)", re.S)
-ETIKETT_SCHRIFT = re.compile(r"(?:Bei den|For the) (\d+) (?:Schrift-Labels|type labels)")
+  r"(?:Gemessen,\s+jede\s+der|Measured,\s+all)\s+(\d+)\s+(?:Regeln|rules)"
+  r".{0,240}?(?:genau\s+die|exactly\s+the)\s+(\d+)"
+  r".{0,320}?(?:Die\s+übrigen|The\s+other)\s+(\d+)", re.S)
+ETIKETT_SCHRIFT = re.compile(
+  r"(?:Bei den|For the)\s+(\d+)\s+(?:Schrift-Labels|type labels)")
 
 
 def etiketten_pruefen():
