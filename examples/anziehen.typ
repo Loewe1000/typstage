@@ -14,7 +14,7 @@
 // And `overflow: "error"`: a talk about design that shipped a slide running
 // off its own canvas would be arguing against itself.
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 // ── The palette ────────────────────────────────────────────────────────────
 // Five of the eight entries. `surface`, `border` and `inverted` are not named
@@ -291,13 +291,15 @@
 
 #side-by-side(
   split: (1fr, 1.1fr), align: top,
-  text(size: 0.64em, raw(lang: "typ",
-    "#show label(\"ts-slide-title\"):
-  set text(weight: 500)
-#show label(\"ts-slide-progress\"):
-  set rect(fill: rgb(\"#20372c\"))
-#show label(\"ts-callout\"):
-  set block(radius: 0pt)")),
+  // Je Regel eine Zeile, wie oben im echten Deck auch. Umbrochen -- der
+  // Doppelpunkt am Zeilenende, der Rumpf darunter -- ist es kein gueltiges
+  // Typst mehr ("expected expression"), und die Hervorhebung fiel deshalb auf
+  // reinen Text zurueck. Ein Listing, das man nicht abtippen kann, ist kein
+  // Beispiel.
+  text(size: 0.56em, raw(lang: "typ",
+    "#show label(\"ts-slide-title\"): set text(weight: 500)
+#show label(\"ts-slide-progress\"): set rect(fill: p.strong)
+#show label(\"ts-callout\"): set block(radius: 0pt)")),
   [
     Three of the seven rules this deck wears: the title above you, the bar at
     the bottom edge, the square corners of the note below.
@@ -351,16 +353,16 @@
     #v(0.2em)
     #align(center, type-inside)
     #v(0.35em)
-    #text(size: 0.56em, raw(lang: "typ", "set rect(fill: grey)\n[#rect(..) <l>]"))
+    #text(size: 0.56em, raw(lang: "typ", "set rect(fill: gray)\n[#rect(width: 100%) <l>]"))
     #v(0.2em)
     #area-inside
   ],
   card(title: [Label around the call])[
-    #text(size: 0.56em, raw(lang: "typ", "[#text(fill: grey)[..] <l>]"))
+    #text(size: 0.56em, raw(lang: "typ", "[#text(fill: gray)[Wort] <l>]"))
     #v(0.2em)
     #align(center, type-outside)
     #v(0.35em)
-    #text(size: 0.56em, raw(lang: "typ", "\n[#rect(.., fill: grey) <l>]"))
+    #text(size: 0.56em, raw(lang: "typ", "\n[#rect(width: 100%, fill: gray) <l>]"))
     #v(0.2em)
     #area-outside
   ],
