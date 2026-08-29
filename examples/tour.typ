@@ -9,9 +9,11 @@
 //   typst compile tour.typ tour.pdf
 //   typst compile tour.typ handout.pdf          (with handout: 3 below)
 //
-// Deliberately in `themes.plain`: white, black, one grey, no progress bar. The
-// layout is meant to keep out of the way. What is on show is the package, not
-// a taste in colours.
+// `themes.default` with `palettes.textbook`: a theme is a dictionary and a
+// palette is colour on its own, so `+` is all it takes to put one on the
+// other. Red for the built shapes, a blue accent, cream card surfaces. The
+// deck reads its own colours back out of `t` wherever it draws by hand, so a
+// change here reaches every drawing on it.
 //
 // The slide transitions used below are "zoom", "fade", "push" and "cover". The
 // full set is none, fade, slide, push, cover, uncover, zoom, blur, iris, wipe,
@@ -28,11 +30,12 @@
 // needed. This deck's theme keeps none of its own. `live` marks the parts of a
 // slide that actually move, so even a still screenshot says which half of the
 // slide is alive; `done` is its counterpart on the bridged lamp.
-#let live = accent
-#let done = rgb("#16a34a")
+#let t = themes.default + palettes.textbook
+#let live = t.accent
+#let done = rgb("#3f7d3a")
 
 #show: presentation.with(
-  theme: themes.plain,
+  theme: t,
   title: [A Tour of typstage],
   subtitle: [Every function once, and what it is for],
   author: [typstage #runtime-version],
@@ -195,8 +198,8 @@
     let b = (w - 24pt, h - 24pt)
     let c = (w - 24pt, 26pt)
     box(width: w, height: h, {
-      place(line(start: a, end: b, stroke: 3pt + themes.plain.muted))
-      place(line(start: b, end: c, stroke: from(2, 3pt + themes.plain.muted)))
+      place(line(start: a, end: b, stroke: 3pt + t.muted))
+      place(line(start: b, end: c, stroke: from(2, 3pt + t.muted)))
       place(line(start: a, end: c, stroke: from(3, 3.5pt + live)))
       place(dx: 74pt, dy: 44pt, from(3, text(size: 0.8em, fill: live)[c]))
     })
@@ -333,7 +336,7 @@ reach for `anim`.
 #v(1fr)
 
 #anim(align(center, block(width: 64%,
-  text(size: 0.9em, fill: themes.plain.muted)[
+  text(size: 0.9em, fill: t.muted)[
     Whatever transition a slide asks for, a morph overrides it with a
     cross-fade: otherwise the flight would ride on a moving stage.
   ])), at: "2-", enter: "fade")
@@ -371,12 +374,149 @@ and the wrong two find each other), the piece gets a name instead.
 #v(1fr)
 
 #anim(align(center, block(width: 64%,
-  text(size: 0.9em, fill: themes.plain.muted)[
+  text(size: 0.9em, fill: t.muted)[
     Without the pins both letters would find the nearest matching outline and
     quietly stay where they were.
   ])), at: "2-", enter: "fade")
 
 #v(0.5fr)
+
+== morph: without leaving the slide
+
+// The flight is not tied to a slide boundary. It happens between two steps,
+// and two steps of one slide are as much two steps as the change to the next
+// one. Two shapes carry that themselves, and both are on this slide at once,
+// stepping together.
+//
+// Left, `stagger(morph: true)`: every piece stays from its own step on, so at
+// a step change the piece set last is the source and the new one the target.
+// The new line grows out of the line above while the line above stays put.
+//
+// Right, `alternatives(morph: true)`: the versions all stand in the same
+// place, so the flight is no distance at all and what is left of it is the
+// glyphs rearranging themselves where they stand.
+//
+// `start: 1` on the right so the two run side by side on the same three
+// steps; left to itself it would take the three steps after them.
+#speaker-note[
+  Page forward and stay. Left the chain grows downwards, right the same three
+  steps happen in one place. Nothing else on the slide moves.
+]
+
+// Kein `#v(1fr)`-Paar: fünf Gleichungszeilen füllen den Rumpf, und gepolstert
+// lief die Folie unten hinaus.
+#v(0.2fr)
+
+// A caption over each half, because the two are told apart by which one they
+// are and not by what they say. Set here rather than left to the reader: a
+// slide that shows two things at once has to name both.
+#let ueber(was, satz) = align(center, {
+  text(size: 0.78em, raw(was))
+  linebreak()
+  text(size: 0.72em, fill: t.muted, satz)
+  v(10pt)
+})
+
+// The chain, as pairs of left-hand and right-hand side. Written apart for one
+// reason: `&` aligns inside *one* equation, and every piece of a stagger is an
+// equation of its own. So the alignment comes out of a shared measurement
+// instead -- the widest left-hand side, measured once, and every line set to
+// exactly that width, flush right. The equals signs then stand in a column and
+// every line is still its own piece for the flight to come out of.
+// Vier benannte Zeichen statt zweier gleichnamiger. Gleiche Namen auf der
+// Zielseite teilen sich *eine* Quelle -- das ist die Spaltung, die beim
+// Ausmultiplizieren gewollt ist. Aber `a` und `a` in derselben Fassung sind
+// zwei verschiedene Stellen der Rechnung, und ohne eigene Namen flog beim
+// Schritt von `(a+b)(a+b)` auf `a(a+b) + b(a+b)` alles aus dem letzten `a`
+// heraus, kreuz und quer. Die Ziffern stehen nirgends auf der Folie; sie sind
+// nur die Namen.
+#let eins = pin("a1", $a$)
+#let zwei = pin("b1", $b$)
+#let drei = pin("a2", $a$)
+#let vier = pin("b2", $b$)
+
+#let kette = (
+  ($#pin("x", $x$)^2 + #pin("halb", $6$)#pin("x", $x$) + #pin("c", $2$)$, $0$),
+  ($#pin("x", $x$)^2 + #pin("halb", $6$)#pin("x", $x$)$, $-#pin("c", $2$)$),
+  ($#pin("x", $x$)^2 + #pin("halb", $6$)#pin("x", $x$) + 9$,
+   $-#pin("c", $2$) + 9$),
+  ($(#pin("x", $x$) + #pin("halb", $3$))^2$, $7$),
+  ($#pin("x", $x$)$, $-#pin("halb", $3$) plus.minus sqrt(7)$),
+)
+
+#context {
+  let breit = calc.max(..kette.map(z => measure(z.first()).width.pt())) * 1pt
+  let zeile-roh(z) = box[
+    #box(width: breit, align(right, z.first()))
+    #h(0.3em) $=$ #h(0.3em)
+    #z.last()
+  ]
+  // Feste Zeilenhöhe, und der Abstand zwischen den Blöcken ausdrücklich
+  // gesetzt: nur so ist der Zeilenabstand eine Zahl, die auch die Anmerkungen
+  // daneben benutzen können. (`spacing:` von `stagger` greift nur im
+  // Listenzweig; hier stehen die Stücke einzeln, und dann zählt der
+  // Blockabstand.)
+  let zh = calc.max(..kette.map(z => measure(zeile-roh(z)).height.pt())) * 1pt
+  let luft = 13pt
+  let zeile(z) = box(height: zh, align(horizon, zeile-roh(z)))
+  side-by-side(
+    split: (1.3fr, 1fr), align: top,
+    {
+      ueber("stagger(morph: \"rewrite\")", [every line stays])
+      // Etwas kleiner als der Fließtext: die längste Zeile stieß sonst an den
+      // Rand der Spalte.
+      set text(size: 0.9em)
+      // Ein Kasten mit fester Höhe, damit `place` an seiner oberen linken Ecke
+      // hängt und nicht am Fluss: die Anmerkungen sollen *neben* den Zeilen
+      // stehen, nicht unter ihnen.
+      set block(spacing: luft)
+      block(width: 100%, height: (zh + luft) * kette.len(), {
+        stagger(morph: "rewrite", ..kette.map(zeile))
+        // Was zu der jeweiligen Zeile geführt hat, an ihrem Rand.
+        // `stagger-layer` schlägt den Schritt nach, statt ihn abzuzählen: die
+        // Anmerkung zur Umformung k erscheint mit der Zeile, die aus ihr
+        // hervorgeht -- und steht neben der Zeile *darüber*, denn dort wird
+        // gerechnet. Daher `dy` eine Zeilenhöhe weniger.
+        for (nr, was) in ((2, $| -2$), (3, $| +9$), (4, $"binomial"$),
+                          (5, $| sqrt("")$)) {
+          // `top + left` ausdrücklich: ohne eine Ausrichtung hängt `place` an
+          // der Stelle im Fluss, an der es steht -- also unter der Kette --
+          // und nicht an der Ecke des Kastens.
+          place(top + left, dx: breit + 112pt,
+                dy: (nr - 2) * (zh + luft) + zh / 2 - 8pt,
+                stagger-layer("rewrite", nr,
+                              text(size: 0.78em, fill: t.muted, was)))
+        }
+      })
+    },
+    {
+      ueber("alternatives(morph: true)", [one place])
+      // Das `align(center, …)` gehört um den ganzen Aufruf: `alternatives`
+      // baut einen Kasten so breit wie seine breiteste Fassung, und der stand
+      // sonst linksbündig unter einer mittigen Überschrift.
+      align(center, alternatives(morph: true, start: 1, align: center + top,
+        $ (#eins + #zwei)^2 $,
+        $ (#eins + #zwei)(#drei + #vier) $,
+        // Kein Zwischenschritt `a(a+b) + b(a+b)`. Dort wird *eine* Klammer zu
+        // zweien, und was ein Zeichen mit sich nimmt, hängt daran, welche der
+        // beiden Kopien man ansieht -- gemessen sah der Flug zerrissen aus,
+        // gleich wie die vier Zeichen benannt waren. Der Schritt hier verteilt
+        // jedes mit jedem, und dann hat jedes seinen Weg.
+        $ #eins dot #drei + #eins dot #vier
+          + #zwei dot #drei + #zwei dot #vier $,
+        $ #eins#drei + #eins#vier + #zwei#drei + #zwei#vier $,
+        $ #eins^2 + 2#eins#vier + #vier^2 $,
+      ))
+    },
+  )
+}
+
+#anim(align(center, text(size: 0.8em, fill: t.muted)[
+  Both are `morph` calls of one name with ranges that do not overlap, written
+  out for you.
+]), at: "6-", enter: "fade")
+
+#v(0.2fr)
 
 == camera: closer, and back out again
 
@@ -432,15 +572,16 @@ and the wrong two find each other), the piece gets a name instead.
     let x = -2.2 + i / 88 * 4.4
     (px(x), py(f(x)))
   })
-  // The tangent at x0, from the derivative that this slide is about.
-  let t(x) = f(x0) + 2 * x0 * (x - x0)
+  // The tangent at x0, from the derivative that this slide is about. Not
+  // called `t`: that is the deck's own colour world, a few pages up.
+  let tang(x) = f(x0) + 2 * x0 * (x - x0)
   box(width: w, height: h, clip: true, {
-    place(rect(width: w, height: h, fill: luma(94%), stroke: none))
+    place(rect(width: w, height: h, fill: t.surface, stroke: none))
     place(line(start: (0pt, py(0)), end: (w, py(0)),
-               stroke: 1pt + themes.plain.border))
-    place(curve(stroke: 2.5pt + themes.plain.muted, curve.move(bogen.first()),
+               stroke: 1pt + t.border))
+    place(curve(stroke: 2.5pt + t.muted, curve.move(bogen.first()),
                 ..bogen.slice(1).map(curve.line)))
-    place(line(start: (px(-2.2), py(t(-2.2))), end: (px(2.2), py(t(2.2))),
+    place(line(start: (px(-2.2), py(tang(-2.2))), end: (px(2.2), py(tang(2.2))),
                stroke: 3pt + live))
     place(dx: px(x0) - 5pt, dy: py(f(x0)) - 5pt,
           circle(radius: 5pt, fill: live, stroke: none))
@@ -504,21 +645,22 @@ and the wrong two find each other), the piece gets a name instead.
 
 // The drawing function gets a name of its own so `still:` can call it a second
 // time, for the single frame that goes into the PDF.
-#let wave(t) = {
-  // `t` runs from 0 to 1, and Typst renders every frame separately. Here a
-  // curve grows from left to right, so the picture shows that it is being
-  // *drawn* rather than merely moved.
+#let wave(anteil) = {
+  // `anteil` runs from 0 to 1, and Typst renders every frame separately. Here
+  // a curve grows from left to right, so the picture shows that it is being
+  // *drawn* rather than merely moved. Not called `t`: that name belongs to the
+  // deck's colour world at the top of this file.
   let w = 340pt
   let h = 190pt
   let n = 60
   // `calc.round` returns a float; `range` wants an integer.
-  let upto = calc.max(1, int(calc.round(n * t)))
+  let upto = calc.max(1, int(calc.round(n * anteil)))
   let points = range(upto + 1).map(i => (
     i / n * w,
     h / 2 - 54pt * calc.sin(i / n * 3 * calc.pi),
   ))
   box(width: w, height: h, clip: true, {
-    place(rect(width: w, height: h, fill: luma(94%), stroke: none))
+    place(rect(width: w, height: h, fill: t.surface, stroke: none))
     place(curve(
       stroke: 4pt + live,
       curve.move(points.first()),
@@ -550,7 +692,7 @@ and the wrong two find each other), the piece gets a name instead.
                6.31, 6.32, 6.32, 6.33, 6.33, 6.33, 6.33, 6.33)
   table(
     columns: werte.len() + 1,
-    stroke: 0.5pt + themes.plain.border,
+    stroke: 0.5pt + t.border,
     inset: 7pt,
     align: right,
     table.header([*t* / s], ..range(1, werte.len() + 1).map(i => [#(i * 5)])),
@@ -572,7 +714,7 @@ and the wrong two find each other), the piece gets a name instead.
     its place, for the one large number meant to fill the slide.
 ]
 
-#anim(text(size: 0.85em, fill: themes.plain.muted)[
+#anim(text(size: 0.85em, fill: t.muted)[
   Eighteen columns at their natural size are wider than this slide. Nothing in
   the source says by how much they had to give.
 ], at: "3-", enter: "fade")
@@ -611,6 +753,65 @@ and the wrong two find each other), the piece gets a name instead.
 
 #v(1fr)
 
+== enter: "draw": the same gesture, one layout
+
+// The flipbook next door drew this curve by setting thirty pictures. Here the
+// same curve comes out of one. A stroked SVG path carries its own length;
+// `stroke-dasharray` cuts it into a dash of exactly that length and a gap just
+// as long, and `stroke-dashoffset` slides the dash in. At full offset nothing
+// is there, at zero everything is, and in between a pen traces the path.
+// Nothing is laid out twice.
+//
+// Deliberately the same wave as the flipbook: the room has just seen it built
+// out of thirty layouts, and that is what makes this an argument rather than
+// an example.
+//
+// Not on step one. Entering a slide restores the state instead of playing the
+// entrances -- otherwise the transition and a dozen reveals would run against
+// each other -- so a drawing needs a step in front of it.
+//
+// Two elements rather than one, laid over each other in a box of fixed size:
+// every stroked path of *one* element sets off at the same time, and there is
+// no knob for that. An order is said instead, one step per piece. That is the
+// axis on step two and the curve on step three.
+//
+// 1400 ms, not the deck's 520: a drawing wants more time than a bullet point,
+// and here the travel is the whole point.
+#let feld = (340pt, 190pt)
+
+#let grundlinie = {
+  let (w, h) = feld
+  line(start: (0pt, h / 2), end: (w, h / 2), stroke: 2pt + t.muted)
+}
+
+#let welle = {
+  let (w, h) = feld
+  let punkte = range(0, 121).map(i => (
+    i / 120 * w,
+    h / 2 - 54pt * calc.sin(i / 120 * 3 * calc.pi),
+  ))
+  curve(stroke: 4pt + live, curve.move(punkte.first()),
+        ..punkte.slice(1).map(curve.line))
+}
+
+#v(1fr)
+
+#side-by-side(
+  split: (1fr, 1fr), align: horizon,
+  box(width: feld.first(), height: feld.last(), {
+    place(anim(grundlinie, at: "2-", enter: "draw", duration: 900))
+    place(anim(welle, at: "3-", enter: "draw", duration: 1400))
+  }),
+  stagger[
+    - The same curve as next door, out of one layout instead of thirty.
+    - Only strokes are traced. A glyph is a filled shape with no length to
+      travel along, so text fades -- over exactly the drawing time.
+    - An element with no stroke at all says so in the console, once.
+  ],
+)
+
+#v(1fr)
+
 == Embedding a foreign document
 
 // `embed` puts arbitrary HTML into a sandboxed frame. `bridge:` gives that frame
@@ -630,8 +831,8 @@ and the wrong two find each other), the piece gets a name instead.
 #let lamp = (
   "<style>body{display:grid;place-items:center}"
   + "#p{width:3.4em;height:3.4em;border-radius:50%;background:"
-  + themes.plain.muted.to-hex() + ";box-shadow:0 0 0 .3em "
-  + themes.plain.border.to-hex() + ";transition:background .45s}</style>"
+  + t.muted.to-hex() + ";box-shadow:0 0 0 .3em "
+  + t.border.to-hex() + ";transition:background .45s}</style>"
   + "<div><div id=p></div></div><script>"
   // Without this announcement the frame stays mute: the runtime marks a frame
   // live only once the document has said hello, and sends it nothing until then.
@@ -650,21 +851,21 @@ and the wrong two find each other), the piece gets a name instead.
         // In paged output nothing can run, and `embed` would leave a
         // labelled grey box. `fallback` puts the lamp at rest there, so
         // whoever holds the handout can see what the frame holds.
-        fallback: circle(radius: 24pt, fill: themes.plain.muted,
-                         stroke: 5pt + themes.plain.border)),
+        fallback: circle(radius: 24pt, fill: t.muted,
+                         stroke: 5pt + t.border)),
   stagger[
-    - `bridge: "lamp"` names the frame; `bridge-job` sends it a dictionary on
+    - `bridge: "lamp"` names the frame, `bridge-job` sends it a dictionary on
       a step. The lamp changes for that reason and no other.
-    - The document has to announce itself once with
-      `postMessage({typstage: 1, ready: 1})`, or it silently gets nothing.
-    - Paging back replays the whole run with a `reset`, so a job has to be
-      repeatable: "set the colour to green", never "make it greener".
+    - The document announces itself once with
+      `postMessage({typstage: 1, ready: 1})`, or it gets nothing.
+    - Paging back replays the run with a `reset`, so a job has to be
+      repeatable.
   ],
 )
 
 // The three jobs sit on the first three steps, next to the first three bullets:
 // the lamp is the proof that the sentence beside it is true.
-#bridge-job("lamp", (color: themes.plain.muted.to-hex()), at: 1)
+#bridge-job("lamp", (color: t.muted.to-hex()), at: 1)
 #bridge-job("lamp", (color: live.to-hex()), at: 2)
 #bridge-job("lamp", (color: done.to-hex()), at: 3)
 
@@ -699,20 +900,21 @@ and the wrong two find each other), the piece gets a name instead.
 #let einheitskreis = {
   let r = 74pt
   let w = 2 * r + 30pt
-  let t = 1.0472            // 60 degrees, where the drawing stands still
-  let px = r * calc.cos(t)
-  let py = r * calc.sin(t)
+  // Nicht `t`: so heisst weiter oben die Farbwelt des Decks.
+  let winkel = 1.0472       // 60 degrees, where the drawing stands still
+  let px = r * calc.cos(winkel)
+  let py = r * calc.sin(winkel)
   box(width: w, height: w, {
     place(dx: w / 2 - r, dy: w / 2 - r,
-          circle(radius: r, stroke: 1.6pt + themes.plain.muted, fill: none))
+          circle(radius: r, stroke: 1.6pt + t.muted, fill: none))
     place(line(start: (15pt, w / 2), end: (w - 15pt, w / 2),
-               stroke: 1pt + themes.plain.border))
+               stroke: 1pt + t.border))
     place(line(start: (w / 2, 15pt), end: (w / 2, w - 15pt),
-               stroke: 1pt + themes.plain.border))
+               stroke: 1pt + t.border))
     place(line(start: (w / 2 + px, w / 2), end: (w / 2 + px, w / 2 - py),
                stroke: 3pt + live))
     place(line(start: (w / 2, w / 2), end: (w / 2 + px, w / 2 - py),
-               stroke: 3pt + themes.plain.muted))
+               stroke: 3pt + t.muted))
     place(dx: w / 2 + px - 4.5pt, dy: w / 2 - py - 4.5pt,
           circle(radius: 4.5pt, fill: live, stroke: none))
   })
@@ -732,13 +934,11 @@ and the wrong two find each other), the piece gets a name instead.
            link: "https://www.geogebra.org/calculator"),
   stagger[
     - `ggb-run` builds the construction, `ggb-view` sets the section of the
-      plane, `ggb-style` fixes colour and weight so a rebuild cannot hand out
-      a different palette colour.
-    - `ggb-tween` sends a value on a journey, once and then stop.
-      `ggb-set` puts it where you want it with no journey at all.
-    - `ggb-hide` and `ggb-show` keep the radius and the sine out of the way
-      until they are being talked about; `ggb-animate` is GeoGebra's own
-      animation, which runs back and forth without end.
+      plane, `ggb-style` nails colour and weight.
+    - `ggb-tween` sends a value on a journey. `ggb-set` puts it where you
+      want it with no journey at all.
+    - `ggb-hide` and `ggb-show` keep the radius and the sine back;
+      `ggb-animate` is GeoGebra's own, and it has no end.
   ],
 )
 
@@ -751,7 +951,7 @@ and the wrong two find each other), the piece gets a name instead.
 #ggb-set((t: 0), target: "circle", at: "1-")
 #ggb-view(target: "circle", x: (-1.8, 1.8), y: (-1.25, 1.25),
           grid: false, at: "1-")
-#ggb-style("k", target: "circle", at: "1-", color: themes.plain.muted,
+#ggb-style("k", target: "circle", at: "1-", color: t.muted,
            thickness: 2, label: false)
 #ggb-style("P", target: "circle", at: "1-", color: live, point-size: 5)
 #ggb-style("s", "c", target: "circle", at: "1-", thickness: 4, label: false)
@@ -814,7 +1014,7 @@ and the wrong two find each other), the piece gets a name instead.
   + "</style>"
   + "<svg id=\"s\" viewBox=\"0 0 400 130\" preserveAspectRatio=\"none\">"
   + "<line x1=\"0\" y1=\"65\" x2=\"400\" y2=\"65\" vector-effect=\"non-scaling-stroke\""
-  + " stroke=\"" + themes.plain.border.to-hex() + "\" stroke-width=\"1\"/>"
+  + " stroke=\"" + t.border.to-hex() + "\" stroke-width=\"1\"/>"
   + "<polyline id=\"w\" fill=\"none\" vector-effect=\"non-scaling-stroke\""
   + " stroke=\"" + live.to-hex() + "\" stroke-width=\"2.4\" stroke-linejoin=\"round\"/>"
   // A transparent sheet over the whole box, so a press anywhere counts and not
@@ -927,7 +1127,7 @@ and the wrong two find each other), the piece gets a name instead.
   Built on this slide with `theme(…)`: #swatch(eigen.paper, "paper")
   #swatch(eigen.ink, "ink") #swatch(eigen.accent, "accent")
   #swatch(eigen.muted, "muted") — #eigen.keys().len() keys, and
-  `themes.plain` has #themes.plain.keys().len().
+  this deck's own theme has #t.keys().len().
 ], at: 2, enter: "fade-up")
 
 == Palettes, and the contract they are held to
@@ -962,9 +1162,9 @@ and the wrong two find each other), the piece gets a name instead.
       column-gutter: 14pt,
       align: (left, right, left),
       table.header(
-        text(size: 0.72em, fill: themes.plain.muted)[`palettes.dark`],
-        text(size: 0.72em, fill: themes.plain.muted)[measured],
-        text(size: 0.72em, fill: themes.plain.muted)[wants],
+        text(size: 0.72em, fill: t.muted)[`palettes.dark`],
+        text(size: 0.72em, fill: t.muted)[measured],
+        text(size: 0.72em, fill: t.muted)[wants],
       ),
       ..bericht.map(f => (
         text(size: 0.78em, raw(f.pair)),
@@ -1041,7 +1241,7 @@ and the wrong two find each other), the piece gets a name instead.
   },
 )
 
-#anim(text(size: 0.85em, fill: themes.plain.muted)[
+#anim(text(size: 0.85em, fill: t.muted)[
   Both are read off the state every slide already carries: no `query`, no
   second walk over the document, and the same answer in the HTML and in the
   PDF.
@@ -1073,10 +1273,9 @@ and the wrong two find each other), the piece gets a name instead.
 
 #anim(callout(title: [Why this slide only quotes it])[
   #text(size: 0.85em)[
-    A file that calls `bundle` compiles *only* with `--format bundle`; `typst
-    compile talk.typ talk.pdf` aborts on it. This deck has to come out as HTML
-    and as PDF, so it cannot call the thing it is about. Whoever wants both
-    writes the body into a `#let` and calls `presentation` by hand.
+    A file that calls `bundle` compiles *only* with `--format bundle`. This
+    deck has to come out as HTML and as PDF, so it cannot call the thing it is
+    about. Whoever wants both writes the body into a `#let`.
   ]
 ], at: 2, enter: "fade-up")
 
