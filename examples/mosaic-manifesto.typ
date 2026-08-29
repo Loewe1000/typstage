@@ -2,10 +2,11 @@
 //
 // Source: the "Minimalist White Slides" template by SlidesCarnival
 // (https://www.slidescarnival.com/), CC BY 4.0, adapted; mosaic brought it to
-// Typst first (docs-src/examples/decks/manifesto). The template's photographs
-// are not carried over; duotone surfaces drawn in plain Typst stand in their
-// place — a poster in one colour cannot take a second one, and a photograph
-// would bring one along.
+// Typst first (docs-src/examples/decks/manifesto). None of the template's
+// photographs are used: the pictures here are synthetic, generated for this
+// deck, and reduced to a true cream-to-red duotone — a poster in one colour
+// cannot take a second one, and a photograph in full colour would bring one
+// along. See `mosaic-manifesto-bilder/PROVENANCE.md`.
 //
 //   typst compile mosaic-manifesto.typ mosaic-manifesto.html --format html --features html
 //   typst compile mosaic-manifesto.typ mosaic-manifesto.pdf
@@ -25,34 +26,25 @@
 #let cream = rgb("#fffcf9")
 #let red = rgb("#c83224")
 
-// ── Duotone surfaces ───────────────────────────────────────────────────────
-// In place of the photographs: red, cream and the tints between them. Four
-// compositions, all in the same area, so one can stand in for another.
-#let tint = red.lighten(62%)
-#let deep = red.darken(18%)
+// ── The pictures ───────────────────────────────────────────────────────────
+// In place of the template's photographs, and in its register: people at work,
+// seen so that nobody is identifiable -- hands on a table, a circle of arms
+// from above, a room from behind. Each is a true duotone, cream to deep red:
+// the poster's argument is one colour, and a picture carrying a second one
+// would be the exception that breaks it. What they are and where they come
+// from is in `mosaic-manifesto-bilder/`.
+#let pictures = (
+  "mosaic-manifesto-bilder/table.webp",  // 0  six pairs of hands, from above
+  "mosaic-manifesto-bilder/hands.webp",  // 1  a circle of arms, from above
+  "mosaic-manifesto-bilder/team.webp",   // 2  a room at work, from behind
+  "mosaic-manifesto-bilder/desk.webp",   // 3  one pair of hands, a notebook
+)
 
-#let duotone(n) = block(width: 100%, height: 100%, clip: true, {
-  let i = calc.rem(n, 4)
-  place(top + left, rect(width: 100%, height: 100%,
-                         fill: (tint, red, tint, deep).at(i)))
-  if i == 0 {
-    place(bottom + left, rect(width: 100%, height: 42%, fill: red))
-    place(top + right, dx: -14%, dy: 16%, circle(radius: 34pt, fill: cream))
-  } else if i == 1 {
-    place(center + horizon, dy: 10pt, circle(radius: 54pt, fill: cream))
-    place(bottom + left, rect(width: 100%, height: 14%, fill: deep))
-  } else if i == 2 {
-    for j in range(4) {
-      place(top + left, dy: 12% + j * 20%,
-            rect(width: 100%, height: 7%, fill: red))
-    }
-  } else {
-    place(top + left, dx: -40pt, dy: -40pt, circle(radius: 90pt, fill: red))
-    place(bottom + right, dx: -12%, dy: -14%, circle(radius: 26pt, fill: tint))
-  }
-})
+#let duotone(n) = block(width: 100%, height: 100%, clip: true,
+  image(pictures.at(calc.rem(n, pictures.len())),
+        width: 100%, height: 100%, fit: "cover"))
 
-/// A surface in the red keyline the template draws around its pictures.
+/// A picture in the red keyline the template draws around its own.
 #let plated(n) = rect(width: 100%, height: 100%, stroke: 1.5pt + red,
                       inset: 0pt, duotone(n))
 
@@ -267,8 +259,76 @@ They can inform, persuade, teach, or spark discussion.]
     )
   ],
 
+  // ── 09 Meet the team ─────────────────────────────────────────────────────
+  // The template's own team slide: a hairline between the claim and the
+  // people, three rows of picture and name. The pictures carry no faces (see
+  // `mosaic-manifesto-bilder/PROVENANCE.md`), so the rows name the work rather
+  // than a person -- which is what a manifesto talks about anyway.
+  slide(none, note: [Three rows, one keypress each. The hairline draws itself
+                     first: here stands who we are, there stands what we do.])[
+    #bands((0.98fr, 4pt, 0.97fr),
+      plate(inset: 48pt, align: left + horizon,
+            title-text([Meet the team], size: 2.05em)),
+      plate(align: center + horizon, divider),
+      plate(inset: (left: 24pt, right: 48pt), align: left + horizon)[
+        #stagger(spacing: 14pt, start: 3, enter: "fade-left",
+          ..(("Around the table", "we decide together", 0),
+             ("Shoulder to shoulder", "we build it", 1),
+             ("At the desk", "we write it down", 3))
+            .map(zeile => grid(
+              columns: (72pt, 1fr), column-gutter: 14pt, align: horizon,
+              block(width: 72pt, height: 72pt, plated(zeile.at(2))),
+              // Zwei Blöcke mit gesetztem Abstand, kein `linebreak`: der
+              // Zeilenumbruch ließ Name und Zeile darunter über die ganzen 72
+              // Punkte der Reihe auseinanderlaufen -- oben der Name, unten die
+              // Zeile, dazwischen Luft. Dieselbe Form wie auf der Zahlenfolie.
+              block(width: 100%, {
+                block(above: 0pt, below: 0.3em,
+                      title-text(zeile.at(0), size: 1.07em))
+                block(above: 0pt, below: 0pt,
+                      body-text(zeile.at(1), size: 0.8em))
+              }),
+            )),
+        )
+      ],
+    )
+  ],
+
   // ── 09 Section ───────────────────────────────────────────────────────────
   section([Our projects], transition: (kind: "cover", from: "bottom")),
+
+  // ── 10 One project ───────────────────────────────────────────────────────
+  // The template gives a project a whole page: the picture in its keyline on
+  // one side, the claim on the other. The keyline is the template's own device
+  // for a photograph, and this deck keeps it.
+  slide(none)[
+    #bands((0.82fr, 1fr),
+      plate(inset: (top: 44pt, left: 48pt, bottom: 38pt), plated(2)),
+      plate(inset: (left: 30pt, right: 48pt), align: left + horizon)[
+        #title-text([One project], size: 2.05em)
+        #v(12pt)
+        #body-text(copy)
+        #v(18pt)
+        #anim(at: 2, enter: "fade-left",
+              body-text([And what came of it, in one line.], size: 0.86em))
+      ],
+    )
+  ],
+
+  // ── 11 Image mosaic ──────────────────────────────────────────────────────
+  // Four pictures, one field, no text. The template puts a page like this
+  // between two arguments, and it works because nothing on it explains
+  // anything.
+  slide(none, note: [Say nothing here. The page is a breath between two
+                     arguments.])[
+    #plate(inset: (top: 44pt, left: 48pt, right: 48pt, bottom: 38pt))[
+      #grid(
+        columns: (1fr, 1fr), rows: (1fr, 1fr),
+        column-gutter: 8pt, row-gutter: 8pt,
+        ..range(4).map(i => block(width: 100%, height: 100%, duotone(i))),
+      )
+    ]
+  ],
 
   // ── 10 Numbers ───────────────────────────────────────────────────────────
   slide(none, note: [One number per keypress. A poster puts its numbers down;

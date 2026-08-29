@@ -3,9 +3,10 @@
 // Source: the "Cream, Green, and Black Geometric Blocks Clean Minimal
 // Presentation" template by SlidesCarnival (https://www.slidescarnival.com/),
 // CC BY 4.0, adapted; mosaic brought it to Typst first
-// (docs-src/examples/decks/editorial). The template's photographs are not
-// carried over — geometric plates drawn in plain Typst stand in their place.
-// The template is called "Geometric Blocks"; it can take it.
+// (docs-src/examples/decks/editorial). None of the template's photographs are
+// used: the six plates are synthetic pictures generated for this deck, in the
+// register the template works in — warm minimal interiors, ceramics, wood and
+// marble. See `mosaic-editorial-bilder/PROVENANCE.md`.
 //
 //   typst compile mosaic-editorial.typ mosaic-editorial.html --format html --features html
 //   typst compile mosaic-editorial.typ mosaic-editorial.pdf
@@ -41,52 +42,33 @@
 #let rose = rgb("#cbb0a2")
 #let shell = rgb("#efe9e0")
 
-/// One plate: a ground tone, two or three shapes on it, hard-cropped.
+/// One plate: a photograph, filling its cell and hard-cropped.
 ///
-/// `n` picks the composition. All six fill the same area, so one plate can
-/// replace another without anything beside it moving.
-#let plate-art(n) = block(width: 100%, height: 100%, clip: true, {
-  let i = calc.rem(n, 6)
-  place(top + left, rect(width: 100%, height: 100%,
-                         fill: (shell, sand, rose, shell, sand, rose).at(i)))
-  if i == 0 {
-    // A disc above an edge.
-    place(top + right, dx: -18pt, dy: 34pt, circle(radius: 46pt, fill: clay))
-    place(bottom + left, rect(width: 100%, height: 26%, fill: sand))
-  } else if i == 1 {
-    // An archway: a rectangle with its top corners taken off. As a circle on
-    // a rectangle it looked like a matchstick.
-    place(bottom + center, dy: -14%, rect(
-      width: 44%, height: 60%, fill: shell,
-      radius: (top-left: 100%, top-right: 100%),
-    ))
-    place(bottom + left, dy: -8%, line(length: 100%, stroke: 1pt + clay))
-  } else if i == 2 {
-    // Two overlapping discs.
-    place(center + horizon, dx: -22pt, circle(radius: 50pt, fill: shell))
-    place(center + horizon, dx: 24pt, dy: 14pt,
-          circle(radius: 36pt, stroke: 1.2pt + ink))
-  } else if i == 3 {
-    // Stacked bands, like a shelf seen from the side.
-    for (j, h) in (14%, 9%, 20%).enumerate() {
-      place(top + left, dy: 16% + j * 22%,
-            rect(width: 100%, height: h, fill: (clay, sand, rose).at(j)))
-    }
-  } else if i == 4 {
-    // A quarter disc in the corner and one tall narrow form.
-    place(top + left, dx: -58pt, dy: -58pt, circle(radius: 116pt, fill: rose))
-    place(bottom + right, dx: -34pt, rect(width: 16%, height: 52%, fill: ink))
-  } else {
-    // A vase on a table: wide below, narrow above, a disc behind it that is
-    // allowed to be the light.
-    place(bottom + center, dy: -18%, rect(
-      width: 22%, height: 30%, fill: shell,
-      radius: (top-left: 60%, top-right: 60%, bottom: 12pt),
-    ))
-    place(top + right, dx: -22%, dy: 16%, circle(radius: 30pt, fill: sand))
-    place(bottom + left, rect(width: 100%, height: 18%, fill: clay))
-  }
-})
+/// `n` picks the picture. All six fill the same area, so one plate can replace
+/// another without anything beside it moving -- which is why the call sites
+/// name a number and not a subject.
+///
+/// The six stand in for the photographs of the template this deck is modelled
+/// on, and they keep to its register: warm minimal interiors and still lifes,
+/// ceramics, dried grasses, wood and marble, one dark botanical texture. What
+/// they are and where they come from is in `mosaic-editorial-bilder/`.
+///
+/// `fit: "cover"` and not `"contain"`: a plate fills its cell, and the box
+/// cuts away what runs over the edge. Otherwise a strip of ground would stand
+/// beside the picture, and the cell would no longer be the surface the layout
+/// treats it as.
+#let plates = (
+  "mosaic-editorial-bilder/shelf.webp",   // 0  vases and dried palm on a shelf
+  "mosaic-editorial-bilder/room.webp",    // 1  an arched window, two chairs
+  "mosaic-editorial-bilder/marble.webp",  // 2  two vessels on marble
+  "mosaic-editorial-bilder/leaves.webp",  // 3  dried leaves, edge to edge
+  "mosaic-editorial-bilder/corner.webp",  // 4  a corner, a wooden window
+  "mosaic-editorial-bilder/table.webp",   // 5  succulents seen from above
+)
+
+#let plate-art(n) = block(width: 100%, height: 100%, clip: true,
+  image(plates.at(calc.rem(n, plates.len())),
+        width: 100%, height: 100%, fit: "cover"))
 
 // ── Surfaces ───────────────────────────────────────────────────────────────
 
@@ -405,6 +387,27 @@ dolore magna aliqua.]
         ))),
       ))
     })
+  ],
+
+  // ── 11 Gallery ───────────────────────────────────────────────────────────
+  // The template's gallery page: a third for the heading, two thirds for a
+  // grid of pictures with hairline gutters. Its own grid is three by three and
+  // uneven on purpose -- 0.8/1.1/0.9 across, 0.7/1.15/0.65 down -- so that no
+  // cell is the obvious one. Six plates, so this one is three by two, with the
+  // same unevenness.
+  slide(none, note: [Nothing to read out. Page on once the room has looked.])[
+    #framed(bands((0.34fr, 0.66fr),
+      plate(fill: cream, inset: 38pt, align: left + horizon)[
+        #head([Gallery], size: 1.9em)
+        #v(10pt)
+        #text(size: 0.82em, fill: ink.lighten(25%), filler)
+      ],
+      plate(inset: 0pt, grid(
+        columns: (0.85fr, 1.1fr, 0.9fr), rows: (1.1fr, 0.75fr),
+        column-gutter: 5pt, row-gutter: 5pt,
+        ..range(6).map(i => block(width: 100%, height: 100%, plate-art(i))),
+      )),
+    ))
   ],
 
   // ── 11 Market research ───────────────────────────────────────────────────
