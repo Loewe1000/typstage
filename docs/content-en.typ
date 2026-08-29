@@ -3569,6 +3569,19 @@ it and names the ones that do not fit.
 It is off by default and meant to be switched on for a run, not left on while
 writing.
 
+A build script does not have to edit the deck to do that. The same setting can
+be raised from the command line, which is how the seventeen example decks of
+this package are measured on every push:
+
+#show-code(```sh
+typst compile --features html --format html \
+  --input typstage-overflow=error deck.typ deck.html
+```)
+
+The input raises, it never lowers. Of the two settings the stricter one wins,
+`"none"` < `"record"` < `"error"`, so a deck that asks for `"error"` itself
+keeps it and no run can quietly switch a check off in passing.
+
 A deck needs this more than a document does. A page one leafs through shows an
 overrun: the line simply stands past the margin and the eye catches it. A
 typstage slide goes into an SVG frame of fixed size and is scaled in the

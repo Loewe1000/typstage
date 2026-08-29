@@ -1,14 +1,14 @@
-<img src="assets/logo.svg" alt="typstage" width="360">
+<img src="assets/logo.svg" alt="The typstage wordmark: four coloured shapes rising like a lit stage beside the name" width="360">
 
 # typstage
 
 **Animated HTML presentations from a single Typst file, and the slide set and
 the handout as PDF from that same file.**
 
-[![Manual](https://img.shields.io/badge/docs-manual-green)](https://loewe1000.github.io/typstage/)
-[![Example decks](https://img.shields.io/badge/demo-seventeen%20decks-blue)](https://loewe1000.github.io/typstage/beispiele/en.html)
-[![Changelog](https://img.shields.io/badge/changelog-0.1.0-lightgrey)](CHANGELOG.md)
-![License](https://img.shields.io/github/license/Loewe1000/typstage)
+[![Badge linking to the typstage manual](https://img.shields.io/badge/docs-manual-green)](https://loewe1000.github.io/typstage/)
+[![Badge linking to seventeen example decks](https://img.shields.io/badge/demo-seventeen%20decks-blue)](https://loewe1000.github.io/typstage/beispiele/en.html)
+[![Badge linking to the changelog for version 0.1.0](https://img.shields.io/badge/changelog-0.1.0-lightgrey)](CHANGELOG.md)
+![Badge showing the license this package is released under](https://img.shields.io/github/license/Loewe1000/typstage)
 
 ```bash
 typst compile deck.typ deck.html --format html --features html   # the animated talk
@@ -374,7 +374,7 @@ generated from the built pages so its anchors cannot go stale.
 **Every example in the manual is compiled on every build** — 201 of them, plus
 fifteen that are checked for failing as they should. The example decks are then
 driven through a real browser, step by step, and compared against recorded
-values. [`CONTRIBUTING.md`](CONTRIBUTING.md) describes how, and how to build
+values. [`CONTRIBUTING.md`](https://github.com/Loewe1000/typstage/blob/main/CONTRIBUTING.md) describes how, and how to build
 the manual and the site yourself.
 
 ## GeoGebra

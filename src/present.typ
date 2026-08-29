@@ -367,6 +367,18 @@
 ///   'query(<typstage-overflow>).map(e => e.value)'
 /// ```
 ///
+/// The same setting can be raised from the command line, so a build script
+/// can measure a deck without editing it:
+///
+/// ```sh
+/// typst compile --features html --format html \
+///   --input typstage-overflow=error deck.typ deck.html
+/// ```
+///
+/// The input raises, it never lowers. Of the two the stricter one wins,
+/// `"none"` < `"record"` < `"error"`, so a run cannot switch off a check the
+/// deck asked for.
+///
 /// It is not meant to stay on while writing. Measured over the six example
 /// decks: in HTML it costs noticeably more time, between 1.2 and 1.5 times
 /// depending on the deck and on how the process start is accounted for. On
@@ -443,6 +455,26 @@
   assert(overflow in ("none", "error", "record"), message:
     "typstage: overflow is \"none\" (the default), \"error\" or \"record\", "
     + "not " + repr(overflow))
+  // Von außen anschaltbar. Der Melder ist per Vorgabe aus, weil er den Bau um
+  // das 1,2- bis 1,5-fache verteuert -- und genau deshalb lief er über die
+  // Beispieldecks nie. Gemessen an einer Folie, die 33 Punkte unter die Bühne
+  // ragte: der Decklauf meldete "ok", denn er prüft nur, *dass* der Melder
+  // noch meldet, nicht die Decks selbst.
+  //
+  //   typst compile --input typstage-overflow=error deck.typ deck.html
+  //
+  // Die Eingabe hebt an, sie senkt nie ab. Es gilt der strengere der beiden
+  // Werte, "none" < "record" < "error". Sonst könnte ein Lauf ein Deck, das
+  // den Melder selbst auf "error" gestellt hat, im Vorbeigehen stumm schalten
+  // -- und ausgerechnet die Probe wäre der Weg, eine Prüfung abzustellen.
+  let strenge = ("none": 0, "record": 1, "error": 2)
+  let von-aussen = sys.inputs.at("typstage-overflow", default: "none")
+  assert(von-aussen in strenge, message:
+    "typstage: --input typstage-overflow= is \"none\", \"error\" or "
+    + "\"record\", not " + repr(von-aussen))
+  let overflow = if strenge.at(von-aussen) > strenge.at(overflow) {
+    von-aussen
+  } else { overflow }
   assert(drift in ("none", "error", "record"), message:
     "typstage: drift is \"error\" (the default), \"record\" or \"none\", not "
     + repr(drift))

@@ -42,6 +42,8 @@ AGGREGAT=/path/to/Typst-Schule bash .github/scripts/build-site.sh
 | `decklauf/flug-hoehe.js` | what lies on top of what during a flight |
 | `decklauf/sprung.js` | what a jump into a running transition leaves behind |
 | `pruefe-palette.py` | the contrast contract of the speaker palette |
+| `pruefe-rundgang.py` | every export is demonstrated in `tour.typ` |
+| `pruefe-ueberlauf.py` | no example deck runs over its slide |
 
 Pass `--paketpfad` to `pruefe-beispiele.py`, or it checks the *installed*
 package rather than your working tree. `build-site.sh` passes it; a run by hand

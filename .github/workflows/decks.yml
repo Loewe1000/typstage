@@ -94,6 +94,16 @@ jobs:
       - name: Der Rundgang zeigt jede Ausfuhr
         run: python3 .github/scripts/pruefe-rundgang.py
 
+      # Ragt in einem Beispieldeck etwas aus seiner Folie? Der Melder des
+      # Pakets steht per Vorgabe auf `overflow: "none"`, weil er den Bau
+      # verteuert -- angeschaltet hatte ihn genau ein Deck. Über die anderen
+      # sechzehn lief er nie, und der Decklauf prüft nur, *dass* der Melder
+      # meldet, nicht die Decks. Beim ersten Anlauf dieser Probe kamen drei
+      # Folien des Rundgangs zum Vorschein, die niemand gesehen hatte, weil
+      # der Browser wegschneidet, was übersteht.
+      - name: Kein Deck ragt aus seiner Folie
+        run: python3 .github/scripts/pruefe-ueberlauf.py
+
       # Das Kontrastgatter der Sprecherpalette. Ohne Browser und in einer
       # Sekunde: `contrast()` im Paket bewacht die Folienpaletten, die zwanzig
       # Farben der Sprecheransicht standen unter keiner Aufsicht.

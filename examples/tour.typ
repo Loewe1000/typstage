@@ -119,7 +119,7 @@
     #text(size: 0.72em, raw(lang: "typ",
       "#presentation(\n  title-slide(title: [My talk]),\n  section([A section]),\n  slide(title: [A slide],\n        note: [Say this])[One point.],\n)"))
 
-    The way for talks that are computed. Slides out of a loop.
+    The way for computed talks -- slides out of a loop.
     `theme-night.typ` next door does it that way.
   ],
 )
@@ -598,11 +598,11 @@ and the wrong two find each other), the piece gets a name instead.
   scene("tangent", tangent, stops: (-1.7, 0, 1.7), tween: 8,
         width: 300pt, height: 176pt),
   stagger[
-    - A stop may be a tuple, and then the drawing takes that many arguments.
-      What is lost against manim is that there two trackers may move
-      independently; here everything travels together.
-    - `duration` is the time of one pull from stop to stop, not the time of the
-      entrance -- the same separation `morph` draws, and for the same reason.
+    - A stop may be a tuple, and the drawing then takes that many arguments.
+      Unlike in manim, two trackers cannot move independently -- everything
+      travels together.
+    - `duration` is the time of one pull from stop to stop, not of the
+      entrance -- the same separation `morph` draws.
   ],
 )
 
@@ -610,7 +610,7 @@ and the wrong two find each other), the piece gets a name instead.
 // before it in the source.
 #scene-layer("tangent", 2,
   align(center, text(size: 0.9em, fill: live)[
-    At the vertex the slope is zero, and the line is the only thing that moved.
+    At the vertex the slope is zero, and only the line moved.
   ]))
 
 #v(1fr)
@@ -1266,16 +1266,16 @@ and the wrong two find each other), the piece gets a name instead.
     #text(size: 0.66em, raw(lang: "sh",
       "typst compile \\\n  --features bundle,html \\\n  --format bundle \\\n  talk.typ out"))
 
-    Since 0.15 Typst can write several files from one compilation, and
-    everything here sits in one source anyway.
+    Since 0.15 Typst writes several files from one run, and everything
+    here sits in one source anyway.
   ],
 )
 
 #anim(callout(title: [Why this slide only quotes it])[
-  #text(size: 0.85em)[
+  #text(size: 0.82em)[
     A file that calls `bundle` compiles *only* with `--format bundle`. This
-    deck has to come out as HTML and as PDF, so it cannot call the thing it is
-    about. Whoever wants both writes the body into a `#let`.
+    deck has to come out as HTML *and* as PDF, so it cannot call what it is
+    about. Whoever wants both puts the body into a `#let`.
   ]
 ], at: 2, enter: "fade-up")
 

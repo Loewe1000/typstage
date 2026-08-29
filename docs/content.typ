@@ -4415,6 +4415,20 @@ gegen den Platz, den das Theme ihm gibt, und nennt die, die nicht hineingehen.
 Standardmäßig aus, und dafür gedacht, für einen Lauf eingeschaltet zu werden --
 nicht dafür, beim Schreiben mitzulaufen.
 
+Ein Bauskript muss dafür kein Deck anfassen. Dieselbe Einstellung lässt sich
+von der Kommandozeile anheben -- so werden die siebzehn Beispieldecks dieses
+Pakets bei jedem Push gemessen:
+
+#show-code(```sh
+typst compile --features html --format html \
+  --input typstage-overflow=error deck.typ deck.html
+```)
+
+Die Eingabe hebt an, sie senkt nie ab. Von beiden Angaben gilt die strengere,
+`"none"` < `"record"` < `"error"`. Ein Deck, das selbst auf `"error"` steht,
+behält das also, und kein Lauf kann eine Prüfung im Vorbeigehen stumm
+schalten.
+
 Ein Foliensatz braucht das dringender als ein Dokument. Auf einer Seite, die
 man durchblättert, sieht man den Überlauf: die Zeile steht schlicht über dem
 Rand und das Auge fängt sie. Eine typstage-Folie wird in einen SVG-Rahmen
