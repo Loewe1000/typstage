@@ -379,6 +379,10 @@
 /// at once, and nothing has to be linked by name.
 #let cue-gruppen = state("typstage-cue", (:))
 
+/// Dasselbe für `stagger`, damit `stagger-layer` den Schritt eines Stückes
+/// nachschlagen kann. Eingetragen wird nur, was einen Namen trägt.
+#let stagger-gruppen = state("typstage-stagger", (:))
+
 /// Die Szenen einer Folie: Name -> (start, stops).
 ///
 /// Dasselbe Buch wie nebenan, aus demselben Grund. `scene` traegt ein, auf
@@ -400,6 +404,16 @@
 /// Die Fahrten einer Folie, in der Reihenfolge ihres Aufschreibens.
 ///
 /// Zurueckgesetzt je Folie, wie `sprites` und `bridge-jobs`.
+/// Fortlaufende Nummer für Morph-Namen, die niemand genannt hat.
+///
+/// `alternatives(morph: true)` und `stagger(morph: true)` geben ihren Stücken
+/// denselben Morph-Namen, damit sie ineinander fliegen -- und den muss jemand
+/// vergeben. Der Name muss im ganzen Deck eindeutig sein und nicht nur auf
+/// seiner Folie: `flugFolie` paart über den Folienrand hinweg nach Namen, und
+/// ein Name, der auf der Nachbarfolie noch einmal vorkäme, ergäbe einen Flug,
+/// den niemand geschrieben hat.
+#let auto-morph-nr = state("typstage-automorph", 0)
+
 #let kamera-liste = state("typstage-kamera", ())
 
 /// Jede Fahrt des ganzen Decks, samt Folie und Zielname.

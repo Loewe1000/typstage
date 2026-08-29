@@ -1388,17 +1388,43 @@
   // Schrittwechsel, sechs beim Folienwechsel.
   function flugSchritt(folie, vonSchritt, nachSchritt, fallback) {
     var f = SLIDES[folie];
-    var quellen = {}, ziele = [];
+    var quellen = {}, ziele = [], bleiber = [];
     f.querySelectorAll(".ts-morph").forEach(function (e) {
-      if (zustand(e, vonSchritt) > 0) quellen[e.dataset.name] = e;
+      if (zustand(e, vonSchritt) > 0) {
+        quellen[e.dataset.name] = e;
+        // Eine Quelle, die auf dem *erreichten* Schritt ebenfalls steht, geht
+        // nirgendwohin -- sie bleibt liegen, und aus ihr wächst das neue
+        // Stück heraus. Das ist die Form, die `stagger(morph: true)` baut:
+        // jede Zeile bleibt, die nächste fliegt aus ihr hervor. Wer sie
+        // trotzdem für die Dauer des Fluges versteckt, lässt sie vor den Augen
+        // des Saales verschwinden und plötzlich wieder erscheinen.
+        if (zustand(e, nachSchritt) > 0) bleiber.push(e);
+      }
     });
+    // Ziel ist, was *neu* dazukommt, und nicht alles, was nachher dasteht.
+    // Sonst bekommt in einer Kette, in der jede Zeile stehen bleibt, auch die
+    // erste Zeile einen Flug zugeteilt -- gemeldet aus einem echten Deck: beim
+    // zweiten Schritt morphte die zweite Zeile zugleich nach oben in die erste
+    // und nach unten in die dritte. Beim Folienwechsel fällt der Unterschied
+    // nicht auf, weil dort nichts von der Quellfolie stehen bleibt.
+    //
+    // Rückwärts heißt das: was verschwindet, fliegt nicht zurück, es geht.
+    // `alternatives` fliegt auch rückwärts, denn dort kommt die vorige Fassung
+    // wieder neu dazu; eine Kette, in der alles stehen bleibt, hat rückwärts
+    // kein neues Stück und damit kein Ziel.
     f.querySelectorAll(".ts-morph").forEach(function (e) {
-      if (zustand(e, nachSchritt) > 0) ziele.push(e);
+      if (zustand(e, nachSchritt) > 0 && !(zustand(e, vonSchritt) > 0)) {
+        ziele.push(e);
+      }
     });
-    return fly(quellen, ziele, f, fallback);
+    return fly(quellen, ziele, f, fallback, bleiber);
   }
 
-  function fly(quellen, ziele, umfeld, fallback) {
+  // `bleiber` sind Quellen, die auch nach dem Flug noch stehen. Beim
+  // Folienwechsel gibt es die nicht -- die Quellfolie geht ja fort --, deshalb
+  // ist die Liste dort leer.
+  function fly(quellen, ziele, umfeld, fallback, bleiber) {
+    bleiber = bleiber || [];
     // Magic move is travel and nothing but travel: the point of it is that
     // the eye follows a shape from where it stood to where it now stands.
     // Asked for less motion there is nothing left of it worth keeping, so
@@ -1444,7 +1470,11 @@
       var perGlyph = wie !== "block" && qg.length > 0 && zg.length > 0 &&
         (wie === "glyph" || (qg.length <= 48 && zg.length <= 48));
 
-      src.dataset.hold = "1";
+      // Die Quelle wird für die Dauer des Fluges verborgen -- der Geist
+      // übernimmt ihre Stelle. Eine Quelle, die stehen bleibt, nicht: dort
+      // liegt der Geist im ersten Bild genau auf ihr, und was sich löst, ist
+      // die Kopie.
+      if (bleiber.indexOf(src) < 0) src.dataset.hold = "1";
       dst.dataset.hold = "1";
 
       // Die Bahn ist das Rechteck, das der Geist ueberstreicht: von der Quelle

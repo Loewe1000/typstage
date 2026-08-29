@@ -1,12 +1,14 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (cue-gruppen, deck-info, drift-ausweg, drift-modus,
+#import "internal.typ": (auto-morph-nr, cue-gruppen, deck-info,
+                        drift-ausweg, drift-modus,
                         drift-satz, drift-toleranz, durchsichtig,
                         fit-meldung, fit-verbot, html-output, im-deck,
                         im-fit, kamera-index, kamera-liste, kurve, max-step,
                         name-of, offenes-ende, pin-index, pin-index-buch,
                         pin-marker, platz-pruefen, selector, step-cursor,
-                        szene-gruppen, track, will-fuellen)
+                        stagger-gruppen, szene-gruppen, track,
+                        will-fuellen)
 
 /// What `anim` does once its arguments have been checked.
 ///
@@ -102,7 +104,11 @@
             duration: duration, delay: delay, easing: kurve(easing, "anim"))
 }
 
-/// Magic move: the same `name` on two slides, and the thing flies across.
+/// Magic move: the same `name` twice, and the thing flies across.
+///
+/// Twice on two adjacent slides, or twice on one slide with `at:` selectors
+/// that do not overlap. The runtime pairs the flights step by step as well as
+/// slide by slide.
 ///
 /// The name is a string or a label: `morph(<pythagoras>, …)`.
 ///
@@ -141,6 +147,10 @@
   )
 }
 
+// Der Parameter `morph:` von `alternatives` verdeckt die Funktion gleichen
+// Namens. Hier wird sie festgehalten, bevor das geschieht.
+#let morph-fn = morph
+
 /// Several versions of the same thing, each replacing the one before.
 ///
 /// ```typ
@@ -158,6 +168,28 @@
 /// so nothing around them jumps as they change. Each takes one step; the last
 /// one stays for the rest of the slide.
 ///
+/// `morph: true` lets the versions fly into one another instead of replacing
+/// one another. They all stand in the same place, so the flight is no distance
+/// at all and what you see is the glyphs rearranging themselves where they
+/// stand -- which is what a rewritten formula does:
+///
+/// ```typ
+/// #alternatives(morph: true,
+///   $ (a + b)^2 $,
+///   $ (a + b)(a + b) $,
+///   $ a^2 + 2 a b + b^2 $,
+/// )
+/// ```
+///
+/// It works because the versions carry one name and step ranges that do not
+/// overlap, and a morph flies from step to step as readily as from slide to
+/// slide. A name of your own instead of `true` is allowed and is only needed
+/// where the flight has to continue onto the next slide.
+///
+/// A morph has no entrance and no easing curve, so `enter:` and `easing:` are
+/// refused rather than quietly dropped. `duration:` is read and is the time of
+/// the flight.
+///
 /// On paper only the last one is set, in the same box, so the page keeps the
 /// spacing of the slide. Printing all of them would pile them on top of one
 /// another.
@@ -169,6 +201,7 @@
   duration: auto,
   easing: auto,
   inline: false,
+  morph: false,
 ) = {
   // `..variants` would otherwise swallow any named argument without a word: a
   // typo in `start:` would leave the versions on the steps they happened to
@@ -176,7 +209,21 @@
   assert(variants.named().len() == 0,
          message: "typstage: alternatives() does not know "
                 + variants.named().keys().join(", ")
-                + ". It takes start, align, enter, duration, easing and inline.")
+                + ". It takes start, align, enter, duration, easing, inline "
+                + "and morph.")
+  assert(morph == false or morph == true or type(morph) == str
+         or type(morph) == label, message:
+    "typstage: alternatives(morph: …) is `true`, or a name of your own as a "
+    + "string or a label. Not " + str(type(morph)) + ".")
+  // Ein Morph blendet nicht ein, er fliegt. Wer `enter:` oder `easing:`
+  // danebenschreibt, meint etwas, das es hier nicht gibt -- und stillschweigend
+  // fallenzulassen, was jemand ausdrücklich hingeschrieben hat, ist die
+  // Auskunft, die man am spätesten bekommt.
+  assert(morph == false or (enter == "fade" and easing == auto), message:
+    "typstage: alternatives(morph: …) has no entrance and no easing curve. "
+    + "The versions fly into one another; `enter:` and `easing:` describe a "
+    + "fade, which is what happens instead of a flight, not during one. "
+    + "`duration:` is read, and it is the time of the flight.")
   let items = variants.pos()
   assert(items.len() > 0,
          message: "typstage: alternatives() wants at least one version")
@@ -190,6 +237,9 @@
   // the versions are sitting in. The wrapper must therefore lie around the
   // whole thing, not inside it.
   let shell-outer = if inline { box } else { it => it }
+  // Vor dem Layout, damit die Nummer einmal je Aufruf hochzählt und nicht
+  // einmal je Messdurchgang.
+  if morph == true { auto-morph-nr.update(n => n + 1) }
   shell-outer(layout(available => context {
     // On paper `alternatives` never reaches `track`, it only moves the cursor,
     // so the fit check cannot be left to `track` here. Asked as an assertion
@@ -218,13 +268,27 @@
       }
     }
     let last = items.len() - 1
+    // Mit `morph:` traegt jede Fassung denselben Namen. Die Bereiche
+    // ueberschneiden sich nicht, und damit ist jeder Schrittwechsel ein Flug
+    // von der einen auf die naechste -- dieselbe Maschinerie wie ueber den
+    // Folienrand hinweg, nur zwischen zwei Schritten einer Folie.
+    //
+    // Alle Fassungen liegen an derselben Stelle, die Flugstrecke ist also
+    // null. Was man sieht, ist die Umordnung der Zeichen an Ort und Stelle --
+    // fuer eine Formel, die sich umformt, genau das Richtige.
+    let mname = if morph == true {
+      "ts-alternatives-" + str(auto-morph-nr.get())
+    } else if morph != false { name-of(morph) }
     block(width: w, height: h, {
       for (i, v) in items.enumerate() {
         // Exactly this step for all but the last, which stays: `"3"` is that
         // one step, `"3-"` is from there on.
         let at = if i == last { str(first + i) + "-" } else { str(first + i) }
-        place(align, anim(v, at: at, enter: enter, duration: duration,
-                          easing: easing))
+        place(align, if morph == false {
+          anim(v, at: at, enter: enter, duration: duration, easing: easing)
+        } else {
+          morph-fn(mname, v, at: at, duration: duration, inline: inline)
+        })
       }
     })
   }))
@@ -553,6 +617,24 @@
 /// `dim` leaves the pieces already shown standing, dimmed, instead of at full
 /// strength. `spacing` is the gap between them, `enter`, `duration` and
 /// `easing` are handed on to every piece unchanged.
+///
+/// `morph: true` lets each piece fly out of the one before it. Every piece
+/// stays where it is once it has arrived, so at a step change the piece set
+/// last is the source and the new one the target: the new line grows out of
+/// the line above while the line above stays put. That is a chain of
+/// transformations, line by line, on a single slide:
+///
+/// ```typ
+/// #stagger(morph: true, spacing: 14pt,
+///   $ x^2 + 6 x + 2 = 0 $,
+///   $ (x + 3)^2 - 7 = 0 $,
+///   $ x = -3 plus.minus sqrt(7) $,
+/// )
+/// ```
+///
+/// A morph has no entrance, no easing curve and no dimmed rest, so `enter:`,
+/// `easing:` and `dim:` are refused rather than quietly dropped. `duration:`
+/// is read and is the time of the flight.
 #let stagger(
   ..items,
   start: auto,
@@ -563,7 +645,14 @@
   stagger: 60,
   spacing: 0.65em,
   dim: false,
-) = context {
+  morph: false,
+  name: none,
+) = {
+  // Vor dem `context`, nicht darin. Ein `update` im selben Kontextblock ist
+  // für das `get()` daneben noch nicht geschehen -- gemessen: der erste Aufruf
+  // hieß dann `ts-stagger-0`.
+  if morph == true { auto-morph-nr.update(n => n + 1) }
+  context {
   // Asked here rather than left to the `anim`s below, so the message names the
   // function the deck actually wrote. An assertion, not a placed `fit-verbot`,
   // because the list branch below leaves through a `return`.
@@ -586,7 +675,18 @@
          message: "typstage: stagger() does not know "
                 + items.named().keys().join(", ")
                 + ". It takes start, stride, enter, duration, easing, "
-                + "stagger, spacing and dim.")
+                + "stagger, spacing, dim, morph and name.")
+  assert(morph == false or morph == true or type(morph) == str
+         or type(morph) == label, message:
+    "typstage: stagger(morph: …) is `true`, or a name of your own as a string "
+    + "or a label. Not " + str(type(morph)) + ".")
+  // Ein Morph fliegt, er blendet nicht ein und er ruht nicht gedimmt.
+  assert(morph == false or (enter == "fade-up" and easing == auto and not dim),
+         message:
+    "typstage: stagger(morph: …) has no entrance, no easing curve and no "
+    + "dimmed rest. The pieces fly into one another instead of appearing, and "
+    + "each one stays -- that is what the flight comes out of. `duration:` is "
+    + "read, and it is the time of the flight.")
   let gegeben = items.pos()
   assert(gegeben.len() > 0, message: "typstage: stagger() wants something to stagger")
 
@@ -607,17 +707,44 @@
   // Einmal geprüft und einmal aufgelöst, nicht je Punkt: die Meldung nennt
   // sonst dieselbe Kurve so oft, wie die Liste Punkte hat.
   let takt = kurve(easing, "stagger")
+  // Mit `morph:` tragen alle Stücke denselben Namen, und jedes bleibt von
+  // seinem Schritt an stehen. Beim Schrittwechsel ist das zuletzt gesetzte
+  // Stück die Quelle und das neue das Ziel: die neue Zeile wächst aus der
+  // darüber, während die darüber stehen bleibt. Das ist die Umformungskette,
+  // Zeile für Zeile, auf einer einzigen Folie.
+  let mname = if morph == true {
+    "ts-stagger-" + str(auto-morph-nr.get())
+  } else if morph != false { name-of(morph) }
+  // Der Gruppenname, unter dem `stagger-layer` diese Staffelung findet.
+  // `name:` sagt ihn ausdrücklich; wer schon `morph: "…"` geschrieben hat, hat
+  // ihn damit gesagt, und ein zweites Mal wäre er nur Abschrift.
+  let gname = if name != none { name-of(name) }
+              else if morph != false and morph != true { name-of(morph) }
 
   if punkte.len() == 0 {
     // No list: the pieces in order, each as its own block.
-    for (i, b) in gegeben.enumerate() {
-      block(anim-kern(b, at: bereich(start + i * stride), after: ruhe,
-                      dim-freiwillig: dim, enter: enter, duration: duration,
-                      easing: takt, delay: i * stagger))
+    if gname != none {
+      stagger-gruppen.update(g => g + ((gname): (
+        start: start, anzahl: gegeben.len(), stride: stride)))
     }
-    return
-  }
+    for (i, b) in gegeben.enumerate() {
+      block(if morph == false {
+        anim-kern(b, at: bereich(start + i * stride), after: ruhe,
+                  dim-freiwillig: dim, enter: enter, duration: duration,
+                  easing: takt, delay: i * stagger)
+      } else {
+        morph-fn(mname, b, at: bereich(start + i * stride), duration: duration,
+                 inline: false)
+      })
+    }
+    // Kein `return`: es verließe die Funktion und nicht nur den Kontextblock,
+    // und der Zähler oben stünde dann ohne seinen Rumpf da.
+  } else {
 
+  if gname != none {
+    stagger-gruppen.update(g => g + ((gname): (
+      start: start, anzahl: punkte.len(), stride: stride)))
+  }
   let numbered = punkte.at(0).func() == enum.item
   let marks = punkte.enumerate().map(((i, p)) => {
     if numbered { [#(i + 1).] } else { [•] }
@@ -627,7 +754,11 @@
 
   for (i, p) in punkte.enumerate() {
     if i > 0 { v(spacing, weak: true) }
-    anim-kern(
+    let stueck = if morph == false { anim-kern } else {
+      (koerper, at: none, ..rest) => morph-fn(mname, koerper, at: at,
+                                              duration: duration, inline: false)
+    }
+    stueck(
       grid(
         columns: (column, 1fr),
         column-gutter: 0.5em,
@@ -642,6 +773,47 @@
       enter: enter, duration: duration, easing: takt, delay: i * stagger,
     )
   }
+  }
+  }
+}
+
+/// Something that belongs to one particular piece of a `stagger`.
+///
+/// A note in the margin, an annotation on a line of a calculation, a second
+/// drawing: it shares the step with its piece and therefore travels with it,
+/// without having to be counted.
+///
+/// ```typ
+/// #stagger(morph: "rewrite", ..lines)
+///
+/// #stagger-layer("rewrite", 2)[$| -2$]
+/// ```
+///
+/// The group needs a name for that -- `name:` says it, and a `morph:` written
+/// as a name says it too, because then it is already there.
+///
+/// The stagger has to stand *before* its layers in the source, because a layer
+/// looks up which step its piece was given. Standing after them, the package
+/// says so rather than quietly doing nothing.
+///
+/// A layer stays from its piece to the end of the slide, as `cue-layer` and
+/// `scene-layer` do. And it stays out of a `morph: true` flight: the layer is
+/// its own element and carries no morph name, so what flies is the piece and
+/// the annotation merely appears beside it -- which is what an annotation
+/// should do.
+#let stagger-layer(name, number, body, enter: "fade") = context {
+  let g = stagger-gruppen.get()
+  assert(name-of(name) in g, message:
+    "typstage: stagger-layer(\"" + name-of(name) + "\") finds no group of "
+    + "that name. A stagger() has to carry `name:` (or a `morph:` written as a "
+    + "name) and has to stand before its layers in the source, because a layer "
+    + "looks up which step its piece was given.")
+  let e = g.at(name-of(name))
+  assert(number >= 1 and number <= e.anzahl, message:
+    "typstage: stagger-layer(\"" + name-of(name) + "\", " + str(number)
+    + ") -- that group has " + str(e.anzahl) + " piece"
+    + (if e.anzahl == 1 { "" } else { "s" }) + ", so the number is out of range.")
+  anim(body, at: str(e.start + (number - 1) * e.stride) + "-", enter: enter)
 }
 
 
