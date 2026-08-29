@@ -371,11 +371,12 @@ The site build also writes [llms.txt](https://loewe1000.github.io/typstage/llms.
 one line per chapter with its title and first sentence, in both languages,
 generated from the built pages so its anchors cannot go stale.
 
-**Every example in the manual is compiled on every build** — 201 of them, plus
+**Every example in the manual is compiled on every build** — 236 of them, plus
 fifteen that are checked for failing as they should. The example decks are then
 driven through a real browser, step by step, and compared against recorded
-values. [`CONTRIBUTING.md`](https://github.com/Loewe1000/typstage/blob/main/CONTRIBUTING.md) describes how, and how to build
-the manual and the site yourself.
+values.
+[`CONTRIBUTING.md`](https://github.com/Loewe1000/typstage/blob/4661ec0303ff2c03458d8c3ad5d0886c6b06829f/CONTRIBUTING.md)
+describes how, and how to build the manual and the site yourself.
 
 ## GeoGebra
 
