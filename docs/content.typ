@@ -29,8 +29,9 @@ denn eines davon bedeutet nicht, was es sonst bedeutet.
   Stelle gesetzt, mit `hide()` zurückgehalten und über eine Marke gemalt, die
   sagt, wohin es gehört. `anim`, `stagger`, `alternatives`, `morph`, `embed`,
   `video` und `flipbook` erzeugen je eines.
-/ Morph: Dasselbe benannte Element auf zwei Folien. Dazwischen fliegt es,
-  Zeichen für Zeichen, wo es kann.
+/ Morph: Dasselbe benannte Element zweimal -- auf zwei benachbarten Folien
+  oder auf zwei Schritten einer Folie. Dazwischen fliegt es, Zeichen für
+  Zeichen, wo es kann.
 / Sprecheransicht: Dieselbe Datei ein zweites Mal geöffnet, mit `#speaker` in
   der Adresse. Sie trägt die Notiz, die Uhr und den nächsten Schritt, und man
   zeichnet darin auf die Folie, die der Raum sieht.
@@ -972,6 +973,41 @@ statt einer Folge.
   - der dritte 120 ms später
 ]
 ```]
+
+=== Was neben einem Stück steht
+
+Ein `stagger` kann Schichten tragen wie eine `cue`-Gruppe: `stagger-layer`
+hängt etwas an den Schritt eines bestimmten Stückes. Der häufigste Fall ist
+die Umformung am Rand einer Rechnung -- sie gehört zu der Zeile, aus der die
+nächste hervorgeht, und soll mit dieser nächsten erscheinen.
+
+Dafür braucht die Staffelung einen Namen. `name:` sagt ihn; wer ohnehin
+`morph:` als Namen geschrieben hat, hat ihn damit gesagt.
+
+// check: folie
+#show-code[```typ
+#stagger(morph: "umformung",
+  $ x^2 + 6x + 2 = 0 $,
+  $ x^2 + 6x = -2 $,
+  $ (x + 3)^2 = 7 $,
+)
+
+#stagger-layer("umformung", 2)[$| -2$]
+```]
+
+Die Schicht bleibt von ihrem Stück an stehen, wie bei `cue-layer` und
+`scene-layer`. Und sie bleibt aus dem Flug heraus: sie trägt keinen
+Morph-Namen, also fliegt das Stück, und die Anmerkung erscheint nur daneben --
+was eine Anmerkung tun soll.
+
+Die Staffelung muss im Quelltext *vor* ihren Schichten stehen; eine Schicht
+liest nach, welchen Schritt ihr Stück bekommen hat.
+
+#warning[
+  `spacing:` gilt nur für den Listenzweig. Stehen die Stücke einzeln da, zählt
+  der gewöhnliche Blockabstand -- und wer die Schichten von Hand danebensetzt,
+  rechnet sonst mit einem Abstand, den es nicht gibt.
+]
 
 == Aufdecken in der Reihenfolge, in der es genannt wird
 
@@ -3004,8 +3040,8 @@ Daraus folgen drei Dinge, die vor dem Vortrag zu wissen sind:
 Ziel dieses Kapitels: eine Umformung, der man mit den Augen folgen kann. Bei
 einer Kette von Zwischenschritten ist die entscheidende Frage nicht, wie die
 nächste Zeile aussieht, sondern *welches Zeichen wohin gewandert ist*. Genau
-das leistet `morph`: dasselbe Objekt auf zwei Folien, und es fliegt von seinem
-alten Platz an seinen neuen.
+das leistet `morph`: dasselbe Objekt zweimal, und es fliegt von seinem alten
+Platz an seinen neuen.
 
 == Ein Name, zwei Folien
 
@@ -3031,6 +3067,80 @@ Typst färbt sie als das, was sie ist.
 Ein Morph verbraucht keinen Schritt und schiebt auch keinen weiter: Er steht
 von Anfang an auf seiner Folie. Auf Papier bleibt von ihm nichts als sein
 Inhalt -- jede Folie setzt dort ihre eigene Fassung.
+
+== Und auf einer Folie
+
+Der Flug hängt nicht am Folienrand. Er findet zwischen zwei Schritten statt,
+und zwei Schritte einer Folie sind ebenso zwei Schritte wie der Wechsel zur
+nächsten. Zwei Aufrufe desselben Namens mit Bereichen, die sich nicht
+überschneiden:
+
+#show-code[```typ
+== Quadratische Ergänzung
+
+#statement[#morph(<sq>, $ x^2 + 6 x $, at: "1")]
+#statement[#morph(<sq>, $ (x + 3)^2 - 9 $, at: "2-")]
+
+#anim([Und ein Schritt, damit es einen zweiten gibt.], at: "2-")
+```]
+
+Dabei ist zweierlei zu wissen, und beides folgt aus dem, was schon dasteht.
+
+Ein Morph verbraucht keinen Schritt. Die Folie braucht also einen zweiten
+Schritt von woanders her -- ein `anim`, ein `stagger`, was auch immer --, sonst
+gibt es keinen Wechsel, bei dem geflogen werden könnte.
+
+Und der Name muss auf der Folie davor frei sein. Ein Morph, der nach Schritt
+eins anfängt, darf seinen Namen nicht mit einem auf der vorigen Folie teilen;
+sonst ginge der Flug zwischen den Folien stillschweigend verloren. Das Paket
+sagt es beim Übersetzen.
+
+#tip[
+  Zwei Fassungen an derselben Stelle fliegen null Punkte weit, und dann sieht
+  man nur die Zeichen sich umordnen. Das ist oft genau richtig -- eine Formel,
+  die sich an Ort und Stelle umformt. Wer die Bewegung sehen will, setzt die
+  beiden Fassungen untereinander.
+]
+
+== Zwei Abkürzungen für den häufigsten Fall
+
+Die beiden Formen, in denen man das auf einer Folie eigentlich immer will,
+tragen den Flug selbst.
+
+`alternatives(morph: true)` lässt seine Fassungen ineinander fliegen, statt
+sie zu ersetzen. Sie stehen ohnehin alle an derselben Stelle, die Flugstrecke
+ist also null, und was man sieht, ist die Umformung an Ort und Stelle:
+
+#show-code[```typ
+#alternatives(morph: true,
+  $ (a + b)^2 $,
+  $ (a + b)(a + b) $,
+  $ a^2 + 2 a b + b^2 $,
+)
+```]
+
+`stagger(morph: true)` ist der andere Fall, und der nützlichere: die Kette,
+bei der jede Zeile stehen bleibt. Jedes Stück bleibt von seinem Schritt an
+stehen, also ist beim Schrittwechsel das zuletzt gesetzte die Quelle und das
+neue das Ziel -- die neue Zeile wächst aus der Zeile darüber, während die
+darüber stehen bleibt:
+
+#show-code[```typ
+#stagger(morph: true, spacing: 14pt,
+  $ x^2 + 6 x + 2 = 0 $,
+  $ (x + 3)^2 - 7 = 0 $,
+  $ x = -3 plus.minus sqrt(7) $,
+)
+```]
+
+Beide nehmen statt `true` auch einen Namen. Nötig ist er nur, wenn der Flug
+über den Folienrand hinaus weitergehen soll.
+
+#warning[
+  Ein Morph blendet nicht ein und ruht nicht gedimmt. `enter:`, `easing:` und
+  `dim:` weisen die beiden deshalb zurück, statt sie stillschweigend
+  fallenzulassen. Gelesen wird `duration:`, und das ist die Dauer des Fluges.
+]
 
 == Eine Umformungskette
 
@@ -3172,11 +3282,11 @@ obwohl es sich bewegen müsste, oder es fliegt sichtbar an die falsche Stelle.
 
 Drei Grenzen sind zu kennen.
 
-*Es fliegt nur zwischen benachbarten Folien.* Der Flug findet beim Blättern von
-einer Folie zur unmittelbar nächsten oder vorigen statt. Sprünge -- die
-Übersicht mit `o`, `Pos 1`, `Ende`, ein Sprung über die Adresszeile -- setzen
-die Zielfolie ohne Bewegung. Ein Name auf Folie 3 und derselbe auf Folie 7 tun
-darum nichts.
+*Es fliegt nur von einem Schritt zum nächsten.* Das ist der Schritt innerhalb
+einer Folie oder der Wechsel zur unmittelbar nächsten oder vorigen. Sprünge --
+die Übersicht mit `o`, `Pos 1`, `Ende`, ein Sprung über die Adresszeile --
+setzen das Ziel ohne Bewegung. Ein Name auf Folie 3 und derselbe auf Folie 7
+tun darum nichts.
 
 *Zwei gleiche Namen auf der Zielfolie teilen sich dieselbe Quelle.* Beide
 starten sichtbar am selben Ort, das Zeichen spaltet sich vor den Augen der

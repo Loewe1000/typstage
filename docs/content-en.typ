@@ -25,8 +25,8 @@ one of these words does not mean what it usually means.
   to the next slide. The address bar counts steps, the footer counts slides.
 / Element: A piece of a slide that the runtime may touch. `anim`, `stagger`,
   `alternatives`, `morph`, `embed`, `video` and `flipbook` all produce one.
-/ Morph: The same named element on two slides. Between them it flies, glyph by
-  glyph where it can.
+/ Morph: The same named element twice -- on two adjacent slides, or on two
+  steps of one slide. Between them it flies, glyph by glyph where it can.
 / Speaker view: The same file opened a second time with `#speaker` on the
   address. It carries the note, the clock and the next step, and it draws on
   the slide the room sees.
@@ -584,6 +584,41 @@ consequences follow, and both are intentional. The last point dims too, once
 the slide has a further step after it -- because then the walk has moved on
 from it as well. And `stride: 0`, which puts every point on one step, makes
 them all dim together on the next.
+
+=== What stands beside a piece
+
+A `stagger` can carry layers the way a `cue` group does: `stagger-layer` hangs
+something on the step of one particular piece. The common case is the
+annotation beside a calculation -- it belongs to the line the next one comes
+out of, and it should appear with that next one.
+
+The stagger needs a name for that. `name:` says it; a `morph:` written as a
+name says it too.
+
+// check: folie
+#show-code[```typ
+#stagger(morph: "rewrite",
+  $ x^2 + 6x + 2 = 0 $,
+  $ x^2 + 6x = -2 $,
+  $ (x + 3)^2 = 7 $,
+)
+
+#stagger-layer("rewrite", 2)[$| -2$]
+```]
+
+The layer stays from its piece to the end of the slide, as `cue-layer` and
+`scene-layer` do. And it stays out of the flight: it carries no morph name, so
+what flies is the piece and the annotation merely appears beside it -- which is
+what an annotation should do.
+
+The stagger has to stand *before* its layers in the source; a layer looks up
+which step its piece was given.
+
+#warning[
+  `spacing:` applies to the list branch only. Where the pieces stand on their
+  own, ordinary block spacing decides -- and anyone placing the layers by hand
+  would otherwise reckon with a gap that is not there.
+]
 
 == Revealing in the order it is called out
 
@@ -2279,6 +2314,78 @@ The same name on two slides, and the thing flies across:
 The name is a string or a label. Nothing else is needed: the runtime finds both
 ends, pairs the glyphs, and moves each one from where it was to where it now
 belongs.
+
+== And on one slide
+
+The flight is not tied to a slide boundary. It happens between two steps, and
+two steps of one slide are as much two steps as the change to the next one.
+Two calls of the same name with ranges that do not overlap:
+
+#show-code[```typ
+== Completing the square
+
+#statement[#morph(<sq>, $ x^2 + 6 x $, at: "1")]
+#statement[#morph(<sq>, $ (x + 3)^2 - 9 $, at: "2-")]
+
+#anim([And one step, so that there is a second one.], at: "2-")
+```]
+
+Two things to know, and both follow from what is already here.
+
+A morph takes no step of its own. So the slide needs a second step from
+somewhere else -- an `anim`, a `stagger`, anything -- or there is no change for
+the flight to happen on.
+
+And the name has to be free on the slide before. A morph that starts after step
+one may not share its name with one on the previous slide; the flight between
+the slides would be lost without a word. The package says so while compiling.
+
+#tip[
+  Two versions in the same place fly no distance at all, and then all you see
+  is the glyphs rearranging themselves. That is often exactly right -- a
+  formula rewriting itself where it stands. To see the movement, put the two
+  versions one above the other.
+]
+
+== Two shorthands for the common case
+
+The two shapes you almost always want on one slide carry the flight
+themselves.
+
+`alternatives(morph: true)` lets its versions fly into one another instead of
+replacing one another. They all stand in the same place anyway, so the flight
+is no distance at all and what you see is the rewriting happening where it
+stands:
+
+#show-code[```typ
+#alternatives(morph: true,
+  $ (a + b)^2 $,
+  $ (a + b)(a + b) $,
+  $ a^2 + 2 a b + b^2 $,
+)
+```]
+
+`stagger(morph: true)` is the other case, and the more useful one: the chain
+where every line stays. Each piece stays from its own step on, so at a step
+change the piece set last is the source and the new one the target -- the new
+line grows out of the line above while the line above stays put:
+
+#show-code[```typ
+#stagger(morph: true, spacing: 14pt,
+  $ x^2 + 6 x + 2 = 0 $,
+  $ (x + 3)^2 - 7 = 0 $,
+  $ x = -3 plus.minus sqrt(7) $,
+)
+```]
+
+Both take a name of your own instead of `true`. It is only needed where the
+flight has to carry on past the edge of the slide.
+
+#warning[
+  A morph has no entrance and no dimmed rest. `enter:`, `easing:` and `dim:`
+  are therefore refused rather than quietly dropped. `duration:` is read, and
+  it is the time of the flight.
+]
 
 == How the pairing works
 
