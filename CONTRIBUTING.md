@@ -5,16 +5,22 @@ is the part that is easy to get wrong and hard to guess.
 
 ## Getting a clone to build
 
-The package lives in the local `@schule` namespace while you work on it. Clone
-it under the package path and import it from there:
+Every source in this repository imports `@preview/typstage:0.1.0` — the name
+the package carries once published. A clone under the local package path is
+found before the published one, so that import reaches your working tree:
 
 ```bash
 git clone https://github.com/Loewe1000/typstage \
-  ~/Library/Application\ Support/typst/packages/schule/typstage/0.1.0
+  ~/Library/Application\ Support/typst/packages/preview/typstage/0.1.0
 ```
 
-On Linux that path is `~/.local/share/typst/packages/schule/…`, on Windows
-`%APPDATA%\typst\packages\schule\…`. Needs Typst 0.15; the HTML target
+On Linux that path is `~/.local/share/typst/packages/preview/…`, on Windows
+`%APPDATA%\typst\packages\preview\…`.
+
+The check scripts do not rely on any of this: each builds a throwaway package
+root and links the working tree into it, under `schule` *and* under `preview`.
+That is deliberate — a run that found the *installed* package instead of the
+one it is checking would measure the wrong thing and say nothing about it. Needs Typst 0.15; the HTML target
 additionally needs `--features html`.
 
 The manual, the website and the example decks are built in one go. `AGGREGAT`

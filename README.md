@@ -119,16 +119,18 @@ compile:
 #import "@preview/typstage:0.1.0": *
 ```
 
-To work on the package itself, clone it under the local package path instead
-and import it from `@schule`:
+To work on the package itself, clone it under the local package path. A clone
+that sits there is found before the published one, so the same
+`@preview/typstage` import reaches your working tree:
 
 ```bash
 git clone https://github.com/Loewe1000/typstage \
-  ~/Library/Application\ Support/typst/packages/schule/typstage/0.1.0
+  ~/Library/Application\ Support/typst/packages/preview/typstage/0.1.0
 ```
 
-On Linux that path is `~/.local/share/typst/packages/schule/…`, on Windows
-`%APPDATA%\typst\packages\schule\…`.
+On Linux that path is `~/.local/share/typst/packages/preview/…`, on Windows
+`%APPDATA%\typst\packages\preview\…`. The build script does the same thing
+for itself, so `build-site.sh` needs no clone at all.
 
 Needs Typst 0.15. The HTML target additionally needs `--features html`; nothing
 else, no Node, no bundler.
