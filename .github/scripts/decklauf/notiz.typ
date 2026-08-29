@@ -13,7 +13,7 @@
 // Zeilenzahl. Wie viele Zeilen daraus werden, hängt am Umbruch und damit an
 // der Schrift des Rechners; was zwischen den Sätzen steht, hängt an nichts.
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #show: presentation.with(theme: themes.lesson)
 

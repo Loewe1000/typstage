@@ -23,7 +23,7 @@
 // Ausdehnung, die drei gesetzten auf einer Höhe und in gleichem Abstand, und
 // die Fehlerliste der Laufzeit leer.
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #show: presentation.with(
   title: [Was im Fluss nichts misst],

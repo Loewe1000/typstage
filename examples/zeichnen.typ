@@ -19,7 +19,7 @@
 // check compiles those. They resolve from the package cache or are fetched on
 // first compile.
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 #import "@preview/cetz:0.5.2"
 #import "@preview/lilaq:0.6.0" as lq
 

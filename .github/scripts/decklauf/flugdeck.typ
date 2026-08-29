@@ -14,7 +14,7 @@
 // darüber, und beide überlappen die Bahn des Fluges. Ohne diese Überlappung
 // prüfte der Lauf nichts.
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #presentation(
   title: [Flugdeck],

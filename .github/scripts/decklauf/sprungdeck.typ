@@ -8,7 +8,7 @@
 // `slide` und nicht `fade`: der Fehler zeigte sich am `transform`, und eine
 // Blende hat keins.
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #show: presentation.with(
   title: [Sprungdeck],

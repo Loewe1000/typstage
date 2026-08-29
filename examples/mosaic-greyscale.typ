@@ -40,7 +40,7 @@
 // the print, so that one picture can step out of the sheet and become the
 // print. And the big number counts itself up instead of standing there.
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 // ── The one line ───────────────────────────────────────────────────────────
 // Set beside mosaic's own `greyscale` dictionary:

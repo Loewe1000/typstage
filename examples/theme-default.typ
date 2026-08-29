@@ -6,7 +6,7 @@
 //   typst compile theme-default.typ theme-default.html --format html --features html
 //   typst compile theme-default.typ theme-default.pdf
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 // A theme is a dictionary, so its colours are available to our own drawings.
 #let t = themes.default

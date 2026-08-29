@@ -98,7 +98,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 WURZEL = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 HANDBUECHER = ["docs/content.typ", "docs/content-en.typ"]
-IMPORT = '#import "@schule/typstage:0.1.0": *\n'
+IMPORT = '#import "@preview/typstage:0.1.0": *\n'
 
 # Namen, die die Handbücher als Platzhalter benutzen, ohne sie zu erklären —
 # „meine-tabelle" steht im Text für „irgendeine Tabelle". Der Prüfer muss
@@ -291,7 +291,7 @@ def regie_lesen(text):
 
 
 def art_raten(rumpf):
-  if re.search(r'^#import\s+"@schule/typstage', rumpf, re.M):
+  if re.search(r'^#import\s+"@preview/typstage', rumpf, re.M):
     return "ganz"
   if re.search(r"^#show:\s*(presentation|bundle)", rumpf, re.M):
     return "dokument"

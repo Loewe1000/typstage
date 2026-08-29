@@ -6,7 +6,7 @@
 // The same source gives the animated presentation and a handout. Not shipped
 // with the package (see `exclude` in typst.toml).
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 #import "@preview/cetz:0.5.2"
 
 #let card(fill: luma(96%), body) = block(

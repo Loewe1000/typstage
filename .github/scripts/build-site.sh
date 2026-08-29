@@ -30,9 +30,16 @@ trap 'rm -rf "$PAKETPFAD"' EXIT
 
 # Paketpfad zusammenstellen: schuldocs aus dem Aggregat, typstage aus *diesem*
 # Stand — nicht aus dem Submodul des Aggregats, das älter sein kann.
-mkdir -p "$PAKETPFAD/schule/typstage"
+mkdir -p "$PAKETPFAD/schule/typstage" "$PAKETPFAD/preview/typstage"
 cp -R "$AGGREGAT/schuldocs" "$PAKETPFAD/schule/schuldocs"
 ln -s "$WURZEL" "$PAKETPFAD/schule/typstage/$VERSION"
+# Und derselbe Verweis noch einmal unter `preview`. Die Quelle nennt das Paket
+# so, wie es nach der Einreichung heisst -- `@preview/typstage` --, und ohne das
+# hier fiele jedes Handbuchbeispiel und jedes Deck beim Bauen auf
+# "package not found". Gemessen: `--package-path` bedient auch `preview`, und
+# Pakete, die dort fehlen, holt Typst weiter aus seinem Zwischenspeicher --
+# `@preview/cetz` und `@preview/lilaq` daneben funktionieren unveraendert.
+ln -s "$WURZEL" "$PAKETPFAD/preview/typstage/$VERSION"
 
 # Kein Begleitpaket mehr im Paketpfad: GeoGebra steckt seit der Zusammenlegung
 # im Kern, und kein Handbuchbeispiel importiert noch ein zweites @schule-Paket.
