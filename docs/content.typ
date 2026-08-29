@@ -62,9 +62,11 @@ Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
 + *Etwas vorführen statt behaupten* -- Applet, Video, Daumenkino
 + *GeoGebra* -- Konstruktionen, die den Schritten der Folie folgen
 + *Eine Rechnung entwickeln* -- Magic Move über mehrere Folien
++ *Den Vortrag halten* -- Tasten, Sprecheransicht, Zeichnen, die zwei Uhren
 + *Aus einer Quelle drei Ausgaben* -- Präsentation, Foliensatz, Handout
 + *Das eigene Aussehen* -- Themes, Farben, Leinwand, Bausteine
-+ *Weitergeben* -- wo die Datei liegt, Barrierefreiheit, Größe
++ *Weitergeben* -- wo die Datei liegt und wie groß sie wird
++ *Was es nicht kann* -- Barrierefreiheit, Reichweite, die harten Grenzen
 + *Wenn nichts passiert* -- die Stolpersteine, in der Reihenfolge, in der man
   über sie fällt
 + *API-Referenz* -- vollständige Funktionsdokumentation
@@ -143,177 +145,12 @@ Foliensatz zum Ausdrucken.
   im Allgemeinen, nicht dieses Paket.
 ]
 
-== Vorführen
-
-Die Laufzeitumgebung zählt in *Schritten*, nicht in Folien: Eine Folie mit drei
-Einblendungen hat drei Schritte, und `→` geht zum nächsten -- gleich ob der auf
-derselben oder auf der nächsten Folie liegt.
-
-#table(
-  columns: (auto, 1fr),
-  stroke: 0.5pt + luma(180),
-  table.header([*Taste*], [*Wirkung*]),
-  [`→`, `Bild ab`, Leertaste], [einen Schritt weiter],
-  [`←`, `Bild auf`], [einen Schritt zurück],
-  [`Pos 1`], [zum ersten Schritt, ohne Bewegung],
-  [`Ende`], [zum letzten Schritt, ohne Bewegung],
-  [`o`, `Esc`], [Übersicht aller Folien ein- und ausschalten],
-  [`f`], [Vollbild],
-  [`n`], [die Sprecheransicht in einem zweiten Fenster öffnen],
-  [`?`], [die Tastenbelegung einblenden],
-)
-
-Ein Klick in das linke Viertel des Fensters blättert zurück, jeder andere
-vorwärts; in einem eingebetteten Element bleibt der Klick bei diesem. Auf
-Telefon und Tablet gilt dasselbe mit dem Finger, dazu der Wisch nach links für
-die nächste Folie. In der Übersicht führt ein Klick auf ein Vorschaubild zu
-dieser Folie.
-
-Die Adresszeile trägt den laufenden Schritt mit, `#12` etwa den zwölften. Ein
-neu geladenes Fenster steht damit wieder an derselben Stelle, und eine von Hand
-geänderte Nummer springt dorthin.
-
 #warning[
   Inhalt vor der ersten Überschrift gehört zu keiner Folie: Text bricht das
   Übersetzen ab, ein Bild verschwindet wortlos. Und ein `#set heading` nach der
   Show-Regel erreicht die Folientitel nicht mehr -- dafür gibt es `style`, siehe
   „Das eigene Aussehen".
 ]
-
-== Die Sprecheransicht
-
-`n` öffnet dieselbe Datei ein zweites Mal in einem zweiten Fenster, mit
-`#speaker` an der Adresse: eines für den Beamer, eines für den Vortragenden.
-Beide reden miteinander, auch als lokale Dateien ohne Server.
-
-Oben stehen die beiden großen Kacheln -- links die laufende Folie, rechts die
-Notiz --, darunter eine Zeile aus vier kleinen und einer breiten:
-
-#table(
-  columns: (auto, 1fr),
-  stroke: 0.5pt + luma(180),
-  table.header([*Kachel*], [*was darin steht*]),
-  [verstrichen], [die Zeit seit dem ersten Tastendruck, darunter klein die
-    Uhrzeit an der Wand],
-  [Folie], [Folie #sym.slash Folien, darunter Schritt #sym.slash Schritte, am
-    Fuß der Fortschrittsbalken],
-  [Ziel (min)], [die geplante Dauer -- `d` geht hinein --, darunter Rest und
-    Plan, sobald eine gesetzt ist],
-  [Klassenuhr], [die Uhr, die im Saal an der Wand steht; `t` startet sie],
-  [nächster Schritt], [die Vorschau: was der nächste Tastendruck tut],
-)
-
-Darunter die Werkzeugzeile: Stift oder Zeiger, die vier Farben, die
-Tastenbelegung. Der Zustand des Saals -- `schwarz`, `eingefroren`, `kein
-Vortragsfenster` -- steht oben rechts in der Folienkachel.
-
-Die Tasten der Ansicht, die `?` dort auch selbst zeigt:
-
-#table(
-  columns: (auto, 1fr),
-  stroke: 0.5pt + luma(180),
-  table.header([*Taste*], [*Wirkung*]),
-  [`←` `→`], [ein Schritt; `Pos1` `Ende` zum ersten oder letzten],
-  [`↑` `↓`], [die Notiz rollen],
-  [`o`], [die Übersicht],
-  [`b`], [den Saal schwarz schalten],
-  [`e`], [das Bild im Saal auf diesem Schritt einfrieren],
-  [`n`], [das Vortragsfenster nach vorn holen],
-  [`t`], [die Klassenuhr, im Saal als Vollbild],
-  [`⇧t`], [dieselbe Uhr, aber auf der Folie statt über ihr],
-  [`⇧←` `⇧→`], [eine Minute weniger oder mehr, während eine Uhr läuft],
-  [`d`], [die Zieldauer in Minuten],
-  [`r`], [den Stundenzähler auf null zurücksetzen],
-  [`m`], [zwischen Stift und Zeiger umschalten],
-  [`c`], [die nächste Zeichenfarbe],
-  [`z`], [den letzten Strich zurücknehmen],
-  [`x`], [die Striche dieser Folie löschen],
-  [`l`], [hell oder dunkel, nur für die Ansicht],
-  [`+` `-`], [die Größe der Notiz],
-  [`f`], [Vollbild],
-  [`?`], [diese Tabelle, in der Ansicht],
-)
-
-Auf der laufenden Folie lässt sich zeichnen; die Striche erscheinen auf der
-Leinwand und bleiben an ihrer Folie kleben. `x` löscht sie, `z` nimmt den
-letzten Strich zurück, `c` wechselt die Farbe. `b` schaltet den Saal schwarz,
-`e` friert das Bild auf der Leinwand ein, während man bei sich weiterblättert.
-`m` schaltet den Zeiger zwischen Stift und Einbettung um: im Zeigermodus landet
-ein Klick auf einen eingebetteten Rahmen drüben im Vortragsfenster.
-
-#warning[
-  Die Striche werden *nicht* mitgedruckt: die Druckansicht ist der saubere
-  Foliensatz, nicht das Tafelbild.
-
-  Schwarz und Einfrieren enden von selbst, sobald das Sprecherfenster
-  geschlossen wird. Bleibt es offen und trägt nur kein Deck mehr, dauert das bis
-  zu einer Minute.
-]
-
-=== Was die Ansicht zeigen soll
-
-Eine Kachel, mit der niemand arbeitet, nimmt Platz, der der Notiz fehlt.
-`speaker-view` bestellt ab, was nicht gebraucht wird; was dort nicht steht,
-bleibt an:
-
-// check: dokument
-#show-code[```typ
-#show: presentation.with(speaker-view: (
-  clock: false,                             // keine Klassenuhr
-  target: false,                            // keine geplante Dauer
-  pen: (colors: (red, green, rgb("#FF99DD"))),   // eigene Stiftfarben
-))
-```]
-
-`tools: false` nimmt die Werkzeugzeile weg. Eine abbestellte Kachel nimmt ihre
-Tasten mit: mit `clock: false` tun `t` und `⇧t` nichts mehr. Die Stiftfarben
-sind Typst-Farben, keine Zeichenketten, und es dürfen mehr oder weniger als vier
-sein.
-
-=== Hell oder dunkel
-
-Die Ansicht folgt der Systemeinstellung des Rechners, an dem sie steht
-(`prefers-color-scheme`); `l` widerspricht ihr, und die Wahl übersteht ein
-Neuladen. An der Palette des Decks hängt sie *nicht*: die sagt, wie die Wand
-aussieht, nicht das Pult vor dem Vortragenden.
-
-=== Eine Uhr, die die Klasse sieht
-
-`t` fragt nach einer Zahl in Minuten, und danach steht auf der Leinwand nichts
-als eine Uhr: weiße `m:ss`-Ziffern auf Schwarz, aus der letzten Reihe zu lesen.
-Sie ersetzt die Folie und ist für die Minuten gedacht, in denen die Klasse etwas
-tut und nicht zuhört.
-
-#table(
-  columns: (auto, 1fr),
-  stroke: 0.5pt + luma(180),
-  table.header([*Taste*], [*Wirkung*]),
-  [`t`], [nach Minuten fragen; `Eingabe` startet, `Esc` lässt es],
-  [`t` (während sie läuft)], [Uhr beenden, Folie wieder da],
-  [`⇧→`, `⇧←`], [eine Minute mehr oder weniger, auch während sie läuft],
-  [`→` (oder jede andere Blättertaste)], [beendet sie und deckt die Folie auf],
-)
-
-Bei null hört sie nicht auf, sondern geht auf `+0:01` weiter; die Ziffern nehmen
-die Signalfarbe an, und über ihnen erscheint das Wort „Überzeit".
-
-#warning[
-  `t`, wenn sonst nichts an der Wand steht. Keine Uhr, solange Sie reden -- eine
-  Uhr neben einem Satz zieht den Blick den ganzen Vortrag lang.
-]
-
-#info[
-  Fällt das Sprecherfenster weg, hebt der Vortrag die Uhr von selbst auf. Ein
-  Neuladen des Vortragsfensters bringt sie zurück -- weiter, nicht von vorn.
-]
-
-=== Ein Rahmen, der den Fokus hat
-
-Wer eine Einbettung anklickt, gibt ihr den Fokus, und von da an landet jede
-Taste darin. Die Tasten des Vortrags werden ihm deshalb aus dem Rahmen
-zurückgereicht -- aber nur, wenn das Dokument sie nicht schon genommen hat, wenn
-der Vortrag sie überhaupt benutzt und wenn nicht in ein Textfeld getippt wird.
-Alles andere, `Entf` etwa, bleibt beim Rahmen.
 
 == Mehr als zwei Ebenen
 
@@ -1787,42 +1624,6 @@ meldet das Paket einen Fehler:
 Ein `fr` *innerhalb* eines Rasters ist davon nicht betroffen:
 `anim(grid(rows: (1fr, 1fr), …))` verteilt das Raster unter sich selbst.
 
-== Eine Grenze bei verfolgten Elementen
-
-*Sehr dicke Striche.* Eine Linie misst 0pt hoch; ihre Farbe liegt außerhalb des
-Kastens. Damit ein flächenloses Element überhaupt erscheint, bekommt es eine
-Schrifthöhe Luft nach jeder Seite. Was dicker aufträgt, wird beschnitten.
-Solche Striche gehören in einen `block` oder `rect` mit eigener Höhe, dann gilt
-dessen Maß.
-
-#info[
-  Sonst braucht die Breite eines verfolgten Elements keine Aufmerksamkeit: Das
-  Paket sieht dem Inhalt an, ob er den angebotenen Platz ausfüllen will. Ein
-  `align(center, …)` in einem `anim` zentriert wie im PDF, und ein verfolgtes
-  Element in einer `auto`-Rasterspalte lässt die `1fr`-Nachbarspalte stehen.
-]
-
-*Was gar keine Fläche hat.* Ein senkrechter Strich misst null breit, ein
-`place` null in beiden Richtungen. Beide sind versorgt: Der Strich bekommt
-seine Luft wie jedes flächenlose Element, und beim `place` tauschen Marke und
-Inhalt die Reihenfolge, damit im Fluss kein Platz belegt wird:
-
-// check: folie
-#show-code(```typ
-#anim(at: 2, place(top + left, dx: 20pt, dy: 50pt,
-                   rect(width: 20pt, height: 20pt)))
-```)
-
-*Und wenn doch keines von beidem greift*, sagt es die Laufzeit, statt das
-Element zu verlieren. Zwei Fälle bleiben: eine Marke, die null breit oder null
-hoch misst, und eine, die tiefer als vier verfolgte Elemente ineinander liegt.
-Beide gehen einmal je Element in die Konsole des Browsers, mit dem Ausweg
-dazu -- das Element in einen Kasten mit Größe setzen oder ihm eine Breite
-geben.
-
-Gemeldet wird das erst im Browser: Beim Übersetzen weiß Typst nicht, ob ein
-Inhalt eine Fläche hat, erst dort liegt das Rechteck da und lässt sich messen.
-
 = Etwas vorführen statt behaupten
 
 Ziel dieses Kapitels: eine Folie, auf der etwas geschieht, das Typst selbst
@@ -2672,6 +2473,182 @@ Umformungskette heißt das: nichts eigens abschalten.
   wenn nichts geschieht.
 ]
 
+= Den Vortrag halten
+
+Alles, was zwischen dem Öffnen der Datei und der letzten Folie geschieht,
+das zweite Fenster eingeschlossen.
+
+== Die Tasten
+
+Die Laufzeitumgebung zählt in *Schritten*, nicht in Folien: Eine Folie mit drei
+Einblendungen hat drei Schritte, und `→` geht zum nächsten -- gleich ob der auf
+derselben oder auf der nächsten Folie liegt.
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Taste*], [*Wirkung*]),
+  [`→`, `Bild ab`, Leertaste], [einen Schritt weiter],
+  [`←`, `Bild auf`], [einen Schritt zurück],
+  [`Pos 1`], [zum ersten Schritt, ohne Bewegung],
+  [`Ende`], [zum letzten Schritt, ohne Bewegung],
+  [`o`, `Esc`], [Übersicht aller Folien ein- und ausschalten],
+  [`f`], [Vollbild],
+  [`n`], [die Sprecheransicht in einem zweiten Fenster öffnen],
+  [`?`], [die Tastenbelegung einblenden],
+)
+
+Ein Klick in das linke Viertel des Fensters blättert zurück, jeder andere
+vorwärts; in einem eingebetteten Element bleibt der Klick bei diesem. In der
+Übersicht führt ein Klick auf ein Vorschaubild zu dieser Folie.
+
+Die Adresszeile trägt den laufenden Schritt mit, `#12` etwa den zwölften. Ein
+neu geladenes Fenster steht damit wieder an derselben Stelle, und eine von Hand
+geänderte Nummer springt dorthin.
+
+=== Ein Rahmen, der den Fokus hat
+
+Wer eine Einbettung anklickt, gibt ihr den Fokus, und von da an landet jede
+Taste darin. Die Tasten des Vortrags werden ihm deshalb aus dem Rahmen
+zurückgereicht -- aber nur, wenn das Dokument sie nicht schon genommen hat, wenn
+der Vortrag sie überhaupt benutzt und wenn nicht in ein Textfeld getippt wird.
+Alles andere, `Entf` etwa, bleibt beim Rahmen.
+
+== Auf Telefon und Tablet
+
+Ein Tippen blättert, in denselben zwei Hälften wie ein Klick. Ein Wisch
+blättert in der natürlichen Richtung: Der Finger schiebt die Folie nach links
+hinaus, also kommt die nächste. Senkrechtes Wischen und zwei Finger bleiben
+beim Browser -- das eine ist Rollen, das andere Zoomen.
+
+== Die Sprecheransicht
+
+`n` öffnet dieselbe Datei ein zweites Mal in einem zweiten Fenster, mit
+`#speaker` an der Adresse: eines für den Beamer, eines für den Vortragenden.
+Beide reden miteinander, auch als lokale Dateien ohne Server.
+
+Oben stehen die beiden großen Kacheln -- links die laufende Folie, rechts die
+Notiz --, darunter eine Zeile aus vier kleinen und einer breiten:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Kachel*], [*was darin steht*]),
+  [verstrichen], [die Zeit seit dem ersten Tastendruck, darunter klein die
+    Uhrzeit an der Wand],
+  [Folie], [Folie #sym.slash Folien, darunter Schritt #sym.slash Schritte, am
+    Fuß der Fortschrittsbalken],
+  [Ziel (min)], [die geplante Dauer -- `d` geht hinein --, darunter Rest und
+    Plan, sobald eine gesetzt ist],
+  [Klassenuhr], [die Uhr, die im Saal an der Wand steht; `t` startet sie],
+  [nächster Schritt], [die Vorschau: was der nächste Tastendruck tut],
+)
+
+Darunter die Werkzeugzeile: Stift oder Zeiger, die vier Farben, die
+Tastenbelegung. Der Zustand des Saals -- `schwarz`, `eingefroren`, `kein
+Vortragsfenster` -- steht oben rechts in der Folienkachel.
+
+Die Tasten der Ansicht, die `?` dort auch selbst zeigt:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Taste*], [*Wirkung*]),
+  [`←` `→`], [ein Schritt; `Pos1` `Ende` zum ersten oder letzten],
+  [`↑` `↓`], [die Notiz rollen],
+  [`o`], [die Übersicht],
+  [`b`], [den Saal schwarz schalten],
+  [`e`], [das Bild im Saal auf diesem Schritt einfrieren],
+  [`n`], [das Vortragsfenster nach vorn holen],
+  [`t`], [die Klassenuhr, im Saal als Vollbild],
+  [`⇧t`], [dieselbe Uhr, aber auf der Folie statt über ihr],
+  [`⇧←` `⇧→`], [eine Minute weniger oder mehr, während eine Uhr läuft],
+  [`d`], [die Zieldauer in Minuten],
+  [`r`], [den Stundenzähler auf null zurücksetzen],
+  [`m`], [zwischen Stift und Zeiger umschalten],
+  [`c`], [die nächste Zeichenfarbe],
+  [`z`], [den letzten Strich zurücknehmen],
+  [`x`], [die Striche dieser Folie löschen],
+  [`l`], [hell oder dunkel, nur für die Ansicht],
+  [`+` `-`], [die Größe der Notiz],
+  [`f`], [Vollbild],
+  [`?`], [diese Tabelle, in der Ansicht],
+)
+
+Auf der laufenden Folie lässt sich zeichnen; die Striche erscheinen auf der
+Leinwand und bleiben an ihrer Folie kleben. `x` löscht sie, `z` nimmt den
+letzten Strich zurück, `c` wechselt die Farbe. `b` schaltet den Saal schwarz,
+`e` friert das Bild auf der Leinwand ein, während man bei sich weiterblättert.
+`m` schaltet den Zeiger zwischen Stift und Einbettung um: im Zeigermodus landet
+ein Klick auf einen eingebetteten Rahmen drüben im Vortragsfenster.
+
+#warning[
+  Die Striche werden *nicht* mitgedruckt: die Druckansicht ist der saubere
+  Foliensatz, nicht das Tafelbild.
+
+  Schwarz und Einfrieren enden von selbst, sobald das Sprecherfenster
+  geschlossen wird. Bleibt es offen und trägt nur kein Deck mehr, dauert das bis
+  zu einer Minute.
+]
+
+=== Was die Ansicht zeigen soll
+
+Eine Kachel, mit der niemand arbeitet, nimmt Platz, der der Notiz fehlt.
+`speaker-view` bestellt ab, was nicht gebraucht wird; was dort nicht steht,
+bleibt an:
+
+// check: dokument
+#show-code[```typ
+#show: presentation.with(speaker-view: (
+  clock: false,                             // keine Klassenuhr
+  target: false,                            // keine geplante Dauer
+  pen: (colors: (red, green, rgb("#FF99DD"))),   // eigene Stiftfarben
+))
+```]
+
+`tools: false` nimmt die Werkzeugzeile weg. Eine abbestellte Kachel nimmt ihre
+Tasten mit: mit `clock: false` tun `t` und `⇧t` nichts mehr. Die Stiftfarben
+sind Typst-Farben, keine Zeichenketten, und es dürfen mehr oder weniger als vier
+sein.
+
+=== Hell oder dunkel
+
+Die Ansicht folgt der Systemeinstellung des Rechners, an dem sie steht
+(`prefers-color-scheme`); `l` widerspricht ihr, und die Wahl übersteht ein
+Neuladen. An der Palette des Decks hängt sie *nicht*: die sagt, wie die Wand
+aussieht, nicht das Pult vor dem Vortragenden.
+
+=== Eine Uhr, die die Klasse sieht
+
+`t` fragt nach einer Zahl in Minuten, und danach steht auf der Leinwand nichts
+als eine Uhr: weiße `m:ss`-Ziffern auf Schwarz, aus der letzten Reihe zu lesen.
+Sie ersetzt die Folie und ist für die Minuten gedacht, in denen die Klasse etwas
+tut und nicht zuhört.
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Taste*], [*Wirkung*]),
+  [`t`], [nach Minuten fragen; `Eingabe` startet, `Esc` lässt es],
+  [`t` (während sie läuft)], [Uhr beenden, Folie wieder da],
+  [`⇧→`, `⇧←`], [eine Minute mehr oder weniger, auch während sie läuft],
+  [`→` (oder jede andere Blättertaste)], [beendet sie und deckt die Folie auf],
+)
+
+Bei null hört sie nicht auf, sondern geht auf `+0:01` weiter; die Ziffern nehmen
+die Signalfarbe an, und über ihnen erscheint das Wort „Überzeit".
+
+#warning[
+  `t`, wenn sonst nichts an der Wand steht. Keine Uhr, solange Sie reden -- eine
+  Uhr neben einem Satz zieht den Blick den ganzen Vortrag lang.
+]
+
+#info[
+  Fällt das Sprecherfenster weg, hebt der Vortrag die Uhr von selbst auf. Ein
+  Neuladen des Vortragsfensters bringt sie zurück -- weiter, nicht von vorn.
+]
+
+
 == Weniger Bewegung
 
 Wer im Betriebssystem "Bewegung reduzieren" eingeschaltet hat, bekommt ein
@@ -2722,6 +2699,7 @@ animiert, schreibt seine eigene `@media`-Regel.
   Bewegung wirklich das Argument trägt, gehört sie zusätzlich in Worte -- die
   liest auch, wer sie nicht laufen sieht.
 ]
+
 
 = Aus einer Quelle drei Ausgaben
 
@@ -4056,6 +4034,10 @@ verhält sie sich wie eine vom Server, samt Sprecheransicht.
 Medien liegen aber neben der Datei, nicht darin. Fehlt die `clip.mp4` nach dem
 Hochladen, bleibt das Videofenster leer -- auch wenn das Deck lokal noch lief.
 
+= Was es nicht kann
+
+Die Grenzen, gesammelt an einer Stelle statt verstreut über die Kapitel.
+
 == Barrierefreiheit
 
 Das ist die härteste Grenze des Pakets. Die Folien sind SVG-Umrisse, Text darin
@@ -4077,6 +4059,51 @@ dasselbe für alle durch.
   steht. Die PDF aus derselben Quelle trägt echten Text.
 ]
 
+
+== Eine Grenze bei verfolgten Elementen
+
+*Sehr dicke Striche.* Eine Linie misst 0pt hoch; ihre Farbe liegt außerhalb des
+Kastens. Damit ein flächenloses Element überhaupt erscheint, bekommt es eine
+Schrifthöhe Luft nach jeder Seite. Was dicker aufträgt, wird beschnitten.
+Solche Striche gehören in einen `block` oder `rect` mit eigener Höhe, dann gilt
+dessen Maß.
+
+#info[
+  Sonst braucht die Breite eines verfolgten Elements keine Aufmerksamkeit: Das
+  Paket sieht dem Inhalt an, ob er den angebotenen Platz ausfüllen will. Ein
+  `align(center, …)` in einem `anim` zentriert wie im PDF, und ein verfolgtes
+  Element in einer `auto`-Rasterspalte lässt die `1fr`-Nachbarspalte stehen.
+]
+
+*Was gar keine Fläche hat.* Ein senkrechter Strich misst null breit, ein
+`place` null in beiden Richtungen. Beide sind versorgt: Der Strich bekommt
+seine Luft wie jedes flächenlose Element, und beim `place` tauschen Marke und
+Inhalt die Reihenfolge, damit im Fluss kein Platz belegt wird:
+
+// check: folie
+#show-code(```typ
+#anim(at: 2, place(top + left, dx: 20pt, dy: 50pt,
+                   rect(width: 20pt, height: 20pt)))
+```)
+
+*Und wenn doch keines von beidem greift*, sagt es die Laufzeit, statt das
+Element zu verlieren. Zwei Fälle bleiben: eine Marke, die null breit oder null
+hoch misst, und eine, die tiefer als vier verfolgte Elemente ineinander liegt.
+Beide gehen einmal je Element in die Konsole des Browsers, mit dem Ausweg
+dazu -- das Element in einen Kasten mit Größe setzen oder ihm eine Breite
+geben.
+
+Gemeldet wird das erst im Browser: Beim Übersetzen weiß Typst nicht, ob ein
+Inhalt eine Fläche hat, erst dort liegt das Rechteck da und lässt sich messen.
+
+
+== Reichweite
+
+Geprüft in Chrome, Firefox und Safari auf macOS und auf einem iPhone. Nicht
+geprüft: ältere Browser, Windows, Android. Die Laufzeit benutzt die Web
+Animations API, `ResizeObserver`, `PointerEvent` und CSS `zoom`; ein Browser
+von vor etwa 2023 wird also irgendwo zu kurz greifen.
+
 == Größe und Tempo
 
 Eine Folie wird so oft gesetzt, wie sie Zustände hat, und jedes verfolgte
@@ -4084,6 +4111,7 @@ Element noch einmal in einem eigenen Rahmen. Die Übersetzungszeit wächst also
 mit den Schritten, nicht mit den Folien, und `flipbook` wächst mit den Bildern.
 Für ein gewöhnliches Deck bleibt das im Sekundenbereich; wer hundert Folien mit
 je einem Daumenkino plant, misst besser, statt zu schätzen.
+
 
 = Wenn nichts passiert
 
