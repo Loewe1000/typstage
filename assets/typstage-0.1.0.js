@@ -328,10 +328,16 @@
   // it must not have taken the key already (`defaultPrevented`), the key must
   // be one the talk actually uses, and whatever was typed into must not be a
   // text field, or typing an `n` into a form would open a second window.
+  //
+  // Nur Tasten, auf die auch jemand hoert. Hier standen einmal `s` und `p`
+  // mit; gegriffen hat sie niemand, weder im Buehnenfenster noch drueben --
+  // durchsucht wurde die ganze Laufzeit, es gibt zu beiden keinen Zweig. Und
+  // was hier steht, wird dem eingebetteten Dokument mit `preventDefault`
+  // weggenommen: zwei Tasten, die es verlor, ohne dass sie etwas bewirkten.
   var TASTEN_DECK = {
     ArrowRight: 1, ArrowLeft: 1, ArrowUp: 1, ArrowDown: 1,
     PageDown: 1, PageUp: 1, " ": 1, Home: 1, End: 1, Escape: 1,
-    o: 1, f: 1, s: 1, p: 1, n: 1, "?": 1,
+    o: 1, f: 1, n: 1, "?": 1,
     b: 1, e: 1, t: 1, r: 1, m: 1, c: 1, z: 1, x: 1,
     "+": 1, "=": 1, "-": 1, "_": 1
   };
@@ -3946,8 +3952,9 @@
   // grosse Empfaenger steigt bei `tippt(e)` aus, und `e.target` steht fest,
   // sobald das Ereignis unterwegs ist -- ein blosses `blur()` kaeme dafuer
   // zu spaet.
+  // Ohne `p`, aus demselben Grund wie oben in `TASTEN_DECK`.
   var SAALTASTEN = {
-    b: 1, e: 1, m: 1, x: 1, z: 1, c: 1, o: 1, f: 1, n: 1, p: 1,
+    b: 1, e: 1, m: 1, x: 1, z: 1, c: 1, o: 1, f: 1, n: 1,
     ArrowLeft: 1, ArrowRight: 1, PageUp: 1, PageDown: 1, Home: 1, End: 1
   };
   function feldDurchreichen(ev, zu) {
