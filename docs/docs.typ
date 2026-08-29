@@ -24,6 +24,10 @@
   // Kapitelnamen -- zweimal `geogebra.html` waere eine Kollision --, und ein
   // Unterverzeichnis dafuer hat `schuldocs` noch nicht.
   split: true,
+  // Drei Ebenen -- aber nur fuer das Kapitel, auf dem man ist: das Verzeichnis
+  // klappt auf, statt alles aufzuzaehlen. Dadurch ist wieder Platz fuer die
+  // Unterabschnitte, und sie stehen dort, wo sie helfen.
+  toc-depth: 3,
   authors: pkg.package.authors,
   abstract: [
     `typstage` setzt Präsentationen mit Typst und bewegt sie im Browser. Jede

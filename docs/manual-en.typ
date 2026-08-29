@@ -8,7 +8,7 @@
 // `docs.typ` with `content.typ` and stays the one that `index.html` is built
 // from.
 
-#import "@schule/schuldocs:0.2.0": *
+#import "@schule/schuldocs:0.3.0": *
 
 #let pkg = toml("../typst.toml")
 
@@ -18,6 +18,14 @@
 #set text(lang: "en")
 
 #show: docs.with(
+  // Wie beim deutschen Handbuch, aber in einen eigenen Ordner: beide tragen
+  // dieselben Kapitelnamen, und `geogebra.html` gaebe es sonst zweimal.
+  split: true,
+  // Drei Ebenen -- aber nur fuer das Kapitel, auf dem man ist: das Verzeichnis
+  // klappt auf, statt alles aufzuzaehlen. Dadurch ist wieder Platz fuer die
+  // Unterabschnitte, und sie stehen dort, wo sie helfen.
+  toc-depth: 3,
+  ordner: "en/",
   // The description on the header comes from `typst.toml` and is German
   // there, because that is what Typst Universe shows. The English manual says
   // the same thing in its own language.
