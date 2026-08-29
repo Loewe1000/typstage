@@ -366,7 +366,8 @@ const BEISPIELE = ["tour", "theme-default", "theme-editorial",
 // und zwei frisch gebaute Decks sind dabei stillschweigend durchgerutscht:
 // gefahren wurde, was hier stand, gemeldet wurde nichts, der Lauf war grün.
 // Darum wird jetzt gegengelesen, was `build-site.sh` tatsächlich abgelegt hat.
-const NICHT_DECK = ["index"];
+// `index` und `en` sind die beiden Übersichtsseiten, deutsch und englisch.
+const NICHT_DECK = ["index", "en"];
 
 // Decks mit einem Applet darin. Sie werden mit abgeklemmtem GeoGebra gefahren,
 // siehe `ohneGeoGebra`.

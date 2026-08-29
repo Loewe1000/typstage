@@ -144,7 +144,15 @@ done
    cp -R "$bei" "$ZIEL/beispiele/"
  done
 
-BSP_PAKET="typstage" BSP_VERSION="$VERSION" BSP_NAMEN="${namen[*]}" \
-  python3 "$AGGREGAT/.github/scripts/beispiele-index.py" "$ZIEL/beispiele/index.html"
-echo "  → Beispiele: ${#namen[@]} Präsentationen (${namen[*]})"
+# Die Übersicht zweimal: die Decks selbst sind englisch und bleiben es -- sie
+# sind Vorträge, keine Oberfläche --, aber wer aus dem englischen Handbuch
+# kommt, soll nicht auf einer deutschen Seite landen.
+for sprache in de en; do
+  ausgabe="$ZIEL/beispiele/index.html"
+  [[ "$sprache" == "en" ]] && ausgabe="$ZIEL/beispiele/en.html"
+  BSP_PAKET="typstage" BSP_VERSION="$VERSION" BSP_NAMEN="${namen[*]}" \
+    BSP_SPRACHE="$sprache" \
+    python3 "$AGGREGAT/.github/scripts/beispiele-index.py" "$ausgabe"
+done
+echo "  → Beispiele: ${#namen[@]} Präsentationen (${namen[*]}), Übersicht de und en"
 echo "=== fertig in $ZIEL ==="

@@ -4,7 +4,7 @@
 the handout as PDF from that same file.**
 
 [![Manual](https://img.shields.io/badge/docs-manual-green)](https://loewe1000.github.io/typstage/)
-[![Example decks](https://img.shields.io/badge/demo-seventeen%20decks-blue)](https://loewe1000.github.io/typstage/beispiele/)
+[![Example decks](https://img.shields.io/badge/demo-seventeen%20decks-blue)](https://loewe1000.github.io/typstage/beispiele/en.html)
 [![Changelog](https://img.shields.io/badge/changelog-0.1.0-lightgrey)](CHANGELOG.md)
 ![License](https://img.shields.io/github/license/Loewe1000/typstage)
 
@@ -15,7 +15,7 @@ typst compile deck.typ deck.pdf                                  # slides and ha
 
 ![A slide of a typstage deck in the browser, halfway through its reveals](assets/slide.png)
 
-**Try it without installing anything:** [seventeen example decks](https://loewe1000.github.io/typstage/beispiele/), running in your browser. They are written as talks somebody might actually give rather than as feature demos — a school lesson, a night of rolling deployments, John Snow's cholera map, a Fermi question worked through in four bursts. Each one links its source.
+**Try it without installing anything:** [seventeen example decks](https://loewe1000.github.io/typstage/beispiele/en.html), running in your browser. They are written as talks somebody might actually give rather than as feature demos — a school lesson, a night of rolling deployments, John Snow's cholera map, a Fermi question worked through in four bursts. Each one links its source.
 
 ## Typst sets, the browser moves
 
@@ -357,7 +357,7 @@ runtime once for all of them. The manual has the numbers.
 
 The [manual](https://loewe1000.github.io/typstage/) covers steps, magic move,
 transitions, media, the bridge and a full API reference. It is published from
-this repository, together with the [example decks](https://loewe1000.github.io/typstage/beispiele/).
+this repository, together with the [example decks](https://loewe1000.github.io/typstage/beispiele/en.html).
 The German source is `docs/content.typ`, the English one `docs/content-en.typ`.
 
 | | Website | PDF |
@@ -402,7 +402,7 @@ that is unwanted, `codebase` points the frame at a local copy instead. On paper
 nothing is fetched at all: `fallback` and `link` stand there instead.
 
 The chapter *GeoGebra* in the manual has the rest, and the
-[two example decks](https://loewe1000.github.io/typstage/beispiele/) are on the
+[two example decks](https://loewe1000.github.io/typstage/beispiele/en.html) are on the
 site with the others.
 
 ## License
