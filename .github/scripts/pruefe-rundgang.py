@@ -75,17 +75,43 @@ def ausfuhren(lib):
 def nur_code(deck):
     """Alles weg, was Text ist: Zäune, Zeichenketten, Backticks, Kommentare.
 
-    Die Reihenfolge ist nicht beliebig. Zeichenketten fallen vor den
-    Kommentaren, sonst hielte ein `https://…` in einer URL den Rest der Zeile
-    für einen Kommentar. Und Kommentare fallen erst zuletzt und dann *ganz*,
-    nicht nur zeilenweise: ein `#let eigen = (:)  // theme(…)` am Zeilenende
-    kam durch die erste Fassung dieser Probe glatt hindurch.
+    Ein Durchgang mit einem Zustand, kein Stapel von Ersetzungen. Die erste
+    Fassung strich nacheinander -- erst Zeichenketten, dann Kommentare --, und
+    daran zerbrach sie an einem einzigen Anführungszeichen in einem Kommentar:
+    `// … bricht mit „… is not valid in code" ab.` Das eine Zeichen paarte sich
+    mit dem nächsten weit unten, und alles dazwischen galt als Zeichenkette.
+    Gemessen: 19 von 58 Ausfuhren galten plötzlich als nicht vorgeführt, obwohl
+    sich an der Datei nichts geändert hatte, was sie betraf.
     """
-    s = re.sub(r"```.*?```", " ", deck, flags=re.S)
-    s = re.sub(r'"(?:[^"\\]|\\.)*"', '""', s)
-    s = re.sub(r"`[^`\n]*`", " ", s)
-    s = re.sub(r"//[^\n]*", " ", s)
-    return s
+    aus, i, n = [], 0, len(deck)
+    while i < n:
+        c = deck[i]
+        if c == '"':                      # Zeichenkette
+            i += 1
+            while i < n and deck[i] != '"':
+                i += 2 if deck[i] == "\\" else 1
+            i += 1
+            aus.append('""')
+        elif deck.startswith("//", i):    # Zeilenkommentar
+            while i < n and deck[i] != "\n":
+                i += 1
+            aus.append(" ")
+        elif deck.startswith("/*", i):    # Blockkommentar
+            i = deck.find("*/", i)
+            i = n if i < 0 else i + 2
+            aus.append(" ")
+        elif c == "`":                    # Zaun oder Codespanne
+            zaun = 1
+            while deck.startswith("`" * (zaun + 1), i):
+                zaun += 1
+            marke = "`" * zaun
+            j = deck.find(marke, i + zaun)
+            i = n if j < 0 else j + zaun
+            aus.append(" ")
+        else:
+            aus.append(c)
+            i += 1
+    return "".join(aus)
 
 def vorgefuehrt(name, code):
     e = re.escape(name)
@@ -95,6 +121,7 @@ def vorgefuehrt(name, code):
         # In einem Ausdruck gebraucht -- aber nicht als benannter Parameter,
         # denn `theme: themes.plain` sagt nichts über `theme`.
         return (re.search(r"#" + e + r"(?![\w-])", code)
+                or re.search(r"(?<![\w-])" + e + r"\s*\.", code)
                 or re.search(r"[(,]\s*" + e + r"(?![\w-]|\s*:)", code)) is not None
     # Der Regelfall: ein Aufruf. Klammer oder Inhaltsblock -- `#speaker-note[…]`
     # ist einer wie `#anim(…)`. `presentation.with(…)` zählt auch als einer.
