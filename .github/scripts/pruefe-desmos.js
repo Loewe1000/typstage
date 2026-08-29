@@ -35,26 +35,9 @@ const KEY = arg("--key", "dcb31709b452b1cf9dc26972add0fda6");
 const CHROME = arg("--chrome",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 
-const DECK = `#import "@preview/typstage:0.1.0": *
-#show: presentation.with(theme: themes.default, title: [Desmos])
-
-== Eine Parabel, die sich öffnet
-
-#desmos(
-  <graph>,
-  api-key: "${KEY}",
-  expressions: (a: "a=1", kurve: "y=a x^2"),
-  bounds: (-5, 5, -2, 12),
-  height: 300pt,
-)
-
-#dsm-tween("a", to: 3.0, from: 0.2, at: 2, duration: 900)
-#anim(at: 2)[Der Faktor wächst.]
-#dsm-set(("gerade": "y=2x"), at: 3)
-#anim(at: 3)[Eine Gerade kommt dazu.]
-#dsm-hide("gerade", at: 4)
-#anim(at: 4)[Und ist wieder weg.]
-`;
+// Das Deck steht als eigene Datei daneben, damit es nicht nur diese Probe
+// gibt: wer der Brücke zusehen will, übersetzt es von Hand und öffnet es.
+const DECK = fs.readFileSync(path.join(__dirname, "desmos-probe.typ"), "utf8");
 
 const AUSDRUECKE = `(function(){
   var f=document.querySelector('iframe');
@@ -81,7 +64,7 @@ function a_wert(liste) {
   }
   fs.writeFileSync(path.join(tmp, "deck.typ"), DECK);
   execFileSync("typst", ["compile", "--format", "html", "--features", "html",
-    "--package-path", paket, "--root", tmp,
+    "--package-path", paket, "--root", tmp, "--input", "desmos-key=" + KEY,
     path.join(tmp, "deck.typ"), path.join(tmp, "deck.html")]);
 
   const b = await starte(CHROME);

@@ -114,12 +114,19 @@
     lockViewport: not pan,
     border: not seamless,
   )
-  let settings = (
-    ..if grid != auto { (showGrid: grid) },
-    ..if axes != auto { (showXAxis: axes, showYAxis: axes) },
-    ..if axis-numbers != auto {
-        (xAxisNumbers: axis-numbers, yAxisNumbers: axis-numbers) },
-  )
+  // Nicht als Klammerliteral aus lauter `..`-Spreads: das liest Typst als
+  // Array, nicht als Wörterbuch, und `json.encode` schriebe dann `[]` statt
+  // `{}` in den Rahmen.
+  let settings = (:)
+  if grid != auto { settings.insert("showGrid", grid) }
+  if axes != auto {
+    settings.insert("showXAxis", axes)
+    settings.insert("showYAxis", axes)
+  }
+  if axis-numbers != auto {
+    settings.insert("xAxisNumbers", axis-numbers)
+    settings.insert("yAxisNumbers", axis-numbers)
+  }
 
   // Das Startbild wird im Rahmen ausgeführt, sobald der Rechner steht. Als
   // Liste gebaut und dann verbunden: ein `+` am Zeilenanfang läse Typst als
@@ -226,18 +233,22 @@
 /// Der Ausschnitt, als `(links, rechts, unten, oben)`, und die Grapheinstellungen.
 #let dsm-view(target: auto, at: "1-", bounds: none, grid: none, axes: none,
               axis-numbers: none, degrees: none, polar: none) = context {
-  let settings = (
-    ..if grid != none { (showGrid: grid) },
-    ..if axes != none { (showXAxis: axes, showYAxis: axes) },
-    ..if axis-numbers != none {
-        (xAxisNumbers: axis-numbers, yAxisNumbers: axis-numbers) },
-    ..if degrees != none { (degreeMode: degrees) },
-    ..if polar != none { (polarMode: polar) },
-  )
-  bridge-job(resolve-target(target), (view: (
-    ..if bounds != none { (bounds: bounds) },
-    ..if settings.len() > 0 { (settings: settings) },
-  )), at: at)
+  let settings = (:)
+  if grid != none { settings.insert("showGrid", grid) }
+  if axes != none {
+    settings.insert("showXAxis", axes)
+    settings.insert("showYAxis", axes)
+  }
+  if axis-numbers != none {
+    settings.insert("xAxisNumbers", axis-numbers)
+    settings.insert("yAxisNumbers", axis-numbers)
+  }
+  if degrees != none { settings.insert("degreeMode", degrees) }
+  if polar != none { settings.insert("polarMode", polar) }
+  let inhalt = (:)
+  if bounds != none { inhalt.insert("bounds", bounds) }
+  if settings.len() > 0 { inhalt.insert("settings", settings) }
+  bridge-job(resolve-target(target), (view: inhalt), at: at)
 }
 
 /// Desmos' eigene Regleranimation an- oder abschalten.
@@ -245,17 +256,17 @@
 /// Sie läuft mit Desmos' Geschwindigkeit und ohne Ziel. Wer von einer Zahl zu
 /// einer anderen will und dann stehenbleiben, nimmt `dsm-tween`.
 #let dsm-animate(..ids, target: auto, at: "1-", playing: true,
-                 min: none, max: none, step: none) = context bridge-job(
-  resolve-target(target), (anim: (
-    ids: ids.pos(), playing: playing,
-    ..if min != none or max != none or step != none {
-      (bounds: (
-        ..if min != none { (min: json.encode(min)) },
-        ..if max != none { (max: json.encode(max)) },
-        ..if step != none { (step: json.encode(step)) },
-      ))
-    },
-  )), at: at)
+                 min: none, max: none, step: none) = context {
+  let auftrag = (ids: ids.pos(), playing: playing)
+  let grenzen = (:)
+  // Desmos will die Reglergrenzen als Zeichenketten. `json.encode` und nicht
+  // `str`, weil `str(-5)` ein typografisches Minus liefert.
+  if min != none { grenzen.insert("min", json.encode(min)) }
+  if max != none { grenzen.insert("max", json.encode(max)) }
+  if step != none { grenzen.insert("step", json.encode(step)) }
+  if grenzen.len() > 0 { auftrag.insert("bounds", grenzen) }
+  bridge-job(resolve-target(target), (anim: auftrag), at: at)
+}
 
 /// Einen Regler von einer Zahl zur anderen ziehen, in einer gegebenen Zeit.
 ///

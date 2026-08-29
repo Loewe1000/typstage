@@ -61,6 +61,7 @@ Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
   der Schrittzeiger
 + *Etwas vorführen statt behaupten* -- Applet, Video, Daumenkino
 + *GeoGebra* -- Konstruktionen, die den Schritten der Folie folgen
++ *Desmos* -- derselbe Weg, ein anderer Rechner
 + *Eine Rechnung entwickeln* -- Magic Move über mehrere Folien
 + *Den Vortrag halten* -- Tasten, Sprecheransicht, Zeichnen, die zwei Uhren
 + *Aus einer Quelle drei Ausgaben* -- Präsentation, Foliensatz, Handout
@@ -2158,6 +2159,129 @@ was darin läuft, holt der Browser von `codebase`, ab Werk
 + *Der Browser des Zuschauers spricht mit `geogebra.org`.* Wo das nicht
   erwünscht ist -- eine Klasse ohne Netz, ein Vortrag hinter einer Firewall,
   eine Datenschutzauflage --, lässt sich das mit `codebase` umlenken.
+
+= Desmos
+
+Derselbe Weg wie bei GeoGebra, ein anderer Rechner. Alles, was das vorige
+Kapitel über die Brücke sagt -- Schrittwähler, Zielwahl, Wiederholbarkeit --
+gilt hier unverändert; dieses Kapitel nennt nur, was anders ist.
+
+Der Unterschied im Kern ist die Sprache: GeoGebra nimmt Befehle, Desmos nimmt
+*Ausdrücke*. Jeder trägt eine `id`, und dieselbe `id` noch einmal ersetzt den
+Ausdruck, statt einen zweiten anzulegen. So bewegt sich eine Kurve über die
+Schritte.
+
+== Der Schlüssel
+
+`api-key` ist Pflicht. Desmos gibt sein Skript nur gegen einen Schlüssel
+heraus -- ohne einen antwortet der Server mit 403, und der Rahmen bliebe leer.
+
+Zum Ausprobieren gibt es `demo-key`, den Desmos in seiner eigenen
+Dokumentation dafür nennt. Er funktioniert, aber das geladene Skript sagt bei
+jedem Aufruf in der Konsole des Browsers, woran man ist:
+
+#show-code[```
+This page is using the Desmos API with a trial key suitable for prototyping,
+not for commercial use.
+```]
+
+#warning[
+  Wer damit vorträgt, arbeitet außerhalb dessen, wofür der Schlüssel gedacht
+  ist. Einen eigenen gibt es über #link("https://www.desmos.com/my-api"). Und
+  er steht im Klartext in der HTML-Datei -- ein Deck, das man weitergibt oder
+  ins Netz stellt, gibt ihn mit.
+]
+
+== Schnellstart
+
+// check: dokument
+#show-code[```typ
+#import "@preview/typstage:0.1.0": *
+
+#presentation(
+  slide([Eine Parabel], {
+    desmos(api-key: demo-key, height: 300pt,
+           expressions: (a: "a=1", kurve: "y=a x^2"),
+           bounds: (-5, 5, -2, 12))
+    dsm-set(("gerade": "y=2x"), at: 2)
+  }),
+)
+```]
+
+`expressions` ist das Startbild, `bounds` der Ausschnitt als
+`(links, rechts, unten, oben)`. Auf Schritt 2 kommt eine Gerade dazu.
+
+Ein Ausdruck mit `=` ist ein Regler, einer ohne eine Kurve; das entscheidet
+Desmos und nicht dieses Paket.
+
+== Zeigen, verbergen, entfernen
+
+// check: folie drin=rechner
+#show-code[```typ
+#dsm-hide("gerade", at: 3)
+#dsm-show("gerade", at: 4)
+#dsm-remove("gerade", at: 5)
+```]
+
+Der Unterschied ist wichtiger, als er aussieht: Ein verborgener Ausdruck
+bleibt im Rechner und rechnet weiter mit -- was von ihm abhängt, gilt
+weiterhin. Ein entfernter ist fort, und alles, was ihn nennt, geht mit ihm.
+
+== Aussehen und Ausschnitt
+
+`dsm-style` nimmt Desmos' eigene Schlüssel. `color` nimmt eine Typst-Farbe,
+damit die Kurve die Palette der Folie tragen kann.
+
+// check: folie drin=rechner
+#show-code[```typ
+#dsm-style("kurve", color: rgb("#eb5e28"), line-width: 3, at: 2)
+#dsm-view(bounds: (-2, 2, -1, 4), at: 3)
+```]
+
+`dsm-view` verschiebt den Ausschnitt und schaltet Gitter, Achsen und
+Achsenzahlen. Was `desmos()` beim Aufbau bekommt, gilt für den Anfang; was
+`dsm-view` schickt, gilt ab seinem Schritt.
+
+== Bewegung
+
+Zwei Wege, und sie tun Verschiedenes.
+
+`dsm-animate` schaltet Desmos' eigene Regleranimation an. Sie läuft mit
+Desmos' Geschwindigkeit und ohne Ziel, hin und her, bis jemand sie anhält --
+richtig für ein Bild, das atmen soll.
+
+`dsm-tween` zieht einen Regler von einer Zahl zur anderen und lässt ihn dort
+stehen -- richtig für einen Schritt, der etwas zeigt.
+
+// check: folie drin=rechner
+#show-code[```typ
+#dsm-tween("a", to: 3.0, at: 2, duration: 900)
+#dsm-animate("b", at: 4, min: -3, max: 3, step: 0.1)
+```]
+
+#warning[
+  `at` ist bei `dsm-tween` eine *Schrittnummer*, kein Wähler, und das ist
+  Absicht. Die Bewegung liegt auf genau diesem Schritt; ab dem nächsten setzt
+  der Befehl den Endwert einfach. Stünde sie auf „ab Schritt 2", liefe sie bei
+  jedem Weiterblättern der Folie neu an -- gemessen sprang der Regler von 3
+  auf 0,75 zurück und wuchs erneut.
+]
+
+== Auf Papier
+
+Wie beim Applet nebenan: Der Rechner lebt nur im HTML. Im PDF steht, was
+`fallback` sagt, und ohne `fallback` bleibt der Platz leer. Ein Bild des
+fertigen Graphen ist dort meist die bessere Auskunft als ein leerer Kasten.
+
+== Wessen Rechner das ist
+
+Der Rahmen holt Desmos von `desmos.com`, sobald die Folie gezeigt wird. Ohne
+Netz bleibt er leer, der Browser des Zuschauers spricht mit diesem Rechner,
+und was darin läuft, steht unter Desmos' Bedingungen und nicht unter der
+MIT-Lizenz dieses Pakets. Das PDF holt nichts.
+
+Ein Deck, das `desmos` nie ruft, trägt von alldem nichts: Bootskript und
+Rahmendokument stehen hinter dem Aufruf.
 
 = Eine Rechnung entwickeln
 

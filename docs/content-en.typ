@@ -64,6 +64,7 @@ This manual is ordered by intent rather than by function:
 + *Revealing a slide step by step* — `pause`, `stagger`, `anim`, `alternatives`
 + *Showing instead of claiming* — an applet, a video, a flip book
 + *GeoGebra* — constructions that follow the steps of the slide
++ *Desmos* — the same road, a different calculator
 + *Developing a calculation* — magic move across several slides
 + *Giving the talk* — keys, touch, the overview, the speaker view
 + *Three outputs from one source* — talk, slide deck, handout
@@ -1753,6 +1754,130 @@ follow:
 #info[
   On paper none of this is left: the PDF fetches nothing.
 ]
+
+= Desmos
+
+The same road as GeoGebra, a different calculator. Everything the previous
+chapter says about the bridge -- step selectors, choosing a target,
+repeatability -- holds here unchanged; this chapter names only what differs.
+
+The difference at the core is the language: GeoGebra takes commands, Desmos
+takes *expressions*. Each carries an `id`, and the same `id` again replaces
+the expression rather than adding a second one. That is how a curve moves
+across the steps.
+
+== The key
+
+`api-key` is required. Desmos serves its script only against a key -- without
+one the server answers 403 and the frame would stay empty.
+
+For trying things out there is `demo-key`, which Desmos names for that purpose
+in its own documentation. It works, but the script says in the browser console
+where you stand:
+
+#show-code[```
+This page is using the Desmos API with a trial key suitable for prototyping,
+not for commercial use.
+```]
+
+#warning[
+  Giving a talk on that key means working outside what it is meant for. A key
+  of your own comes from #link("https://www.desmos.com/my-api"). And it stands
+  in the HTML in plain text -- a deck you hand on or put online hands the key
+  on with it.
+]
+
+== Quick start
+
+// check: dokument
+#show-code[```typ
+#import "@preview/typstage:0.1.0": *
+
+#presentation(
+  slide([A parabola], {
+    desmos(api-key: demo-key, height: 300pt,
+           expressions: (a: "a=1", kurve: "y=a x^2"),
+           bounds: (-5, 5, -2, 12))
+    dsm-set(("gerade": "y=2x"), at: 2)
+  }),
+)
+```]
+
+`expressions` is the opening picture, `bounds` the viewport as
+`(left, right, bottom, top)`. On step 2 a line joins it.
+
+An expression with `=` is a slider, one without is a curve; Desmos decides
+that, not this package.
+
+== Showing, hiding, removing
+
+// check: folie drin=rechner
+#show-code[```typ
+#dsm-hide("gerade", at: 3)
+#dsm-show("gerade", at: 4)
+#dsm-remove("gerade", at: 5)
+```]
+
+The difference matters more than it looks: a hidden expression stays in the
+calculator and keeps computing, so whatever depends on it still holds. A
+removed one is gone, and everything that names it goes with it.
+
+== Appearance and viewport
+
+`dsm-style` takes Desmos' own keys. `color` takes a Typst colour, so the curve
+can carry the palette of the slide.
+
+// check: folie drin=rechner
+#show-code[```typ
+#dsm-style("kurve", color: rgb("#eb5e28"), line-width: 3, at: 2)
+#dsm-view(bounds: (-2, 2, -1, 4), at: 3)
+```]
+
+`dsm-view` moves the viewport and switches grid, axes and axis numbers. What
+`desmos()` is given at build time holds at the start; what `dsm-view` sends
+holds from its step on.
+
+== Motion
+
+Two ways, and they do different things.
+
+`dsm-animate` switches on Desmos' own slider animation. It runs at Desmos'
+speed and without a destination, back and forth until someone stops it --
+right for a picture that should breathe.
+
+`dsm-tween` pulls a slider from one number to another and leaves it there --
+right for a step that shows something.
+
+// check: folie drin=rechner
+#show-code[```typ
+#dsm-tween("a", to: 3.0, at: 2, duration: 900)
+#dsm-animate("b", at: 4, min: -3, max: 3, step: 0.1)
+```]
+
+#warning[
+  On `dsm-tween`, `at` is a *step number* and not a selector, and that is
+  deliberate. The motion sits on exactly that step; from the next one the
+  command simply sets the end value. Were it "from step 2 on", it would start
+  again on every further step of the slide -- measured, the slider jumped back
+  from 3 to 0.75 and grew again.
+]
+
+== On paper
+
+As with the applet next door: the calculator lives in the HTML only. The PDF
+shows what `fallback` says, and without a `fallback` the space stays empty. A
+picture of the finished graph is usually the better answer there than an empty
+box.
+
+== Whose calculator this is
+
+The frame fetches Desmos from `desmos.com` when the slide is shown. Without a
+network it stays empty, the viewer's browser talks to that host, and what runs
+inside is under Desmos' terms rather than this package's MIT licence. The PDF
+fetches nothing.
+
+A deck that never calls `desmos` carries none of it: boot script and frame
+document sit behind the call.
 
 = Developing a calculation
 

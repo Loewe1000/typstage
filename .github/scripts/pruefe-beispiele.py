@@ -168,6 +168,11 @@ VORSPANN = {
 # keiner Folie, und `ggb-run` fände es nicht.
 IN_DER_FOLIE = {
   "applet": "#geogebra(height: 120pt)\n",
+  # Dasselbe für den Rechner nebenan. Der Schlüssel ist Pflicht, sonst kommt
+  # `desmos()` gar nicht erst durch -- `demo-key` ist die Konstante, die das
+  # Paket dafür ausfuhrt, und geladen wird beim Übersetzen ohnehin nichts.
+  "rechner": ('#desmos(api-key: demo-key, height: 120pt,\n'
+              '        expressions: (a: "a=1", kurve: "y=a x^2"))\n'),
 }
 
 # Ein 1x1-Pixel-PNG. `image()` liest die Datei beim Übersetzen, ein leerer
