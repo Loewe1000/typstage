@@ -45,4 +45,5 @@ disciplines = ["education", "mathematics"]
 exclude = ["example.typ", "examples", "docs", ".github", ".gitignore",
            "CONTRIBUTING.md",
            "assets/handout.png", "assets/slide.png", "assets/themes.png",
-           "assets/logo.typ", "assets/logo.svg", "assets/logo.png"]
+           "assets/logo.typ", "assets/logo.svg", "assets/logo.png",
+           "assets/themes.typ"]

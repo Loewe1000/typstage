@@ -45,6 +45,16 @@ AGGREGAT=/path/to/Typst-Schule bash .github/scripts/build-site.sh
 | `pruefe-rundgang.py` | every export is demonstrated in `tour.typ` |
 | `pruefe-ueberlauf.py` | no example deck runs over its slide |
 
+Two images in the README are generated, not drawn: `assets/logo.png`/`.svg`
+from `assets/logo.typ`, and `assets/themes.png` from `assets/themes.typ` via
+`python3 .github/scripts/bau-themenbild.py`. **Run that one by hand after
+touching a theme, and run it on macOS.** It is deliberately not in CI: the
+themes name fonts a Mac has -- Iowan Old Style, Optima, Helvetica Neue --
+and on the Linux runner Typst would fall back to others, so the image would
+show a look nobody ever sees. The picture goes stale silently otherwise: the
+version before this one showed `themes.lesson` with a blue heading and an
+orange rule, long after that had become red on a blue rule.
+
 Pass `--paketpfad` to `pruefe-beispiele.py`, or it checks the *installed*
 package rather than your working tree. `build-site.sh` passes it; a run by hand
 often does not.
