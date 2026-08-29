@@ -3054,7 +3054,7 @@ Größe und die neue Gestalt an:
 
 #align(center, morph(<pythagoras>, $a^2 + b^2$))
 
-== #h(0pt)
+==
 
 #place(center + horizon,
        morph(<pythagoras>, text(size: 2.6em)[$a^2 + b^2 = c^2$]))

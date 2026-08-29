@@ -392,7 +392,7 @@ A hospital compared several ways of removing kidney stones. Take two of them.
   itself caused, and splitting destroys the answer.
 ], enter: "fade-up")
 
-== #h(0pt)
+==
 
 #statement(size: 1.5em)[
   Which number is right is not a question about the data.\
