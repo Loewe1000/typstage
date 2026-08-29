@@ -123,7 +123,7 @@ const sollDatei = path.resolve(opt("--soll", path.join(__dirname, "decklauf", "s
 const bildZiel = opt("--bilder", null) && path.resolve(opt("--bilder"));
 const tempo = Math.max(1, +(opt("--tempo", "1")) || 1);
 const neuSoll = hat("--neu-soll");
-// Der Paketpfad, unter dem die Prüfdecks `@schule/typstage:0.1.0` finden.
+// Der Paketpfad, unter dem die Prüfdecks `@preview/typstage:0.1.0` finden.
 //
 // Ohne Angabe wird er aus dem Arbeitsbaum selbst gebaut, und zwar immer. Das
 // ist nicht Bequemlichkeit: verlässt man sich darauf, dass der Import
@@ -139,6 +139,11 @@ const paketpfad = (function () {
   const ziel = path.join(wurzel, "schule", "typstage");
   fs.mkdirSync(ziel, { recursive: true });
   fs.symlinkSync(WURZEL, path.join(ziel, "0.1.0"), "dir");
+  // Und unter `preview`, wie das Paket nach der Einreichung heisst. Die
+  // Pruefdecks nennen es so; ohne diesen zweiten Verweis faenden sie es nicht.
+  const ziel2 = path.join(wurzel, "preview", "typstage");
+  fs.mkdirSync(ziel2, { recursive: true });
+  fs.symlinkSync(WURZEL, path.join(ziel2, "0.1.0"), "dir");
   return wurzel;
 })();
 
@@ -365,7 +370,7 @@ const NICHT_DECK = ["index"];
 
 // Decks mit einem Applet darin. Sie werden mit abgeklemmtem GeoGebra gefahren,
 // siehe `ohneGeoGebra`.
-const MIT_APPLET = ["geogebra", "geogebra-sprecher"];
+const MIT_APPLET = ["geogebra", "geogebra-sprecher", "tour"];
 
 // Wohin die Applets statt zu `geogebra.org` greifen. Port 9 ist der
 // Mülleimer-Port: die Verbindung wird sofort abgelehnt, es wird nichts
@@ -398,9 +403,21 @@ const GGB_QUELLE = "https://www.geogebra.org/apps/";
 function ohneGeoGebra(datei) {
   const text = fs.readFileSync(datei, "utf8");
   if (text.indexOf(GGB_QUELLE) < 0) return datei;
-  const aus = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "typstage-ggb-")),
-                        path.basename(datei));
+  const ordner = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-ggb-"));
+  const aus = path.join(ordner, path.basename(datei));
   fs.writeFileSync(aus, text.split(GGB_QUELLE).join(TOTE_QUELLE), "utf8");
+  // Und daneben alles, was im Ordner des Originals liegt. Ein Deck lädt seine
+  // Medien relativ, und die Kopie liegt woanders: als `tour` ein Applet bekam
+  // und damit hier hereinkam, meldete der Lauf sofort
+  // `error: file:///…/typstage-ggb-…/demo.mp4`. Das Video lag noch im
+  // Beispielordner. Verknüpfungen statt Kopien, weil `mosaic-bilder/` und
+  // `medien/` sonst bei jedem Lauf mitwandern würden.
+  const quelle = path.dirname(datei);
+  for (const name of fs.readdirSync(quelle)) {
+    if (name === path.basename(datei)) continue;
+    try { fs.symlinkSync(path.join(quelle, name), path.join(ordner, name)); }
+    catch (e) { /* schon da oder nicht verknüpfbar -- dann eben nicht */ }
+  }
   return aus;
 }
 

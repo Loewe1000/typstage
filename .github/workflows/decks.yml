@@ -88,6 +88,12 @@ jobs:
       - name: Ein Sprung mitten in einem Übergang
         run: node .github/scripts/decklauf/sprung.js
 
+      # Ob der Rundgang sein eigenes Versprechen noch hält. Ohne Browser und in
+      # einer Sekunde: `tour.typ` sagt im Untertitel „every function once", und
+      # als das zum ersten Mal nachgezählt wurde, waren es 34 von 57.
+      - name: Der Rundgang zeigt jede Ausfuhr
+        run: python3 .github/scripts/pruefe-rundgang.py
+
       # Das Kontrastgatter der Sprecherpalette. Ohne Browser und in einer
       # Sekunde: `contrast()` im Paket bewacht die Folienpaletten, die zwanzig
       # Farben der Sprecheransicht standen unter keiner Aufsicht.

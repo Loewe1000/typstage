@@ -22,7 +22,7 @@
 // white space under it. `#v(1fr)` at both ends centres one; a pure `fr` spacer
 // is passed through untouched even where it stands next to tracked elements.
 
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 // Two meaning colours, declared once here and passed in wherever they are
 // needed. This deck's theme keeps none of its own. `live` marks the parts of a
@@ -108,13 +108,13 @@
   split: (1fr, 1fr), align: top,
   card(title: [As headings])[
     #text(size: 0.72em, raw(lang: "typ",
-      "#show: presentation.with(…)\n\n= A section\n== A slide\nOne point.\n#pause\nAnd another."))
+      "#show: presentation.with(title: [My talk])\n\n= A section\n== A slide\nOne point.\n#pause\nAnd another."))
 
     The way for talks that are written by hand. This deck uses it.
   ],
   card(title: [As arguments])[
     #text(size: 0.72em, raw(lang: "typ",
-      "#presentation(\n  title-slide(title: […]),\n  section([A section]),\n  slide(title: […],\n        note: […])[…],\n)"))
+      "#presentation(\n  title-slide(title: [My talk]),\n  section([A section]),\n  slide(title: [A slide],\n        note: [Say this])[One point.],\n)"))
 
     The way for talks that are computed. Slides out of a loop.
     `theme-night.typ` next door does it that way.
@@ -169,6 +169,84 @@
       milliseconds, a wave instead of a sequence.],
   ),
 )
+
+#v(1fr)
+
+== build: a drawing that cannot be taken apart
+
+// A CeTZ canvas or a lilaq diagram is one piece. Typst hands out the finished
+// setting, and what was a line in it cannot be reached from outside any more,
+// so there is no `anim` around a part of a drawing. What there is, is the
+// drawing itself, as often as one wants it.
+//
+// `draw` is called once per step and handed a question. `from(k, value)` gives
+// the value back once the k-th piece is due and otherwise the same thing made
+// of air: a colour with alpha 0, a stroke with a transparent brush, a text in
+// `hide`. The piece is therefore never really missing, every stage measures the
+// same to the point, and nothing around it moves while the drawing grows.
+#v(1fr)
+
+#side-by-side(
+  split: (1fr, 1fr), align: horizon,
+  build(from => {
+    let w = 260pt
+    let h = 150pt
+    let a = (24pt, h - 24pt)
+    let b = (w - 24pt, h - 24pt)
+    let c = (w - 24pt, 26pt)
+    box(width: w, height: h, {
+      place(line(start: a, end: b, stroke: 3pt + themes.plain.muted))
+      place(line(start: b, end: c, stroke: from(2, 3pt + themes.plain.muted)))
+      place(line(start: a, end: c, stroke: from(3, 3.5pt + live)))
+      place(dx: 74pt, dy: 44pt, from(3, text(size: 0.8em, fill: live)[c]))
+    })
+  }, steps: 3),
+  stagger[
+    - `steps` is said, not guessed: what the drawing does with its question is
+      nobody's business from outside.
+    - Exactly one stage is drawn at a time. Three layers stacked would paint
+      the same axes and labels three times over, and the ink adds up.
+  ],
+)
+
+#v(1fr)
+
+== cue: in whatever order the room calls it out
+
+// `stagger` has an order and holds to it. This group has none. The digits 1 to
+// 9 pick the point that was just named, and the speaker view shows which digit
+// belongs to which. The group owns as many steps as it has points either way,
+// so the progress bar, the handout and the overflow check never learn that the
+// order was open.
+#speaker-note[
+  Ask first, then press the digit. Whatever nobody names still arrives by
+  paging on.
+]
+
+#v(1fr)
+
+#side-by-side(
+  split: (1.15fr, 1fr), align: top,
+  cue("reading")[
+    - Where the curve crosses zero.
+    - Where it turns.
+    - Where it is steepest.
+  ],
+  stagger[
+    - Unset, the points keep their reading order, so a late one does not push
+      the others down when it arrives.
+    - `cue-layer` hangs a sentence, a formula or a drawing on one of the
+      points. It shares that point's step, wherever the room puts it.
+  ],
+)
+
+// The layer belongs to the second point and rides along with it. The group has
+// to stand before its layers in the source, because a layer looks up which
+// step its point was given.
+#cue-layer("reading", 2,
+  align(center, text(size: 0.9em, fill: live)[
+    The turning point is the one they name first.
+  ]))
 
 #v(1fr)
 
@@ -300,6 +378,102 @@ and the wrong two find each other), the piece gets a name instead.
 
 #v(0.5fr)
 
+== camera: closer, and back out again
+
+// The camera aims at a `pin` and at nothing else -- the same named piece the
+// magic move uses, so a slide that already names its parts adds nothing but
+// the aim. No coordinates, no counting: a pin's marker is the rectangle the
+// runtime measures anyway.
+#v(1fr)
+
+#statement(size: 1.3em)[
+  $ nabla times bold(E) = - #pin(<detail>, $(partial bold(B)) / (partial t)$) $
+]
+
+#anim([One of Maxwell's four. What the law actually claims sits in the term on
+       the right, and that term is the smallest thing on the slide.],
+      at: "2-", enter: "fade-up")
+
+// `at: "3"` in quotes is one step closed: in on three, out again on four.
+// 110pt of margin, not the default 16: the term is about 60pt wide, and with
+// a narrow margin the crop came out at six times the size -- a screenful of
+// one fraction, with nothing around it to say where on the slide it sat.
+// A bare `at: 3` would hold the crop to the end of the slide. Coming back out
+// is a keypress like any other, so it is counted like one and shows up in
+// `info().step.total`.
+#camera(<detail>, at: "3", margin: 110pt)
+
+#anim([`margin` is how much of the slide stays around the detail, measured on
+       the unzoomed slide. On paper there is no camera at all: the page is set
+       whole, and the step is still counted, so the handout's footer names the
+       same number as the talk.], at: "4-", enter: "fade-up")
+
+#v(1fr)
+
+== scene: a drawing that follows a number
+
+// manim's `ValueTracker`, turned around. There a number moves while the film
+// runs and the picture follows it; here Typst draws at compile time, so a
+// number can only change at a step. The deck therefore writes a function from
+// a value to a picture and says at which values the talk stops. Typst renders
+// every stop and the frames between them; a keypress pulls the picture from
+// one stop to the next.
+//
+// `stops` are the values themselves and not 0 to 1 -- that is the whole
+// difference to `flipbook`, which knows only how far along it is.
+#let tangent(x0) = {
+  let w = 300pt
+  let h = 176pt
+  // The window on the plane: x from -2.2 to 2.2, y from -0.6 to 4.4.
+  let px(x) = (x + 2.2) / 4.4 * w
+  let py(y) = h - (y + 0.6) / 5.0 * h
+  let f(x) = x * x
+  let bogen = range(0, 89).map(i => {
+    let x = -2.2 + i / 88 * 4.4
+    (px(x), py(f(x)))
+  })
+  // The tangent at x0, from the derivative that this slide is about.
+  let t(x) = f(x0) + 2 * x0 * (x - x0)
+  box(width: w, height: h, clip: true, {
+    place(rect(width: w, height: h, fill: luma(94%), stroke: none))
+    place(line(start: (0pt, py(0)), end: (w, py(0)),
+               stroke: 1pt + themes.plain.border))
+    place(curve(stroke: 2.5pt + themes.plain.muted, curve.move(bogen.first()),
+                ..bogen.slice(1).map(curve.line)))
+    place(line(start: (px(-2.2), py(t(-2.2))), end: (px(2.2), py(t(2.2))),
+               stroke: 3pt + live))
+    place(dx: px(x0) - 5pt, dy: py(f(x0)) - 5pt,
+          circle(radius: 5pt, fill: live, stroke: none))
+  })
+}
+
+#v(1fr)
+
+#side-by-side(
+  split: (1fr, 1fr), align: top,
+  // Three stops are two steps: the first is there as soon as the scene
+  // appears, every further one costs a keypress. `tween` is the number of
+  // frames *between* two stops, so this scene is 3 stops plus 2 times 8.
+  scene("tangent", tangent, stops: (-1.7, 0, 1.7), tween: 8,
+        width: 300pt, height: 176pt),
+  stagger[
+    - A stop may be a tuple, and then the drawing takes that many arguments.
+      What is lost against manim is that there two trackers may move
+      independently; here everything travels together.
+    - `duration` is the time of one pull from stop to stop, not the time of the
+      entrance -- the same separation `morph` draws, and for the same reason.
+  ],
+)
+
+// A layer belongs to one stop and shares its step. The scene has to stand
+// before it in the source.
+#scene-layer("tangent", 2,
+  align(center, text(size: 0.9em, fill: live)[
+    At the vertex the slope is zero, and the line is the only thing that moved.
+  ]))
+
+#v(1fr)
+
 = Blocks and media
 
 == The five layouts
@@ -354,6 +528,56 @@ and the wrong two find each other), the piece gets a name instead.
           circle(radius: 6pt, fill: live, stroke: none))
   })
 }
+
+== fit: for the block whose size the deck does not choose
+
+// A wide table, a generated diagram, a list that came out of a data file:
+// without `fit` such a block runs over the edge of the slide. In the PDF it is
+// still to be seen standing there; in the browser the slide sits in a frame of
+// fixed size and whatever reaches past it is simply cut away.
+//
+// `wrap: false` because this is a table. A paragraph or a list is offered the
+// full width first and breaks into it instead of shrinking -- but anything
+// that lays itself out in columns would rearrange its own columns, and that
+// changes the picture rather than its size.
+#let messreihe = {
+  // Achtzehn Spalten. Gemessen in dieser Präsentation ist die Tabelle 936,8
+  // Punkte breit, die Folie gibt zwischen ihren Rändern 777,9 her -- `fit`
+  // staucht sie also auf gut vier Fünftel. Die Zahl der Spalten kommt aus der
+  // Messreihe und nicht aus dem Entwurf der Folie, und das ist der Fall, für
+  // den es `fit` gibt.
+  let werte = (0.42, 1.08, 1.97, 3.12, 4.31, 5.24, 5.83, 6.11, 6.24, 6.29,
+               6.31, 6.32, 6.32, 6.33, 6.33, 6.33, 6.33, 6.33)
+  table(
+    columns: werte.len() + 1,
+    stroke: 0.5pt + themes.plain.border,
+    inset: 7pt,
+    align: right,
+    table.header([*t* / s], ..range(1, werte.len() + 1).map(i => [#(i * 5)])),
+    [*U* / V], ..werte.map(v => [#v]),
+  )
+}
+
+#v(1fr)
+
+#fit(wrap: false, messreihe)
+
+#v(0.6fr)
+
+#stagger[
+  - Measured against the place it stands in and scaled geometrically, so it
+    keeps its proportions and what stands around it counts with the new size.
+    No factor is given by hand.
+  - It only shrinks. `grow: true` also blows up a block that is smaller than
+    its place, for the one large number meant to fill the slide.
+]
+
+#anim(text(size: 0.85em, fill: themes.plain.muted)[
+  Eighteen columns at their natural size are wider than this slide. Nothing in
+  the source says by how much they had to give.
+], at: "3-", enter: "fade")
+
+#v(1fr)
 
 == Video and flipbook
 
@@ -453,6 +677,106 @@ and the wrong two find each other), the piece gets a name instead.
   ],
   at: "4-", enter: "fade",
 )
+
+#v(1fr)
+
+== GeoGebra: the same bridge, with a vocabulary
+
+// The lamp on the last slide was a document of our own with three lines of
+// JavaScript in it. An applet is the same arrangement with the words already
+// written down: `geogebra` opens the frame, and the nine `ggb-*` calls are
+// jobs over that same bridge. A deck that never calls `geogebra` carries none
+// of this.
+//
+// The calls sit in the body of the slide they belong to -- that is where they
+// are collected -- and they print nothing themselves.
+//
+// The fallback is drawn by hand rather than by CeTZ, so this deck keeps to the
+// one package it is about. The last step animates without end, so there is no
+// final state to draw; what stands on paper is the construction standing still
+// at sixty degrees -- the circle, the point, the radius to it, and the sine
+// hanging from it.
+#let einheitskreis = {
+  let r = 74pt
+  let w = 2 * r + 30pt
+  let t = 1.0472            // 60 degrees, where the drawing stands still
+  let px = r * calc.cos(t)
+  let py = r * calc.sin(t)
+  box(width: w, height: w, {
+    place(dx: w / 2 - r, dy: w / 2 - r,
+          circle(radius: r, stroke: 1.6pt + themes.plain.muted, fill: none))
+    place(line(start: (15pt, w / 2), end: (w - 15pt, w / 2),
+               stroke: 1pt + themes.plain.border))
+    place(line(start: (w / 2, 15pt), end: (w / 2, w - 15pt),
+               stroke: 1pt + themes.plain.border))
+    place(line(start: (w / 2 + px, w / 2), end: (w / 2 + px, w / 2 - py),
+               stroke: 3pt + live))
+    place(line(start: (w / 2, w / 2), end: (w / 2 + px, w / 2 - py),
+               stroke: 3pt + themes.plain.muted))
+    place(dx: w / 2 + px - 4.5pt, dy: w / 2 - py - 4.5pt,
+          circle(radius: 4.5pt, fill: live, stroke: none))
+  })
+}
+
+#v(1fr)
+
+#side-by-side(
+  split: (1fr, 1.05fr), align: horizon,
+  // Feste Breite statt `100%`, und der Ausschnitt hat dasselbe Verhältnis.
+  // `ggb-view` setzt x und y getrennt, also streckt ein Bereich, der nicht zum
+  // Kasten passt, eine Achse: gemessen wurde der Einheitskreis hier zur Ellipse,
+  // ehe die beiden Verhältnisse zusammenfielen. 360 zu 250 ist 1,44, und 3,6 zu
+  // 2,5 ist es auch.
+  geogebra("circle", perspective: "G", width: 360pt, height: 250pt,
+           grid: false, fallback: align(center, einheitskreis),
+           link: "https://www.geogebra.org/calculator"),
+  stagger[
+    - `ggb-run` builds the construction, `ggb-view` sets the section of the
+      plane, `ggb-style` fixes colour and weight so a rebuild cannot hand out
+      a different palette colour.
+    - `ggb-tween` sends a value on a journey, once and then stop.
+      `ggb-set` puts it where you want it with no journey at all.
+    - `ggb-hide` and `ggb-show` keep the radius and the sine out of the way
+      until they are being talked about; `ggb-animate` is GeoGebra's own
+      animation, which runs back and forth without end.
+  ],
+)
+
+// The construction, and the two legs kept back until step three.
+#ggb-run("k=Circle((0,0),1)", "t=Slider(0,6.2832,0.02)",
+         "P=(cos(t),sin(t))", "s=Segment((cos(t),0),P)", "c=Segment((0,0),P)",
+         target: "circle", at: "1-")
+// Der Schieber selbst gehört nicht ins Bild, nur sein Wert.
+#ggb-hide("t", target: "circle", at: "1-")
+#ggb-set((t: 0), target: "circle", at: "1-")
+#ggb-view(target: "circle", x: (-1.8, 1.8), y: (-1.25, 1.25),
+          grid: false, at: "1-")
+#ggb-style("k", target: "circle", at: "1-", color: themes.plain.muted,
+           thickness: 2, label: false)
+#ggb-style("P", target: "circle", at: "1-", color: live, point-size: 5)
+#ggb-style("s", "c", target: "circle", at: "1-", thickness: 4, label: false)
+#ggb-hide("s", "c", target: "circle", at: "1-")
+
+// Step two: the point travels a third of the way round, and the value it hangs
+// on is counted up frame by frame in the browser.
+#ggb-tween("t", target: "circle", to: 2.0944, at: 2, duration: 1100)
+
+// Step three: the radius and the sine, now that there is something to say
+// about them.
+#ggb-show("s", "c", target: "circle", at: 3)
+#ggb-style("s", target: "circle", at: 3, color: live)
+
+// Step four: the same kind of value, set instead of travelled. That is the
+// whole difference between `ggb-tween` and `ggb-set`.
+#ggb-set((t: 0.5236), target: "circle", at: 4)
+
+// Step five: GeoGebra's own, which has no end of its own.
+//
+// `t` is a slider and not a plain `t=0`, and that is the whole reason this
+// step does anything. Measured on the built deck: with a free number,
+// `isAnimationRunning()` stayed `false` through every sample and `t` sat at
+// its last value. GeoGebra animates what has bounds to run between.
+#ggb-animate("t", target: "circle", at: 5, speed: 0.4, trace: ("P",))
 
 #v(1fr)
 
@@ -593,6 +917,66 @@ and the wrong two find each other), the piece gets a name instead.
   raw(name)
 })
 
+
+// The third way, taken rather than described. A theme is a dictionary, so one
+// built here can be read straight back out again.
+#let eigen = theme(paper: rgb("#fffdf6"), ink: rgb("#22252b"),
+                   accent: rgb("#0f766e"), muted: rgb("#5b6472"))
+
+#anim(text(size: 0.85em)[
+  Built on this slide with `theme(…)`: #swatch(eigen.paper, "paper")
+  #swatch(eigen.ink, "ink") #swatch(eigen.accent, "accent")
+  #swatch(eigen.muted, "muted") — #eigen.keys().len() keys, and
+  `themes.plain` has #themes.plain.keys().len().
+], at: 2, enter: "fade-up")
+
+== Palettes, and the contract they are held to
+
+// A palette is colour on its own, apart from fonts and sizes. Five ship with
+// the package, and those five are held to a contrast contract by an assertion
+// in `palettes.typ`: a palette that misses it does not compile. `contrast` is
+// the instrument -- the WCAG ratio of two colours, 1 to 21 -- and
+// `palette-report` is the reading it takes, one row per pair.
+//
+// The numbers are measured while this deck compiles, so the slide cannot go
+// stale when a colour moves.
+#v(1fr)
+
+#side-by-side(
+  split: (1.15fr, 1fr), align: top,
+  stagger[
+    - Five of them: `light`, `mono`, `textbook`, `parchment`, `dark`.
+      A theme carries one and adds the rest.
+    - `contrast(black, white)` is #calc.round(contrast(black, white)) --
+      the largest there is. WCAG names 4.5 for body text and 3.0 for lines
+      and bars.
+    - It is a report, not a gate: only the five bundled palettes face the
+      assertion. A palette written in a deck faces nothing.
+  ],
+  {
+    let bericht = palette-report(palettes.dark)
+    table(
+      columns: (auto, auto, auto),
+      stroke: none,
+      inset: (x: 0pt, y: 4pt),
+      column-gutter: 14pt,
+      align: (left, right, left),
+      table.header(
+        text(size: 0.72em, fill: themes.plain.muted)[`palettes.dark`],
+        text(size: 0.72em, fill: themes.plain.muted)[measured],
+        text(size: 0.72em, fill: themes.plain.muted)[wants],
+      ),
+      ..bericht.map(f => (
+        text(size: 0.78em, raw(f.pair)),
+        text(size: 0.78em)[#calc.round(f.ratio, digits: 2)],
+        text(size: 0.78em, fill: if f.ok { done } else { live })[#f.min],
+      )).flatten(),
+    )
+  },
+)
+
+#v(1fr)
+
 == What else the package hands out
 
 #v(1fr)
@@ -615,6 +999,110 @@ and the wrong two find each other), the piece gets a name instead.
 
 #v(1fr)
 
+== What the deck knows about itself
+
+// `info()` is the same reading the built-in chrome takes. Every number the
+// package prints on a slide -- the footer, the fraction, the length of the
+// progress bar -- comes out of this one function and out of no second count,
+// so a hand-built footer and the built-in one cannot disagree. That is the way
+// to build your own chrome without forking the theme.
+//
+// `class-clock` is the third thing a slide records about itself, and the only
+// one that is not a number to print: how long the work on this slide is meant
+// to take. It starts nothing. `Shift+T` in the speaker view offers the number,
+// the speaker confirms or changes it, and only then does the clock run.
+#class-clock(2)
+
+#speaker-note[
+  Press `Shift+T` here. The two minutes are the deck's suggestion, not a
+  countdown that started behind your back.
+]
+
+#v(1fr)
+
+#side-by-side(
+  split: (1fr, 1.05fr), align: top,
+  context {
+    let deck = info()
+    card(title: [What info() answers here])[
+      #set text(size: 0.85em)
+      Slide #deck.slide.number of #deck.slide.total, step #deck.step.number of
+      #deck.step.total, in section #deck.section.number of
+      #deck.section.total, #emph(deck.section.title).
+    ]
+  },
+  context {
+    card(title: [What deck-outline() answers])[
+      #set text(size: 0.78em)
+      #for a in deck-outline() [
+        #a.number.~#a.title #h(1fr) #a.count slides \
+      ]
+    ]
+  },
+)
+
+#anim(text(size: 0.85em, fill: themes.plain.muted)[
+  Both are read off the state every slide already carries: no `query`, no
+  second walk over the document, and the same answer in the HTML and in the
+  PDF.
+], at: "2-", enter: "fade")
+
+#v(1fr)
+
+== bundle: three outputs, one run
+
+// The one function of the package this deck cannot show at work, and it gets a
+// slide of its own for saying so. Appended to the closing slide it ran 33
+// points off the bottom of the stage -- measured, not guessed.
+#v(1fr)
+
+#side-by-side(
+  split: (1fr, 1fr), align: top,
+  card(title: [The call])[
+    #text(size: 0.66em, raw(lang: "typ",
+      "#bundle(\n  theme: themes.lesson,\n  title: [Completing the Square],\n  html: \"talk.html\",\n  slides: \"slides.pdf\",\n  handout: \"handout.pdf\",\n)[\n  = A section\n  == A slide\n]"))
+  ],
+  card(title: [The one command])[
+    #text(size: 0.66em, raw(lang: "sh",
+      "typst compile \\\n  --features bundle,html \\\n  --format bundle \\\n  talk.typ out"))
+
+    Since 0.15 Typst can write several files from one compilation, and
+    everything here sits in one source anyway.
+  ],
+)
+
+#anim(callout(title: [Why this slide only quotes it])[
+  #text(size: 0.85em)[
+    A file that calls `bundle` compiles *only* with `--format bundle`; `typst
+    compile talk.typ talk.pdf` aborts on it. This deck has to come out as HTML
+    and as PDF, so it cannot call the thing it is about. Whoever wants both
+    writes the body into a `#let` and calls `presentation` by hand.
+  ]
+], at: 2, enter: "fade-up")
+
+#v(1fr)
+
+== #h(0pt)
+
+// `#invert` is the heading notation's way of saying `slide(invert: true)`: a
+// marker, like `#pause`, because a heading carries no arguments. It is only
+// looked for and never split on, so it is found however deeply it is nested --
+// but not where the content is handed to a closure, which is `context`, `fit`,
+// `anim`, `card` and `alternatives`. Measured, those five are the whole of it.
+//
+// It prints nothing and may stand anywhere in the body. It inverts the whole
+// slide either way, not the part after it.
+#invert
+#transition("fade")
+
+#v(1fr)
+
+#statement(size: 1.45em)[
+  One file, and every function of the package has now stood on a slide of it.
+]
+
+#v(1fr)
+
 == Where to start
 
 #v(1fr)
@@ -623,7 +1111,7 @@ and the wrong two find each other), the piece gets a name instead.
   split: (1fr, 1fr), align: top,
   card(title: [The whole file])[
     #text(size: 0.68em, raw(lang: "typ",
-      "#import \"@schule/typstage:0.1.0\": *\n#show: presentation.with(\n  theme: themes.default,\n  title: [My talk],\n  handout: 3,\n)\n\n= First section\n== First slide\nOne point."))
+      "#import \"@preview/typstage:0.1.0\": *\n#show: presentation.with(\n  theme: themes.default,\n  title: [My talk],\n  handout: 3,\n)\n\n= First section\n== First slide\nOne point."))
   ],
   card(title: [The three commands])[
     #text(size: 0.68em, raw(lang: "sh",
@@ -631,10 +1119,15 @@ and the wrong two find each other), the piece gets a name instead.
   ],
 )
 
+// The keys the runtime actually listens for, read out of its own key handler
+// rather than out of memory. `s` for the speaker note and `p` for a print view
+// stood here for a while and neither exists: there is no branch for either,
+// in the talk window or in the speaker view.
 #anim(callout(title: [In the browser])[
   #text(size: 0.85em)[
-    `→` `←` one step · `o` overview · `f` full screen · `s` speaker note ·
-    `p` print view · `?` key help · `Home` `End` first and last slide
+    `→` `←` one step · `Home` `End` first and last slide · `o` overview ·
+    `f` full screen · `n` speaker view · `1`--`9` a point of an adaptive
+    group · `?` key help
   ]
 ], at: 2, enter: "rise")
 
