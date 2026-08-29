@@ -6,13 +6,13 @@ Das `typstage`-Paket erzeugt aus einer einzigen Typst-Datei eine animierte
 Präsentation für den Browser -- und aus derselben Quelle eine PDF. Der Satz
 dahinter lautet: *Typst setzt, der Browser bewegt.* Jede Folie wird von Typst
 als SVG gesetzt und als solches in die HTML-Datei geschrieben; die Anordnung im
-Browser ist deshalb dieselbe wie auf dem Papier. Bewegt wird erst danach: Was
-sich rühren soll, wird im Quelltext angemeldet, und eine kleine
-Laufzeitumgebung setzt es im Browser in Bewegung.
+Browser ist deshalb dieselbe wie auf dem Papier. Was sich bewegen soll, wird im
+Quelltext angemeldet; eine kleine Laufzeitumgebung setzt es im Browser in
+Bewegung.
 
-Daraus folgt der Rest. Eine Folie ist eine Folie und kein Stapel von
-Zwischenständen; die PDF hat eine Seite je Folie, nicht eine je Schritt; und
-was allein zur Bewegung gehört, fällt auf dem Papier von selbst weg.
+Daraus folgt der Rest: Eine Folie ist eine Folie und kein Stapel von
+Zwischenständen. Die PDF hat eine Seite je Folie, nicht eine je Schritt. Was
+allein zur Bewegung gehört, fällt auf dem Papier von selbst weg.
 
 == Fünf Wörter, die dieses Handbuch benutzt
 
@@ -42,8 +42,8 @@ Typst hat gute Präsentationspakete, und die meisten machen PDF. `touying` und
 einen gewöhnlichen PDF-Vortrag will, nimmt eines davon.
 
 Was dieses Paket kann und jene nicht, ist die vierte von vier Stufen: Ein
-benanntes Stück steht auf Folie n an einer Stelle und auf Folie n+1 woanders --
-und fliegt dorthin, im besten Fall Zeichen für Zeichen, sodass sich eine
+benanntes Stück steht auf Folie n an einer Stelle und auf Folie n+1 woanders.
+Es fliegt dorthin, im besten Fall Zeichen für Zeichen, sodass sich eine
 Gleichung sichtbar selbst umschreibt. Die anderen Stufen sind eine Seite, die
 umblättert, ein Betrachter, der zwischen zwei Seiten überblendet, und ganze
 Folien, die ein Skript umherschiebt.
@@ -63,6 +63,7 @@ Hier ist der Satz auf den Punkt Typsts, und der Preis dafür steht auf der
 Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
 
 + *Die erste Präsentation* -- von der leeren Datei zur laufenden HTML
++ *Ein Deck von Anfang bis Ende* -- ein Vortrag, zu Ende gebaut
 + *Eine Folie Schritt für Schritt aufdecken* -- `pause`, `stagger`, `anim` und
   der Schrittzeiger
 + *Etwas vorführen statt behaupten* -- Applet, Video, Daumenkino
@@ -80,22 +81,10 @@ Dieses Handbuch ist nach Vorhaben geordnet, nicht nach Funktionen:
   Endzustand -- alles auf einmal. Was im Browser nacheinander geschieht, steht
   im Text daneben oder als Kommentar in der Quelle.
 
-  Jeder `typ`-Block hier wird vor dem Bau der Website gegen das echte Paket
-  übersetzt -- `python3 .github/scripts/pruefe-beispiele.py` --, damit kein
-  Beispiel eine Umbenennung im Paket überlebt, die es ungültig macht. Was der
-  Lauf dabei *nicht* leistet, gehört dazugesagt: Die meisten Blöcke sind
-  Bruchstücke und keine ganzen Dateien, er setzt sie also in eine Folie und
-  prüft, dass sie darin übersetzen -- nicht, dass die Folie danach richtig
-  aussieht. Zeilen, die absichtlich einen Fehler auslösen, sind als solche
-  geführt, müssen fehlschlagen und nennen, woran -- eine Zeile, die aus einem
-  anderen Grund bricht, ist ein durchgefallener Test und kein bestandener. Eine
-  Zeile dagegen, die zwar übersetzt, aber nicht das Gewünschte tut ("wirkt
-  nicht", "zu spät"), kann er von einer richtigen nicht unterscheiden. Er
-  übersetzt für den Browser, nicht für Papier, und er sieht nie auf die Prosa
-  neben einem Listing -- dort sitzt eine veraltete Zahl am liebsten. Blöcke in
-  anderen Sprachen bleiben ungeprüft und werden gezählt, damit niemand einen
-  davon durch einen verschriebenen Zaun verliert. Und ein Beispiel, für das ein
-  Begleitpaket fehlt, wird übersprungen; der Lauf sagt, welches.
+  Jeder `typ`-Block wird vor dem Bau der Website gegen das echte Paket
+  übersetzt, damit kein Beispiel eine Umbenennung im Paket überlebt, die es
+  ungültig macht. Das prüft, dass ein Block übersetzt -- nicht, dass die Folie
+  danach richtig aussieht oder die Prosa daneben noch stimmt.
 ]
 
 = Die erste Präsentation
@@ -199,18 +188,18 @@ Richtung ist die natürliche, der Finger schiebt die Folie aus dem Bild.
   Das Tippen hängt dabei ausdrücklich *nicht* am Klick. iOS Safari baut aus
   einer Berührung nur dann einen Klick, wenn ihm das getroffene Element
   anklickbar vorkommt, also ein Verweis, ein Knopf oder etwas mit eigenem
-  Klickzuhörer. Eine Folie ist keins davon, und auf einem iPhone geschah
-  deshalb beim Tippen gar nichts, während dieselbe Stelle in Chrome blätterte.
-  Ein nachgestelltes Telefon zeigt das nicht, weil Chrome den Klick immer baut.
+  Klickzuhörer. Eine Folie ist keins davon. Auf einem iPhone geschah deshalb
+  beim Tippen gar nichts, während dieselbe Stelle in Chrome blätterte. Ein
+  nachgestelltes Telefon zeigt das nicht, weil Chrome den Klick immer baut.
 ]
 
 == Die Sprecheransicht
 
 `n` öffnet dieselbe Datei ein zweites Mal, mit `#speaker` an der Adresse, in
 einem zweiten Fenster. Das eine kommt auf den Beamer, das andere auf den
-Rechner vor dem Vortragenden. Beide reden über `postMessage` miteinander, und
-das trägt auch zwischen zwei lokalen Dateien; es braucht also so wenig einen
-Server wie alles andere hier.
+Rechner vor dem Vortragenden. Beide Fenster reden miteinander, auch zwischen
+zwei lokalen Dateien; es braucht also so wenig einen Server wie alles andere
+hier.
 
 Die Ansicht ist ein Pult aus Kacheln. Oben die beiden großen: links die
 laufende Folie, rechts die Notiz -- die beiden Dinge, auf die man wirklich
@@ -253,11 +242,10 @@ Kachel trotzdem im Blick, und sie nimmt Platz, der der Notiz fehlt.
 Was nicht dasteht, ist an: ein Deck, das nichts sagt, bekommt die ganze
 Ansicht. `tools: false` nimmt die Werkzeugzeile weg.
 
-Eine abbestellte Kachel nimmt ihre Tasten mit. Mit `clock: false` tun `t` und
-`⇧t` nichts mehr, und sie stehen auch nicht mehr in der Tastenzeile: eine
-Leiste, die eine Taste bewirbt, die nichts tut, erzählt dem Vortragenden etwas
-Falsches -- und zwar an der einen Stelle, an der er nachsieht, wenn er unsicher
-ist.
+Eine abbestellte Kachel nimmt ihre Tasten mit: Mit `clock: false` tun `t` und
+`⇧t` nichts mehr und verschwinden auch aus der Tastenzeile. Eine Leiste, die
+eine wirkungslose Taste bewirbt, wäre ausgerechnet dort irreführend, wo der
+Vortragende bei Unsicherheit nachsieht.
 
 Die Farben sind Typst-Farben, keine Zeichenketten, und es dürfen mehr oder
 weniger als vier sein. `c` geht der Reihe nach durch sie hindurch.
@@ -310,11 +298,9 @@ Minuten, in denen die Klasse etwas tut und nicht zuhört.
 )
 
 In der Sprecheransicht hat sie eine eigene Kachel, `Klassenuhr`, neben der
-Kachel `Ziel (min)`. Die Sorge, zwei große Zahlen nebeneinander würden
-verwechselt, ist berechtigt -- sie ist hier durch Bauart aufgelöst und nicht
-durch Verstecken: die Zieldauer ist ein Feld mit ganzen Minuten, das man einmal
-je Vortrag setzt, die Klassenuhr eine laufende `m:ss` mit einem Balken, der
-leerläuft. Sie sehen verschieden aus, sie ticken verschieden, sie heißen
+Kachel `Ziel (min)`. Die Zieldauer ist ein Feld mit ganzen Minuten, das man
+einmal je Vortrag setzt; die Klassenuhr eine laufende `m:ss` mit einem Balken,
+der leerläuft. Sie sehen verschieden aus, ticken verschieden und heißen
 verschieden.
 
 Läuft keine, steht dort ein Strich. Antwortet kein Vortragsfenster, steht dort
@@ -370,9 +356,9 @@ Wer eine Einbettung anklickt, gibt ihr den Fokus. Von da an landet jede Taste
 darin, das Fenster ringsum hört nichts, und der Vortrag blättert nicht mehr.
 
 Die Tasten des Vortrags werden ihm deshalb aus jedem Rahmen zurückgereicht, in
-den dieses Fenster hineinlesen darf. Drei Bedingungen halten das ehrlich: das
-eingebettete Dokument darf die Taste nicht schon genommen haben, die Taste muss
-eine sein, die der Vortrag benutzt, und das Getippte darf kein Textfeld sein,
+den dieses Fenster hineinlesen darf. Drei Bedingungen halten das ehrlich: Das
+eingebettete Dokument darf die Taste nicht schon genommen haben. Die Taste muss
+eine sein, die der Vortrag benutzt. Und das Getippte darf kein Textfeld sein --
 sonst öffnete ein `n` in einem Formular ein zweites Fenster.
 
 #tip[
@@ -399,9 +385,8 @@ werden: sie finden sich wieder, und die Striche kommen mit.
   Schwarz und Einfrieren enden von selbst, sobald das Sprecherfenster
   geschlossen wird, gemessen in gut acht Zehntelsekunden. Steht das Fenster
   dagegen offen und trägt nur kein Deck mehr, greift erst eine Frist von einer
-  Minute. Wer in dieser Lage zusätzlich ein stockendes Vortragsfenster hat,
-  kann sie unbegrenzt hinauszögern; das ist die eine bekannte Ecke, in der der
-  Saal schwarz bleibt.
+  Minute. Ein zusätzlich stockendes Vortragsfenster kann diese Frist unbegrenzt
+  hinauszögern -- die eine bekannte Ecke, in der der Saal schwarz bleibt.
 
   Gemessen ist das in Chrome, Firefox 154 und Safari 26: die sechs
   Beispiel-Decks laufen in allen dreien mit denselben Zahlen durch, und das
@@ -469,11 +454,8 @@ Struktur-Ebene, und `outline` ist die ganze Gliederung. Der Abschnitt
 
 Zwischen einer Abschnittsüberschrift und der nächsten Überschrift ist kein
 Platz für Text. Eine Abschnittsfolie ist ein ganzes Bild, das das Theme
-zeichnet; sie hat keinen Rumpf. Früher fiel solcher Text ohne ein Wort aus dem
-Deck: es übersetzte, die Folienzahl stimmte, der Absatz war schlicht weg. Seit
-es mehr als eine Art von Struktur-Überschrift gibt, gibt es dafür auch mehr
-Gelegenheiten, und deshalb bricht das Übersetzen dort jetzt mit einer Meldung
-ab.
+zeichnet; sie hat keinen Rumpf. Text an dieser Stelle bricht das Übersetzen
+deshalb mit einer Meldung ab.
 
 Ein Satz zwischen `= Der Beweis` und `== Die Zerlegung` bricht also mit
 `content between the heading "Der Beweis" and the next one belongs to no
@@ -497,13 +479,12 @@ Er gehört unter die Folienüberschrift:
 Dieser Satz gehört zur Folie und wird gesetzt.
 ```]
 
-Zwei Vorbehalte, damit hier nicht mehr versprochen wird, als der Code hält.
-Erstens wird auch der Text *vor* der ersten Überschrift abgewiesen, aber nur
-dann, wenn das Deck überhaupt eine Überschrift hat: ein Rumpf ohne eine
-einzige Überschrift ist keine Präsentation in der Überschriften-Schreibweise,
-und dort fehlt nicht eine Folie, sondern es gibt keine. Zweitens greift das
-Ganze nur in der Überschriften-Schreibweise; wer Folien als Argumente übergibt,
-schreibt jeden Rumpf ohnehin selbst hin.
+Zwei Einschränkungen. Erstens wird auch der Text *vor* der ersten Überschrift
+abgewiesen, aber nur dann, wenn das Deck überhaupt eine Überschrift hat: ein
+Rumpf ohne eine einzige Überschrift ist keine Präsentation in der
+Überschriften-Schreibweise, und dort fehlt nicht eine Folie, sondern es gibt
+keine. Zweitens greift das Ganze nur in der Überschriften-Schreibweise; wer
+Folien als Argumente übergibt, schreibt jeden Rumpf ohnehin selbst hin.
 
 == Wenn die Folien berechnet werden
 
@@ -554,7 +535,7 @@ dieses Dokument eine Präsentation ist.
 
 // check: dokument
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 #show: presentation.with(title: [Wie hoch ist der Turm?])
 ```]
 
@@ -679,7 +660,7 @@ je Seite, die Notiz daneben, und wo keine steht, Linien.
 
 // check: dokument
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 #show: presentation.with(
   title: [Wie hoch ist der Turm?],
   handout: 3,
@@ -695,7 +676,7 @@ Fünfundvierzig Zeilen, und nichts darin, das nicht oben erklärt wurde.
 
 // check: dokument
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #show: presentation.with(
   title: [Wie hoch ist der Turm?],
@@ -760,8 +741,8 @@ Druck weiter.
 == Welches Mittel wofür
 
 Sechs Bausteine decken so gut wie alles ab. Sie lassen sich auf einer Folie
-mischen; welcher der richtige ist, hängt daran, wie fein die Folie gesteuert
-werden soll.
+mischen; welcher der richtige ist, hängt davon ab, wie fein die Folie
+gesteuert werden soll.
 
 #table(
   columns: (auto, 1fr),
@@ -822,7 +803,7 @@ keine Zahl.
 )
 
 Der Zeiger beginnt auf jeder Folie neu; Schrittnummern sind folienlokal. Eine
-ausgeschriebene Zahl setzt den Zeiger neu, und von dort zählt es weiter -- eine
+ausgeschriebene Zahl setzt den Zeiger neu, und von dort zählt er weiter -- eine
 einzelne Korrektur zwingt also nicht dazu, alles dahinter umzunummerieren:
 
 #show-code[```typ
@@ -876,8 +857,8 @@ erste steht von Beginn an, der zweite erscheint auf Schritt zwei, der dritte
 auf Schritt drei. Danach zählt der Zeiger regulär weiter -- ein `stagger` unter
 zwei Pausen beginnt bei vier.
 
-Eine Pause beginnt einen neuen Block, und die PDF setzt ihn genauso; beide
-Ziele werden zum selben Umbruch angehalten.
+Eine Pause beginnt einen neuen Block, und die PDF setzt ihn ebenso um -- beide
+Ziele halten am selben Umbruch an.
 
 #warning[
   `#pause` wird auf der obersten Ebene des Folienrumpfs gelesen, `#set`- und
@@ -1039,9 +1020,10 @@ Paket es, statt still nichts zu tun.
 
 #tip[
   Für eine CeTZ-Zeichnung, die mit den Punkten wächst, zeichnet man das
-  Gerüst einmal und jede Schicht als eigene, vollständige Zeichnung, in der
-  alles andere über `cetz.draw.hide(rest, bounds: true)` unsichtbar, aber für
-  den Ausschnitt maßgebend bleibt. Dann liegen alle Schichten deckungsgleich
+  Gerüst einmal. Jede Schicht ist dann eine eigene, vollständige Zeichnung, in
+  der alles andere über `cetz.draw.hide(rest, bounds: true)` unsichtbar
+  bleibt, aber für den Ausschnitt weiter zählt. Dann liegen alle Schichten
+  deckungsgleich
   übereinander und der Graph steht still, egal in welcher Reihenfolge er
   wächst -- gemessen an einem Achsenkreuz mit drei Beschriftungsschichten:
   jede Teilmenge misst 347,9 pt #sym.times 329,71 pt.
@@ -1132,9 +1114,9 @@ Die Himmelsrichtung im Namen ist die Bewegungsrichtung, nicht die Herkunft:
 `"fade-right"` läuft nach rechts und kommt daher von links.
 
 *Ein Name, den es nicht gibt, ist ein Fehler beim Übersetzen*, genau wie bei
-`easing`. Die Laufzeit fiel früher wortlos auf `"fade"` zurück; ein Vertipper
-sah danach aus wie ein Deck, das sich eben anders bewegt als gedacht -- und das
-findet niemand mitten im Vortrag.
+`easing`. Fiele die Laufzeit hier wortlos auf `"fade"` zurück, sähe ein
+Vertipper aus wie ein Deck, das sich eben anders bewegt als gedacht -- und das
+fiele erst mitten im Vortrag auf.
 
 // check: folie bricht=the_package_does_not_know_that_effect
 #show-code[```typ
@@ -1220,11 +1202,9 @@ kubischen Bézierkurven, und die Web Animations API kennt nur solche; sie ließe
 sich nur als Bildfolge nachbauen.
 
 #info[
-  Ohne `easing` ändert sich an einem Deck kein Byte. Der Name wird beim
-  Übersetzen zu einer fertigen Kurve aufgelöst und nur dann ins Markup
-  geschrieben, wenn er von der Vorgabe abweicht -- sonst trüge jedes Element
-  jedes Decks ein neues Attribut. Nachgemessen an den acht Beispielen dieses
-  Pakets, die keine Kurve nennen, HTML wie PDF: dieselben Bytes wie vorher.
+  Ohne `easing` ändert sich an einem Deck kein Byte. Nachgemessen an den acht
+  Beispielen dieses Pakets, die keine Kurve nennen, HTML wie PDF: dieselben
+  Bytes wie vorher.
 ]
 
 === Der gedimmte Ruhezustand
@@ -1263,17 +1243,17 @@ Papier trotzdem. Der Ausdruck der HTML-Seite aus dem Browser hält es genauso.
 
 *Woher die 65 Prozent kommen.* Deckkraft mischt die Schrift zum Untergrund hin,
 also entscheidet der Untergrund, was das Dimmen kostet -- und auf dunklem Grund
-kostet es deutlich weniger als auf hellem. Das ist eine Messung, keine Meinung:
+kostet es deutlich weniger als auf hellem. Das ist eine Messung, keine Meinung.
 0.65 ist der kleinste Hundertstelwert, bei dem gedimmter Fließtext noch die 4,5
 zu 1 erreicht, die der Kontrastvertrag dieses Pakets (siehe "Der
-Kontrastvertrag") für Fließtext verlangt -- auf allen fünf mitgelieferten
-Paletten, aufrecht wie umgedreht, auf dem Papier der Folie wie auf der Fläche
-einer Karte. Der engste dieser zwanzig Fälle ist `parchment` auf seinem eigenen
-Papier: 4,57 zu 1 bei 0.65 und 4,44 bei 0.64. Der großzügigste ist `mono`
-umgedreht mit 8,60. Zwischen voll und gedimmt bleiben je nach Palette
-1,94 bis 3,23 zu 1 -- je nach Palette und danach, ob das Element auf dem
-Papier oder auf einer Karte steht; der Unterschied ist also überall deutlich
-zu sehen.
+Kontrastvertrag") für Fließtext verlangt. Das gilt auf allen fünf
+mitgelieferten Paletten, aufrecht wie umgedreht, auf dem Papier der Folie wie
+auf der Fläche einer Karte. Der engste dieser zwanzig Fälle ist `parchment`
+auf seinem eigenen Papier: 4,57 zu 1 bei 0.65 und 4,44 bei 0.64. Der
+großzügigste ist `mono` umgedreht mit 8,60. Zwischen voll und gedimmt bleiben,
+je nach Palette und danach, ob das Element auf dem Papier oder auf einer Karte
+steht, 1,94 bis 3,23 zu 1 -- der Unterschied ist also überall deutlich zu
+sehen.
 
 #warning[
   Die Zusage gilt für Text in der Schriftfarbe `ink`, und das ist, worin ein
@@ -1297,11 +1277,8 @@ in einem gedimmten `anim` bleibt also voll stehen -- gemessen an einem inneren
 
 Was ein inneres Element dagegen nie tut: früher erscheinen als das, worin es
 steht. Sein Zustand wird an dem seines Wirts gedeckelt, die ganze Kette hinauf.
-Ohne das stand ein `morph` in einem `anim(at: "2-")` schon auf Schritt 1 in
-voller Stärke da, während sein eigener Satz noch unsichtbar war -- die Sprites
-sind im Markup Geschwister, der Wirt kann also nichts verdecken. Weniger
-sichtbar als sein Wirt darf ein inneres Element weiterhin sein; dafür ist sein
-eigener Bereich da.
+Weniger sichtbar als sein Wirt darf ein inneres Element weiterhin sein; dafür
+ist sein eigener Bereich da.
 
 In der Praxis stehen `morph`, `video`, `embed` und `flipbook` damit ganz
 außerhalb dieser Vererbung: alle vier haben `at: "1-"` als Vorgabe, einen
@@ -1598,11 +1575,9 @@ as filled shapes. The element fades in instead. draw is for a drawing,
 the fade is for text.
 ```]
 
-*Warum erst dort und nicht beim Übersetzen.* Weil Typst das SVG erst beim
-Export herausgibt. Im Dokument gibt es keine Frage, die "hat dieser Inhalt eine
-Kontur" beantwortete -- es ist derselbe blinde Fleck, wegen dessen dieses Paket
-überhaupt mit Rechtecken in Signalfarbe arbeitet und den Browser zurückmelden
-lässt, wo etwas steht. Erst im Browser steht der Pfad da und lässt sich zählen.
+*Warum erst dort und nicht beim Übersetzen.* Ob ein Inhalt eine Kontur hat,
+weiß Typst erst nach dem Export ins SVG -- im Dokument selbst lässt sich das
+nicht beantworten. Erst im Browser steht der Pfad da und lässt sich zählen.
 Der Prüflauf des Pakets liest diese Meldung mit aus, damit sie nicht eines
 Tages aufhört zu kommen.
 
@@ -1700,7 +1675,7 @@ durchgezogenen Nachbarn sich zeichnen.
   [Die Vorschau des nächsten Schritts zeigt den Ruhezustand, also die fertige
    Zeichnung. Bewegung gibt es dort keine.],
   [Papier],
-  [Nichts. `enter` erreicht das PDF nie, die Zeichnung steht fertig da.
+  [Nichts. `enter` erreicht die PDF nie, die Zeichnung steht fertig da.
    Nachgemessen an den neun Beispielen dieses Pakets: dieselben Bytes wie ohne
    `draw`.],
   [Bewegung reduzieren],
@@ -1888,15 +1863,6 @@ darunter.
     slide 4, from step 1: 28 frames in 19 different sizes, up to 28.35pt apart across and 53.86pt down
   ```)
 
-  Woran das Geradebiegen scheitert, in einem Satz: `measure` antwortet mit
-  einer Größe und nie damit, *wo* die Tinte darin liegt -- es gibt also keinen
-  Versatz zu rechnen und nichts zu verschieben. `build` kann es, weil dort ein
-  Stück, das noch nicht dran ist, als Luft dasteht und seinen Platz behält;
-  hier gibt es kein gemeinsames Stück, dessen Platz zu behalten wäre, und vom
-  Koordinatensystem der Zeichnung weiß `scene` nichts. Alle Bilder auf das
-  größte Maß aufzupolstern hülfe nicht: der Kasten stünde dann still, die
-  Leinwand darin läge trotzdem jedes Mal anders.
-
   Der Ausweg liegt in der Zeichnung: ihr eine feste Ausdehnung geben und das,
   was sich bewegt, darin halten. In CeTZ ist das ein `rect` mit durchsichtigem
   Strich, dieselbe Luft, mit der `ab` arbeitet:
@@ -2057,13 +2023,8 @@ Rechteck ist genau das, was die Laufzeit zu jedem Schritt vermisst.
 #anim[Und wieder heraus, im Schritt danach.]
 ```]
 
-Dass das überhaupt geht, hat einen Grund, der eine Zeile wert ist. Typst gibt
-zur Übersetzungszeit keine Geometrie heraus -- `here().position()` liefert in
-der HTML-Ausgabe überall $(0, 0)$, und genau deshalb arbeitet dieses Paket mit
-Rechtecken in Signalfarbe. Im Browser liegt die Sache umgekehrt: dort *müssen*
-diese Rechtecke bekannt sein, sonst fände kein einziges Sprite seinen Platz.
-Die Kamera hängt sich daran. Das Deck nennt einen Namen, keine Koordinate, und
-wer die Folie umräumt, muss nichts nachrechnen.
+Das Deck nennt damit einen Namen, keine Koordinate -- wer die Folie umräumt,
+muss nichts nachrechnen.
 
 === Wie man wieder herauskommt
 
@@ -2365,16 +2326,16 @@ Stelle tritt.
 
 == Ein Applet neben den Stichpunkten
 
-`geogebra()` bringt GeoGebra-Applets auf die Folie. Es war einmal ein eigenes
-Paket und geht deshalb bis heute über die Brücke wie jedes fremde
-Begleitpaket -- ein Deck ohne Applet trägt nichts davon mit sich.
+`geogebra()` bringt GeoGebra-Applets auf die Folie -- wie jedes fremde
+Begleitpaket über die Brücke. Ein Deck ohne Applet trägt nichts davon mit
+sich.
 
 Der übliche Aufbau einer solchen Folie: links die Konstruktion, rechts die
 Stichpunkte, und darunter -- außerhalb des Layouts -- die Befehle, die das
 Applet aufbauen und Schritt für Schritt weiterbewegen.
 
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #show: presentation.with(theme: themes.lesson)
 
@@ -2421,20 +2382,19 @@ jedem Befehl.
   können, steht im Kapitel _GeoGebra_. Hier geht es nur darum, wie sie sich in
   den Ablauf einer Folie einfügen.
 
-  Und eines gehört gleich hier gesagt: das Applet lädt zur Laufzeit von
-  `geogebra.org` nach. Ohne Netz bleibt der Rahmen leer, und was darin läuft,
-  steht unter GeoGebras Bedingungen.
+  Schon hier wichtig: Das Applet lädt zur Laufzeit von `geogebra.org` nach.
+  Ohne Netz bleibt der Rahmen leer, und was darin läuft, steht unter
+  GeoGebras Bedingungen.
 ]
 
 == Was auf dem Papier an dieser Stelle steht
 
 Im Browser steht dort das Applet, in der PDF bliebe ein leerer Kasten. Deshalb
-nehmen sowohl `geogebra` als auch `embed` zwei Angaben, die allein die
-gedruckte Ausgabe betreffen: `fallback` nimmt beliebigen Inhalt auf, der an die
-Stelle des Rahmens tritt -- eine CeTZ-Zeichnung, ein Bild, eine Tabelle --, und
-`link` setzt darunter eine im PDF anklickbare Adresse, über die der Leser des
-Handouts zum lebenden Ding kommt. Ohne `fallback` bleibt ein Platzhalter mit
-der Beschriftung aus `label`.
+nehmen `geogebra` und `embed` zwei Angaben für die gedruckte Ausgabe:
+`fallback` nimmt beliebigen Inhalt auf, der an die Stelle des Rahmens tritt --
+eine CeTZ-Zeichnung, ein Bild, eine Tabelle. `link` setzt darunter eine im PDF
+anklickbare Adresse zum lebenden Applet. Ohne `fallback` bleibt ein
+Platzhalter mit der Beschriftung aus `label`.
 
 #show-example(
   rendered: {
@@ -2483,19 +2443,20 @@ jedem Fenster denselben Ausschnitt zeigt.
 Ein Dokument, das mit `html` mitgegeben wird, bekommt den Grundstil des
 Vortrags vorangestellt: es füllt seinen Rahmen, ist durchsichtig und trägt die
 laufende Schrift -- Familie, Größe und Farbe an genau dieser Stelle des Decks.
-Das lohnt sich zu wissen, denn im gezoomten Rahmen ist ein CSS-Pixel genau ein
-Punkt der Folie. Wer sein Dokument in `em` bemaßt, dessen Inhalt wächst mit den
-Folien mit; wer `15px` schreibt, hat unabhängig von der Fenstergröße 15 Punkte
-neben einer 19-Punkt-Folienschrift stehen -- und wundert sich, warum die
-Einbettung zu klein wirkt.
 
-Der eigene Stil des Dokuments gewinnt, denn er steht dahinter. Wer den ganzen
-Grundstil nicht will, schaltet ihn mit `style: false` ab und bekommt wieder
-eine leere Browserseite.
+Im gezoomten Rahmen ist ein CSS-Pixel genau ein Punkt der Folie. Wer sein
+Dokument in `em` bemaßt, dessen Inhalt wächst mit den Folien mit. Wer `15px`
+schreibt, hat unabhängig von der Fenstergröße 15 Punkte neben einer
+19-Punkt-Folienschrift stehen -- und wundert sich, warum die Einbettung zu
+klein wirkt.
+
+Der eigene Stil des Dokuments gewinnt. Wer den ganzen Grundstil nicht will,
+schaltet ihn mit `style: false` ab und bekommt wieder eine leere
+Browserseite.
 
 #warning[
   `height: 100%` greift in einem eingebetteten Dokument nur, weil der Grundstil
-  `html` und `body` eine Höhe gibt. Ein Prozentmaß braucht eine Höhe am
+  `html` und `body` eine Höhe gibt -- ein Prozentmaß braucht eine Höhe am
   Elternteil, und `body` hat von Haus aus keine. Ohne das ist der Rahmen so
   hoch wie sein Inhalt, klebt oben in der Box, und `justify-content: center`
   zentriert im Nichts.
@@ -2517,9 +2478,9 @@ setzen die `ggb-`Befehle auf -- und jedes Begleitpaket kann es genauso tun.
 #warning[
   *Das Dokument muss sich anmelden.* An einen Rahmen, der sich nie gemeldet
   hat, wird nichts zugestellt -- und zwar wortlos: keine Meldung, keine
-  Warnung, das Applet sitzt einfach da. Ein Zeile genügt, und beide Felder
-  werden gebraucht, denn alles ohne `typstage: 1` wird verworfen, bevor
-  `ready` überhaupt angesehen wird.
+  Warnung, das Applet sitzt einfach da. Eine Zeile genügt, doch beide Felder
+  werden gebraucht: Alles ohne `typstage: 1` wird verworfen, bevor `ready`
+  überhaupt angesehen wird.
 
   #show-code(```js
   parent.postMessage({ typstage: 1, ready: 1 }, "*");
@@ -2587,10 +2548,12 @@ letzte Bild stehen.
 Die Uhr beginnt, wenn das Daumenkino zu sehen ist, und nicht, wenn seine Folie
 kommt. Ein `flipbook(at: "3-", loop: false)` liegt auf den ersten beiden
 Schritten auf Bild 0 still und fängt beim Aufdecken bei null an; wer
-zurückblättert und es noch einmal aufdeckt, sieht es noch einmal von vorn. Auf Papier steht ein einziges: `render(0.0)`, oder was
-`still` an seine Stelle setzt. Hat der Zuschauer im Betriebssystem
-"Bewegung reduzieren" eingeschaltet, läuft das Daumenkino gar nicht erst los --
-siehe "Weniger Bewegung".
+zurückblättert und es noch einmal aufdeckt, sieht es noch einmal von vorn.
+
+Auf Papier steht ein einziges Bild: `render(0.0)`, oder was `still` an seine
+Stelle setzt. Hat der Zuschauer im Betriebssystem "Bewegung reduzieren"
+eingeschaltet, läuft das Daumenkino gar nicht erst los -- siehe "Weniger
+Bewegung".
 
 #warning[
   Jedes Einzelbild wird wirklich gesetzt. 24 Bilder heißen 24 Layouts und 24
@@ -2604,13 +2567,9 @@ Konstruktion baut GeoGebra, die Dramaturgie kommt aus den Folien. Auf jedem
 Schritt können Aufträge liegen -- Werte setzen, Objekte zeigen oder verbergen,
 Farben ändern, den Ausschnitt verschieben, eine Bewegung anstoßen.
 
-Das war einmal ein eigenes Paket, `typstage-geogebra`, und der Bauplan von
-damals ist geblieben: alles hier steht auf denselben zwei öffentlichen Teilen,
-die auch ein fremdes Begleitpaket benutzt -- `embed(bridge: …)` meldet einen
-Rahmen als Ziel an, `bridge-job` schickt ihm auf einem Schritt etwas zu. Was in
-den Aufträgen steht, liest der Kern nicht. Ein Deck ohne Applet zahlt deshalb
-nichts dafür: Bootskript und Applet-Dokument entstehen erst, wenn `geogebra()`
-gerufen wird, und ein Deck ohne diesen Ruf ist auf das Byte so groß wie vorher.
+Ein Deck ohne Applet zahlt dafür nichts: Bootskript und Applet-Dokument
+entstehen erst, wenn `geogebra()` gerufen wird, und ein Deck ohne diesen Ruf
+ist auf das Byte so groß wie vorher.
 
 #warning[
   Ein gesetztes Applet lädt zur Laufzeit von `geogebra.org` nach und steht
@@ -2621,10 +2580,10 @@ gerufen wird, und ein Deck ohne diesen Ruf ist auf das Byte so groß wie vorher.
 == Schnellstart
 
 Ein Applet steht mit `geogebra()` auf der Folie, die Befehle stehen im selben
-Folienrumpf -- dort werden sie eingesammelt. Sie geben selbst nichts aus.
+Folienrumpf. Sie geben selbst nichts aus.
 
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #presentation(
   slide([Ferngesteuert], {
@@ -2897,23 +2856,23 @@ einer getönten Folie zu ändern ist.
 #warning[
   Der Ausschnitt lässt sich mit der Hand nicht verschieben, und das ist die
   Vorgabe. Wer im Vortrag danebengreift, schöbe sonst die ganze Ebene weg, und
-  die Konstruktion wäre fort -- gemeldet aus dem Gebrauch, nicht ausgedacht.
-  `pan: true` gibt Verschieben und Zoomen zurück, wo sie zur Sache gehören;
-  Punkte und Schieber lassen sich in beiden Fällen ziehen.
+  die Konstruktion wäre fort. `pan: true` gibt Verschieben und Zoomen zurück,
+  wo sie zur Sache gehören; Punkte und Schieber lassen sich in beiden Fällen
+  ziehen.
 ]
 
 `font-size` ist die Schrift des Applets, gezählt in Punkten der Folie -- so wie
 `width` und `height` es tun. Sie wächst deshalb mit der Folie mit, statt auf
 dem Beamer in ihrer physischen Größe stehenzubleiben.
 
-Vorgabe ist 20 und nicht GeoGebras 16. An gerenderten Bildern gemessen sind die
-Achsenzahlen damit 0,71 so hoch wie der Fließtext der Folie, bei 16 nur 0,62 --
-das eine ist eine untergeordnete Beschriftung, das andere ein Nachgedanke.
+Vorgabe ist 17 und nicht GeoGebras 16. An gerenderten Bildern gemessen stehen
+die Achsenzahlen damit etwa zwei Drittel so hoch wie der Fließtext der Folie:
+eine Beschriftung, die man aus der letzten Reihe liest, ohne dass sie dem Text
+die Folie streitig macht.
 
 #warning[
-  GeoGebra rastet die Größe in Stufen ein. Gemessen springt sie zwischen 20 und
-  21: die Achsenzahlen gehen von 0,71 auf 1,12 des Fließtextes und sind dann so
-  groß wie er. Wer einen Zwischenwert setzt, bekommt deshalb nicht unbedingt
+  GeoGebra rastet die Größe in Stufen ein: benachbarte Werte fallen gemessen
+  oft auf dieselbe Höhe zusammen. Ein Zwischenwert gibt deshalb nicht unbedingt
   einen Zwischenschritt.
 ]
 
@@ -2940,14 +2899,10 @@ ein.
 Bildschirmpunkten.
 
 Für die meisten Einbettungen spannt die Laufzeit den Rahmen in Punkten der
-Folie auf und vergrößert ihn dann mit `zoom`. Ein Applet ist davon ausgenommen
-und bekommt echte Bildschirmpunkte. Der Grund ist gemessen: Safari rechnet
-diesen Zoom bei GeoGebra doppelt ein -- ein Leinwandpuffer von 1400 Punkten bei
-253 Punkten Breite, also Zoom mal Zoom mal Bildschirmdichte. Das Applet
-zeichnete zu klein, und wer die Größe dagegen korrigierte, verschob dafür den
-Trefferpunkt: es zeichnete dann richtig, glaubte sich aber 704 Punkte breit,
-während es 424 breit gezeigt wurde, und ein Punkt ließ sich nur noch greifen,
-wenn man weit rechts daneben klickte.
+Folie auf und vergrößert ihn dann mit `zoom`. Ein Applet ist davon
+ausgenommen und bekommt echte Bildschirmpunkte -- Safari verrechnet sich bei
+GeoGebra sonst am Zoom: Das Applet zeichnet zu klein, oder ein Klick trifft
+neben den Punkt, den er treffen soll.
 
 Dass trotzdem in jedem Fenster derselbe Ausschnitt zu sehen ist, hängt deshalb
 nicht an der Pixelzahl, sondern am Bereich. Den setzt das Applet beim ersten
@@ -3325,8 +3280,8 @@ abgeschaltet werden.
 Wer im Betriebssystem "Bewegung reduzieren" eingeschaltet hat, bekommt ein
 ruhigeres Deck. Der Browser reicht die Einstellung als
 `prefers-reduced-motion: reduce` durch, und die Laufzeit fragt sie bei jedem
-Schritt und bei jedem Einzelbild neu ab: Wer sie mitten im Vortrag umlegt,
-sieht die Wirkung beim nächsten Tastendruck, und ein laufendes Daumenkino hält
+Schritt und bei jedem Einzelbild neu ab. Wer sie mitten im Vortrag umlegt,
+sieht die Wirkung beim nächsten Tastendruck; ein laufendes Daumenkino hält
 innerhalb eines Bildes an. Einzustellen gibt es dafür nichts, weder im Deck
 noch beim Bauen.
 
@@ -3389,12 +3344,12 @@ und sein Blinken läuft unter der Einstellung weiter.
 
 #info[
   Es gibt keinen Schalter, mit dem ein Deck die Einstellung überstimmt. Ein
-  solcher Schalter wäre nur einen Halbsatz Arbeit, aber er beantwortete die
-  falsche Frage: Ob eine Bewegung unentbehrlich ist, weiß das Paket nicht, und
-  wer sie für unentbehrlich hält, schaltete ihn überall an. Wo eine Bewegung
-  wirklich das Argument trägt -- das Daumenkino in `theme-default`, das eine
-  Größe stetig durch die Null führt --, gehört sie zusätzlich in Worte, und die
-  liest auch, wer sie nicht laufen sieht.
+  solcher Schalter beantwortete die falsche Frage: Ob eine Bewegung
+  unentbehrlich ist, weiß das Paket nicht, und wer sie für unentbehrlich
+  hält, schaltete ihn überall an. Wo eine Bewegung wirklich das Argument
+  trägt -- das Daumenkino in `theme-default`, das eine Größe stetig durch die
+  Null führt --, gehört sie zusätzlich in Worte, und die liest auch, wer sie
+  nicht laufen sieht.
 ]
 
 = Aus einer Quelle drei Ausgaben
@@ -3466,7 +3421,7 @@ hat, obwohl Typst die Introspektion über das ganze Bündel führt.
   `presentation` von Hand.
 ]
 
-Neben oder unter jeder Folie steht ihre Notiz; wo eine Folie keine hat, treten
+Neben oder unter jeder Folie steht ihre Notiz. Wo eine Folie keine hat, treten
 Schreiblinien an ihre Stelle. Welches von beiden, entscheidet die Anzahl: Eine
 16:9-Folie neben einer Notizspalte ist breit und niedrig, und bei bis zu zwei
 Folien je Seite bliebe der größte Teil des Hochformats leer. Bis zwei stehen
@@ -3629,7 +3584,7 @@ Laufzeitumgebung, die die Bewegung ausführt. Wo sie herkommen, sagt `assets`:
   Wie viel `"split"` spart, hängt daran, wie groß das Deck selbst ist -- und bei
   einem kleinen ist es die Mehrheit. Gepackt gemessen: Laufzeit und Stilvorlage
   zusammen 108 kB; das kleinste Beispieldeck wiegt 173 kB, die Laufzeit ist
-  also **63 % dessen, was über die Leitung geht**. Bei `theme-plain` sind es
+  also *63 % dessen, was über die Leitung geht*. Bei `theme-plain` sind es
   33 %, bei `tour` 21 %.
 
   Mit `"split"` zahlt das *erste* Deck diese 108 kB, und jedes weitere im selben
@@ -3648,7 +3603,7 @@ Bündel-Export gibt sie in demselben Lauf aus, in dem auch der Vortrag entsteht:
 
 // check: ganz ziel=bundle
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #document("vortrag.html", title: "Der Satz des Pythagoras")[
   #show: presentation.with(title: [Der Satz des Pythagoras], assets: "split")
@@ -3757,8 +3712,8 @@ Die drei Bauformen der gewöhnlichen Folie:
 dünner Rahmen, farbiger Streifen mit versalem Etikett darüber. `"label"` kommt
 aus dem Schulbuch: keine Kante, keine Rundung, eine getönte Fläche, und die
 Beschriftung steht gemischtschriftlich in der Farbe im Kasten. Die Tönung
-folgt dabei der mitgegebenen Farbe, ein blau beschrifteter Kasten steht also
-auf Blau; ohne eigene Farbe gilt `surface`.
+folgt der mitgegebenen Farbe: Ein blau beschrifteter Kasten steht also auf
+Blau. Ohne eigene Farbe gilt `surface`.
 
 Dazu kommen `surface` und `border` für die Karten, `inverted` für hell auf
 dunkel, `head-gap`, `foot-gap` und `band-height` für die Luft um den Rumpf --
@@ -3822,12 +3777,11 @@ entworfen wurde -- eine Gestaltungsentscheidung, gemessen und nicht übersehen.
   `rule-fill`. Ob sie mitfolgen, entscheidet das Theme. Alle fünf
   mitgelieferten lassen sie mitfolgen -- entweder als Funktion der Palette,
   `title-fill: p => p.strong`, oder als `none`, was den Akzent meint und mit
-  ihm wandert. Beide haben dafür den Typ gewechselt: `themes.X.title-fill`
-  *auszulesen* ergab früher eine Farbe und ergibt jetzt eine Funktion, und
-  `rule-fill` ergibt `none`, wo es den Akzent ergab. Sie zu *schreiben*,
-  `themes.X + (title-fill: red)`, ist unverändert. Ein eigenes Theme,
-  das dort eine feste Farbe hinschreibt, behält sie unter jeder Palette. Das
-  ist Absicht: eine Farbe, die jemand ausdrücklich genannt hat, wird nicht
+  ihm wandert. `themes.X.title-fill` *auszulesen* liefert deshalb eine
+  Funktion, `rule-fill` liefert `none`. Sie zu *schreiben*,
+  `themes.X + (title-fill: red)`, bleibt eine feste Farbe: Ein eigenes Theme,
+  das dort eine Farbe hinschreibt, behält sie unter jeder Palette. Das
+  ist Absicht -- eine Farbe, die jemand ausdrücklich genannt hat, wird nicht
   hinter seinem Rücken getauscht.
 ]
 
@@ -3857,7 +3811,7 @@ mitgelieferten Themes belegen sie verschieden:
     )
   },
   source: ```typ
-  #import "@schule/typstage:0.1.0": themes
+  #import "@preview/typstage:0.1.0": themes
   #themes.night.accent      // die Signalfarbe des Themes, als Farbe
   ```,
   width: 12cm,
@@ -3883,7 +3837,7 @@ wird; wer das Theme tauscht, greift besser auf dessen Einträge zu.
 == Eine Folie umdrehen
 
 Für die eine Folie, die nur eine große Zahl trägt, gibt es `invert`. Der Grund
-wird zur Schriftfarbe der Palette, der Satz zu ihrem Grund; `muted`, `border`
+wird zur Schriftfarbe der Palette, der Satz zu ihrem Grund. `muted`, `border`
 und `surface` werden aus diesen beiden gemischt, `strong` und `accent` gehen
 unverändert mit. Das Chrom zieht mit: Kopfzeile, Fußzeile, Foliennummer und
 Fortschrittsbalken stehen in denselben Farben wie die Folie unter ihnen. Karte
@@ -3907,19 +3861,19 @@ In der Argumentschreibweise ist es ein Argument von `slide`:
 
 #warning[
   Nur eine gewöhnliche Folie dreht sich um. Titel- und Abschnittsfolie sind
-  ganze Bilder, die das Theme selbst malt, und drei der fünf mitgelieferten
-  bauen sie aus Farben, an die eine Umkehrung nicht heranreicht; beide nehmen
-  das Argument deshalb nicht an.
+  ganze Bilder, die das Theme selbst malt; drei der fünf mitgelieferten Themes
+  bauen sie aus Farben, an die eine Umkehrung nicht heranreicht. Beide
+  Folienarten nehmen das Argument deshalb nicht an.
 
   Die Marke `#invert` wird überall dort gefunden, wo der Rumpf begehbar ist:
   auf der obersten Ebene, in einem `block` oder `align`, in einer
   Tabellenzelle, in einem Raster, beliebig tief geschachtelt, in der
   Folienüberschrift selbst und hinter `#set`- und `#show`-Regeln. *Nicht*
-  gefunden wird sie dort, wo der Inhalt an eine Closure abgegeben wird, in die
-  der Lauf nicht hineinkommt -- in `context`, `fit`, `anim`, `card` und
-  `alternatives` --, und die Folie bleibt dann einfach stehen, wie sie ist,
-  ohne ein Wort. Gemessen sind das genau diese fünf. Wer eine davon braucht,
-  schreibt die Folie als `slide(invert: true)`, was nie am Lauf hängt.
+  gefunden wird sie, wo der Inhalt an eine Closure geht -- in `context`,
+  `fit`, `anim`, `card` und `alternatives` --, und die Folie bleibt dann
+  einfach stehen, ohne Meldung. Gemessen sind das genau diese fünf. Wer eine
+  davon braucht, schreibt die Folie als `slide(invert: true)`, was
+  unabhängig davon funktioniert.
 ]
 
 == Der Kontrastvertrag
@@ -3989,7 +3943,7 @@ stillschweigend weggefärbt zu werden:
 
 Keine dieser Farben wurde geändert. Sie stehen in gemessenen Gestaltungen --
 die von `themes.lesson` stammen von einer Musterseite aus _Fundamente der
-Mathematik_ --, und ein Wechsel hätte jedes bestehende Deck anders aussehen
+Mathematik_. Ein Wechsel hätte jedes bestehende Deck anders aussehen
 lassen. Was `muted` trägt, ist Nebensächliches: Foliennummer, Untertitel,
 Kopfzeile. Wer die Zahlen einhalten will, legt die passende Palette darüber:
 
@@ -4004,12 +3958,12 @@ Kopfzeile. Wer die Zahlen einhalten will, legt die passende Palette darüber:
   Deshalb rechnet das Paket mit `contrast` und färbt nirgends automatisch um.
 
   Die eine Ausnahme steht im Theme, nicht in der Palette, und sie ist ebenfalls
-  eine Messung: wo ein Theme `strong` als *Schrift* setzt -- die Überschrift in
+  eine Messung: Wo ein Theme `strong` als *Schrift* setzt -- die Überschrift in
   `themes.lesson`, der Abschnittstitel in `themes.plain` --, wählt es zwischen
-  `strong` und `ink` nach dem gemessenen Kontrast gegen den Grund, weil dieselbe
-  Farbe nicht zugleich dunkler Balken und Schrift auf dunklem Grund sein kann.
-  Wo die zuerst genannte Farbe reicht, und das tut sie bei allen fünf Themes
-  in ihren eigenen Farben, bleibt genau sie stehen.
+  `strong` und `ink` nach dem gemessenen Kontrast gegen den Grund. Dieselbe
+  Farbe kann nicht zugleich dunkler Balken und Schrift auf dunklem Grund sein.
+  Reicht die zuerst genannte Farbe -- das gilt bei allen fünf Themes in ihren
+  eigenen Farben --, bleibt sie stehen.
 ]
 
 == Die Leinwand
@@ -4073,10 +4027,9 @@ Haken `style`: eine Funktion, die um jeden Folienrumpf gelegt wird.
   style: it => { v(1fr); it; v(1fr) }
   ```
 
-  Zentriert wird mit Abständen und nicht mit `align`, weil `align` als
-  Stilregel bis in jede Rasterzelle durchschlagen würde -- das
-  Aufzählungszeichen eines zweizeiligen Punktes rutschte dann neben dessen
-  zweite Zeile.
+  Zentriert wird mit Abständen, nicht mit `align`: Als Stilregel würde
+  `align` bis in jede Rasterzelle durchschlagen -- das Aufzählungszeichen
+  eines zweizeiligen Punktes rutschte dann neben dessen zweite Zeile.
 ]
 
 == Bausteine für den Folienrumpf
@@ -4169,8 +4122,8 @@ ihre größte Höhe festgesetzt, und `card` und `callout` füllen sie aus.
 
 #warning[
   Ein `height: 100%` im Kasten allein täte es nicht. Ein Prozentmaß löst gegen
-  die *Region* auf und nicht gegen die Rasterzeile; gemessen wurden zwei
-  Kästen so beide seitenhoch statt gleich hoch. Deshalb reicht `side-by-side`
+  die *Region* auf, nicht gegen die Rasterzeile. Gemessen wurden zwei
+  Kästen so: beide seitenhoch statt gleich hoch. Deshalb reicht `side-by-side`
   die gemessene Länge weiter, und deshalb wirkt `equal` nur auf `card` und
   `callout` und nicht auf beliebigen Inhalt.
 ]
@@ -4281,7 +4234,7 @@ seiner Größe. `wrap: false` misst so einen Block genau so, wie er steht:
 
 Gemessen an einer Tabelle mit 24 Spalten, die frei gesetzt 1316 pt breit ist:
 mit dem Vorgabewert `wrap: true` quetscht Typst die Spalten in die 777,89 pt
-des Rumpfes, die Ziffern überlagern sich, und der Faktor kommt bei 100 %
+des Rumpfes, die Ziffern überlagern sich. Der Faktor kommt bei 100 %
 heraus, es wird also nichts skaliert. Mit `wrap: false` rechnet `fit` mit
 59,1 %, und die Spalten behalten ihr Verhältnis.
 
@@ -4304,22 +4257,20 @@ das `1fr`, nicht das Skalieren: ein `card` um ein blankes
 ausdrücklich an, dann rechnet das `fit` damit.
 
 #warning[
-  *Keine Einblendung im `fit`.* Zweierlei übersteht das Messen nicht. Ein
-  `pause` wird gefunden, indem der Folienrumpf abgelaufen wird, und ein
-  gemessener Block ist eine Closure, in die dieser Lauf nicht hineinkommt:
-  gemessen an einer Folie mit zwei Pausen fiel die Schrittzahl von drei auf
-  eins, und nichts hat es gesagt. Und ein gemessener Block hat keine Höhe, gegen
-  die er rechnen könnte -- die Breite ist die, die ein umbrechendes `fit`
-  hineinreicht, die Höhe aber kommt unbegrenzt zurück, und genau an dieser
-  Achse legt ein verfolgtes Element seine Größe und den Platz seiner Marke
-  fest. Gemessen: ein `anim` in einem `fit` wurde gar nicht verkleinert und
-  lief unten aus der Folie.
+  *Keine Einblendung im `fit`.* Zwei Dinge übersteht das Messen nicht. Ein
+  `pause` findet sich nur, indem der Folienrumpf abläuft; ein gemessener Block
+  ist eine Closure, die dieser Lauf nicht erreicht. Gemessen an einer Folie
+  mit zwei Pausen: die Schrittzahl fiel von drei auf eins, ohne Meldung. Und
+  ein gemessener Block hat keine feste Höhe -- sie kommt unbegrenzt zurück --,
+  an der aber ein verfolgtes Element seine Größe und den Platz seiner Marke
+  festmacht. Gemessen: ein `anim` in einem `fit` wurde gar nicht verkleinert
+  und lief unten aus der Folie.
 
   `fit` bricht deshalb ab, mit Namen und Rat, für `pause`, `anim`, `stagger`,
   `alternatives`, `morph`, `tiles`, `video`, `embed`, `flipbook`, `build`
   und `scene` -- in
   beiden Ausgaben und auch dann, wenn das `fit` in einem anderen `fit` steckt.
-  Der Ausweg ist, das `fit` *innerhalb* der Einblendung zu setzen statt darum
+  Der Ausweg: das `fit` *innerhalb* der Einblendung setzen, nicht darum
   herum:
 
   // check: folie pre=tabelle fehlt=2 weil=cannot_stand_inside_fit
@@ -4379,25 +4330,24 @@ Shorten the slide, split it, or put the block that does not fit into fit(). …
 ```)
 
 *Warum beim Schritt "at the earliest" steht.* Eine Folie ist auf Schritt eins
-genauso hoch wie auf Schritt fünf: jedes verfolgte Element hält seinen vollen
-Platz von Anfang an mit `hide()`, ob der Rumpf passt, ist also eine Frage an
-die Folie und nicht an den Schritt. Mit dem Schritt ändert sich nur, was
-*gezeichnet* wird. Ein `anim`, das unten übersteht, ist bis zu seinem Schritt
-unsichtbar, und erst dann gibt es etwas zu sehen.
+genauso hoch wie auf Schritt fünf: Jedes verfolgte Element hält von Anfang an
+seinen vollen Platz. Ob der Rumpf passt, ist also eine Frage an die Folie,
+nicht an den Schritt. Mit dem Schritt ändert sich nur, was *gezeichnet* wird
+-- ein `anim`, das unten übersteht, bleibt bis zu seinem Schritt unsichtbar.
 
-Der Schritt wird aus den Einblendungen gerechnet: alles, was erst nach Schritt
-k dazukommt, ist dort unsichtbar, und ist der Überlauf größer als das alles
+Der Schritt wird aus den Einblendungen gerechnet: Alles, was erst nach Schritt
+k dazukommt, ist dort unsichtbar. Ist der Überlauf größer als all das
 zusammen, hängt schon auf Schritt k etwas über den Rand. Das ist eine untere
-Schranke und keine genaue Antwort, denn die Summe zählt die Einblendungen und
-sonst nichts -- die Zwischenräume, Blockabstand, ein `v()`, zählen in der Höhe
-des Rumpfes und in keiner Einblendung. Gemessen: ein 350 pt hoher Kasten, ein
-`v(100pt)` und ein `anim(at: 4)` darunter werden ab Schritt 1 gemeldet, während
-der Überstand erst auf Schritt 4 auf den Schirm kommt. Wo das Überstehende
-selbst eine Einblendung ist und nichts Leeres darüber steht, stimmt der Schritt
-genau: `anim(at: 3)` wird ab Schritt 3 gemeldet. *Die Folie steht in beiden
-Fällen richtig da*, und das ist der Teil, an dem man handelt. Auf Papier wird
-gar kein Schritt genannt, weil dort jeder Schritt zugleich auf der Seite steht;
-in den Datensätzen zeigt sich das als `step: 0`.
+Schranke, keine genaue Antwort -- die Summe zählt nur die Einblendungen, nicht
+die Zwischenräume, den Blockabstand oder ein `v()`. Gemessen: ein 350 pt hoher
+Kasten, ein `v(100pt)` und ein `anim(at: 4)` darunter werden ab Schritt 1
+gemeldet, während der Überstand erst auf Schritt 4 sichtbar wird. Wo das
+Überstehende selbst eine Einblendung ist und nichts Leeres darüber steht,
+stimmt der Schritt genau: `anim(at: 3)` wird ab Schritt 3 gemeldet. *Die
+Folie steht in beiden Fällen richtig da*, und das ist der Teil, an dem man
+handelt. Auf Papier wird kein Schritt genannt, weil dort jeder Schritt
+zugleich auf der Seite steht; in den Datensätzen zeigt sich das als
+`step: 0`.
 
 Die Datensätze holt man mit `typst eval`, und dafür muss das Deck auf
 `overflow: "record"` stehen -- auf `"error"` bricht auch dieser Befehl mit dem
@@ -4483,7 +4433,7 @@ benutzt: gemessen an einer Szene aus 28 CeTZ-Bildern 434 ms ohne und 536 ms
 mit, also rund 100 ms für diese eine Szene. `overflow` dagegen misst jeden
 Rumpf jedes Decks. Und was er findet, ist beim Schreiben unsichtbar -- jedes
 Bild für sich sieht richtig aus, und erst das Blättern zeigt die wandernde
-Zeichnung. Gemessen wird nur im Browserzweig; auf Papier steht ein einziges
+Zeichnung. Gemessen wird nur im Browserzweig. Auf Papier steht ein einziges
 Standbild, und ein Standbild wandert nicht.
 
 #info[
@@ -4527,7 +4477,7 @@ Videos --, trägt ein festes Typst-Label. Damit ist sie von außen ansprechbar:
 eine gewöhnliche `show`-Regel genügt, kein Theme-Schlüssel, kein Fork.
 
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #show label("ts-slide-header-band"): set rect(fill: rgb("#4c1d95"))
 #show label("ts-slide-title"): set text(fill: rgb("#fde047"), style: "italic")
@@ -4581,10 +4531,8 @@ Typografie, die den ganzen Rumpf betrifft; für Labels ist die Stelle vor
 
 #warning[
   Eine `show`-Regel, die *hinter* `#show: presentation` steht, erreicht ein
-  getracktes Element (`anim`, `morph`) nicht. Der Grund steht schon im
-  Abschnitt über Typografie: Im Browser wird jedes bewegte Element ein zweites
-  Mal gesetzt, in einem eigenen Rahmen, und dieser Rahmen kennt die
-  `#show`-Regeln aus dem Dokumentrumpf nicht.
+  getracktes Element (`anim`, `morph`) nicht -- der Grund steht schon im
+  Abschnitt über Typografie.
 
   ```typ
   #show: presentation.with(theme: themes.default)
@@ -4933,9 +4881,9 @@ so, wie sie im ganzen Handbuch heißen.
 `step.number` ist der Schritt, auf dem der aufrufende Inhalt selbst steht: im
 Rumpf einer Folie `1`, innerhalb eines `anim`, eines `stagger` oder einer
 `alternatives` der Schritt jener Einblendung -- und wo eine Einblendung über
-mehrere Schritte steht, ihr erster. Das ist der Unterschied, auf den
-es ankommt -- eine Anzeige, die den laufenden Schritt nennt, muss in den
-Einblendungen sitzen, denn der Browser setzt nichts neu:
+mehrere Schritte steht, ihr erster. Darauf kommt es an: eine Anzeige, die den
+laufenden Schritt nennt, muss in den Einblendungen sitzen, denn der Browser
+setzt nichts neu:
 
 #show-code[```typ
 #let stand = context {
@@ -5002,8 +4950,8 @@ statt sie zu ersetzen.
   *Nicht über `style:`.* Der Haken sieht nach der bequemen Abkürzung aus:
   `style: it => { fusszeile; it }` schriebe die Fußzeile auf jede Folie, ohne
   sie einzeln hinzuschreiben. Er ist aber zugleich die Vorlage, mit der jedes
-  bewegte Element ein zweites Mal gesetzt wird -- und alles, was dort
-  *zeichnet*, wird in jedem Sprite mitgezeichnet.
+  bewegte Element ein zweites Mal gesetzt wird. Alles, was dort *zeichnet*,
+  wird in jedem Sprite mitgezeichnet.
 
   Gemessen an einem Deck mit drei Einblendungen je Folie: die Fußzeile stand
   im Browser viermal auf der Folie statt einmal, und in einem Daumenkino aus
@@ -5028,11 +4976,11 @@ statt sie zu ersetzen.
 
   *Danach* nicht: wer die Folien als Argumente übergibt und unter den Aufruf
   noch ein `info()` schreibt, bekommt weiter die Zahlen der letzten Folie. Das
-  ließe sich schließen, indem das Deck seinen Stand am Ende abräumt -- gemessen
+  ließe sich schließen, indem das Deck seinen Stand am Ende abräumt. Gemessen
   kostet das aber Übersetzungs-Spielraum: eine Folie mit einer Einblendung
   neben einem `tiles` ging damit von null auf drei
-  "did not converge"-Meldungen. Eine Ecke, in der niemand steht, ist das nicht
-  wert; in der Show-Regel-Form steht hinter dem Deck ohnehin nichts.
+  "did not converge"-Meldungen. Das ist eine Ecke, die niemand braucht --
+  in der Show-Regel-Form steht hinter dem Deck ohnehin nichts.
 ]
 
 
@@ -5054,7 +5002,7 @@ An einem Deck mit `slide-level: 3` und zwei Teilen zu je zwei Unterabschnitten
 kommt heraus: der erste Teil deckt die Folien 1 bis 3, seine beiden
 Unterabschnitte 1 bis 2 und 3 bis 3, der zweite Teil 4 bis 7.
 
-`first`, `last` und `count` zählen **transitiv**: unter einen Abschnitt der
+`first`, `last` und `count` zählen *transitiv*: unter einen Abschnitt der
 Tiefe 1 fallen auch die Folien seiner Unterabschnitte. Eine Leiste, die nur
 die unmittelbar eigenen zählte, zeigte für jede Oberüberschrift eine Null. Ein
 Abschnitt ohne Folien unter sich hat `none` bei `first` und `last` und `0` bei
@@ -5065,20 +5013,20 @@ den Folien stehen und das Deck schneiden. Eine Überschrift *in* einer Folie --
 `slide(none)[= Jede Karte lügt]` -- ist ein Folientitel und eröffnet keinen
 Abschnitt. Ein Deck, das seine Gliederung ausschließlich so schreibt, bekommt
 eine leere Liste zurück und wundert sich über eine leere Navigationsleiste. Wer
-eine bauen will, setzt die `=` also zwischen die Folien, nicht in sie hinein;
+eine bauen will, setzt die `=` also zwischen die Folien, nicht in sie hinein.
 `examples/gliedern.typ` macht genau das vor.
 
 #info[
-  Gelesen wird nur, was jede Folie ohnehin mit sich trägt -- kein `query`, kein
-  zweiter Gang durch das Dokument, dieselbe Antwort in beiden Ausgaben.
-  Nachgemessen: `tour`, `theme-editorial` und `geogebra` sind mit und ohne
-  diesen Aufruf byteidentisch, in HTML wie im PDF.
+  Gelesen wird nur, was jede Folie ohnehin mit sich trägt, in beiden Ausgaben
+  mit derselben Antwort. Nachgemessen: `tour`, `theme-editorial` und
+  `geogebra` sind mit und ohne diesen Aufruf byteidentisch, in HTML wie im
+  PDF.
 ]
 
 #warning[
   Ein fremdes Paket, das die Gliederung über `query(heading)` sucht, findet
   nichts: die Überschriftennotation zerlegt den Rumpf an seinen Überschriften
-  und kopiert `depth` und `body` heraus, das Element selbst fällt weg. Das gilt
+  und kopiert `depth` und `body` heraus. Das Element selbst fällt weg. Das gilt
   in *beiden* Ausgaben, nicht nur im Browser. `deck-outline()` ist die Antwort
   darauf -- dieselbe Auskunft, ohne dass jemand ein Dokument durchsuchen muss,
   das so nicht gebaut ist.
@@ -5094,14 +5042,12 @@ Die HTML-Datei ist statisch. Was Dateien ausliefert, liefert auch sie aus:
 GitHub Pages, ein Webplatz der Hochschule, ein S3-Eimer. Zweierlei ist dabei zu
 beachten.
 
-Medien reisen neben der Datei. `video("clip.mp4")` verweist auf eine Datei, die
-neben der HTML liegen muss; ein Deck, das örtlich läuft, zeigt nach dem
-Hochladen ohne sie ein leeres Videofenster.
+Medien reisen mit der Datei. `video("clip.mp4")` verweist auf eine Datei
+neben der HTML. Fehlt sie nach dem Hochladen, bleibt das Videofenster leer --
+auch wenn das Deck lokal noch lief.
 
 Ein Deck, das aus `file://` geöffnet wird, verhält sich wie eines von einem
-Server, samt Sprecheransicht -- hier geht alles über `postMessage`. Das ist die
-eine Stelle, an der dieses Paket es leichter hat als die browsereigenen
-Werkzeuge, die genau dafür einen Server brauchen.
+Server, samt Sprecheransicht.
 
 == Barrierefreiheit
 
@@ -5109,24 +5055,25 @@ Das ist die härteste Grenze, und sie folgt unmittelbar aus der Entscheidung auf
 der ersten Seite.
 
 Die Folien sind SVG-Umrisse. Text darin ist als Pfad und Zeichenverweis
-gezeichnet, nicht als Text. Nichts im Browser ist auswählbar, nichts
-durchsuchbar, und ein Bildschirmleser findet nichts zu lesen. Es gibt keine
-Textalternative dahinter und keine Lesereihenfolge.
+gezeichnet, nicht als Text. Nichts im Browser ist auswählbar, durchsuchbar
+oder von einem Bildschirmleser lesbar. Es gibt keine Textalternative und keine
+Lesereihenfolge.
 
-Was hingegen geht: Das Dokument trägt aus `text.lang` ein `lang`-Attribut, die
-Seite sagt ihre Sprache also an. Die Navigation ist vollständig über die
+Was hingegen geht: Das Dokument trägt aus `text.lang` ein `lang`-Attribut --
+die Seite meldet ihre Sprache. Die Navigation ist vollständig über die
 Tastatur bedienbar, und die ganze Tastenliste ist einen Druck auf `?` entfernt.
 Farbe und Kontrast gehören dem Theme und damit dir; `themes.plain` ist das
-dunkelste der fünf auf Weiß.
+dunkelste der fünf Themes auf Weiß.
 
-Wer sein System um weniger Bewegung gebeten hat, bekommt ein Deck, das zuhört:
-`prefers-reduced-motion` wird zur Laufzeit gelesen, und das Kapitel weiter oben
-sagt im Einzelnen, was bleibt und was geht. Wo dasselbe für alle gelten soll,
-sagen es `transition: "none"` und `enter: "none"` in der Quelle.
+Wer sein System auf weniger Bewegung eingestellt hat, bekommt ein Deck, das
+reagiert: `prefers-reduced-motion` wird zur Laufzeit gelesen. Das Kapitel
+weiter oben beschreibt im Einzelnen, was bleibt und was geht. Soll dasselbe
+für alle gelten, setzen `transition: "none"` und `enter: "none"` in der Quelle
+das durch.
 
 #warning[
-  Sitzt jemand im Raum, der mit einem Bildschirmleser liest, ist die ehrliche
-  Antwort, zusätzlich die PDF auszugeben und zu sagen, was auf jeder Folie
+  Sitzt jemand im Raum, der einen Bildschirmleser nutzt: Die ehrliche Lösung
+  ist, zusätzlich die PDF auszugeben und auf jeder Folie vorzulesen, was dort
   steht. Die PDF aus derselben Quelle trägt echten Text.
 ]
 
@@ -5155,17 +5102,16 @@ Die Stolpersteine, ungefähr in der Reihenfolge, in der man über sie fällt.
   Folie. Trägt er Text, bricht die Übersetzung dort ab und sagt es -- siehe
   "Text, der zu keiner Folie gehört". Trägt er keinen, etwa ein Bild, geht er
   wortlos verloren.
-/ Die Folientitel übergehen ein `#set heading`: es steht nach der Show-Regel
-  und sie haben deren Geltungsbereich längst verlassen. `style:` erreicht sie.
+/ Die Folientitel übergehen ein `#set heading`: steht es nach der Show-Regel,
+  haben die Titel deren Geltungsbereich schon verlassen. `style:` erreicht sie
+  trotzdem.
 / `#pause` tut nichts: es steht in einer Rasterzelle oder in einer Tabelle.
   `#pause` zerlegt den Rumpf, und dort ist nichts zu zerlegen. `anim` geht
   überall dorthin, wo Inhalt hingeht.
 / Ein Übergang oder eine Wirkung wird beim Namen abgewiesen: das Paket kennt
-  sie nicht. Früher fiel es wortlos auf die Blende zurück, und ein Tippfehler
-  sah dann aus wie ein Deck, das sich eben anders bewegt als gedacht. Die
-  Meldung nennt alle Namen, die es gibt.
+  sie nicht. Die Meldung nennt alle Namen, die es gibt.
 / Die Stichpunkte neben einem Applet fangen bei Schritt drei an: ein `embed`
-  verbraucht keinen Schritt, aber etwas davor hat es getan. Gezählt werden die
+  verbraucht keinen Schritt, etwas davor aber schon. Gezählt werden die
   Aufdeckungen, nicht die Elemente.
 / Eine fliegende Formel hat die falsche Schrift: Typografie, die mit `#set`
   gesetzt ist, erreicht ein verfolgtes Element nicht -- das wird in einem
@@ -5177,17 +5123,17 @@ Die Stolpersteine, ungefähr in der Reihenfolge, in der man über sie fällt.
   Kopie.
 / Ein `ggb-run`-Befehl bleibt wirkungslos: er ist einer von GeoGebras
   Skriptbefehlen, die `evalCommand` nicht annimmt. `ggb-set`, `ggb-style`,
-  `ggb-show` und `ggb-hide` greifen zur Schnittstelle, die das kann.
+  `ggb-show` und `ggb-hide` nutzen die Schnittstelle, die das kann.
 / Der Bau bricht ab und nennt zwei Applets: zwei Rahmen auf einer Folie und
   kein `target`. Hier wird mit Absicht nichts geraten.
 / Die Farben des Applets ändern sich nach dem Zurückblättern: GeoGebra vergibt
-  beim Neuaufbau die nächste Farbe seiner Palette. Die Farbe auf `"1-"`
-  festlegen.
+  beim Neuaufbau die nächste Farbe seiner Palette. Die Farbe lässt sich auf
+  `"1-"` festlegen.
 / Ein Kreis im Applet ist eine Ellipse: der x-Bereich und der y-Bereich von
   `ggb-view` passen nicht zur Form des Kastens.
-/ Eine Tween läuft nicht: sie steht auf Schritt 1, wo die Laufzeit Tweens auf
-  ihren Zielwert setzt statt sie zu fahren, oder sie hat einen Bereich statt
-  einer Schrittnummer bekommen.
+/ Ein Tween läuft nicht: er steht auf Schritt 1 -- dort setzt die Laufzeit
+  Tweens auf ihren Zielwert, statt sie zu fahren. Oder er hat einen Bereich
+  statt einer Schrittnummer bekommen.
 / Zwei Schieber liegen übereinander: `position` zählt bei einem mit `Slider`
   gebauten Schieber in Pixeln, nicht in Koordinaten.
 / Ein Punkt lässt sich in der Sprecheransicht nicht ziehen: er ist mit

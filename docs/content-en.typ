@@ -4,10 +4,10 @@
 
 `typstage` turns a single Typst file into an animated presentation for the
 browser, and a PDF from the same source. The sentence behind it is this:
-*Typst typesets, the browser moves.* Every slide is set by Typst as SVG and
-written into the HTML file as such, so the arrangement in the browser is the
-one on paper. Motion comes afterwards. Whatever is meant to stir is registered
-for it in the source, and a small runtime sets it going in the browser.
+*Typst typesets, the browser moves.* Every slide is set by Typst as SVG, so
+the arrangement in the browser is the one on paper. Motion is added
+afterwards: whatever is meant to move is marked in the source, and a small
+runtime animates it in the browser.
 
 The rest follows from that. A slide is a slide and not a stack of intermediate
 states. The PDF has one page per slide, not one per step. And whatever belongs
@@ -23,10 +23,8 @@ one of these words does not mean what it usually means.
 / Step: One press of the arrow key. A slide can hold several of them. Paging
   forward inside a slide reveals more of it; at its end the next press moves
   to the next slide. The address bar counts steps, the footer counts slides.
-/ Element: A piece of a slide that the runtime may touch. It is typeset in
-  place, held back with `hide()`, and painted over a marker that says where it
-  belongs. `anim`, `stagger`, `alternatives`, `morph`, `embed`, `video` and
-  `flipbook` all produce one.
+/ Element: A piece of a slide that the runtime may touch. `anim`, `stagger`,
+  `alternatives`, `morph`, `embed`, `video` and `flipbook` all produce one.
 / Morph: The same named element on two slides. Between them it flies, glyph by
   glyph where it can.
 / Speaker view: The same file opened a second time with `#speaker` on the
@@ -39,19 +37,19 @@ Typst has good presentation packages, and most of them make PDF. `touying` and
 `polylux` are mature, have far more themes, and are on Universe. If you want a
 normal PDF talk, take one of those.
 
-What this package does that they do not is level four of four: a named piece
-stands in one place on slide n and elsewhere on slide n+1 and flies there,
-ideally glyph by glyph, so an equation visibly rewrites itself. The other
-levels are a page that turns, a viewer that cross-fades between two pages, and
-whole slides pushed around by a script.
+What this package does that they do not: a named piece stands in one place on
+slide n and elsewhere on slide n+1, and it flies between the two -- ideally
+glyph by glyph, so an equation visibly rewrites itself. Weaker forms of motion
+cover the rest: a page that turns, a cross-fade between two pages, and whole
+slides pushed around by a script.
 
 The other comparison group is `reveal.js`, `Slidev` and `Quarto`. They animate
 in the browser and do it well, but the layout is HTML's, not Typst's. Here the
-layout is Typst's to the point, and the price is on the next page but one.
+layout is Typst's to the point, and the price follows below.
 
 #warning[
-  The price, so it stands before the first line of code and not after the
-  first talk. The slides are SVG outlines. Nothing in the browser is
+  The price, stated here before the first line of code rather than after the
+  first talk: the slides are SVG outlines. Nothing in the browser is
   selectable or searchable, and a screen reader sees nothing at all. There is
   a chapter on that further down, and for some talks the price is too high.
 ]
@@ -59,6 +57,7 @@ layout is Typst's to the point, and the price is on the next page but one.
 This manual is ordered by intent rather than by function:
 
 + *Your first presentation* — from the empty file to a running HTML
++ *One deck, from start to finish* — one talk, built to the end
 + *Revealing a slide step by step* — `pause`, `stagger`, `anim`, `alternatives`
 + *Showing instead of claiming* — an applet, a video, a flip book
 + *GeoGebra* — constructions that follow the steps of the slide
@@ -76,21 +75,20 @@ This manual is ordered by intent rather than by function:
   state, everything at once. What happens one after another in the browser is
   said in the text beside them or as a comment in the source.
 
-  Every `typ` listing here is compiled against the real package before the site
-  is built, by `python3 .github/scripts/pruefe-beispiele.py`, so that no example
-  survives a rename in the package that makes it invalid. What the run does
-  *not* do belongs in the same breath: most listings are fragments rather than
-  whole files, so it wraps each one in a slide and checks that it compiles
-  there, not that the slide then looks right. Lines that deliberately raise an
-  error are marked as such and have to keep failing, and they name what they
-  have to fail at -- a line that breaks for some other reason is a failed
-  check, not a passed one. A line that does compile but does not do what was
-  wanted ("has no effect", "too late") it cannot tell from a correct one. It
-  compiles for the browser, not for paper, and it never looks at the prose
-  beside a listing -- which is where a stale number likes to sit. Listings in
-  other languages are left alone and counted, so nobody loses one by writing
-  the wrong fence. And an example whose companion package is missing is
-  skipped, and the run says which.
+  Every `typ` listing here is compiled against the real package before
+  publishing, so no example survives a rename in the package that would make
+  it invalid. What that check does *not* do matters just as much: most
+  listings are fragments rather than whole files, so it wraps each one in a
+  slide and checks that it compiles there, not that the slide then looks
+  right. Lines that deliberately raise an error are marked as such and have to
+  keep failing, and they name what they have to fail at -- a line that breaks
+  for some other reason is a failed check, not a passed one. A line that
+  compiles but does the wrong thing -- "has no effect", "too late" -- looks
+  the same as a correct one to this check. It compiles for the browser, not
+  for paper, and it never looks at the prose beside a listing, where a stale
+  number can sit unnoticed. Listings in other languages are left alone and
+  counted, so nobody loses one by writing the wrong fence. And an example
+  whose companion package is missing is skipped, and the run says which.
 ]
 
 = Your first presentation
@@ -133,31 +131,28 @@ The sum of the first n terms.
 ```]
 
 `= Part I` and `== Sequences` each become a section slide, every `===` becomes
-a slide. The transition slides for *both* levels come along by themselves: a
+a slide. Transition slides for *both* levels come along by themselves: a
 section heading here already is the transition slide, so there is nothing to
-switch on and no hook to write.
+switch on.
 
 `slide-level: 1` makes every heading a slide; the deck then has no structure
 level at all.
 
 The five bundled themes draw a deeper level more quietly: the title gets
 smaller, and above it stands what the section hangs under. A theme with a
-`section` function of its own reads `s.depth` and `s.parents` off the record
-and may ignore both. Then every level looks alike, and nothing breaks.
+`section` function of its own reads `s.depth` and `s.parents` off the record,
+and may ignore both; if it does, every level looks alike, but nothing breaks.
 
 What the deck knows about its structure is in `info()`: `section` still means
 the level directly above the slide, `levels` has one entry per structure
-level, and `outline` is the whole thing. The section "`info()`: what the deck
-knows about itself" says what is in them.
+level, and `outline` is the whole thing -- see "`info()`: what the deck knows
+about itself" for details.
 
 === Text that belongs to no slide
 
 Between a section heading and the next heading there is no room for text. A
-section slide is a whole picture the theme draws; it has no body. Such text
-used to fall out of the deck without a word: it compiled, the slide count was
-right, and the paragraph was simply gone. Now that there is more than one kind
-of structure heading there are more chances to run into that, so compiling
-stops there with a message instead.
+section slide is a whole picture the theme draws; it has no body. Text placed
+there stops the compile with a message, instead of silently disappearing.
 
 A sentence between `= The proof` and `== The dissection` therefore aborts with
 `content between the heading "The proof" and the next one belongs to no
@@ -181,17 +176,17 @@ It belongs under the slide heading:
 This sentence belongs to the slide and gets typeset.
 ```]
 
-Two reservations, so that nothing here promises more than the code holds.
-First, text *before* the first heading is refused as well, but only if the deck
-has any heading at all: a body without a single heading is not a presentation
-in the heading notation, and there it is not one slide that is missing, there
-are none. Second, all of this applies to the heading notation only; whoever
-passes slides as arguments writes every body out anyway.
+Two reservations, so this promises no more than the code holds. First, text
+*before* the first heading is refused too, but only if the deck has at least
+one heading: a body without a single heading is not a presentation in heading
+notation at all, so there is no slide for the text to be missing from. Second,
+this applies to heading notation only; whoever passes slides as arguments
+writes every body out anyway.
 
 == When the slides are computed
 
-Headings that only come into being while the document is set become slides too.
-A loop over a list gives one slide per entry:
+Headings created while the document is set become slides too. A loop over a
+list gives one slide per entry:
 
 #show-code[```typ
 #for element in ("Water", "Air", "Earth") [
@@ -200,9 +195,9 @@ A loop over a list gives one slide per entry:
 ]
 ```]
 
-Where the slides come entirely out of data, they can be handed over one by one
-instead. Each slide is then a function call, and a list of slides passes on
-with `..` like any other array:
+Where the slides come entirely from data, hand them over one by one instead:
+each slide is then a function call, and a list of slides spreads with `..`
+like any other array:
 
 // check: dokument
 #show-code[```typ
@@ -215,9 +210,9 @@ with `..` like any other array:
 )
 ```]
 
-Both spellings lead to the same output; `presentation` tells from what it gets
-which one is meant. The heading form reads like a document and is the ordinary
-case.
+Both spellings lead to the same output; `presentation` detects which one is
+meant from its arguments. The heading form reads like a document and is the
+ordinary case.
 
 == Two compilations
 
@@ -229,16 +224,16 @@ typst compile talk.typ talk.pdf
 ```]
 
 #warning[
-  Without `--features html` the HTML export is not available at all, and Typst
-  says so in a way that is easy to mistake for a mistake of your own. The
-  feature is experimental on Typst's side, not on this package's.
+  Without `--features html`, HTML export is unavailable, and Typst's error
+  message reads like a mistake in your file rather than a missing flag. The
+  feature is experimental in Typst itself, not in this package.
 ]
 
 == Looking at it
 
 The HTML file is one file. Double-click it, and it runs: no server, no network,
-nothing loaded afterwards. That is deliberate and it is the reason several
-decisions later in this manual look stricter than they need to.
+nothing loaded afterwards. That is deliberate, and it explains why some
+choices later in this manual look stricter than necessary.
 
 Arrow keys page. `?` shows every key, `o` opens the overview, `f` goes full
 screen, and `n` opens the speaker view in a second window.
@@ -250,7 +245,7 @@ from the empty line to the handout, and every step adds exactly one thing.
 Whoever walks through it once has used everything an ordinary deck needs.
 
 The subject is a school exercise: *How tall is the tower?* A pole 1.20 m high
-casts a shadow of 0.90 m, the tower casts 21 m. Its height is wanted.
+casts a shadow of 0.90 m; the tower casts a shadow of 21 m. Find its height.
 
 == The empty file
 
@@ -259,7 +254,7 @@ document is a presentation.
 
 // check: dokument
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 #show: presentation.with(title: [How tall is the tower?])
 ```]
 
@@ -271,12 +266,12 @@ typst compile tower.typ tower.pdf
 ```
 
 Open the HTML in a browser and page with the arrow keys. So far there is only
-the title slide -- `title:` is enough to bring it about.
+the title slide: `title:` alone is enough to produce it.
 
 == The first slide
 
-A second-level heading is a slide, the text below it its body. A first-level
-heading is a section slide.
+A second-level heading is a slide; the text below it is its body. A
+first-level heading is a section slide.
 
 // check: folgen
 #show-code[```typ
@@ -288,14 +283,14 @@ A pole 1.20 m high casts a shadow of 0.90 m.
 The tower casts 21 m. How tall is it?
 ```]
 
-No more structure than that is needed. Whoever would rather call functions than
-write headings finds the second spelling in the chapter before; both give the
+No more structure than this is needed. Whoever prefers calling functions to
+writing headings finds that spelling in the previous chapter; both give the
 same deck.
 
 == What is to appear one after another
 
-Three observations, one after the other. `stagger` takes a bullet list apart at
-its items and gives each one a step of its own.
+Three observations, one after the other. `stagger` splits a bullet list at its
+items, giving each one its own step.
 
 // check: folgen
 #show-code[```typ
@@ -336,12 +331,11 @@ The caption of the box follows the document language. `title:` changes it,
 
 == The formula that rewrites itself
 
-Here comes the one tool that sets this package apart from a PDF talk. The same
-formula stands on two slides in two places, and between them it flies -- glyph
-by glyph, as far as they recognise one another.
+This is the one tool that sets this package apart from a PDF talk: the same
+formula stands in two places on two slides, and between them it flies --
+glyph by glyph, as far as they recognise one another.
 
-Both slides call it by the same name. The name is a label, and there is nothing
-else to do for it.
+Both slides call it by the same name -- a label, and nothing more is needed.
 
 // check: folgen
 #show-code[```typ
@@ -374,25 +368,26 @@ on it -- there the chain becomes the calculation.
 ]
 ```]
 
-It is to be seen in the speaker view, which `n` opens in a second window, and
-in the handout beside its slide.
+It appears in the speaker view -- opened in a second window with `n` -- and in
+the handout, beside its slide.
 
 == The handout
 
 One argument turns the slide deck into a sheet to write on: three slides per
-page, the note beside them, and ruled lines where there is none.
+page, the note printed beside each one, and ruled lines beside any slide that
+has none.
 
 // check: dokument
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 #show: presentation.with(
   title: [How tall is the tower?],
   handout: 3,
 )
 ```]
 
-The slides are not re-set for it, only shrunk. The handout therefore cannot
-drift away from what stood on the screen.
+The slides are not re-set for the handout, only shrunk -- so it cannot drift
+from what stood on the screen.
 
 == The whole source
 
@@ -400,7 +395,7 @@ Forty-five lines, and nothing in them that was not explained above.
 
 // check: dokument
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #show: presentation.with(
   title: [How tall is the tower?],
@@ -448,9 +443,9 @@ The tower casts 21 m. How tall is it?
 ```]
 
 #tip[
-  From here the next thing worth a look is `side-by-side` -- a drawing on the
-  left, the words on the right is the commonest slide there is -- and `theme:`,
-  because another theme changes the look without a line of the content moving.
+  From here, two things are worth a look: `side-by-side` -- a drawing on the
+  left, the words on the right, the commonest slide there is -- and `theme:`,
+  since another theme changes the look without moving a line of content.
 ]
 
 = Revealing a slide step by step
@@ -585,10 +580,10 @@ there, the ones before it stay legible but muted.
 
 For that, each point holds exactly its own step instead of the rest of the
 slide and then rests in `after: "dimmed"` (see "The muted resting state"). Two
-things follow, and both are meant. The last point dims as well as soon as the
-slide has a further step after it, because then the walk has moved on from it
-too. And `stride: 0`, which puts every point on one step, makes them all dim
-together on the next.
+consequences follow, and both are intentional. The last point dims too, once
+the slide has a further step after it -- because then the walk has moved on
+from it as well. And `stride: 0`, which puts every point on one step, makes
+them all dim together on the next.
 
 == Revealing in the order it is called out
 
@@ -631,8 +626,8 @@ Nothing is linked to do that: the point and the layer share a step, and
 swapping the step moves both. You can hang as much on a point as you like.
 
 The group has to stand *before* its layers in the source -- a layer looks up
-which step its point was given. Standing after them, the package says so rather
-than quietly doing nothing.
+which step its point was given. If it stands after them instead, the package
+says so rather than quietly doing nothing.
 
 #tip[
   For a CeTZ drawing that grows with the points, draw the scaffolding once and
@@ -706,9 +701,9 @@ holds the start back, which is what makes two elements on the same step arrive
 one after the other.
 
 *A name the package does not know is an error at compile time*, exactly as it
-is for `easing`. The runtime used to fall back to `"fade"` without a word, and
-a typo then looked like a deck that simply moved differently than intended --
-which nobody finds in the middle of a talk.
+is for `easing`. A silent default would be worse: a typo would render as
+`"fade"` without a word of complaint, and a deck that just moves differently
+than intended is not something anyone catches in the middle of a talk.
 
 // check: folie bricht=the_package_does_not_know_that_effect
 #show-code[```typ
@@ -1071,12 +1066,10 @@ as filled shapes. The element fades in instead. draw is for a drawing,
 the fade is for text.
 ```]
 
-*Why there and not at compile time.* Because Typst only hands out the SVG on
-export. In the document there is no question that would answer "does this
-content have an outline" -- it is the same blind spot for which this package
-paints rectangles in a signal colour and has the browser report back where
-things are. Only in the browser is the path there to be counted. The package's
-own check run reads this message along, so that it cannot one day stop coming.
+*Why there and not at compile time.* Typst only hands out the SVG on export, so
+there is no way to tell beforehand whether a piece of content has an outline.
+Only in the browser is the path there to be counted. The package's own check
+run reads this message along, so that it cannot one day stop coming.
 
 === All at once, and how to get them one after another
 
@@ -1271,7 +1264,8 @@ gets a name.
 This is word for word `cue-layer`, and for the same reason: the coupling
 falls out of the shared step. Move a stop and everything hanging on it moves
 along, and nowhere does a number stand twice. The scene has to stand *before*
-its layers in the source; standing after them, the package says so.
+its layers in the source; if it stands after them instead, the package says
+so.
 
 === Several values at once
 
@@ -1343,14 +1337,13 @@ They are measured all the same, and what for is in the box just below.
     slide 4, from step 1: 28 frames in 19 different sizes, up to 28.35pt apart across and 53.86pt down
   ```)
 
-  Why putting it right fails, in one sentence: `measure` answers with a size
-  and never with *where* the ink lies inside it -- so there is no offset to
-  compute and nothing to shift. `build` can do it, because there a piece not
-  yet due stands as air and keeps its room; here there is no shared piece
-  whose room could be kept, and `scene` knows nothing of the drawing's
-  coordinate system. Padding every frame out to the largest size would not
-  help either: the box would stand still, the canvas inside it would still lie
-  somewhere else each time.
+  Why putting it right fails, in one sentence: `measure` returns a size, never
+  *where* the ink sits inside it, so there is no offset to compute and nothing
+  to shift. `build` can fix this because a piece not yet due stands there as
+  air and keeps its room. A scene has no such shared piece, and it knows
+  nothing of the drawing's coordinate system. Padding every frame out to the
+  largest size would not help either: the box would stand still, but the
+  canvas inside it would still land somewhere different each time.
 
   The way out lies in the drawing: give it a fixed extent and keep what moves
   inside it. In CeTZ that is a `rect` with a transparent stroke -- the same air
@@ -1509,14 +1502,6 @@ runtime measures on every step anyway.
 #camera(<sensor>)
 #anim[And out again, on the step after.]
 ```]
-
-That this works at all has a reason worth a line. Typst hands out no geometry
-at compile time -- `here().position()` gives $(0, 0)$ everywhere in the HTML
-output, and that is precisely why this package works with rectangles in signal
-colour. In the browser it is the other way round: there those rectangles *have*
-to be known, or not a single sprite would find its place. The camera hangs
-itself on that. The deck names a name, not a coordinate, and whoever rearranges
-the slide has nothing to recompute.
 
 === How you get out again
 
@@ -1706,16 +1691,16 @@ asserting it. Three ways in, from the most involved to the simplest.
        width: 100%, height: 190pt)
 ```]
 
-`url:` takes a foreign address instead. Both spellings put a frame on the
-slide; the difference is what may be reached later.
+`url:` takes a foreign address instead. Both put a frame on the slide; the
+difference is what may be reached later.
 
 #tip[
-  Everything inside in `em`. `embed` puts the deck's basic style in front of
-  the document, and inside a zoomed frame one CSS pixel is exactly one point of
-  the slide. So the content grows with the slides. Written as `78px` it would
-  stay the size it has on a laptop even on a projector, which measured against
-  the slide is about a third as wide. A page that reflows on its own wants
-  `zoom: false` instead, and then it spans real screen pixels.
+  Size everything inside in `em`. `embed` puts the deck's basic style in front
+  of the document, and inside a zoomed frame one CSS pixel equals one point of
+  the slide, so the content scales with it. Written as `78px` it would stay the
+  size it has on a laptop even on a projector, where it is about a third as
+  wide. A page that reflows on its own wants `zoom: false` instead: it then
+  spans real screen pixels.
 ]
 
 `style: false` leaves out the basic style where the embedded document brings
@@ -1724,8 +1709,8 @@ address printed beneath it, so whoever holds the handout can still get there.
 
 == Sending it something on a step
 
-A frame with a `bridge:` has a name, and `bridge-job` sends it a dictionary
-when a step arrives:
+A frame with a `bridge:` argument gets a name; `bridge-job` sends it a
+dictionary when a step arrives:
 
 #show-code[```typ
 #embed(html: "…", bridge: "lamp", width: 100%, height: 190pt)
@@ -1734,9 +1719,9 @@ when a step arrives:
 #bridge-job("lamp", (color: "#eb5e28"), at: 3)
 ```]
 
-The package never reads what is in the job. What it means is known only to the
-document on the other side. That is exactly how the `ggb-` commands drive their
-applets — see the chapter *GeoGebra*.
+The package never reads the job's contents; only the document on the other
+side interprets them. That is how the `ggb-` commands drive their applets —
+see the chapter *GeoGebra*.
 
 #warning[
   Three things about the bridge, and each of them has cost somebody an hour.
@@ -1761,14 +1746,14 @@ applets — see the chapter *GeoGebra*.
 #video("clip.mp4", width: 100%, height: 260pt, poster: image("still.png"))
 ```]
 
-The file travels beside the HTML, it is not embedded. `autoplay`, `loop`,
-`muted` and `controls` are the usual switches; `poster` is what stands there
-before it runs and what the PDF shows in its place.
+The file travels beside the HTML rather than being embedded in it. `autoplay`,
+`loop`, `muted` and `controls` are the usual switches; `poster` is what stands
+there before it runs and what the PDF shows in its place.
 
 #info[
-  The frame crops rather than stretches, which is what the poster does on paper
-  as well. Measured on the example clip, a video without that setting came out
-  12 % too wide.
+  The frame crops rather than stretches; the poster does the same on paper.
+  Measured on the example clip: a video without that setting came out 12 % too
+  wide.
 ]
 
 == A flip book
@@ -1783,8 +1768,8 @@ before it runs and what the PDF shows in its place.
 )
 ```]
 
-The function receives `t` running from 0 to 1 and is called once per frame, and
-it may draw with anything Typst has, CeTZ and Fletcher included. Every frame
+The function receives `t`, running from 0 to 1, and is called once per frame.
+It can draw with anything Typst has, CeTZ and Fletcher included. Every frame
 sits in the file as SVG and stays sharp at any size. That makes it the tool for
 motion that Typst can draw and CSS cannot: a curve being traced, a mechanism
 turning, a diagram assembling itself.
@@ -1799,10 +1784,10 @@ steps and starts from zero when it is revealed; page back and reveal it again,
 and it plays again from the beginning.
 
 #warning[
-  Every frame is really typeset. Twenty-four frames are twenty-four layouts and
-  twenty-four SVG trees in the file. That is the most expensive element in this
-  package, in compile time and in file size alike, and it is worth reaching for
-  only where the motion carries the argument.
+  Every frame is typeset separately: twenty-four frames means twenty-four
+  layouts and twenty-four SVG trees in the file. This is the most expensive
+  element in the package, in compile time and in file size alike — reach for
+  it only where the motion carries the argument.
 ]
 
 = GeoGebra
@@ -1812,10 +1797,9 @@ GeoGebra builds the construction, the slides supply the dramaturgy. Jobs can
 sit on every step. Set values, show or hide objects, change colours, move the
 viewport, start a motion.
 
-This was a package of its own once, `typstage-geogebra`, and the plan of that
-day has stayed: everything here rests on the same two public parts any foreign
-companion package uses — `embed(bridge: …)` registers a frame as a target, and
-`bridge-job` sends it something on a step. What is in the jobs is never read.
+GeoGebra support rests on the same two public parts any companion package
+could use — `embed(bridge: …)` registers a frame as a target, and `bridge-job`
+sends it something on a step; see the chapter *Showing instead of claiming*.
 A deck without an applet pays nothing for this: the boot script and the applet
 document come into being only where `geogebra()` is called, and a deck without
 that call is the same size, to the byte, as before.
@@ -1828,12 +1812,12 @@ that call is the same size, to the byte, as before.
 
 == Quick start
 
-An applet stands on the slide with `geogebra()`, and the commands stand in the
-same slide body, because that is where they are collected. They produce no
+An applet stands on the slide with `geogebra()`; the commands that drive it
+stand in the same slide body, where they are collected. They produce no
 output themselves.
 
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #presentation(
   slide([Remote controlled], {
@@ -1851,8 +1835,9 @@ draws itself together.
 `at` is a step selector on every command, as it is on `anim`: `2` means "from
 step two on", and `"1-2"`, `"2,4"` and `"-2"` mean what they say. The default
 is `"1-"`, since most jobs set the construction up as the slide is entered. The
-applet frame itself uses no step and pushes nothing along: the bullets beside it
-belong on step one, not behind its jobs.
+applet frame itself has no step of its own and does not shift the count:
+bullet points beside it still start on step one, unaffected by the applet's
+jobs.
 
 #info[
   The applet lives in the HTML export only. In the PDF, what stands in its
@@ -1921,10 +1906,9 @@ of its palette, and the slide would look different after paging back.
 ```]
 
 #info[
-  A `.ggb` file cannot be embedded: Typst has no base64 encoding, and without
-  it the file's content never reaches the HTML. The construction is therefore
-  built with `ggb-run`, or it is loaded from GeoGebra through `material`:
-  `geogebra(material: "abc123xy")`.
+  A `.ggb` file cannot be embedded directly: Typst has no way to inline binary
+  data into the HTML. Build the construction with `ggb-run` instead, or load
+  it from GeoGebra through `material`: `geogebra(material: "abc123xy")`.
 ]
 
 == Values, appearance, viewport
@@ -1986,7 +1970,7 @@ the colours of the slides instead of GeoGebra's palette.
 === Viewport
 
 `ggb-view` sets the visible range as well as the grid and the axes. `x` and `y`
-only take effect together, both being pairs of smallest and largest value.
+take effect only together; each is a pair of smallest and largest value.
 
 // check: folie drin=applet
 #show-code[```typ
@@ -2022,12 +2006,12 @@ named objects, `speed` sets the pace, `playing: false` stops it.
 #ggb-animate("t", at: 3, speed: 1.2, trace: ("P",))
 ```]
 
-`ggb-tween` goes once from A to B and stays there. The browser counts the value
-up frame by frame; an object that depends on it grows with it, a segment whose
-endpoint travels, an arc whose angle follows. That is how a construction draws
-itself. `from` gives the starting value where it should not be the one
-currently in force, `duration` the time in milliseconds, `easing` the shape of
-it (`"ease-in-out"` or `"linear"`).
+`ggb-tween` moves a value once from A to B and stops. Any object that depends
+on it updates as it moves — a segment whose endpoint travels, an arc whose
+angle follows — which is how a construction draws itself. `from` gives the
+starting value where it should not be the one currently in force, `duration`
+the time in milliseconds, `easing` the shape of it (`"ease-in-out"` or
+`"linear"`).
 
 // check: folie drin=applet
 #show-code[```typ
@@ -2039,7 +2023,7 @@ it (`"ease-in-out"` or `"linear"`).
   `ggb-tween` needs a step number, not a range: `at: 2`, not `at: "2-"`.
   Otherwise the build stops with "`ggb-tween() needs a step number`".
 
-  And a tween on step 1 would never arrive as a motion. On entering a slide the
+  A tween on step 1 never arrives as motion either: on entering a slide, the
   runtime replays the run up to the current step at once, and tweens are set to
   their target value rather than played. Step 1 is for building up; drawing
   starts at step 2.
@@ -2134,18 +2118,18 @@ a tinted slide.
   points and sliders can be dragged either way.
 ]
 
-`font-size` is the applet's type, counted in points of the slide, the way
-`width` and `height` are. It therefore grows with the slide instead of staying
-at its physical size on a projector.
+`font-size` sets the applet's font size, counted in points of the slide, the
+way `width` and `height` are. It therefore grows with the slide instead of
+staying at its physical size on a projector.
 
-The default is 20 rather than GeoGebra's 16. Measured on rendered pictures, the
-axis numbers are then 0.71 as tall as the slide's body text; at 16 they are
-0.62. The first reads as a subordinate label, the second as an afterthought.
+The default is 17 rather than GeoGebra's 16. Measured on rendered pictures, the
+axis numbers then stand about two thirds as tall as the slide's body text: a
+label you can read from the back row without it taking the slide away from the
+text.
 
 #warning[
-  GeoGebra snaps the size to steps. Measured, it jumps between 20 and 21: the
-  axis numbers go from 0.71 to 1.12 of the body text and are then as large as
-  it is. Setting a value in between therefore need not give you a step in
+  GeoGebra snaps the size to steps: measured, neighbouring values often fall on
+  the same height. A value in between therefore need not give you a step in
   between.
 ]
 
@@ -2173,17 +2157,14 @@ screen pixels.
 
 For most embeds the runtime spans the frame in points of the slide and then
 enlarges it with `zoom`. An applet is exempt and gets real screen pixels
-instead. The reason is measured: Safari counts that zoom twice for GeoGebra, a
-canvas buffer of 1400 points at a width of 253, which is zoom times zoom times
-pixel density. The applet drew too small, and correcting its size instead
-moved the place where it could be hit: it then drew correctly but believed
-itself 704 points wide while being shown 424 wide, and a point could only be
-grabbed by clicking far to the right of it.
+instead: measured in Safari, the usual zoom math left the applet's clickable
+points visibly offset from what was drawn, because GeoGebra applies its own
+zoom on top.
 
-That every window still shows the same crop therefore does not hang on the
-pixel count but on the range. The applet sets that from the box in slide
-points the first time, at GeoGebra's 50 points per unit; after that `ggb-view`
-decides, and a change of size leaves the range where it is.
+What keeps every window showing the same crop is not the pixel count but the
+range. The applet sets the range from the box, in slide points, the first
+time it appears, at GeoGebra's 50 points per unit; after that `ggb-view`
+decides, and resizing the box leaves the range where it is.
 
 The applet takes its pixel size from the frame, not from a number written at
 compile time. `width: 100%` cannot be a number before the slide has been laid
@@ -2207,10 +2188,10 @@ works it out for itself. Creating, deleting or renaming sends the whole
 construction instead, and panning and zooming travel too.
 
 #tip[
-  Measured: a point on a half circle reported four states per frame while being
-  dragged, the point, both segments and the angle. The three dependent ones are
-  not merely redundant. Their XML redefines them on the other side, and that
-  wipes away the trace the dragged point had just left behind.
+  Measured: dragging a point on a half circle sent four states per frame — the
+  point, both dependent segments and the angle. All four are necessary:
+  redefining only the point would wipe out the trace it had just left behind
+  on the other side.
 ]
 
 Only what a hand has touched is reported. An animation that runs on both sides
@@ -2232,9 +2213,9 @@ keyboard anyway: without a toolbar and without an algebra input, no key changes
 anything in the construction.
 
 #info[
-  Should that ever change, with a toolbar shown for instance, a change made
-  with the keyboard travels along: the window in which mirroring is awake opens
-  on a key as it does on a press.
+  Should that ever change — with a toolbar shown, for instance — a
+  keyboard-driven change would sync too: the same mirroring channel that opens
+  on a press opens on a keystroke as well.
 ]
 
 #tip[
@@ -2258,7 +2239,7 @@ sliders.
 == Whose applet this is
 
 This package does not ship GeoGebra. It puts a frame on the slide, and what
-runs inside it the browser fetches when it shows the page, from `codebase`,
+runs inside it the browser fetches when it shows the page — from `codebase`,
 `https://www.geogebra.org/apps/` by default.
 
 Three things follow, and they are worth knowing before the talk:
@@ -2312,8 +2293,8 @@ per glyph, `"block"` moves the whole thing as one rectangle.
 ]
 
 Whatever stands #emph[above] the flight's destination on the target slide
-stays above it while it flies. Source order decides, at rest and in motion
-alike: what is written after the `morph` lies on top of it, what comes before
+stays above it while it flies. Source order decides this, both at rest and in
+motion: what is written after the `morph` lies on top of it, what comes before
 lies below. A caption sitting on the finished picture therefore does not have
 to wait until the picture has landed.
 
@@ -2337,18 +2318,18 @@ without complaint, so pinning one troublesome pair costs nothing elsewhere.
 the slide takes longer than a fade-in. `auto` falls back to the presentation's
 value.
 
-A morph is present from the first step, and that holds at both ends of a chain,
-because paging back swaps the roles. The one exception is the *first* link:
-there no flight arrives, so it may be delayed. The package checks at compile
-time that the preceding slide really carries no morph of that name, and says so
-when it does.
+A morph is present from the first step — true at both ends of a chain, since
+paging back swaps the roles. The one exception is the *first* link: no flight
+arrives there, so it may be delayed. The package checks at compile time that
+the preceding slide really carries no morph of that name, and reports it when
+it does.
 
 == Where the magic move stops
 
-Two names may be equal on the *target* slide. The runtime looks the source up
-by name but iterates over the targets, so two targets sharing a name both start
-from the same place and the glyph visibly splits in two. That is occasionally
-what you want and more often a surprise.
+Two names may repeat on the *target* slide. Because the runtime looks up the
+source by name but walks through every target, two targets sharing a name both
+start from the same place, and the glyph visibly splits in two. Occasionally
+that is what you want; more often it is a surprise.
 
 #warning[
   A morph carries its own typesetting. A tracked element is typeset a second
@@ -2448,19 +2429,19 @@ in the same place and a number typed by hand jumps there.
 Click an embedded frame and it holds the focus. From then on every key lands
 inside it, the window around it hears nothing, and the talk stops paging.
 
-The keys the talk uses are therefore handed back to it out of any frame this
-window may read into. Three conditions keep that honest: the embedded document
-must not have taken the key already, the key must be one the talk actually
-uses, and what was typed into must not be a text field, or an `n` typed into a
-form would open a second window.
+The talk's own keys are therefore handed back to it out of any frame this
+window reads into — under three conditions: the embedded document has not
+already taken the key, the key is one the talk actually uses, and the focused
+element is not a text field. Otherwise an `n` typed into a form would open a
+second window.
 
 #tip[
   Measured on a GeoGebra applet before deciding this. Focus sits on its
-  canvas, it sees all seventeen keys that were tried, it calls
-  `preventDefault` on none of them, and it changes nothing in the
-  construction: without a toolbar and without an algebra input it has no use
-  for the keyboard at all. A document that does want a key takes it in the
-  ordinary way, by preventing the default, and then it keeps it.
+  canvas, and it sees all seventeen keys that were tried, but calls
+  `preventDefault` on none of them and changes nothing in the construction:
+  without a toolbar and without an algebra input it has no use for the
+  keyboard at all. A document that does want a key takes it in the ordinary
+  way, by preventing the default, and then keeps it.
 ]
 
 Everything outside that set stays with the frame. `Delete` is the example: it
@@ -2472,12 +2453,12 @@ A tap pages, in the same two halves as a click. A swipe pages in the natural
 direction: the finger pushes the slide out to the left, so the next one comes.
 
 #info[
-  The tap deliberately does *not* hang off the click. iOS Safari only builds a
-  click out of a touch when the element it hits strikes it as clickable, which
-  is to say a link, a button or something with a click listener of its own. A
-  slide is none of those, and on an iPhone tapping therefore did nothing at
-  all, while the same spot paged in Chrome. An emulated phone does not show
-  this, because Chrome always builds the click.
+  The tap deliberately does *not* hang off the click. iOS Safari only
+  synthesizes a click from a touch when the element looks clickable — a link,
+  a button, something with a click listener of its own. A slide is none of
+  those: on an iPhone, tapping did nothing at all, while the same spot paged
+  in Chrome. An emulated phone in devtools does not show this, because Chrome
+  always synthesizes the click.
 ]
 
 Vertical swipes and two fingers are left to the browser: one is scrolling and
@@ -2757,10 +2738,10 @@ and the handout to write on, without a second version to keep in step.
 
 The PDF run without further arguments gives one page per slide, in the size of
 the canvas. Every element that moves in the browser stands there in its final
-state: what is revealed is there, and of several versions in one place the last
-one stands. What belongs to the motion alone, the notes, the transitions, the
-jobs for embedded elements, are state changes without output and fall away by
-themselves.
+state: what is revealed is there, and where several versions share one place,
+the last one stands. What belongs to the motion alone — the notes, the
+transitions, the jobs for embedded elements — are state changes without
+output, and they fall away by themselves.
 
 == The handout
 
@@ -2777,8 +2758,8 @@ cannot differ from what stood on the canvas.
 Beside or below each slide stands its note; where a slide has none, ruled lines
 take its place. Which of the two depends on the count. A 16:9 slide beside a
 column of notes is wide and low, and at up to two slides per page most of the
-portrait page would stay empty. Up to two the notes therefore stand *below* and
-the slide takes the full width; from three on they stand *beside*.
+portrait page would otherwise stay empty. So up to two, notes stand *below*
+and the slide takes the full width; from three on, they stand *beside*.
 
 == What the paper leaves out — and what to plan for
 
@@ -2939,11 +2920,11 @@ A theme is a plain dictionary, so `+` is all it takes:
 ```]
 
 `theme(...)` builds one from scratch. Its colours are `paper`, `ink`, `strong`,
-`accent`, `muted`, `surface` and `border`; `header` is `"band"`, `"plain"` or
-`"run"`, `footer` is `"fraction"`, `"number"`, `"center"` or `"none"`,
-`progress` is `"bar"`, `"top"`, `"tick"` or `"none"`, and `box` is `"bar"` or
-`"label"`. `title-slide` and `section` are functions, because those two are
-whole pictures rather than variations on one another.
+`accent`, `muted`, `surface` and `border`. `header` takes `"band"`, `"plain"`
+or `"run"`; `footer` takes `"fraction"`, `"number"`, `"center"` or `"none"`;
+`progress` takes `"bar"`, `"top"`, `"tick"` or `"none"`; `box` takes `"bar"` or
+`"label"`. `title-slide` and `section` are functions instead -- those two are
+whole pictures, not variations on one theme.
 
 #tip[
   A typo in one of those four words does not quietly do nothing. The package
@@ -3005,12 +2986,9 @@ and a measured one rather than an oversight.
   `rule-fill`. Whether they follow is up to the theme. All five bundled ones
   let them follow -- either as a function of the palette,
   `title-fill: p => p.strong`, or as `none`, which means the accent and
-  follows with it. Both changed type for that: reading `themes.X.title-fill`
-  used to give a colour and now gives a function, and `rule-fill` gives `none`
-  where it gave the accent. Writing them, `themes.X + (title-fill: red)`, is
-  unchanged. A theme of your own that names a fixed colour there keeps it
-  under every palette. That is deliberate: a colour someone named out loud is
-  not swapped behind their back.
+  follows with it. A theme of your own that names a fixed colour there keeps
+  it under every palette. That is deliberate: a colour someone named out loud
+  is not swapped behind their back.
 ]
 
 == The colours of a theme
@@ -3039,7 +3017,7 @@ differently:
     )
   },
   source: ```typ
-  #import "@schule/typstage:0.1.0": themes
+  #import "@preview/typstage:0.1.0": themes
   #themes.night.accent      // the theme's signal colour, as a colour
   ```,
   width: 12cm,
@@ -3103,10 +3081,8 @@ In the argument notation it is an argument of `slide`:
 
 == The contrast contract
 
-The bundled palettes are measured before they ship. The arithmetic is real
-WCAG 2 contrast: each channel linearised, from those the relative luminance
-$0.2126 R + 0.7152 G + 0.0722 B$, and from two luminances the ratio
-$(L_"light" + 0.05) \/ (L_"dark" + 0.05)$. Seven pairs are checked:
+The bundled palettes are measured before they ship, against the standard WCAG
+2 contrast ratio. Seven pairs are checked:
 
 #table(
   columns: (auto, auto, 1fr),
@@ -3128,10 +3104,9 @@ whatever the deck's palette says, and its overtime digits are set in the
 accent. The five bundled palettes measure 6.16 (`light`), 3.66 (`mono`), 4.83
 (`textbook`), 4.69 (`parchment`) and 5.41 (`dark`) against it.
 
-Every one of the five palettes is checked, and its inverted form with it, by an
-assertion in `src/palettes.typ` that runs when the package is loaded. A colour
-moved there that breaks the contract stops the build and names the number it
-missed.
+Every one of the five palettes is checked automatically, and its inverted form
+with it. A colour moved there that breaks the contract stops the build and
+names the number it missed.
 
 #warning[
   *The contract holds only the bundled palettes.* A palette of your own faces
@@ -3181,13 +3156,12 @@ Anyone who wants the numbers met lays the matching palette over the theme:
   1.96 to 1, far under the 4.5 that body text wants. That is why the package
   measures with `contrast` and recolours nothing on its own.
 
-  The one exception lives in the theme rather than in the palette, and it is a
-  measurement too. Where a theme sets `strong` as *text*, the heading in
-  `themes.lesson`, the section title in `themes.plain`, it picks between
-  `strong` and `ink` by measured contrast against the ground, because one
-  colour cannot be a dark band and text on a dark ground at the same time.
-  Where the colour named first suffices, and it does for all five themes in
-  their own colours, that is the one that stays.
+  The one exception lives in the theme, not the palette, and it is measured
+  too. Where a theme uses `strong` as *text* -- the heading in
+  `themes.lesson`, the section title in `themes.plain` -- it picks between
+  `strong` and `ink` by contrast against the ground, since one colour cannot
+  serve as both a dark band and text on a dark ground. All five bundled
+  themes pass with the colour named first, so that is the one that stays.
 ]
 
 == The canvas
@@ -3391,8 +3365,8 @@ fixed size and whatever reaches past it is cut away.
 #fit(wrap: false, my-table)
 ```)
 
-`wrap: false` because the block is a table. Everything that lays itself out in
-columns wants to be measured as it stands; the reason follows two paragraphs
+`wrap: false` because the block is a table: anything that lays itself out in
+columns wants to be measured as it stands. That is covered two paragraphs
 down, and it is the one setting worth knowing before the first use.
 
 `fit` measures the block against the place it stands in and scales it
@@ -3400,8 +3374,7 @@ geometrically, so the proportions are kept and no factor is given by hand.
 Measured on a table of 9 columns and 22 data rows: the body of a slide in the
 `plain` theme is 777.89 pt wide and 364.61 pt tall, the table measures
 572.09 pt #sym.times 571.60 pt and is therefore 207 pt too tall. `fit` works
-out 63.8 % and sets it 364.6 pt tall. The same in the HTML and in the PDF,
-because the arithmetic happens at compile time.
+out 63.8 % and sets it 364.6 pt tall -- identically in the HTML and the PDF.
 
 *Width first, then smaller.* The block is offered the full width before it is
 measured. A paragraph or a list then wraps into the space instead of shrinking,
@@ -3449,12 +3422,10 @@ scaling: a `card` around a bare `block(height: 1fr)` behaves the same. Give
   *No reveal inside a `fit`.* Two things do not survive being measured. A
   `pause` is found by walking the slide body, and a fitted block is a closure
   that walk cannot enter: measured on a slide carrying two pauses, the step
-  count fell from three to one, and nothing said so. And a measured block has
-  no height to reckon against -- the width is the one a wrapping fit hands in,
-  but the height comes back unbounded, and that is the axis on which a tracked
-  element resolves its size and reserves the room for its marker. Measured: an
-  `anim` inside a fit was not scaled at all and ran off the bottom of the
-  slide.
+  count fell from three to one, and nothing said so. A measured block also
+  gets no bounded height to reckon against, so a tracked element inside one
+  cannot reserve room for its marker: measured, an `anim` inside a `fit` was
+  not scaled at all and ran off the bottom of the slide.
 
   `fit` therefore stops with a message that names the thing, for `pause`,
   `anim`, `stagger`, `alternatives`, `morph`, `tiles`, `video`, `embed`,
@@ -3469,11 +3440,10 @@ scaling: a `card` around a bare `block(height: 1fr)` behaves the same. Give
   ```
 ]
 
-`speaker-note` and `bridge-job` are allowed inside a fit. They settle no
-geometry, and a `measure` commits no state, so both were measured to arrive
-exactly once. The other direction is the one that does not work: a note made
-only of a `fit` carries no text and therefore reaches neither the presenter
-view nor the handout. `speaker-note` refuses that with a message.
+`speaker-note` and `bridge-job` are allowed inside a `fit` -- both were
+measured to arrive exactly once. The other direction does not work: a note
+made only of a `fit` carries no text, so it reaches neither the presenter view
+nor the handout. `speaker-note` refuses that with a message.
 
 The arithmetic is taken from mosaic, which took it from Touying 0.7.4; Touying
 credits the work on it to Andreas Kröpelin (Polylux PR #91) and to ntjess.
@@ -3515,25 +3485,16 @@ error: assertion failed: typstage: 2 slides run over the room the body has. …
 Shorten the slide, split it, or put the block that does not fit into fit(). …
 ```)
 
-*Why the step says "at the earliest".* A slide is exactly as tall on step one
-as on step five: every tracked element holds its full room with `hide()` from
-the start, so whether the body fits is a question about the slide, not about
-the step. What changes with the step is only what is *drawn*. An `anim` hanging
-over the bottom edge is invisible until its step, and only then is there
-something to see.
-
-The step is worked out from the reveals: everything that only arrives after
-step k is invisible there, and if the overrun is larger than all of it put
-together, something is hanging over the edge on step k already. That is a lower
-bound and not an exact answer, because the sum counts the reveals and nothing
-else -- the gaps between them, block spacing, a `v()`, count in the body's
-height and in no reveal. Measured: a 350pt box, a `v(100pt)` and an
-`anim(at: 4)` below it are reported from step 1, while the overrun only reaches
-the screen on step 4. Where the thing that overruns is itself a reveal and
-nothing empty stands above it, the step is exact: `anim(at: 3)` is reported
-from step 3. *The slide is named correctly either way*, and that is the part to
-act on. On paper no step is named at all, because every step stands on the page
-at once; in the records that shows as `step: 0`.
+*Why the step says "at the earliest".* A slide is the same height on every
+step -- only what is *drawn* changes, not the room reserved for it. The step
+named in a finding is therefore a lower bound, worked out from what has
+already appeared by then, and not always exact: measured, a 350pt box, a
+`v(100pt)` and an `anim(at: 4)` below it are reported from step 1, though the
+overrun only reaches the screen on step 4. Where the thing that overruns is
+itself a reveal, the step is exact: `anim(at: 3)` is reported from step 3.
+*The slide is named correctly either way*, and that is the part to act on. On
+paper no step is named at all, because every step stands on the page at once;
+in the records that shows as `step: 0`.
 
 The records are read with `typst eval`, and for that the deck has to be on
 `overflow: "record"` -- on `"error"` this command stops with the error instead:
@@ -3621,9 +3582,8 @@ branch measures; on paper a single still image stands there, and a still image
 does not travel.
 
 #info[
-  *What the check cannot do, and why.* It sees the case, it does not fix it.
-  `measure` answers with a size and never with *where* the ink lies inside it
-  -- so there is no offset to compute and nothing to shift.
+  *What the check cannot do.* It flags the scene; it does not fix it -- there
+  is no offset it can compute and shift for you.
 
   *What it misses.* The drawing itself is measured, without a width to reckon
   against. Anything setting itself to `100%` then measures the same for every
@@ -3660,7 +3620,7 @@ video -- carries a fixed Typst label. That makes it addressable from outside:
 an ordinary `show` rule is enough, no theme key, no fork.
 
 #show-code[```typ
-#import "@schule/typstage:0.1.0": *
+#import "@preview/typstage:0.1.0": *
 
 #show label("ts-slide-header-band"): set rect(fill: rgb("#4c1d95"))
 #show label("ts-slide-title"): set text(fill: rgb("#fde047"), style: "italic")
@@ -3673,11 +3633,11 @@ an ordinary `show` rule is enough, no theme key, no fork.
 Two kinds of rule cover all of it, split by what they touch: the *surfaces* --
 grounds, bands, hairlines, bars, boxes -- take `set rect(..)`,
 `set block(..)`, `set circle(..)` or `set line(..)`; the *type* takes
-`set text(..)` with size, weight, colour, font and tracking. Both act at
-compile time, so the result is the same in the HTML and in the PDF -- with one
-exception: what is only drawn in the PDF, because the browser puts the real
-`<video>` or `<iframe>` in its place, is only seen there. That concerns the
-six labels under /Media and handout/.
+`set text(..)` with size, weight, colour, font and tracking. Both apply
+identically in the HTML and in the PDF, with one exception: what is only
+drawn in the PDF -- because the browser puts the real `<video>` or `<iframe>`
+in its place -- is only seen there. That concerns the six labels under /Media
+and handout/.
 
 #warning[
   *For the surfaces* the short form works and the long one does not:
@@ -3737,16 +3697,17 @@ whole body; for labels, the place before `#show: presentation` is the one.
 
 === What a label rule changes and what it does not
 
-Reachable is whatever the package does *not* write as an explicit argument.
-For type that is everything; for the surfaces it is `fill` and `stroke`
-everywhere and `radius` wherever the shape has a rounding, because those are
-exactly what typstage gives its shapes through a `set` rule.
+Reachable is whatever the package does *not* set explicitly. For type, that
+is everything. For surfaces, it is `fill` and `stroke` everywhere, and
+`radius` wherever the shape has rounding -- exactly what typstage gives its
+shapes through a `set` rule.
 
 `width` stands there as an argument everywhere and is therefore nowhere
 reachable. `height` has three exceptions worth naming: `ts-card`,
 `ts-card-bar` and `ts-callout` get their height as `auto`, and `auto` is not a
-value that could beat a rule. Not in a row of equal height either: measured on
-the painted surface itself, `height:` reaches them there as well.
+value that could beat a rule. That holds even in a row of equal height:
+measured directly on the painted surface, a `height:` rule still reaches
+them.
 
 #show-code[```typ
 #show label("ts-card"): set block(height: 150pt)   // works
@@ -3935,10 +3896,9 @@ A section slide has no subtitle in typstage, so the list names none.
   `themes.lesson` none on its section slide. Which theme draws what stands in
   the /What it is/ column.
 
-  *The invisible markers carry none.* Every moving element paints a
-  transparent rectangle around itself so the browser can find it again, and
-  `pin` does the same for a single glyph. That is machinery, not a shape;
-  both stay nameless.
+  *The invisible markers carry none.* Every moving element paints an
+  invisible marker rectangle around itself, and `pin` does the same for a
+  single glyph -- machinery, not a shape, so neither carries a label.
 
   *Typst labels and the runtime's CSS classes are two separate namespaces.*
   `.ts-slide` in the stylesheet is a slide's `<section>` in the browser,
@@ -3953,9 +3913,9 @@ A section slide has no subtitle in typstage, so the list names none.
 == `info()`: what the deck knows about itself
 
 Labels say how a shape the package builds looks. They do not say what stands
-in it. The slide number, the fraction, the chapter in the running header --
-those numbers were the package's own, and anyone who wanted a footer of their
-own had to count along. `info()` hands them out:
+in it -- the slide number, the fraction, the chapter in the running header. A
+hand-built footer used to have to count those itself. `info()` hands them
+out:
 
 #show-code[```typ
 #context {
@@ -4176,7 +4136,7 @@ On a deck with `slide-level: 3` and two parts of two sub-sections each, the
 first part covers slides 1 to 3, its two sub-sections 1 to 2 and 3 to 3, and
 the second part 4 to 7.
 
-`first`, `last` and `count` are **transitive**: a depth-1 section counts the
+`first`, `last` and `count` are *transitive*: a depth-1 section counts the
 slides of its sub-sections too. A bar that counted only the immediate ones
 would show a zero for every top-level heading. A section with nothing under it
 has `none` for `first` and `last`, and `0` for `count`.
@@ -4215,8 +4175,7 @@ result is one file that runs from a memory stick, from a download folder, from
 an email attachment. No server, no network, nothing loaded afterwards.
 
 The seventeen example decks measure between 0.61 and 3.44 MB that way, and the
-runtime is about 324 KB of it. What makes up the rest are the slides themselves:
-the tour holds 134 SVGs and 5830 glyph references.
+runtime is about 324 KB of it.
 
 == Beside the file
 
@@ -4239,7 +4198,7 @@ there.
   How much `"split"` saves depends on how large the deck itself is -- and on a
   small one it is the majority. Measured gzipped: runtime and stylesheet
   together 108 kB; the smallest example deck weighs 173 kB, so the runtime is
-  **63 % of what goes over the wire**. For `theme-plain` it is 33 %, for `tour`
+  *63 % of what goes over the wire*. For `theme-plain` it is 33 %, for `tour`
   21 %.
 
   With `"split"` the *first* deck pays those 108 kB and every further one in the
@@ -4257,9 +4216,8 @@ lie next to the HTML, and a deck that works locally will show an empty frame
 once uploaded without it.
 
 A deck opened from `file://` behaves like one from a server, including the
-speaker view, because everything here goes over `postMessage`. That is the one
-place where this package is easier than the browser-native tools, which need a
-server for exactly that reason.
+speaker view. That is the one place where this package is easier than the
+browser-native tools, which require a server for that same feature.
 
 = What it cannot do
 
@@ -4282,9 +4240,9 @@ keyboard, and the full key list is one press of `?` away. Colour and contrast
 are the theme's and therefore yours to set, and `themes.plain` is the darkest
 of the five on white.
 
-A viewer who has asked their system for less motion gets a deck that listens:
-`prefers-reduced-motion` is read at run time, and the chapter above says in
-detail what stays and what goes. Where you want the same for everyone,
+A viewer who has asked their system for less motion gets less motion:
+`prefers-reduced-motion` is read at run time, and the chapter above details
+what stays and what goes. Where you want the same for everyone,
 `transition: "none"` and `enter: "none"` say it in the source.
 
 #warning[
@@ -4296,17 +4254,17 @@ detail what stays and what goes. Where you want the same for everyone,
 == A tracked element with no area
 
 A tracked element gets its place in the browser from a rectangle Typst paints
-around it in a signal colour. Where the content has no area, that rectangle
-would have none either, and a sprite given a viewport of zero scales everything
-inside it to nothing: the element stands in the page, with its path and its
-colour, and cannot be seen. On paper it stands.
+around it in a signal colour. Where the content has no area, so does that
+rectangle: a sprite given a viewport of zero scales everything inside it to
+nothing. The element is still in the page, with its path and its colour, and
+cannot be seen. On paper it stands.
 
-Two shapes reach that point and both are handled. A vertical rule measures no
-width; like every arealess element it is given a font height of air on each
-side, and the air is placed, so the flow is unchanged. A `place` measures
-nothing in either direction and is not in the flow at all; it moves outward on
-its own and the tracked element moves inside it, so the marker stands where the
-content stands and the flow keeps its zero.
+Two shapes reach that point, and both are already handled. A vertical rule
+measures no width; like every arealess element, it is given a font height of
+air on each side, and that air is placed, so the flow is unchanged. A `place`
+measures nothing in either direction and is not in the flow at all: it moves
+outward on its own, the tracked element moves inside it, and the marker ends up
+where the content is while the flow keeps its zero.
 
 // check: folie
 #show-code(```typ
@@ -4314,9 +4272,9 @@ content stands and the flow keeps its zero.
                    rect(width: 20pt, height: 20pt)))
 ```)
 
-What is left over is said rather than lost. A marker with no width or no
-height, and a marker nested deeper than four tracked elements, which is as far
-as the placing goes: each goes to the browser's console once per element.
+What is left over is reported, not lost. A marker with no width, a marker with
+no height, and a marker nested deeper than four tracked elements (as far as the
+placing goes) each print once per element to the browser's console.
 
 #show-code[```
 typstage: the tracked element 3 on slide 4 has a marker with no width.
@@ -4326,10 +4284,10 @@ its path and its colour, and cannot be seen. On paper it stands. Put it
 in a box with a size, or give the element a width.
 ```]
 
-The question cannot be asked at compile time, for the same reason as with
-`draw`: whether content has an area is not a question the document can answer.
-Only in the browser is the rectangle there to be measured. The package's own
-check run reads these messages along.
+The check cannot run at compile time, for the same reason as with `draw`:
+whether content has an area is not a question the document can answer. Only in
+the browser is the rectangle there to be measured. The package's own check run
+reads these console messages too.
 
 == Reach
 
@@ -4343,9 +4301,9 @@ from before about 2023 is likely to fall short somewhere.
 
 == Size and speed
 
-A slide is typeset as often as it has states, and every tracked element is
-typeset once more in a frame of its own. Compile time therefore grows with
-steps, not with slides, and `flipbook` grows with frames.
+A slide is typeset once per state, and every tracked element is typeset once
+more, in a frame of its own. Compile time therefore grows with steps, not with
+slides, and `flipbook` grows with frames.
 
 The largest of the seventeen example decks compiles in a few seconds and
 weighs 3.44 MB. A deck of a hundred slides with a flip book on each would be a
@@ -4355,8 +4313,8 @@ different matter, and the honest advice is to measure rather than to guess.
 
 The traps, in roughly the order they are usually hit.
 
-/ No HTML export: `--features html` is missing. The export is experimental on
-  Typst's side, not on this package's.
+/ No HTML export: `--features html` is missing. The export is experimental in
+  Typst itself, not in this package.
 / The deck is empty but for the title: the two notations have been mixed. In
   the heading form you write `= …` and `== …`; in the argument form you call
   `slide(...)` and hand the slides to `presentation`. A `slide(...)` call
@@ -4366,15 +4324,14 @@ The traps, in roughly the order they are usually hit.
   no slide. Where it carries text, compiling stops there and says so — see
   "Text that belongs to no slide". Where it carries none (an image, say), it
   still goes without a word.
-/ The slide titles ignore a `#set heading`: it stands after the show rule and
-  they have left the region it encloses. `style:` reaches them.
+/ The slide titles ignore a `#set heading`: the `#set` rule comes after the
+  show rule, so the titles have already left the region it encloses.
+  `style:` reaches them.
 / `#pause` does nothing: it is inside a grid cell or a table. `#pause` splits
   the body, and there is nothing there to split. `anim` goes anywhere content
   goes.
 / A transition or an entrance is refused by name: the package does not know
-  that effect. It used to fall back to a cross-fade without a word, which made
-  a typo look like a deck that simply moved differently than intended. The
-  message names every effect there is.
+  that effect. The message names every effect there is.
 / The bullets beside an applet start at step three: an `embed` uses no step,
   but something before it did. Count the reveals, not the elements.
 / A flying equation has the wrong font: typography set with `#set` does not
@@ -4384,9 +4341,10 @@ The traps, in roughly the order they are usually hit.
   announced itself with `postMessage({typstage: 1, ready: 1})`.
 / An applet frame stays empty: the applet is loaded from `geogebra.org`, so
   without a network there is nothing to load. Point `codebase` at a local copy.
-/ A `ggb-run` command has no effect: it is one of GeoGebra's scripting
-  commands, which `evalCommand` does not accept. `ggb-set`, `ggb-style`,
-  `ggb-show` and `ggb-hide` reach the interface that can do it.
+/ A `ggb-run` command has no effect: `ggb-run` is one of GeoGebra's scripting
+  commands, and `evalCommand` does not accept those. Use `ggb-set`,
+  `ggb-style`, `ggb-show` or `ggb-hide` instead: they call the interface that
+  does accept them.
 / The build stops naming two applets: two frames on one slide and no `target`.
   Nothing is guessed here on purpose.
 / The applet's colours change after paging back: GeoGebra hands out the next
@@ -4410,9 +4368,9 @@ The traps, in roughly the order they are usually hit.
 
 = API reference
 
-Generated from the comments in the source files. The order follows the build of
-the package: first the presentation and its slides, then the building blocks,
-then media and the bridge, and last the measurements and colours.
+Generated from the comments in the source files. The order follows the build
+of the package: presentation and slides first, then the building blocks, then
+media and the bridge, and last the measurements and colours.
 
 == The presentation
 
