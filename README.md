@@ -331,9 +331,9 @@ runtime once for all of them. The manual has the numbers.
 - **The slides are SVG outlines, not text.** Glyphs go into the file as paths,
   so nothing in the browser is selectable, searchable or reflowable, screen
   readers see nothing, and the file grows with the deck. Measured: the little
-  deck above weighs 211 kB, the seventeen example decks between 0.61 and
-  3.44 MB, and `tour` holds 134 SVG trees with 5830 glyph references across
-  24 slides. In exchange no font has to load and the layout cannot drift.
+  deck above weighs 211 kB, the seventeen example decks between 0.59 and
+  4.28 MB, and `tour` holds 242 SVG trees with 9996 glyph references across
+  37 slides. In exchange no font has to load and the layout cannot drift.
 - **`#pause` is read at the top level of a slide body only.** Inside a grid
   cell, a table or a figure it is not seen, so reach for `anim` there.
 - **GeoGebra is not in the box.** A typeset applet is an empty frame that
@@ -354,6 +354,51 @@ runtime once for all of them. The manual has the numbers.
   in a deck is never checked and never recoloured, and no colour is inferred
   from the lightness of another: a muted sage such as `#aebdb3` reads as
   "light" to a luminance rule, yet white on it measures 1.96 to 1.
+
+## Next to the other slide packages
+
+A hundred and seventeen packages on Universe carry the `presentation`
+category, and most of them are themes on top of two frameworks. The line that
+matters runs somewhere else: through the output.
+
+**Nearly all of them write a PDF.** [Touying][t] is the large one,
+[Polylux][p] the older one, and [Mosaic][m], [Slydekit][s] and a long tail of
+others sit beside them. There a reveal is another page — a slide with three
+steps becomes three pages that differ in what is drawn on them. Nothing moves
+between two pages, and nothing has to: the file opens wherever a PDF opens,
+outlives a dead network and needs no browser. Between them Touying and Polylux
+carry years of work and most of those hundred community themes. That is a real
+advantage this package does not have and will not have soon.
+
+**Three of us write HTML.** [touying-exporter][te] renders one SVG per slide
+and packages them with impress.js. [slipst][sl] follows slipshow: instead of
+slides of a fixed size, "slips" that scroll from top to bottom — a genuinely
+different idea of what a presentation is, and one that frees the talk from a
+slide's dimensions. typstage keeps the fixed slide, writes one SVG per *state*
+rather than per slide, and moves between them.
+
+That last part is the difference worth naming. Typst's layout goes into the
+file to the point and the browser only moves it; a name given to two shapes
+makes one fly to the other, glyph by glyph, between slides and within one. I
+know of no other Typst package that does that, and I would rather be told than
+go on believing it. Counting in steps instead of pages is also what lets one
+source give the HTML talk, a PDF with one page per slide, and a handout, in a
+single run.
+
+The price stands in the list above: an experimental export, files measured in
+megabytes, outlines instead of text, five themes rather than a hundred, and a
+version number that begins with a zero. Mosaic is at 0.0.1 and this at 0.1.0;
+neither of us has earned a habit yet.
+
+`examples/` holds three decks adapted from Mosaic's own, so that part of the
+comparison is on the screen rather than in my prose.
+
+[t]: https://typst.app/universe/package/touying
+[p]: https://typst.app/universe/package/polylux
+[m]: https://typst.app/universe/package/mosaic
+[s]: https://typst.app/universe/package/slydekit
+[te]: https://github.com/touying-typ/touying-exporter
+[sl]: https://typst.app/universe/package/slipst
 
 ## Documentation
 

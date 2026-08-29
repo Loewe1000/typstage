@@ -54,6 +54,23 @@ animieren im Browser und tun das gut, aber der Satz ist HTMLs, nicht Typsts.
 Hier ist der Satz auf den Punkt Typsts, und der Preis dafür steht auf der
 übernächsten Seite.
 
+Dazwischen steht eine dritte Gruppe, die dem hier am nächsten kommt:
+Typst-Pakete, die selbst HTML schreiben. `touying-exporter` setzt je Folie ein
+SVG und packt die Folge mit `impress.js` in eine Datei. `slipst` folgt
+slipshow und gibt die Folie fester Größe ganz auf -- dort scrollen "slips" von
+oben nach unten, was den Vortrag von den Maßen einer Folie befreit und eine
+andere Vorstellung davon ist, was eine Präsentation sei. Dieses Paket behält
+die feste Folie und schreibt je #emph[Zustand] ein SVG statt je Folie. Erst
+das trägt die vierte Stufe: zwischen zwei Zuständen ist etwas da, das fliegen
+kann.
+
+Auf der PDF-Seite lohnt neben `touying` und `polylux` ein Blick auf `mosaic`
+und `slydekit`. `mosaic` schneidet die Folien aus denselben Überschriften wie
+dieses Paket -- `=` für den Abschnitt, `==` für die Folie -- und steht bei
+0.0.1, wo dieses bei 0.1.0 steht; eine Gewohnheit hat keines von beiden. Drei
+der siebzehn Beispieldecks sind Adaptionen von mosaic-Decks, damit dieser
+Vergleich auf dem Bildschirm steht und nicht in meiner Prosa.
+
 #warning[
   Der Preis, damit er vor der ersten Zeile Code steht und nicht nach dem ersten
   Vortrag: Die Folien sind SVG-Umrisse. Nichts im Browser ist auswählbar oder
@@ -5208,7 +5225,7 @@ Element noch einmal in einem eigenen Rahmen. Die Übersetzungszeit wächst also
 mit den Schritten, nicht mit den Folien, und `flipbook` wächst mit den Bildern.
 
 Das größte der siebzehn Beispieldecks übersetzt in wenigen Sekunden und wiegt
-3,44 MB. Ein Deck aus hundert Folien mit je einem Daumenkino wäre eine andere
+4,28 MB. Ein Deck aus hundert Folien mit je einem Daumenkino wäre eine andere
 Sache, und der ehrliche Rat lautet: messen statt schätzen.
 
 = Wenn nichts passiert

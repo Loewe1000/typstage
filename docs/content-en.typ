@@ -47,6 +47,23 @@ The other comparison group is `reveal.js`, `Slidev` and `Quarto`. They animate
 in the browser and do it well, but the layout is HTML's, not Typst's. Here the
 layout is Typst's to the point, and the price follows below.
 
+Between the two stands a third group, and it is the nearest neighbour: Typst
+packages that write HTML themselves. `touying-exporter` renders one SVG per
+slide and packages the sequence with `impress.js` into one file. `slipst`
+follows slipshow and gives up the fixed-size slide altogether -- there "slips"
+scroll from top to bottom, which frees the talk from a slide's dimensions and
+is a different idea of what a presentation is. This package keeps the fixed
+slide and writes one SVG per #emph[state] rather than per slide. That is what
+carries the fourth kind of motion: between two states there is something left
+that can fly.
+
+On the PDF side, `mosaic` and `slydekit` are worth a look beside `touying` and
+`polylux`. `mosaic` cuts its slides from the same headings this package does
+-- `=` for the section, `==` for the slide -- and stands at 0.0.1 where this
+stands at 0.1.0; neither of us has earned a habit yet. Three of the seventeen
+example decks are adaptations of mosaic decks, so that part of the comparison
+is on the screen rather than in my prose.
+
 #warning[
   The price, stated here before the first line of code rather than after the
   first talk: the slides are SVG outlines. Nothing in the browser is
@@ -4294,8 +4311,8 @@ The aim of this chapter: getting the talk to where it will be given.
 result is one file that runs from a memory stick, from a download folder, from
 an email attachment. No server, no network, nothing loaded afterwards.
 
-The seventeen example decks measure between 0.61 and 3.44 MB that way, and the
-runtime is about 324 KB of it.
+The seventeen example decks measure between 0.59 and 4.28 MB that way, and the
+runtime is about 331 KB of it.
 
 == Beside the file
 
@@ -4426,7 +4443,7 @@ more, in a frame of its own. Compile time therefore grows with steps, not with
 slides, and `flipbook` grows with frames.
 
 The largest of the seventeen example decks compiles in a few seconds and
-weighs 3.44 MB. A deck of a hundred slides with a flip book on each would be a
+weighs 4.28 MB. A deck of a hundred slides with a flip book on each would be a
 different matter, and the honest advice is to measure rather than to guess.
 
 = When nothing happens
