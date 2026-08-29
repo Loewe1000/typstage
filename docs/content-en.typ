@@ -637,7 +637,7 @@ otherwise the package says so.
 
 === Entrance and exit
 
-`enter` and `exit` name the motion. Eleven of them exist:
+`enter` and `exit` name the motion. Twelve of them exist:
 
 #table(
   columns: (auto, 1fr),
@@ -774,7 +774,15 @@ the next replaces it:
 
 The box is as large as the largest version, so nothing around it jumps. `align`
 decides where the smaller ones sit inside it, `start` on which step the first
-appears, and `inline: true` puts the whole thing in a line of text.
+appears, and `inline: true` puts the whole thing in a line of text. `enter`,
+`duration` and `easing` describe the change from one version to the next.
+
+`morph: true` is the other way, and for the example above it is the better
+one: the versions fly into one another instead of replacing one another. They
+stand in the same place, so the flight has no distance -- what you see is the
+glyphs rearranging themselves where they stand, which is what a rewritten
+formula does. With `morph` there is no entrance, so `enter:` and `easing:` are
+refused; `duration:` becomes the time of the flight.
 
 == A drawing that grows
 
@@ -1199,8 +1207,9 @@ put.
 === How far it goes
 
 `margin` says how much of the slide stays around the detail, measured on the
-*unzoomed* slide. The camera fits detail plus margin into the frame, and the
-tighter direction decides, so the whole of it is seen.
+*unzoomed* slide (16 pt by default). The camera fits detail plus margin into
+the frame, and the tighter direction decides, so the whole of it is seen. The
+move takes `duration` milliseconds, 700 by default, and `easing` bends it.
 
 // check: folie
 #show-code[```typ
@@ -1650,11 +1659,8 @@ rather than a window inside a window. `background` sets that colour.
 #geogebra(height: 240pt, seamless: false)   // with GeoGebra's own frame
 ```]
 
-#tip[
-  `background: auto` takes the package's paper white and not the theme's. On a
-  theme whose paper is pure white, an applet left to `auto` therefore sits as a
-  faintly grey box. `background: themes.lesson.paper` is the way to say it.
-]
+`background: auto`, the default, takes the paper of the theme in force, so an
+applet on a dark theme comes up dark.
 
 #warning[
   The viewport cannot be dragged by hand, and that is the default: whoever
@@ -1823,9 +1829,10 @@ Both take a name of your own instead of `true`. That is needed only where the
 flight carries on past the edge of the slide.
 
 #warning[
-  A morph has no entrance and no dimmed rest, so `enter:`, `easing:` and `dim:`
-  are refused rather than quietly dropped. `duration:` is read, and it is the
-  time of the flight.
+  A morph has no entrance, so both refuse `enter:` and `easing:` rather than
+  quietly dropping them, and `stagger` also refuses `dim:` -- an argument
+  `alternatives` does not have. `duration:` is read, and it is the time of the
+  flight.
 ]
 
 == How the pairing works
@@ -2002,6 +2009,33 @@ and one wide one:
 Below that the tool row: pen or pointer, the four colours, the key help. The
 state of the hall -- `black`, `frozen`, `no talk window` -- stands at the top
 right inside the slide tile.
+
+The keys of the view, which `?` also shows inside it:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Key*], [*What it does*]),
+  [`←` `→`], [one step; `Home` `End` to the first or the last],
+  [`↑` `↓`], [scroll the note],
+  [`o`], [the overview],
+  [`b`], [black out the hall],
+  [`e`], [freeze the hall on this step],
+  [`n`], [bring the talk window forward],
+  [`t`], [the class clock, full screen in the hall],
+  [`⇧t`], [the same clock, but on the slide instead of over it],
+  [`⇧←` `⇧→`], [one minute less or more, while a clock runs],
+  [`d`], [the target duration in minutes],
+  [`r`], [set the elapsed time back to zero],
+  [`m`], [switch between pen and pointer],
+  [`c`], [the next drawing colour],
+  [`z`], [take back the last stroke],
+  [`x`], [clear the strokes on this slide],
+  [`l`], [light or dark, for the view alone],
+  [`+` `-`], [the size of the note],
+  [`f`], [full screen],
+  [`?`], [this table, in the view],
+)
 
 === What the view should show
 
@@ -2343,7 +2377,7 @@ The aim: a deck that looks like yours and not like the package.
 
 Five ship with the package, made for different occasions rather than one slide
 in five colours. The title sits in a bar, free, or under a line; the progress
-indicator grows, travels, or is missing.
+indicator grows, or is missing.
 
 #table(
   columns: (auto, 1fr),
@@ -2507,10 +2541,10 @@ In the argument notation it is an argument of `slide`:
   The `#invert` marker is found wherever the body can be walked: nested in a
   block, an align, a table cell or a grid, in the slide's own heading, and
   behind `#set` and `#show` rules. It is *not* found where the content is
-  handed to a closure -- inside `context`, `fit`, `anim`, `card` or
-  `alternatives` -- and there the slide is left as it is, without a word. Where
-  you need one of those five, write `slide(invert: true)`, which never depends
-  on the walk.
+  handed to a closure. Measured, that is nine: `context`, `fit`, `anim`,
+  `card`, `callout`, `tiles`, `cue`, `stagger` and `alternatives`. There the
+  slide is left as it is, without a word. Where you need one of those, write
+  `slide(invert: true)`, which never depends on the walk.
 ]
 
 == The contrast contract
@@ -2801,7 +2835,8 @@ the slide. Give `height:` explicitly inside a card.
 
   `fit` therefore stops with a message that names the thing, for `pause`,
   `anim`, `stagger`, `alternatives`, `morph`, `tiles`, `video`, `embed`,
-  `flipbook`, `build` and `scene` -- in both outputs, and also when the fit
+  `flipbook`, `build`, `scene`, `camera` and `cue` -- in both outputs, and
+  also when the fit
   sits inside another fit. Put the fit *inside* the reveal rather than around
   it:
 

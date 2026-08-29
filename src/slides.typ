@@ -231,7 +231,7 @@
   stand.data.at("structure", default: ())
 }
 
-/// A note for the presenter view (key `s`).
+/// A note for the presenter view, which `n` opens in a second window.
 ///
 /// The note has to carry text: the presenter view transports it as a string,
 /// so a note made purely of layout would arrive nowhere. That is refused with

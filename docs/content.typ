@@ -207,6 +207,33 @@ Darunter die Werkzeugzeile: Stift oder Zeiger, die vier Farben, die
 Tastenbelegung. Der Zustand des Saals -- `schwarz`, `eingefroren`, `kein
 Vortragsfenster` -- steht oben rechts in der Folienkachel.
 
+Die Tasten der Ansicht, die `?` dort auch selbst zeigt:
+
+#table(
+  columns: (auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Taste*], [*Wirkung*]),
+  [`←` `→`], [ein Schritt; `Pos1` `Ende` zum ersten oder letzten],
+  [`↑` `↓`], [die Notiz rollen],
+  [`o`], [die Übersicht],
+  [`b`], [den Saal schwarz schalten],
+  [`e`], [das Bild im Saal auf diesem Schritt einfrieren],
+  [`n`], [das Vortragsfenster nach vorn holen],
+  [`t`], [die Klassenuhr, im Saal als Vollbild],
+  [`⇧t`], [dieselbe Uhr, aber auf der Folie statt über ihr],
+  [`⇧←` `⇧→`], [eine Minute weniger oder mehr, während eine Uhr läuft],
+  [`d`], [die Zieldauer in Minuten],
+  [`r`], [den Stundenzähler auf null zurücksetzen],
+  [`m`], [zwischen Stift und Zeiger umschalten],
+  [`c`], [die nächste Zeichenfarbe],
+  [`z`], [den letzten Strich zurücknehmen],
+  [`x`], [die Striche dieser Folie löschen],
+  [`l`], [hell oder dunkel, nur für die Ansicht],
+  [`+` `-`], [die Größe der Notiz],
+  [`f`], [Vollbild],
+  [`?`], [diese Tabelle, in der Ansicht],
+)
+
 Auf der laufenden Folie lässt sich zeichnen; die Striche erscheinen auf der
 Leinwand und bleiben an ihrer Folie kleben. `x` löscht sie, `z` nimmt den
 letzten Strich zurück, `c` wechselt die Farbe. `b` schaltet den Saal schwarz,
@@ -787,6 +814,12 @@ ein Stück eingeblendet; mehrere Argumente staffeln beliebige Blöcke:
   [`spacing`], [Abstand zwischen den Zeilen (Vorgabe 0.65 em)],
   [`dim`], [`true` lässt jeden Punkt gedämpft stehenbleiben, sobald der
             nächste kommt (Vorgabe `false`)],
+  [`duration`], [Dauer je Eintritt in Millisekunden],
+  [`easing`], [Kurve je Eintritt],
+  [`morph`], [statt einzublenden, wächst jede Zeile aus der vorherigen heraus
+    -- der Weg für eine Umformungskette. `enter`, `easing` und `dim` weist er
+    dann zurück],
+  [`name`], [Name der Gruppe, nötig nur für `stagger-layer`],
 )
 
 `dim: true` macht aus der Staffelung einen Gang: Der Punkt, über den gerade
@@ -996,7 +1029,7 @@ weich aus. `easing` ändert sie für ein einzelnes Element -- ein Ergebnis darf
 ]
 ```]
 
-`easing` steht bei `anim`, `stagger`, `alternatives` und `build`. Es gilt für
+`easing` steht bei `anim`, `stagger`, `alternatives`, `build` und `camera`. Es gilt für
 Auftritt, Abgang und Dimmen des Elements -- nicht für den Folienwechsel und
 nicht für den Flug eines Magic Move.
 
@@ -1117,7 +1150,12 @@ bis zum Folienende. Auf Papier steht nur die letzte, im selben Kasten.
   [`align`], [Ausrichtung im gemeinsamen Kasten (Vorgabe `top + left`)],
   [`enter`], [Bewegung beim Wechsel (Vorgabe `"fade"`)],
   [`duration`], [Dauer des Wechsels in Millisekunden],
+  [`easing`], [Kurve des Wechsels],
   [`inline`], [hält die Fassungen in der laufenden Zeile],
+  [`morph`], [die Fassungen fliegen ineinander, statt sich abzulösen. Sie
+    stehen an derselben Stelle, der Flug hat also keine Strecke -- zu sehen
+    ist, wie die Zeichen sich an Ort und Stelle umordnen. Das ist der Weg für
+    eine Formel, die umgeschrieben wird.],
 )
 
 #tip[
@@ -1601,9 +1639,10 @@ gehört nicht zur Folie.
 === Wie weit sie fährt
 
 `margin` sagt, wie viel von der Folie um das Detail herum stehenbleibt,
-gemessen an der *unverfahrenen* Folie. Die Kamera passt Detail plus Rand ins
-Bild; die engere der beiden Richtungen entscheidet, damit das Ganze zu sehen
-ist und nicht seine Mitte.
+gemessen an der *unverfahrenen* Folie (Vorgabe 16 pt). Die Kamera passt Detail
+plus Rand ins Bild; die engere der beiden Richtungen entscheidet, damit das
+Ganze zu sehen ist und nicht seine Mitte. Die Fahrt dauert `duration`
+Millisekunden, vorgegeben 700.
 
 // check: folie
 #show-code[```typ
@@ -2401,9 +2440,10 @@ Beide nehmen statt `true` auch einen Namen. Nötig ist er nur, wenn der Flug
 über den Folienrand hinaus weitergehen soll.
 
 #warning[
-  Ein Morph blendet nicht ein und ruht nicht gedimmt. `enter:`, `easing:` und
-  `dim:` weisen die beiden deshalb zurück, statt sie stillschweigend
-  fallenzulassen. Gelesen wird `duration:`, und das ist die Dauer des Fluges.
+  Ein Morph blendet nicht ein. `enter:` und `easing:` weisen beide deshalb
+  zurück, statt sie stillschweigend fallenzulassen; `stagger` zusätzlich
+  `dim:`, das `alternatives` gar nicht kennt. Gelesen wird `duration:`, und
+  das ist die Dauer des Fluges.
 ]
 
 == Eine Umformungskette
@@ -2626,8 +2666,9 @@ etwas, weicht der eingestellte Übergang einer schlichten Überblendung. Für ei
 Umformungskette heißt das: nichts eigens abschalten.
 
 #warning[
-  Eine unbekannte Art bricht den Bau nicht ab, sondern wird im Browser zur
-  Überblendung. Ein Tippfehler in `#transition("iirs")` fällt also erst auf,
+  `#transition("iirs")` und `presentation(transition: "iirs")` brechen ab und
+  zählen die gültigen Namen auf. `slide(transition: (kind: "iirs"))` nicht --
+  dort geht das Wörterbuch ungeprüft durch, und der Tippfehler fällt erst auf,
   wenn nichts geschieht.
 ]
 
@@ -2934,8 +2975,9 @@ sind mitgeliefert, `theme:` wählt eines aus:
   table.header([*Theme*], [*Anlass*]),
   [`themes.default`], [Der Vortrag im hellen Saal: dunkler Titelbalken,
     wachsender Fortschrittsbalken. Die Vorgabe.],
-  [`themes.lesson`], [Der Unterricht: größere Schrift, kein Balken, statt einer
-    Fußzeile ein laufender Kopf mit Nummer und Abschnitt, wie im Schulbuch.],
+  [`themes.lesson`], [Der Unterricht: eine Farbe je Sache, kein Balken, statt
+    einer Fußzeile ein laufender Kopf mit Nummer und Abschnitt, wie im
+    Schulbuch.],
   [`themes.night`], [Der abgedunkelte Raum: tiefer Grund, heller Satz, kühler
     Akzent, Fortschritt als dünne Linie oben.],
   [`themes.plain`], [So wenig wie möglich: keine Fläche, kein Fortschritt,
@@ -2945,8 +2987,8 @@ sind mitgeliefert, `theme:` wählt eines aus:
 )
 
 Die fünf sind nicht dieselbe Folie in fünf Farben: Der Titel steht mal in einem
-Balken, mal frei, mal unter einer Linie, und der Fortschritt wächst, wandert
-oder fehlt ganz.
+Balken, mal frei, mal unter einer Linie, und der Fortschritt wächst oder fehlt
+ganz.
 
 == Ein Theme abwandeln
 
@@ -3131,8 +3173,9 @@ In der Argumentschreibweise ist es ein Argument von `slide`:
   Die Marke `#invert` wird überall gefunden, wo der Rumpf begehbar ist -- auch
   in Blöcken, Tabellenzellen, Rastern, in der Folienüberschrift und hinter
   `#set`- und `#show`-Regeln. *Nicht* gefunden wird sie, wo der Inhalt an eine
-  Closure geht: in `context`, `fit`, `anim`, `card` und `alternatives`. Die
-  Folie bleibt dann ohne Meldung stehen; wer eine davon braucht, schreibt
+  Closure geht. Nachgemessen sind das neun: `context`, `fit`, `anim`, `card`,
+  `callout`, `tiles`, `cue`, `stagger` und `alternatives`. Die Folie bleibt
+  dann ohne Meldung stehen; wer eine davon braucht, schreibt
   `slide(invert: true)`.
 ]
 
@@ -3454,8 +3497,9 @@ gibt man `height:` deshalb ausdrücklich an.
   Größe festmacht.
 
   `fit` bricht deshalb ab, mit Namen und Rat, für `pause`, `anim`, `stagger`,
-  `alternatives`, `morph`, `tiles`, `video`, `embed`, `flipbook`, `build`
-  und `scene` -- auch dann, wenn das `fit` in einem anderen `fit` steckt. Der
+  `alternatives`, `morph`, `tiles`, `video`, `embed`, `flipbook`, `build`,
+  `scene`, `camera` und `cue` -- auch dann, wenn das `fit` in einem anderen
+  `fit` steckt. Der
   Ausweg: das `fit` *innerhalb* der Einblendung setzen, nicht darum herum:
 
   // check: folie pre=tabelle fehlt=2 weil=cannot_stand_inside_fit

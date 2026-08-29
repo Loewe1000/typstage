@@ -419,7 +419,8 @@
 /// its size and reserves the room for its marker: measured, an `anim` inside a
 /// fit was not scaled at all and ran off the bottom of the slide. `fit` stops
 /// with a message instead, for `pause`, `anim`, `stagger`, `alternatives`,
-/// `morph`, `tiles`, `video`, `embed` and `flipbook`, in both outputs. Fit
+/// `morph`, `tiles`, `video`, `embed`, `flipbook`, `build`, `scene`, `camera`
+/// and `cue`, in both outputs. Fit
 /// what stands inside the reveal rather than fitting around it:
 /// `anim(fit(my-table))` works, `fit(anim(my-table))` is the error.
 ///

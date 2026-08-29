@@ -870,8 +870,9 @@
 /// part of a drawing. What there is, is the drawing itself, as often as one
 /// wants it.
 ///
-/// `draw` is called once per step and is handed a question. It is called
-/// `ab` here -- "from" -- because it says exactly what `at:` says elsewhere.
+/// `draw` is called once per step and is handed a question. The examples
+/// call it `from`, because it says exactly what `at:` says elsewhere; the name
+/// is the deck's own, since it is the lambda's parameter.
 ///
 /// - `from(k, value)` gives `value` back once the k-th piece is due, and
 ///   otherwise the same thing made of air: a colour with alpha 0, a stroke

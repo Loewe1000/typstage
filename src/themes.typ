@@ -553,7 +553,7 @@
 ///
 /// They are made for different occasions, not the same slide in five
 /// colors: the title sits sometimes in a bar, sometimes free, sometimes
-/// under a line; the progress indicator grows, travels, or is missing
+/// under a line; the progress indicator grows, or is missing
 /// entirely.
 #let themes = (
   // The talk in a bright hall. The look typstage has always had, and the
