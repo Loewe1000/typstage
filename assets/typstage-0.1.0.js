@@ -1250,6 +1250,52 @@
     return out;
   }
 
+  // Eine Kopie bekommt eigene Bezeichner.
+  //
+  // Ein Sprite traegt einen Beschnitt: `<g clip-path="url(#c…-ts40)">`, und die
+  // Form dazu steht in seinem eigenen `<defs>`. Eine Kopie bringt beides
+  // wortgleich mit -- und `url(#…)` loest auf das *erste* Vorkommen im
+  // Dokument auf, also auf das Original. Dessen Beschnitt steht im
+  // Koordinatensystem des Originals, und im Geist schnitt er alles weg.
+  //
+  // Gemessen am Bildflug des Greyscale-Decks: der Geist stand an der richtigen
+  // Stelle, in der richtigen Groesse, mit Deckkraft 1 und einem `<image>` mit
+  // gueltigem Kasten -- und malte nichts. Ein Bildvergleich mit und ohne
+  // Flugebene war zeichengleich. Nahm man den Beschnitt heraus, erschien das
+  // Bild. Betroffen ist jeder `match: "block"`, denn nur dort wird das ganze
+  // Sprite geklont; die Glyphenkopien bauen sich ein eigenes SVG.
+  var geistNr = 0;
+  function eigeneIds(wurzel) {
+    var karte = {};
+    wurzel.querySelectorAll("[id]").forEach(function (e) {
+      var alt = e.id;
+      var neu = alt + "-tsg" + (++geistNr);
+      karte[alt] = neu;
+      e.id = neu;
+    });
+    var namen = Object.keys(karte);
+    if (!namen.length) return;
+    var felder = ["clip-path", "mask", "filter", "fill", "stroke",
+                  "marker-start", "marker-mid", "marker-end"];
+    wurzel.querySelectorAll("*").forEach(function (e) {
+      felder.forEach(function (f) {
+        var v = e.getAttribute(f);
+        if (!v || v.indexOf("url(#") < 0) return;
+        namen.forEach(function (alt) {
+          v = v.split("url(#" + alt + ")").join("url(#" + karte[alt] + ")");
+        });
+        e.setAttribute(f, v);
+      });
+      // `use` zeigt ohne `url()` auf seine Vorlage.
+      ["href", "xlink:href"].forEach(function (f) {
+        var v = e.getAttribute(f);
+        if (!v || v.charAt(0) !== "#") return;
+        var ziel = karte[v.slice(1)];
+        if (ziel) e.setAttribute(f, "#" + ziel);
+      });
+    });
+  }
+
   function glyphGeist(g, stage, box) {
     var k = box || g.r;
     var w = g.node.ownerSVGElement;
@@ -1583,6 +1629,7 @@
         // 0 instead of 824 and 302.
         var kopie = function (was, kasten) {
           var k = was.cloneNode(true);
+          eigeneIds(k);
           k.className = "ts-ghost";
           k.removeAttribute("data-n");
           k.removeAttribute("data-at");
