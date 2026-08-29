@@ -1323,6 +1323,53 @@
 
   var CHROME = [].slice.call(document.querySelectorAll("#ts-chrome > .ts-chrome"));
 
+  // ── Die Fortschrittsleiste ───────────────────────────────────────────────
+  //
+  // Sie liegt nicht mehr im Chrome-Bild der Folie, sondern ist ein Element für
+  // das ganze Deck. Der Grund steht im CSS: zwei fertige Bilder können nur
+  // überblenden, ein Element kann wachsen -- und wachsen ist, was eine
+  // Fortschrittsleiste sagen soll.
+  //
+  // Der Anteil steht am Chrome der Folie (`data-anteil`) -- auch auf Titel-
+  // und Abschnittsfolien, wo er den Stand *bis dorthin* trägt. Ohne fehlt
+  // beim Zurückgehen der Weg: die Leiste zeigte dann noch den Stand der Folie,
+  // die man gerade verlassen hat.
+  var FORTSCHRITT = document.getElementById("ts-fortschritt");
+  var FORTSCHRITT_STAND = 0;
+  function fortschrittStellen(i, sofort) {
+    if (!FORTSCHRITT) return;
+    var c = CHROME[i];
+    if (!c) return;
+    // Eine Folie ohne Chrome ist eine Titel- oder Abschnittsfolie. Dort
+    // zeichnet das Theme nichts an den Rand, und die Leiste hat dort ebenso
+    // wenig zu suchen -- gemeldet aus einem echten Deck: sie stand plötzlich
+    // unter einer Abschnittsfolie, wo nie eine war. Sie geht also mit dem
+    // Chrome mit; ihr *Stand* wird trotzdem nachgeführt, damit sie beim
+    // Wiederauftauchen richtig steht.
+    var traegt = c.children.length > 0;
+    FORTSCHRITT.style.opacity = traegt ? "1" : "0";
+    var a = c.dataset.anteil;
+    if (a == null || a === "") return;
+    var anteil = Math.max(0, Math.min(1, parseFloat(a)));
+    if (anteil === FORTSCHRITT_STAND) return;
+    FORTSCHRITT_STAND = anteil;
+    // Unsichtbar wird nicht gefahren: was niemand sieht, braucht keine Zeit,
+    // und die Fahrt gehörte sonst der Folie danach.
+    if (sofort || !traegt) {
+      // Ein Sprung ist keine Fahrt. Wer über die Übersicht oder die Adresse
+      // springt, soll den Stand sehen und nicht eine Leiste, die hinterherläuft.
+      var alt = FORTSCHRITT.style.transition;
+      FORTSCHRITT.style.transition = "none";
+      FORTSCHRITT.style.transform = "scaleX(" + anteil + ")";
+      // Erzwungenes Neuberechnen, sonst fasst der Browser beide Schreibvorgänge
+      // zusammen und die Fahrt findet doch statt.
+      void FORTSCHRITT.offsetWidth;
+      FORTSCHRITT.style.transition = alt;
+    } else {
+      FORTSCHRITT.style.transform = "scaleX(" + anteil + ")";
+    }
+  }
+
   var flyTimers = [];
   // Elemente, die im Ruhezustand ueber dem Ziel eines Fluges stehen. Der Geist
   // liegt auf `#ts-fly`, sie liegen in der Folie -- zwei getrennte
@@ -4482,6 +4529,10 @@
     CHROME.forEach(function (c, i) {
       if (i === dst.slide) c.dataset.on = "1"; else delete c.dataset.on;
     });
+    // Die Leiste wandert nicht mit dem Chrome, sie wächst. `instant` ist der
+    // Sprung -- Übersicht, Pos1, Ende, Adresszeile --, und ein Sprung ist
+    // keine Fahrt.
+    fortschrittStellen(dst.slide, instant);
 
     SLIDES[dst.slide].querySelectorAll(".ts-el").forEach(function (el) {
       var d = +erbt(el, "duration") || CFG.duration;

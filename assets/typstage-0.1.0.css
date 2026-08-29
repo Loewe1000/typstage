@@ -48,6 +48,18 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
 /* As with the slide image: the SVG arrives at its point size and has to be
    fitted onto the stage, otherwise the foot sticks out below it. */
 .ts-chrome svg{width:100%!important;height:100%!important;display:block}
+/* The progress bar, drawn by the runtime and not by the theme.
+   It is one element for the whole deck, and its width changes: a bar that
+   grows says "you have got further", one that cross-fades says "here is a
+   new number". Scaled rather than resized, so the browser animates it on the
+   compositor and not in layout. Colour, height and edge come from the theme
+   as an inline style. */
+#ts-fortschritt{position:absolute;left:0;width:100%;z-index:4;
+  transform:scaleX(0);transform-origin:0 50%;pointer-events:none;opacity:0;
+  transition:transform .42s cubic-bezier(.22,1,.36,1),opacity .22s ease-out}
+/* Wer weniger Bewegung will, bekommt den Stand ohne die Fahrt dorthin. */
+@media (prefers-reduced-motion: reduce){#ts-fortschritt{transition:none}}
+
 /* The second chrome per slide exists only for the print view. */
 .ts-chromep{display:none}
 .ts-chromep svg{width:100%!important;height:100%!important;display:block}

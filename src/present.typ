@@ -3,7 +3,8 @@
 #import "config.typ": *
 #import "internal.typ": *
 #import "slides.typ": *
-#import "theme.typ": handout-body, slide-body, slide-chrome
+#import "theme.typ": (fortschritt-stil, handout-body, slide-body,
+                     slide-chrome)
 #import "themes.typ": mit-palette, theme-state, themes
 #import "palettes.typ": palette-pruefen
 #import "render.typ": *
@@ -823,7 +824,20 @@
       // the slides. What the chrome reads therefore has to be put back in
       // front of each of its frames, or all of them would draw the numbers of
       // the last slide.
-      chrome-teile.push(html.elem("div", attrs: (class: "ts-chrome"),
+      // Der Anteil dieser Folie am Ganzen, damit die Laufzeit die Leiste
+      // ziehen kann, statt zwei fertige Bilder überzublenden.
+      //
+      // Auch Titel- und Abschnittsfolien tragen ihn, obwohl sie nicht
+      // mitzählen. `slide.number` ist dort die letzte gezählte Folie davor --
+      // also genau der Stand, der bis hierher erreicht ist, und auf dem
+      // Deckblatt die Null. Die Leiste einfach stehenzulassen war falsch: wer
+      // von Folie acht auf die Abschnittsfolie davor zurückgeht, sähe sonst
+      // weiter den Stand von acht. Gemeldet aus einem echten Deck.
+      let anteil = if hier.data.slide.total > 0 {
+        str(here / hier.data.slide.total)
+      }
+      chrome-teile.push(html.elem("div",
+        attrs: (class: "ts-chrome", ..if anteil != none { ("data-anteil": anteil) }),
         if s.kind == "slide" {
           // The step is said out loud as well, even though the chrome prints
           // no step: chrome stands inside no reveal, so its step is the first
@@ -835,7 +849,7 @@
           deck-info.update(hier)
           step-here.update(())
           sprite-number.update(none)
-          html.frame(slide-chrome(geo, thema(s)))
+          html.frame(slide-chrome(geo, thema(s), fortschritt: false))
         } else { [] }))
       parts.push({
         slide-counter.step()
@@ -947,6 +961,24 @@
     html.elem("div", attrs: (id: "ts-stage"), {
       parts.join()
       html.elem("div", attrs: (id: "ts-chrome"), chrome-teile.join())
+      // Die Leiste selbst: ein Element für das ganze Deck, das seine Breite
+      // ändert. Das Theme sagt Farbe, Höhe und Lage; ob es überhaupt eine
+      // gibt, entscheidet es ebenfalls -- `fortschritt-stil` gibt `none`
+      // zurück, wo kein Balken gezeichnet wird, und dann steht hier nichts.
+      {
+        // Ein Deck ohne eine einzige Folie gibt es: das Handbuch zeigt
+        // `presentation()` an drei Stellen mit leerem Rumpf. `all.first()`
+        // warf dort "array is empty" und hielt den ganzen Bau an.
+        let fs = if all.len() > 0 { fortschritt-stil(geo, thema(all.first())) }
+        if fs != none {
+          html.elem("div", attrs: (
+            id: "ts-fortschritt",
+            style: "height:" + str(calc.round(fs.hoehe.pt(), digits: 2)) + "pt;"
+                 + "background:" + fs.farbe.to-hex() + ";"
+                 + (if fs.oben { "top:0" } else { "bottom:0" }),
+          ), [])
+        }
+      }
       html.elem("div", attrs: (id: "ts-fly"), [])
       // The ink layer, empty. Like the chrome layer it sits above the stage
       // and does not travel along on a slide change: what gets drawn on the

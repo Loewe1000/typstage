@@ -50,7 +50,26 @@
 /// `slide-chrome` draws it, `slide-body` has to place the title below it.
 #let lauf-hoehe(t, k) = if t.header == "run" { 27pt * k } else { 0pt }
 
-#let slide-chrome(geo, t) = context {
+/// Farbe, Höhe und Lage der Fortschrittsleiste -- oder `none`, wenn das Theme
+/// keine zeichnet.
+///
+/// Gebraucht von `present.typ`: im Browser zeichnet nicht mehr das Theme die
+/// Leiste, sondern die Laufzeit, damit sie beim Folienwechsel *wächst* statt
+/// überzublenden. Das Theme behält die Entscheidung, ob und wie sie aussieht;
+/// hier steht nur, was die Laufzeit dafür wissen muss.
+#let fortschritt-stil(geo, t) = {
+  if t.progress != "bar" and t.progress != "top" { return none }
+  (
+    farbe: sichtbar(t.paper, t.accent, t.strong, t.ink),
+    hoehe: 2.5pt * geo.scale,
+    oben: t.progress == "top",
+  )
+}
+
+/// `fortschritt: false` lässt die Leiste weg -- für die HTML-Ausgabe, wo die
+/// Laufzeit sie selbst zieht. Auf Papier und in der Druckansicht bleibt sie,
+/// wo sie war.
+#let slide-chrome(geo, t, fortschritt: true) = context {
   // Every number below comes out of `info()`, and that is the point of the
   // detour: the deck may call the same function, so a hand-built footer and
   // this one read the same dictionary and cannot disagree.
@@ -114,7 +133,10 @@
     // themes' own grounds this is the accent, byte for byte; it is the ground
     // an inverted slide lays underneath that this answers.
     let balken = sichtbar(t.paper, t.accent, t.strong, t.ink)
-    if t.progress == "bar" {
+    if not fortschritt and (t.progress == "bar" or t.progress == "top") {
+      // Nichts: die Laufzeit zieht sie. `tick` bleibt hier, der Reiter wandert
+      // ohnehin und würde als wachsender Balken falsch gelesen.
+    } else if t.progress == "bar" {
       place(bottom + left, {
         set rect(fill: balken, stroke: none)
         [#rect(width: 100% * n / total, height: 2.5pt * k) <ts-slide-progress>]
