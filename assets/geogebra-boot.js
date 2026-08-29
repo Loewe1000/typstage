@@ -175,6 +175,14 @@ function run(m){
    // The base carries the size it was taken at. If it brought a different
    // one back, the next `passe` has to see that, so the memory is cleared.
    breit=0;hoch=0;passe();
+   // Und die Schrift dazu. Der Sockel wird beim Laden aufgenommen, und da
+   // steht der Maßstab noch nicht fest -- er kommt erst mit der Maßmeldung
+   // des Kerns. Im Sockel steckt deshalb GeoGebras Vorgabe, und `setBase64`
+   // holt sie mit zurück: gemessen sprang die Schrift bei jedem Betreten der
+   // Folie auf 16 Bildschirmpunkte, während der Rahmen 1,52-fach groß stand.
+   // Wer danach das Fenster zoomte, schickte eine neue Maßmeldung, und dann
+   // saß sie wieder -- genau die Beobachtung, die das hier ausgelöst hat.
+   schriftSetzen(0);
    play(m.jobs,true);
    try{api.setRepaintingActive(true);}catch(e){}
    busy=false;var n=pending;pending=null;if(n)run(n);});
