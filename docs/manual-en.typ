@@ -18,6 +18,9 @@
 #set text(lang: "en")
 
 #show: docs.with(
+  // Das Zeichen statt des Namens im Kopf. Als SVG: Typst setzt die Schrift
+  // beim Ausgeben in Pfade um, es hängt also an keiner Schrift.
+  logo: image("../assets/logo.svg", height: 1.7em, alt: "typstage"),
   // Wie beim deutschen Handbuch, aber in einen eigenen Ordner: beide tragen
   // dieselben Kapitelnamen, und `geogebra.html` gaebe es sonst zweimal.
   split: true,

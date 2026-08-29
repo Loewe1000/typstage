@@ -68,7 +68,7 @@
   split: (1fr, 1fr), align: top,
   card(title: [What goes in])[
     One `.typ` file. Headings cut it into slides: `=` opens a section, `==` a
-    slide, `== #h(0pt)` a slide with no title bar.
+    slide, `==` a slide with no title bar.
   ],
   callout(title: [What comes out])[
     An animated talk as a single HTML file, a slide deck as PDF (one page per
@@ -322,7 +322,7 @@ reach for `anim`.
 
 #v(1fr)
 
-== #h(0pt)
+==
 
 // A morph and a moving stage would fight each other, so the runtime cross-fades
 // wherever a morph meets a slide change, whatever the transition says. The
@@ -363,7 +363,7 @@ and the wrong two find each other), the piece gets a name instead.
 
 #v(1fr)
 
-== #h(0pt)
+==
 
 #transition("cover")
 
@@ -1281,7 +1281,7 @@ and the wrong two find each other), the piece gets a name instead.
 
 #v(1fr)
 
-== #h(0pt)
+==
 
 // `#invert` is the heading notation's way of saying `slide(invert: true)`: a
 // marker, like `#pause`, because a heading carries no arguments. It is only
@@ -1304,7 +1304,16 @@ and the wrong two find each other), the piece gets a name instead.
 
 == Where to start
 
-#v(1fr)
+// Das Zeichen klein, als Quelle für den Flug auf die letzte Folie. Es steht
+// als SVG im Paket und ist von Typst gesetzt wie alles andere auch; die
+// Schrift ist beim Ausgeben in Pfade umgesetzt, es hängt also an keiner
+// installierten Schrift.
+#v(0.45fr)
+
+#align(center, morph(<zeichen>, match: "block",
+                     image("../assets/logo.svg", width: 128pt)))
+
+#v(0.35fr)
 
 #side-by-side(
   split: (1fr, 1fr), align: top,
@@ -1329,5 +1338,20 @@ and the wrong two find each other), the piece gets a name instead.
     group · `?` key help
   ]
 ], at: 2, enter: "rise")
+
+#v(1fr)
+
+==
+
+// Der letzte Beweis in eigener Sache: dasselbe Zeichen, eine Folie weiter,
+// groß. `match: "block"` -- ein Bild hat keine Glyphen, die man paaren
+// könnte, und paarweise gematcht würde ein Schwarm daraus statt einer
+// Bewegung.
+#transition("fade")
+
+#v(1fr)
+
+#align(center, morph(<zeichen>, match: "block",
+                     image("../assets/logo.svg", width: 520pt)))
 
 #v(1fr)

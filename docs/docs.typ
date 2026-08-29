@@ -15,6 +15,9 @@
 
 #show: docs.with(
   toml: pkg,
+  // Das Zeichen statt des Namens im Kopf. Als SVG: Typst setzt die Schrift
+  // beim Ausgeben in Pfade um, es hängt also an keiner Schrift.
+  logo: image("../assets/logo.svg", height: 1.7em, alt: "typstage"),
   // Eine Seite je Kapitel statt einer Seite von 1,06 MB. Das Inhaltsverzeichnis
   // steht auf jeder davon vollstaendig da und fuehrt ueber die Dateigrenzen
   // hinweg; `alles.html` bleibt als eine Seite daneben liegen, fuer Strg-F und

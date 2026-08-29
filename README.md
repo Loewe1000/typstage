@@ -1,3 +1,5 @@
+<img src="assets/logo.svg" alt="typstage" width="360">
+
 # typstage
 
 **Animated HTML presentations from a single Typst file, and the slide set and
@@ -75,14 +77,14 @@ This file compiles, as it stands, with both commands above.
 
 #align(center, morph(<pythagoras>, $a^2 + b^2$))
 
-== #h(0pt)
+==
 
 #place(center + horizon,
        morph(<pythagoras>, text(size: 2.6em)[$a^2 + b^2 = c^2$]))
 ```
 
-`=` opens a section slide, `==` a slide, `== #h(0pt)` a slide without a title
-band. `stagger` reveals a list point by point, and the same
+`=` opens a section slide and `==` a slide; a bare `==` with nothing after it
+is a slide without a title band. `stagger` reveals a list point by point, and the same
 `morph(<pythagoras>)` on two slides makes the formula fly from the one place to
 the other, growing on the way. Nothing carries a step number: `at` is `auto` by
 default and means *the next free step*, so consecutive reveals number

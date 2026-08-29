@@ -38,6 +38,11 @@ disciplines = ["education", "mathematics"]
 # Unterschied zwischen 0,97 MiB und 0,66 MiB.
 # `CONTRIBUTING.md` steht beim `.github`: es sagt, wie man am Paket arbeitet,
 # nicht wie man es benutzt. Wer das sucht, ist im Repo, nicht im Buendel.
+# `assets/logo.*` steht beim README und nicht beim Paket: gebraucht wird das
+# Zeichen von README, Handbuch und Rundgang, und die sind alle drei
+# ausgeschlossen. Ausgeschlossene Dateien bleiben auf Universe erreichbar, das
+# README zeigt es also weiterhin.
 exclude = ["example.typ", "examples", "docs", ".github", ".gitignore",
            "CONTRIBUTING.md",
-           "assets/handout.png", "assets/slide.png", "assets/themes.png"]
+           "assets/handout.png", "assets/slide.png", "assets/themes.png",
+           "assets/logo.typ", "assets/logo.svg", "assets/logo.png"]
