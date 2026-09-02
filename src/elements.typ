@@ -196,10 +196,6 @@
 #let alternatives(
   ..variants,
   start: auto,
-  // `start`, not `left`: the edge the writing begins at, which is the right
-  // one in a deck that reads from the right. A deck that never says `align:`
-  // gets the corner it always got. `std.`, because `start` is the step
-  // number one line up.
   align: top + std.start,
   enter: "fade",
   duration: auto,
@@ -207,6 +203,12 @@
   inline: false,
   morph: false,
 ) = {
+  // `align` defaults to `std.start`, not `left`: the edge the writing begins
+  // at, which is the right one in a deck that reads from the right. A deck
+  // that never says `align:` gets the corner it always got. `std.`, because
+  // `start` is the parameter one line up. Said here and not beside the
+  // parameter: the manual's parser reads the signature character by
+  // character, and a comma or colon in a comment there breaks the manual.
   // `..variants` would otherwise swallow any named argument without a word: a
   // typo in `start:` would leave the versions on the steps they happened to
   // land on, and nothing would say why.
