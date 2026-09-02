@@ -4,6 +4,42 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), the numbering
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Decks that read from the right.** `#set text(lang: "fa")` before the show
+  rule, or `#set text(dir: rtl)`, turns the whole slide around. The slide body
+  was placed with `place(top + left, …)`, and that alignment beat the `start`
+  every paragraph resolves for itself: every line sat on the left while the
+  lists and columns around it were already mirrored. The body now hands down
+  `start`; the title in its band, the bar beside a `callout`, the footer
+  number, the progress bar and the title and section slides mirror along; the
+  moving parts carry the direction into their own frames; and a `callout`
+  without a title reads its caption in Arabic, Persian or Hebrew. Reported on
+  the forum from a Persian deck. Decks that read from the left come out byte
+  for byte as before.
+- **`build(at: …)`.** A drawing whose stages do not come one click after
+  another. `at: (1, 9)` gives two stages, the second from step 9 on, and the
+  first holds until then. Until now a stage lay fixed on `start + i`, so a
+  picture due on step 9 needed `steps: 9`, and the eight identical stages
+  before it were all typeset. Measured on a slide with three diagrams that are
+  discussed one after another: ten sprites instead of 22, and the file 2.98 MB
+  instead of 3.45 MB. `from` keeps counting stages rather than steps, because
+  under `start: auto` a deck cannot know its own step numbers. Reported with a
+  worked case; `steps` and `start` are refused beside `at`, rather than
+  silently losing to it.
+
+### Fixed
+
+- **A centred `anim` on paper.** `anim(align(center, …))` inside a grid column
+  was centred in the browser and flush left in the PDF, from one source. The
+  HTML branch widens content that wants to centre itself to the room it has;
+  the paper branch handed the body back untouched, and an `align` measured as
+  narrow as its own ink had nothing left to centre in. Both branches now ask
+  the same question. Reported from a deck whose three columns each carried a
+  verdict under a diagram.
+
 ## [0.1.0] — unreleased
 
 First release.

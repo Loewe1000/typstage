@@ -912,6 +912,29 @@
 /// cursor along by `steps`, the way `stagger` and `alternatives` do. A
 /// number sets the first step itself.
 ///
+/// `at` is for a drawing whose stages do *not* come one click after another.
+/// It names, per stage, the step it first stands on, and each stage then holds
+/// until the next one is due:
+///
+/// ```typ
+/// #build(from => diagram(from), at: (1, 9))
+/// ```
+///
+/// Two stages, the second from step 9 on. Whatever happens on the slide in
+/// between -- a camera move, a verdict, a second diagram -- costs nothing
+/// here. Without `at` the same picture needs `steps: 9`, and stages 1 to 8 are
+/// pixel for pixel the same drawing and are all typeset regardless. Measured
+/// on a slide carrying three diagrams that are discussed one after another:
+/// 22 sprites against 10, and the file 3.45 MB against 2.98 MB.
+///
+/// The list's length is the number of stages, so `steps` and `start` have
+/// nothing left to say and are refused rather than quietly ignored.
+///
+/// `from` keeps counting *stages* and not steps: `from(2, …)` is "from the
+/// second picture on", and where that picture stands is said by `at` alone.
+/// It could not be otherwise: under `start: auto` nobody knows while writing
+/// which step the drawing will land on.
+///
 /// Exactly one stage is drawn at a time, and that is not a saving but the only
 /// arrangement that yields the picture that would stand there if the drawing
 /// were set once. Ink adds up: three layers of the same lilaq diagram against
@@ -926,12 +949,35 @@
 ///
 /// Under `prefers-reduced-motion: reduce` nothing changes: the stages fade,
 /// they do not travel, and what would fall away is a motion that is not there.
-#let build(draw, steps: 2, start: auto, enter: "fade", duration: auto,
-           easing: auto) = {
+#let build(draw, steps: auto, start: auto, at: auto, enter: "fade",
+           duration: auto, easing: auto) = {
   assert(type(draw) == function, message:
     "typstage: build() wants a function that paints the drawing as its first "
     + "argument, not a finished drawing. It is called once per stage and is "
     + "handed the question from(k) while it paints.")
+  // Streng steigend, und das ist keine Pedanterie: eine Stufe hält bis zur
+  // nächsten, zwei gleiche Zahlen ergäben also eine Stufe ohne einen einzigen
+  // Schritt, und eine fallende eine, die unter ihrer Vorgängerin läge. Beides
+  // sähe man dem Deck nicht an, man sähe nur ein Bild, das nie kommt.
+  assert(at == auto or (type(at) == array and at.len() >= 1
+    and at.all(x => type(x) == int and x >= 1)
+    and range(1, at.len()).all(i => at.at(i) > at.at(i - 1))), message:
+    "typstage: build(at: …) is one step number per stage, rising: at: (1, 4, 9) "
+    + "puts three stages on steps 1, 4 and 9, and each holds until the next one "
+    + "is due. Steps count from 1. Not " + repr(at))
+  // Wortlos das eine über das andere zu stellen wäre die Auskunft, die man am
+  // spätesten bekommt: die Zeichnung stünde woanders, und im Quelltext stünde
+  // die Zahl, die es nicht war.
+  assert(at == auto or steps == auto, message:
+    "typstage: build(at: …) already says how many stages there are, one per "
+    + "entry. steps: says it a second time and would have to agree. Drop it.")
+  assert(at == auto or start == auto, message:
+    "typstage: build(at: …) already says where the first stage stands, in its "
+    + "first entry. Drop start.")
+  // Die Vorgabe steht hier und nicht in der Signatur, damit `steps: auto` von
+  // "nicht gesagt" zu unterscheiden ist und die Prüfung darüber greifen kann.
+  // Ein Deck ohne beides bekommt die 2 wie eh und je.
+  let steps = if at != auto { at.len() } else if steps == auto { 2 } else { steps }
   assert(type(steps) == int and steps >= 1, message:
     "typstage: build(steps: …) is the number of stages and counts from 1. "
     + "A 0 would mean a drawing without a single stage.")
@@ -999,13 +1045,16 @@
       calc.max(..frei.map(m => m.width), ..gedeckelt.map(m => m.width))
     }
     let hoehe = calc.max(..frei.map(m => m.height), ..gedeckelt.map(m => m.height))
-    let erster = if start == auto { step-cursor.get().first() + 1 } else { start }
+    let erster = if at != auto { at.first() }
+                 else if start == auto { step-cursor.get().first() + 1 }
+                 else { start }
     if not html-output.get() {
       // Nur die letzte Stufe, und der Zähler läuft trotzdem. Genau wie
       // `alternatives`: auf Papier steht die Zeichnung fertig da.
       return {
         if im-deck() {
-          step-cursor.update(c => calc.max(c, erster + steps - 1))
+          step-cursor.update(c => calc.max(c,
+            if at != auto { at.last() } else { erster + steps - 1 }))
         }
         // Ohne `place`, anders als im Zweig darunter: hier steht nur eine
         // Stufe, es ist also nichts zu stapeln, und `place` nähme einem
@@ -1021,7 +1070,13 @@
         // Jede Stufe hält genau ihren Schritt, die letzte den Rest der Folie.
         // Eine Stufe, die bliebe, läge unter der nächsten und würde ein
         // zweites Mal gemalt.
-        let bereich = if i == letzte { str(erster + i) + "-" } else { str(erster + i) }
+        let bereich = if at != auto {
+          // Von ihrem eigenen Schritt bis kurz vor den der nächsten Stufe.
+          // Ohne `at` ist dieser Bereich genau einen Schritt lang, und dann
+          // steht dort die Zahl allein -- Byte für Byte das Deck von gestern.
+          if i == letzte { str(at.at(i)) + "-" }
+          else { str(at.at(i)) + "-" + str(at.at(i + 1) - 1) }
+        } else if i == letzte { str(erster + i) + "-" } else { str(erster + i) }
         place(top + std.start, anim-kern(s, at: bereich, enter: enter,
                                     exit: "hold", duration: duration,
                                     easing: takt))

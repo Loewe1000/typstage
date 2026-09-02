@@ -1281,7 +1281,25 @@
   // On paper there is no overlay, no marker and no reveal, so the body simply
   // stands where Typst puts it. The counting above still has to reach the
   // document, hence the joined return rather than a bare one.
-  if not html-output.get() { return zaehlen + body }
+  //
+  // One thing it does not get for free, and the HTML branch has taken care of
+  // it further down all along: content that centres itself measures as narrow
+  // as its own ink, so an `align(center, …)` inside a `stack` in a grid column
+  // has nothing left to centre in and stays at the start edge. In the browser
+  // the sprite is handed `room` for exactly that reason; here the same
+  // question goes to the same function, and the answer is a block of the full
+  // width. Reported from a deck whose three columns each carried a centred
+  // verdict under a diagram: centred in the browser, flush left in the PDF,
+  // one source. Only an `align` and a block equation reach `will-fuellen`, so
+  // nothing else moves; an inline element keeps its own width, or the box
+  // would break the line it sits in, and one that was given a width was never
+  // asked in the first place. Measured: all seventeen example decks come out
+  // of the PDF pixel for pixel as before.
+  if not html-output.get() {
+    return zaehlen + (if not inline and width == auto and will-fuellen(body) {
+      block(width: 100%, body)
+    } else { body })
+  }
   zaehlen
   element-counter.step()
   context {

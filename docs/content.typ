@@ -1108,6 +1108,40 @@ Weil die Reihe als Luft in den Daten stehen bleibt, rechnet lilaq seine Achsen
 über beide: Die Skala steht fest, und die erste Kurve springt nicht, wenn die
 zweite dazukommt.
 
+=== Stufen, die nicht Klick für Klick kommen
+
+`steps: 4` legt die vier Stufen auf vier aufeinanderfolgende Schritte. Das
+stimmt, solange die Zeichnung Klick für Klick wächst. Sobald zwischen zwei
+Stufen etwas anderes auf der Folie geschieht -- eine Kamerafahrt, ein Urteil,
+ein zweites Diagramm daneben --, stimmt es nicht mehr: Die Zeichnung hat zwei
+Bilder, das zweite soll aber erst auf Schritt 9 kommen.
+
+`at:` nennt je Stufe den Schritt, auf dem sie zuerst steht:
+
+// check: folie pre=cetz
+#show-code[```typ
+#build(from => cetz.canvas({
+  import cetz.draw: *
+  line((0,0), (4,0))
+  line((4,0), (4,3), stroke: from(2, black))
+}), at: (1, 9))
+```]
+
+Zwei Stufen, die zweite ab Schritt 9; dazwischen steht die erste. Die Länge
+der Liste ist die Zahl der Stufen, `steps` und `start` haben damit nichts mehr
+zu sagen und werden zurückgewiesen, statt still übergangen zu werden.
+
+`from` zählt weiter die *Stufen* und nicht die Schritte. `from(2, …)` heißt:
+ab dem zweiten Bild. Wo dieses Bild steht, sagt allein `at:`. Anders ginge es
+nicht -- bei `start: auto` weiß beim Schreiben niemand, auf welchem Schritt
+die Zeichnung landet.
+
+Was das spart, ist keine Tipparbeit, sondern Arbeit. Ohne `at:` bräuchte
+dasselbe Bild `steps: 9`, und die Stufen 1 bis 8 wären pixelgleich und würden
+trotzdem alle gesetzt. Gemessen an einer Folie mit drei Diagrammen, die
+nacheinander besprochen werden: zehn Sprites statt 22, und die ganze Datei
+2,98 MB statt 3,45 MB.
+
 === Die Argumente
 
 #table(
@@ -1116,6 +1150,9 @@ zweite dazukommt.
   table.header([*Argument*], [*Wirkung*]),
   [`steps`], [Zahl der Stufen und damit der Schritte (Vorgabe 2)],
   [`start`], [erster Schritt; `auto` schließt an den Zeiger an],
+  [`at`], [je Stufe der Schritt, auf dem sie zuerst steht, etwa `at: (1, 9)`;
+           jede Stufe hält bis zur nächsten. Damit entfallen `steps` und
+           `start`],
   [`enter`], [Bewegung beim Erscheinen einer Stufe (Vorgabe `"fade"`);
               `"draw"` ist hier ein Fehler, siehe den nächsten Abschnitt],
   [`duration`], [Dauer in Millisekunden],
@@ -1131,6 +1168,9 @@ nicht.
   SVG-Bäume in der Datei -- bei einer aufwendigen Zeichnung wächst beides
   ebenso schnell wie beim Daumenkino. Eine Zeichnung in zwanzig Stufen ist
   keine gute Idee.
+
+  Deshalb `at:`, wo die Stufen weit auseinanderliegen. Was zählt, ist die Zahl
+  der Bilder, nicht die Zahl der Schritte dazwischen.
 ]
 
 == Ein Pfad, der sich selbst zeichnet

@@ -843,6 +843,40 @@ Because the series stays in the data as air, lilaq reckons its axes over both: t
 scale is settled from the start, and the first curve does not jump when the second
 arrives.
 
+=== Stages that do not come one click after another
+
+`steps: 4` puts the four stages on four consecutive steps. That holds as long
+as the drawing grows click by click. As soon as something else happens on the
+slide between two stages -- a camera move, a verdict, a second diagram beside
+it -- it holds no longer: the drawing has two pictures, but the second is not
+due until step 9.
+
+`at:` names, per stage, the step it first stands on:
+
+// check: folie pre=cetz
+#show-code[```typ
+#build(from => cetz.canvas({
+  import cetz.draw: *
+  line((0,0), (4,0))
+  line((4,0), (4,3), stroke: from(2, black))
+}), at: (1, 9))
+```]
+
+Two stages, the second from step 9 on; in between the first one stands. The
+list's length is the number of stages, so `steps` and `start` have nothing
+left to say and are refused rather than quietly ignored.
+
+`from` keeps counting *stages*, not steps. `from(2, …)` means: from the second
+picture on. Where that picture stands is said by `at:` alone. It could not be
+otherwise -- under `start: auto` nobody knows while writing which step the
+drawing will land on.
+
+What this saves is not typing but work. Without `at:` the same picture needs
+`steps: 9`, and stages 1 to 8 are pixel for pixel the same drawing and are all
+typeset regardless. Measured on a slide carrying three diagrams that are
+discussed one after another: ten sprites instead of 22, and the whole file
+2.98 MB instead of 3.45 MB.
+
 === The arguments
 
 #table(
@@ -851,6 +885,9 @@ arrives.
   table.header([*Argument*], [*Effect*]),
   [`steps`], [number of stages, and hence of steps (default 2)],
   [`start`], [first step; `auto` follows on from the cursor],
+  [`at`], [the step each stage first stands on, say `at: (1, 9)`; every stage
+           holds until the next one is due. `steps` and `start` then fall
+           away],
   [`enter`], [motion a stage arrives with (default `"fade"`); `"draw"` is an
               error here, see the next section],
   [`duration`], [duration in milliseconds],
@@ -864,6 +901,9 @@ motion" nothing changes: the stages fade, they do not travel.
   Every stage really is typeset. Four stages mean four layouts and four SVG trees
   in the file -- for an elaborate drawing both grow as fast as they do for a flip
   book. A drawing in twenty stages is not a good idea.
+
+  Hence `at:` where the stages lie far apart. What counts is the number of
+  pictures, not the number of steps between them.
 ]
 
 == A path that draws itself
