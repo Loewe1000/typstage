@@ -438,12 +438,19 @@
              framed(item), room-for-notes(h))
       } else {
         framed(item)
-        v(8pt)
+        v(8pt, weak: true)
         // Fixed height, so every row is exactly its share of the page and the
         // rows below do not creep upwards when a note runs short.
         block(width: w, height: share - h - 8pt, room-for-notes(share - h - 8pt))
       }
     })
-    rows.join(v(gap))
+    // Weak, here and above: a block in a flow carries the paragraph spacing
+    // on both sides, and a strong `v` does not take its place but stands
+    // beside it. Measured, 8pt came out as 20pt and the gap as 26pt. The
+    // arithmetic above has no slack for that -- with notes below the slide,
+    // or beside a 4:3 slide, every sheet ran a hair over its page and left a
+    // page behind that carried one ruled line. A weak spacing is what the
+    // sum assumes: it replaces the paragraph spacing rather than adding to it.
+    rows.join(v(gap, weak: true))
   })).join(pagebreak(weak: true))
 }
