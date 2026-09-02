@@ -22,7 +22,7 @@
 // getan: die alte Fassung zeigte `themes.lesson` mit blauer Überschrift und
 // oranger Linie, Monate nachdem daraus rot auf blauer Linie geworden war. Wer
 // ein Theme anfasst, lässt danach das Skript laufen.
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 #let modus = sys.inputs.at("modus", default: "folie")
 

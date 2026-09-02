@@ -10,7 +10,7 @@
 //
 // Not shipped with the package (see `exclude` in typst.toml).
 
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 #let live = "https://www.geogebra.org/calculator"
 

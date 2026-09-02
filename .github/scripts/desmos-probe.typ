@@ -12,7 +12,7 @@
 // Es steht bewusst nicht in `examples/`. Was dort liegt, wird gebaut und auf
 // die Projektseite gestellt, und ein veröffentlichtes Deck trüge den
 // Schlüssel für jeden sichtbar mit sich.
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 #let key = sys.inputs.at("desmos-key", default: demo-key)
 

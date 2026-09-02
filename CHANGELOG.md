@@ -4,7 +4,7 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), the numbering
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.1] — unreleased
 
 ### Added
 
@@ -30,6 +30,14 @@ All notable changes to this package are recorded here. The format follows
   worked case; `steps` and `start` are refused beside `at`, rather than
   silently losing to it.
 
+### Changed
+
+- **The runtime files are now `typstage-0.1.1.css` and `typstage-0.1.1.js`.**
+  The name carries the version so a CDN can hold several releases side by side
+  and no browser serves a stale one from its cache. A deck with
+  `assets: "split"` or a CDN writes them out from `runtime-files` and never
+  types the name itself; one that inlines them, the default, notices nothing.
+
 ### Fixed
 
 - **A centred `anim` on paper.** `anim(align(center, …))` inside a grid column
@@ -39,8 +47,16 @@ All notable changes to this package are recorded here. The format follows
   narrow as its own ink had nothing left to centre in. Both branches now ask
   the same question. Reported from a deck whose three columns each carried a
   verdict under a diagram.
+- **The handout sheet fits its page.** With the notes below the slide
+  (`handout: 1` or `2`), and beside a 4:3 slide at three per page, every sheet
+  ran a hair over and left a page behind that carried one ruled line. The
+  spacing between the rows now takes the place of Typst's paragraph spacing
+  instead of adding to it.
+- **Room under a 4:3 slide.** At two per page the slide filled its whole share
+  of the height and the notes came out with a negative height. At least four
+  ruled lines now stay underneath; the slide gives way, not the room.
 
-## [0.1.0] — unreleased
+## [0.1.0] — 2026-08-31
 
 First release.
 
@@ -70,17 +86,6 @@ media, and GeoGebra applets that follow the steps of the slide.
   show.
 - **A PDF from the same source**: one page per slide, every tracked element in
   its final state, and a handout of up to six slides per page.
-
-### Fixed
-
-- **The handout sheet fits its page.** With the notes below the slide
-  (`handout: 1` or `2`), and beside a 4:3 slide at three per page, every sheet
-  ran a hair over and left a page behind that carried one ruled line. The
-  spacing between the rows now takes the place of Typst's paragraph spacing
-  instead of adding to it.
-- **Room under a 4:3 slide.** At two per page the slide filled its whole share
-  of the height and the notes came out with a negative height. At least four
-  ruled lines now stay underneath; the slide gives way, not the room.
 
 ### Known limits
 

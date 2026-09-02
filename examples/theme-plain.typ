@@ -15,7 +15,7 @@
 // `themes.plain` is used as it comes. The talk is a table talk: the slides
 // carry few words and large numbers, and the design has nothing to add.
 
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 // Two hues and a grey, fixed once here and handed to every helper below.
 // A colour in this deck always names "one of the two things being compared":

@@ -20,7 +20,7 @@
 // flies onto the section slide and becomes its heading. On paper you have to
 // tell the room where you are; here they watch it happen.
 
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 // ── Colours ────────────────────────────────────────────────────────────────
 // The template's four, taken literally. White on sage measures 1.96 to 1 and

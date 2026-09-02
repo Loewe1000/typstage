@@ -60,7 +60,7 @@ function a_wert(liste) {
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-desmos-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.0"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.1"));
   }
   fs.writeFileSync(path.join(tmp, "deck.typ"), DECK);
   execFileSync("typst", ["compile", "--format", "html", "--features", "html",

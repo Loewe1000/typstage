@@ -14,7 +14,7 @@
 // a speaker note on every slide. This deck is written for somebody who holds
 // it.
 
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 // The classroom theme, because there really is a classroom here.
 #let t = themes.lesson

@@ -46,11 +46,11 @@ function deckBauen() {
   const pp = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-pult-"));
   const ziel = path.join(pp, "schule", "typstage");
   fs.mkdirSync(ziel, { recursive: true });
-  fs.symlinkSync(WURZEL, path.join(ziel, "0.1.0"), "dir");
+  fs.symlinkSync(WURZEL, path.join(ziel, "0.1.1"), "dir");
   // Und unter `preview`, wie das Paket nach der Einreichung heisst.
   const ziel2 = path.join(pp, "preview", "typstage");
   fs.mkdirSync(ziel2, { recursive: true });
-  fs.symlinkSync(WURZEL, path.join(ziel2, "0.1.0"), "dir");
+  fs.symlinkSync(WURZEL, path.join(ziel2, "0.1.1"), "dir");
   const aus = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "typstage-pult-h-")), "pruefdeck.html");
   execFileSync("typst", ["compile", "--format", "html", "--features", "html",
     "--root", WURZEL, "--package-path", pp,

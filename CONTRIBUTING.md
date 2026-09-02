@@ -5,13 +5,13 @@ is the part that is easy to get wrong and hard to guess.
 
 ## Getting a clone to build
 
-Every source in this repository imports `@preview/typstage:0.1.0` — the name
+Every source in this repository imports `@preview/typstage:0.1.1` — the name
 the package carries once published. A clone under the local package path is
 found before the published one, so that import reaches your working tree:
 
 ```bash
 git clone https://github.com/Loewe1000/typstage \
-  ~/Library/Application\ Support/typst/packages/preview/typstage/0.1.0
+  ~/Library/Application\ Support/typst/packages/preview/typstage/0.1.1
 ```
 
 On Linux that path is `~/.local/share/typst/packages/preview/…`, on Windows

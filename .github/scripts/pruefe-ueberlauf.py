@@ -36,7 +36,7 @@ def paketpfad_bauen():
     und nicht ein installiertes Paket.
     """
     pfad = tempfile.mkdtemp(prefix="typstage-ueberlauf-")
-    version = "0.1.0"
+    version = "0.1.1"
     with open(os.path.join(WURZEL, "typst.toml"), encoding="utf-8") as f:
         m = re.search(r'^version\s*=\s*"([^"]+)"', f.read(), re.M)
         if m:

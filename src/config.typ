@@ -4,7 +4,7 @@
 
 /// Version of the runtime. It goes into the asset file names so a CDN can hold
 /// several releases side by side and no browser serves a stale one from cache.
-#let runtime-version = "0.1.0"
+#let runtime-version = "0.1.1"
 
 /// Default slide geometry. 16:9 on an A4-width canvas, so a slide and a
 /// handout page carry text at the same physical size. `presentation` takes

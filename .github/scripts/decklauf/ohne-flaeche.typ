@@ -26,7 +26,7 @@
 // Klage aufhören zu klagen, und dann wäre der stille Verlust zurück, den
 // niemand bemerkt.
 
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 #show: presentation.with(
   title: [Verloren, aber nicht stillschweigend],

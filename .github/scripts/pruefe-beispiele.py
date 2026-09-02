@@ -98,7 +98,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 WURZEL = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 HANDBUECHER = ["docs/content.typ", "docs/content-en.typ"]
-IMPORT = '#import "@preview/typstage:0.1.0": *\n'
+IMPORT = '#import "@preview/typstage:0.1.1": *\n'
 
 # Namen, die die Handbücher als Platzhalter benutzen, ohne sie zu erklären —
 # „meine-tabelle" steht im Text für „irgendeine Tabelle". Der Prüfer muss

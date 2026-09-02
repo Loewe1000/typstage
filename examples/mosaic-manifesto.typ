@@ -20,7 +20,7 @@
 // vision slide step forward one at a time and step back again instead of
 // standing there together. A manifesto asserts in sequence.
 
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 // ── Two colours; the deck has no more ──────────────────────────────────────
 #let cream = rgb("#fffcf9")

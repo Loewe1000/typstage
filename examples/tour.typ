@@ -24,7 +24,7 @@
 // white space under it. `#v(1fr)` at both ends centres one; a pure `fr` spacer
 // is passed through untouched even where it stands next to tracked elements.
 
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 // Two meaning colours, declared once here and passed in wherever they are
 // needed. This deck's theme keeps none of its own. `live` marks the parts of a
@@ -1319,7 +1319,7 @@ and the wrong two find each other), the piece gets a name instead.
   split: (1fr, 1fr), align: top,
   card(title: [The whole file])[
     #text(size: 0.68em, raw(lang: "typ",
-      "#import \"@preview/typstage:0.1.0\": *\n#show: presentation.with(\n  theme: themes.default,\n  title: [My talk],\n  handout: 3,\n)\n\n= First section\n== First slide\nOne point."))
+      "#import \"@preview/typstage:0.1.1\": *\n#show: presentation.with(\n  theme: themes.default,\n  title: [My talk],\n  handout: 3,\n)\n\n= First section\n== First slide\nOne point."))
   ],
   card(title: [The three commands])[
     #text(size: 0.68em, raw(lang: "sh",

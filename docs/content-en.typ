@@ -232,7 +232,7 @@ presentation.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 #show: presentation.with(title: [How tall is the tower?])
 ```]
 
@@ -349,7 +349,7 @@ the note beside each one, ruled lines beside any slide that has none.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 #show: presentation.with(
   title: [How tall is the tower?],
   handout: 3,
@@ -362,7 +362,7 @@ Nothing in it that was not explained above.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 #show: presentation.with(
   title: [How tall is the tower?],
@@ -1448,7 +1448,7 @@ viewport, start a motion.
 the same slide body and produce no output of their own.
 
 #show-code[```typ
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 #presentation(
   slide([Remote controlled], {
@@ -1831,7 +1831,7 @@ not for commercial use.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 #presentation(
   slide([A parabola], {
@@ -2657,7 +2657,7 @@ The five bundled themes fill those eight roles differently:
     )
   },
   source: ```typ
-  #import "@preview/typstage:0.1.0": themes
+  #import "@preview/typstage:0.1.1": themes
   #themes.night.accent      // the theme's signal colour, as a colour
   ```,
   width: 12cm,
@@ -3199,7 +3199,7 @@ callout, the statement, the title and section slides, the box that stands in
 for a video. An ordinary `show` rule reaches it -- no theme key, no fork.
 
 #show-code[```typ
-#import "@preview/typstage:0.1.0": *
+#import "@preview/typstage:0.1.1": *
 
 #show label("ts-slide-header-band"): set rect(fill: rgb("#4c1d95"))
 #show label("ts-slide-title"): set text(fill: rgb("#fde047"), style: "italic")
