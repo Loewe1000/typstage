@@ -196,7 +196,11 @@
 #let alternatives(
   ..variants,
   start: auto,
-  align: top + left,
+  // `start`, not `left`: the edge the writing begins at, which is the right
+  // one in a deck that reads from the right. A deck that never says `align:`
+  // gets the corner it always got. `std.`, because `start` is the step
+  // number one line up.
+  align: top + std.start,
   enter: "fade",
   duration: auto,
   easing: auto,
@@ -766,7 +770,13 @@
         // inherit that of the surrounding grid, and `side-by-side` prescribes
         // `horizon`. The mark would then sit next to the middle of a
         // two-line item instead of next to its first line.
-        align: (right + top, left + top),
+        //
+        // `end` and `start`, not `right` and `left`. In a deck that reads
+        // from the right the grid lays the mark column out on the right, and
+        // there the mark has to hug the text from the other side, and the
+        // text has to begin at the right. With the sides named outright the
+        // marks stood on the right and the lines still ran from the left.
+        align: (end + top, std.start + top),
         marks.at(i), p.body,
       ),
       at: bereich(start + i * stride), after: ruhe, dim-freiwillig: dim,
@@ -1010,7 +1020,7 @@
         // Eine Stufe, die bliebe, läge unter der nächsten und würde ein
         // zweites Mal gemalt.
         let bereich = if i == letzte { str(erster + i) + "-" } else { str(erster + i) }
-        place(top + left, anim-kern(s, at: bereich, enter: enter,
+        place(top + std.start, anim-kern(s, at: bereich, enter: enter,
                                     exit: "hold", duration: duration,
                                     easing: takt))
       }

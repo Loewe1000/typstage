@@ -572,9 +572,12 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
 /* Die Zeile bekommt ein Mass. In einem breiten oder flachen Fenster waere
    die Spalte sonst achthundert Pixel breit, und eine Zeile, die so lang
    ist, findet man nach dem Umbruch nicht wieder. */
+/* `plaintext`: die Notiz liest in die Richtung ihres ersten Zeichens. Eine
+   persische steht dann rechtsbuendig und von rechts, ohne dass das Pult
+   die Sprache des Decks kennen muesste. */
 .ts-sp-notiz{overflow:auto;white-space:pre-wrap;line-height:1.45;
   padding-right:6px;overflow-wrap:break-word;color:var(--sp-satz);flex:1;
-  min-height:0}
+  min-height:0;unicode-bidi:plaintext}
 /* Hochkant liegt die Notiz ueber beide Spalten, und dort braucht die Zeile
    ihr Mass weiterhin selbst. */
 .ts-sp-leib[data-form="hochkant"] .ts-sp-notiz{max-width:34em}

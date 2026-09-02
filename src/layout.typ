@@ -19,6 +19,7 @@
                         umgebungs-block, unloesbar, zeilen-hoehe)
 #import "config.typ": doc-word
 #import "themes.typ": lesbar, theme-state
+#import "richtung.typ": von-rechts
 
 /// A named box: Beamer's `block`.
 ///
@@ -133,7 +134,7 @@
     let rumpf = [#body <ts-card-body>]
     if number == none { rumpf } else {
       grid(
-        columns: (auto, 1fr), column-gutter: 8pt, align: (left + top, left + top),
+        columns: (auto, 1fr), column-gutter: 8pt, align: (start + top, start + top),
         box(baseline: 0.24em, {
           set circle(fill: color, stroke: none)
           [#circle(
@@ -154,8 +155,8 @@
 
 /// A highlighted key sentence: Beamer's `alertblock`.
 ///
-/// The bar on the left marks it on every slide at a glance as "the thing to
-/// remember", without it looking like a second box.
+/// The bar on the edge the writing starts at marks it on every slide at a
+/// glance as "the thing to remember", without it looking like a second box.
 ///
 /// Labelled `<ts-callout>`, `<ts-callout-title>` and `<ts-callout-body>`. As
 /// in `card`, the surface goes through a `set` rule, so a label rule reaches
@@ -182,7 +183,11 @@
   // and the document's own block style is put back inside.
   let aussen = umgebungs-block()
   {
-  set block(fill: grund, stroke: (left: 3.5pt + color), radius: radius)
+  // The bar stands where the writing starts. A stroke names sides, not
+  // `start`, so the side is picked here; the box is in context already and
+  // sees the direction the slide body set.
+  let strich = if von-rechts() { (right: 3.5pt + color) } else { (left: 3.5pt + color) }
+  set block(fill: grund, stroke: strich, radius: radius)
   [#block(
     width: width, height: if zeile == none { auto } else { zeile },
     inset: inset,
@@ -298,7 +303,9 @@
   enter: "fade-up",
   duration: auto,
   easing: auto,
-  align: top + left,
+  // The edge the writing begins at; `std.`, because `start` is a step number
+  // further down.
+  align: top + std.start,
 ) = context {
   // Asked here rather than left to the `anim`s below, so the message names the
   // function the deck actually wrote.

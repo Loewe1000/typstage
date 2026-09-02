@@ -2778,6 +2778,32 @@ draws scales along.
   builds/ below.
 ]
 
+== Right to left
+
+A deck in Arabic, Hebrew, Persian or Urdu needs one line, and it is Typst's
+own:
+
+#show-code[```typ
+#set text(lang: "fa")
+#show: presentation.with(title: [چهار مثلث در یک مربع])
+```]
+
+`lang` is enough for a language Typst reads from the right; `#set text(dir:
+rtl)` says it outright for any other. Typst turns the paragraphs, lists and
+columns around by itself. typstage turns around what it draws by hand: the
+title in its band, the bar beside a `callout`, the number in the footer, the
+progress bar, the title and section slides. `alternatives`, `build` and
+`tiles` anchor at `start`, which is the right edge in such a deck, and a
+`callout` without `title:` reads its caption in Arabic, Persian or Hebrew.
+
+The rule goes *before* the show rule. After it, it still reaches every slide
+body and every moving part, but not the title slide, the section slides and
+the footer: those are drawn outside the body and would keep reading from the
+left.
+
+Not mirrored: the transitions. A `"slide"` still comes in from the right;
+`from: "left"` turns it around where that reads better.
+
 == Building blocks for the body
 
 Six functions for the body of a slide: `card`, `callout`, `side-by-side`,

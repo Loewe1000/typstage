@@ -22,6 +22,7 @@
 
 #import "config.typ": margins
 #import "palettes.typ": contrast, invert-palette, palette-keys
+#import "richtung.typ": am-anfang
 
 /// The first of the given colors that is readable on `grund`, measured.
 ///
@@ -171,12 +172,17 @@
 
 // ── default ────────────────────────────────────────────────────────────────
 
-/// Title on the left at half height, with a short accent stroke below it.
+/// Title at the start edge at half height, with a short accent stroke below
+/// it.
+///
+/// `am-anfang` and not `place(top + left, …)`, here and in every theme that
+/// sets its title against an edge: in a deck that reads from the right the
+/// same picture stands mirrored, and the lines inside it read from the right.
 #let band-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
   grund(t.paper, "title")
-  place(top + left, dx: m.left, dy: geo.height * 0.32, {
+  am-anfang(top, m, dy: geo.height * 0.32, {
     stapel(
       text(..font-args(t.title-font), size: 34pt * k, weight: "bold",
            fill: lesbar(t.paper, t.strong, t.ink),
@@ -187,7 +193,7 @@
       text(size: 17pt * k, fill: t.muted, [#s.subtitle <ts-title-slide-subtitle>]),
     )
   })
-  place(bottom + left, dx: m.left, dy: -m.bottom, by-line(t, s, k))
+  am-anfang(bottom, m, dy: -m.bottom, by-line(t, s, k))
 }
 
 /// Dark full-bleed surface, accent stroke above the title.
@@ -209,7 +215,7 @@
   let rahmen = if eltern.len() > 0 {
     it => block(width: geo.width - m.left - m.right, it)
   } else { it => it }
-  place(horizon + left, dx: m.left, rahmen({
+  am-anfang(horizon, m, rahmen({
     // Built as a list rather than written out, so that at depth 1 exactly the
     // three pieces of before go into `stapel` and the slide is unchanged.
     let teile = (
@@ -253,7 +259,7 @@
   place(bottom + center, dy: -m.bottom, by-line(t, s, k))
 }
 
-/// Tinted background, wide accent bar along the left edge.
+/// Tinted background, wide accent bar along the start edge.
 #let lesson-section(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
@@ -264,14 +270,14 @@
   // section slide in the middle of a dark deck is a flash, not a pause.
   grund(if t.inverted { t.accent.darken(72%) } else { t.accent.lighten(88%) },
         "section")
-  place(top + left, {
+  am-anfang(top, none, {
     set rect(fill: t.accent, stroke: none)
     [#rect(width: balken, height: 100%) <ts-section-slide-bar>]
   })
   let d = s.at("depth", default: 1)
   let eltern = s.at("parents", default: ())
   let boden = if t.inverted { t.accent.darken(72%) } else { t.accent.lighten(88%) }
-  place(horizon + left, dx: m.left + balken,
+  am-anfang(horizon, m, dx: balken,
     block(width: geo.width - 2 * m.left - balken, {
       let titel = text(..font-args(t.title-font),
            size: ebenen-groesse(32pt, d, k), weight: "bold",
@@ -334,12 +340,12 @@
 
 // ── plain ──────────────────────────────────────────────────────────────────
 
-/// Only text, left, far down. No stroke, no surface, no color.
+/// Only text, at the start edge, far down. No stroke, no surface, no color.
 #let plain-title-slide(t, s, geo) = {
   let k = geo.scale
   let m = margins(geo)
   grund(t.paper, "title")
-  place(top + left, dx: m.left, dy: geo.height * 0.42, block(width: geo.width * 0.7, {
+  am-anfang(top, m, dy: geo.height * 0.42, block(width: geo.width * 0.7, {
     stapel(
       text(..font-args(t.title-font), size: 30pt * k,
            fill: lesbar(t.paper, t.strong, t.ink),
@@ -348,7 +354,7 @@
       text(size: 15pt * k, fill: t.muted, [#s.subtitle <ts-title-slide-subtitle>]),
     )
   }))
-  place(bottom + left, dx: m.left, dy: -m.bottom,
+  am-anfang(bottom, m, dy: -m.bottom,
     text(size: 10pt * k, fill: t.muted, [#{
       s.author
       if s.date != none [ · #datum(s.date) ]
@@ -363,7 +369,7 @@
   let d = s.at("depth", default: 1)
   let eltern = s.at("parents", default: ())
   grund(t.paper, "section")
-  place(horizon + left, dx: m.left, block(width: geo.width * 0.7, {
+  am-anfang(horizon, m, block(width: geo.width * 0.7, {
     let teile = (
       text(..font-args(t.title-font), size: ebenen-groesse(26pt, d, k),
            fill: lesbar(t.paper, t.strong, t.ink),

@@ -346,7 +346,9 @@ runtime once for all of them. The manual has the numbers.
   the API comments are mixed German and English. The two strings the runtime shows for itself,
   the `?` help line and the note of a slide that has none, follow the
   document language and exist in German, English and French; anything else
-  falls back to English.
+  falls back to English. A deck that reads from the right -- `#set text(lang:
+  "fa")` before the show rule -- is mirrored throughout, from the title in its
+  band to the progress bar; the manual has a section on it.
 - **Five themes, not a theme ecosystem.** They differ in colour, type and the
   shape of header, footer and progress bar, not in slide layouts. Anything
   further is a dictionary entry, a `style:` wrapper, or plain Typst.

@@ -3391,8 +3391,9 @@ Haken `style`: eine Funktion, die um jeden Folienrumpf gelegt wird.
 ```]
 
 #warning[
-  Alles, was über Größe, Farbe, Schrift, Schnitt, Lage und Sprache des Textes
-  hinausgeht, gehört in `style` und nicht in eine `#set`-Regel im Dokument. Im
+  Alles, was über Größe, Farbe, Schrift, Schnitt, Lage, Sprache und
+  Schreibrichtung des Textes hinausgeht, gehört in `style` und nicht in eine
+  `#set`-Regel im Dokument. Im
   Browser wird jedes bewegte Element ein zweites Mal gesetzt, in einem eigenen
   Rahmen, der die `#show`-Regeln der Folie nicht kennt. `style` liegt auf
   beidem.
@@ -3415,6 +3416,33 @@ Haken `style`: eine Funktion, die um jeden Folienrumpf gelegt wird.
   `align` bis in jede Rasterzelle durch, und das Aufzählungszeichen eines
   zweizeiligen Punktes rutschte neben dessen zweite Zeile.
 ]
+
+== Von rechts nach links
+
+Ein Deck auf Arabisch, Hebräisch, Persisch oder Urdu braucht eine Zeile, und
+die ist Typsts eigene:
+
+#show-code[```typ
+#set text(lang: "fa")
+#show: presentation.with(title: [چهار مثلث در یک مربع])
+```]
+
+`lang` genügt für eine Sprache, die Typst von rechts liest; `#set text(dir:
+rtl)` sagt es für jede andere ausdrücklich. Absätze, Listen und Spalten dreht
+Typst selbst um. typstage dreht um, was es von Hand zeichnet: den Titel im
+Band, den Balken neben einem `callout`, die Nummer im Fuß, die
+Fortschrittsleiste, Titel- und Abschnittsfolien. `alternatives`, `build` und
+`tiles` setzen an `start` an, und das ist in so einem Deck die rechte Kante;
+ein `callout` ohne `title:` trägt seine Beschriftung auf Arabisch, Persisch
+oder Hebräisch.
+
+Die Regel steht *vor* der Show-Regel. Dahinter erreicht sie noch jeden
+Folienrumpf und jedes bewegte Element, aber nicht Titelfolie,
+Abschnittsfolien und Fuß: die werden außerhalb des Rumpfes gezeichnet und
+läsen weiter von links.
+
+Nicht gespiegelt werden die Übergänge. Ein `"slide"` kommt weiter von rechts
+herein; `from: "left"` dreht ihn um, wo das besser liest.
 
 == Bausteine für den Folienrumpf
 

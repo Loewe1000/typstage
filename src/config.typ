@@ -80,6 +80,11 @@
   de: (note: [Merke], embedded: [Eingebetteter Inhalt]),
   en: (note: [Note], embedded: [Embedded content]),
   fr: (note: [À retenir], embedded: [Contenu intégré]),
+  // Three languages that read from the right, so a deck in one of them does
+  // not carry an English tab on its callout while everything else mirrors.
+  ar: (note: [ملاحظة], embedded: [محتوى مضمّن]),
+  fa: (note: [توجه], embedded: [محتوای جاسازی‌شده]),
+  he: (note: [הערה], embedded: [תוכן מוטבע]),
 )
 
 /// Fetch one such default. Only callable in context, because `text.lang` is

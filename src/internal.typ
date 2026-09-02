@@ -1339,9 +1339,15 @@
       // frame: with `#set par(leading: 2em)` the background measured 63pt,
       // the sprite came out at 37pt with default leading and stuck to the
       // top.
+      //
+      // The direction too. It decides where `start` lies, and a Persian
+      // list came back into its frame reading from the left while the
+      // slide underneath read from the right. `auto` is what an unset deck
+      // reads here, and `auto` set again is no change at all.
       let style = (
         size: text.size, fill: text.fill, font: text.font,
         weight: text.weight, style: text.style, lang: text.lang,
+        dir: text.dir,
         tracking: text.tracking, spacing: text.spacing,
         leading: par.leading, par-spacing: par.spacing,
         justify: par.justify, first-line-indent: par.first-line-indent,

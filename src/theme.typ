@@ -30,6 +30,7 @@
                         ueberlauf-pruefen, umgebungs-block)
 #import "slides.typ": info
 #import "themes.typ": font-args, sichtbar, theme-state
+#import "richtung.typ": am-anfang, am-ende
 
 /// The body of one slide, background included.
 ///
@@ -98,8 +99,7 @@
         str(n)
         if sect != none [ #h(1fr) #sect ]
       } <ts-slide-header-text>])
-      place(top + left, dx: m.left, dy: m.top * 0.62,
-            block(width: inner, zeile))
+      am-anfang(top, m, dy: m.top * 0.62, block(width: inner, zeile))
       place(top + left, dx: m.left, dy: m.top * 0.62 + 17pt * k, {
         set rect(fill: t.rule-fill, stroke: none)
         [#rect(width: inner, height: 0.9pt * k) <ts-slide-header-rule>]
@@ -123,8 +123,8 @@
     if t.footer == "center" {
       place(bottom + center, dy: -13pt * k, text(size: 12pt * k, fill: t.muted, zahl))
     } else if t.footer != "none" {
-      place(bottom + right, dx: -m.right, dy: -13pt * k,
-            text(size: 12pt * k, fill: t.muted, zahl))
+      am-ende(bottom, m, dy: -13pt * k,
+              text(size: 12pt * k, fill: t.muted, zahl))
     }
     // Progress: a growing bar at the bottom or top, or a marker that
     // travels along its track: even at seventy slides that still shows
@@ -137,12 +137,15 @@
       // Nichts: die Laufzeit zieht sie. `tick` bleibt hier, der Reiter wandert
       // ohnehin und würde als wachsender Balken falsch gelesen.
     } else if t.progress == "bar" {
-      place(bottom + left, {
+      // From the edge the writing starts at, like everything else placed
+      // by hand here: in a deck that reads from the right the bar grows
+      // from the right.
+      am-anfang(bottom, none, {
         set rect(fill: balken, stroke: none)
         [#rect(width: 100% * n / total, height: 2.5pt * k) <ts-slide-progress>]
       })
     } else if t.progress == "top" {
-      place(top + left, {
+      am-anfang(top, none, {
         set rect(fill: balken, stroke: none)
         [#rect(width: 100% * n / total, height: 2.5pt * k) <ts-slide-progress>]
       })
@@ -167,7 +170,7 @@
                        else { balken.lighten(78%) }, stroke: none)
         [#rect(width: 100%, height: 3pt * k) <ts-slide-progress-track>]
       })
-      place(bottom + left, dx: (geo.width - breite) * (n - 1) / schritte, {
+      am-anfang(bottom, none, dx: (geo.width - breite) * (n - 1) / schritte, {
         set rect(fill: balken, stroke: none)
         [#rect(width: breite, height: 3pt * k) <ts-slide-progress>]
       })
@@ -255,14 +258,14 @@
         set rect(fill: t.strong, stroke: none)
         [#rect(width: 100%, height: bar) <ts-slide-header-band>]
       })
-      place(top + left, dx: m.left,
-        block(width: inner, height: bar, align(left + horizon, titel-text)))
+      am-anfang(top, m,
+        block(width: inner, height: bar, align(start + horizon, titel-text)))
     } else if titel {
       // The same trap as in the callout: without `above`/`below` set, the
       // paragraph spacing would additionally sit between the title and
       // the line, and the line would slide towards the content instead
       // of the title.
-      place(top + left, dx: m.left, dy: m.top + lauf, block(width: inner, {
+      am-anfang(top, m, dy: m.top + lauf, block(width: inner, {
         block(above: 0pt, below: 0pt, titel-text)
         if t.rule-size > 0pt {
           block(above: t.title-size * 0.34 * k, below: 0pt, {
@@ -286,8 +289,15 @@
     // check asks against. Everything else the slide shows, the band, the
     // title, the footer, the progress, is drawn beside this block with
     // `place` and takes nothing away from it.
+    //
+    // Not `place(top + left, …)`, though the block fills the width and the
+    // anchor makes no difference to where it lands. `place` hands its
+    // alignment down into the body, and a fixed `left` there beat the
+    // `start` every paragraph resolves for itself: in a deck that reads from
+    // the right, every line sat on the left while the lists and columns
+    // around it were already mirrored. `am-anfang` hands down `start`.
     let raum = geo.height - kopf - (t.head-gap + t.foot-gap) * k
-    place(top + left, dx: m.left, dy: kopf + t.head-gap * k,
+    am-anfang(top, m, dy: kopf + t.head-gap * k,
       block(width: inner, height: raum, style(s.body)))
     // `place`, like the mark above: the block is already slide-high and full,
     // and the check must not take a single point from the body it measures.
@@ -310,6 +320,7 @@
 #let with-style(s, body) = {
   set text(size: s.style.size, fill: s.style.fill, font: s.style.font,
            weight: s.style.weight, style: s.style.style, lang: s.style.lang,
+           dir: s.style.at("dir", default: auto),
            tracking: s.style.at("tracking", default: 0pt),
            spacing: s.style.at("spacing", default: 100% + 0pt))
   set par(leading: s.style.at("leading", default: 0.65em),
@@ -394,9 +405,15 @@
       set block(radius: 2pt, stroke: 0.5pt + luma(72%))
       [#block(width: w, height: h, clip: true, {
         set block(fill: aussen.fill, stroke: aussen.stroke, radius: aussen.radius)
-        scale(w / geo.width * 100%, origin: top + left,
+        // Anchored at the left by name. The slide keeps its full width under
+        // the scaling and is wider than this frame, and a frame aligns what
+        // overhangs it by `start`: in a deck that reads from the right that
+        // is the right edge, the slide slid left by the overhang and the
+        // frame showed nothing. The slide inside places its own parts with
+        // `start` again, so nothing in it reads from the wrong side.
+        align(top + left, scale(w / geo.width * 100%, origin: top + left,
               slide-body(item.slide, style, geo, thema(item.slide),
-                         overflow: overflow))
+                         overflow: overflow)))
       }) <ts-handout-frame>]
     }
 

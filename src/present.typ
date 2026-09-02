@@ -9,6 +9,7 @@
 #import "palettes.typ": palette-pruefen
 #import "render.typ": *
 #import "elements.typ": anim, pause
+#import "richtung.typ": von-rechts
 
 /// Flatten a body into content pieces and pause markers.
 ///
@@ -1007,7 +1008,11 @@
             id: "ts-fortschritt",
             style: "height:" + str(calc.round(fs.hoehe.pt(), digits: 2)) + "pt;"
                  + "background:" + fs.farbe.to-hex() + ";"
-                 + (if fs.oben { "top:0" } else { "bottom:0" }),
+                 + (if fs.oben { "top:0" } else { "bottom:0" })
+                 // Grows from the edge the writing starts at. The stylesheet
+                 // pins the origin to the left; a deck that reads from the
+                 // right moves it here, inline, where it beats the sheet.
+                 + (if von-rechts() { ";transform-origin:100% 50%" } else { "" }),
           ), [])
         }
       }
