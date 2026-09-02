@@ -2886,7 +2886,9 @@ unverändert an `presentation`. Die Zähler fangen je Ausgabe neu an.
 
 Neben oder unter jeder Folie steht ihre Notiz; wo eine Folie keine hat, treten
 Schreiblinien an ihre Stelle. Bis zwei Folien je Seite stehen sie *darunter*,
-ab drei *daneben*.
+ab drei *daneben*. Unter einer Folie bleiben mindestens vier Linien: Eine
+4:3-Folie, die bei zwei je Seite sonst die ganze Höhe nähme, wird dafür
+schmaler.
 
 // Im HTML-Export wird `align` verworfen; als `rendered:` steht die Skizze
 // in einem Rahmen und behält ihre Anordnung in beiden Ausgaben.

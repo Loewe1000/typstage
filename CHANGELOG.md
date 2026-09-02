@@ -35,6 +35,17 @@ media, and GeoGebra applets that follow the steps of the slide.
 - **A PDF from the same source**: one page per slide, every tracked element in
   its final state, and a handout of up to six slides per page.
 
+### Fixed
+
+- **The handout sheet fits its page.** With the notes below the slide
+  (`handout: 1` or `2`), and beside a 4:3 slide at three per page, every sheet
+  ran a hair over and left a page behind that carried one ruled line. The
+  spacing between the rows now takes the place of Typst's paragraph spacing
+  instead of adding to it.
+- **Room under a 4:3 slide.** At two per page the slide filled its whole share
+  of the height and the notes came out with a negative height. At least four
+  ruled lines now stay underneath; the slide gives way, not the room.
+
 ### Known limits
 
 - Typst's HTML export is experimental; every HTML run needs `--features html`.

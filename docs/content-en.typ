@@ -2376,7 +2376,9 @@ cannot differ from what stood on the canvas.
 
 Beside or below each slide stands its note; where a slide has none, ruled lines
 take its place. Up to two slides per page the notes stand *below* and the slide
-takes the full width; from three on they stand *beside*.
+takes the full width; from three on they stand *beside*. Under a slide at least
+four lines remain: a 4:3 slide that would otherwise take the whole height at two
+per page is made narrower for them.
 
 == What the paper leaves out — and what to plan for
 
