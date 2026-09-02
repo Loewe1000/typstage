@@ -356,11 +356,15 @@
   // A4 that wastes most of the page, so there the notes go underneath and the
   // slide takes the full width. From three on, beside is the better use.
   let beside = per-page >= 3
+  // One ruled line per pitch. Underneath a slide at least four of them stay,
+  // whatever the slide's shape.
+  let pitch = 17pt
+  let least-room = 4 * pitch
 
   let lines(height) = {
-    let count = calc.max(2, int(height.pt() / 17))
+    let count = calc.max(2, int(height / pitch))
     set line(stroke: 0.4pt + luma(84%))
-    [#stack(dir: ttb, spacing: 17pt,
+    [#stack(dir: ttb, spacing: pitch,
             ..range(count).map(_ => line(length: 100%))) <ts-handout-lines>]
   }
   let room-for-notes(height) = context {
@@ -393,7 +397,10 @@
       calc.min(room.width - note-column - column-gap,
                share * (geo.width / geo.height))
     } else {
-      calc.min(room.width, share * (geo.width / geo.height))
+      // The full width, unless that leaves nothing underneath: a 4:3 slide at
+      // two per page is nearly as tall as its share, and the notes came out
+      // with a negative height. Then the slide gives way, not the room.
+      calc.min(room.width, (share - least-room - 8pt) * (geo.width / geo.height))
     }
     let h = w * (geo.height / geo.width)
     // The frame's own look travels through a `set` rule, so a label rule can
