@@ -4206,6 +4206,9 @@ Eintrag je Abschnitt heraus, in ihrer Reihenfolge:
 ]
 ```]
 
+`target` nennt die Folie des Abschnitts selbst -- das braucht, wer wie
+`contents()` einen Verweis darauf setzen will.
+
 `first`, `last` und `count` zählen *transitiv*: unter einen Abschnitt der
 Tiefe 1 fallen auch die Folien seiner Unterabschnitte. Ein Abschnitt ohne
 Folien hat `none` bei `first` und `last` und `0` bei `count`.

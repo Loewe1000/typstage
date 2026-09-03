@@ -1249,6 +1249,39 @@ and the wrong two find each other), the piece gets a name instead.
 
 #v(1fr)
 
+== contents: the deck lists itself
+
+// `deck-outline()` one floor up, made into something a reader can click.
+// The list is not written by hand: it is the deck's own structure, so it
+// cannot fall out of step with the slides it names.
+#v(1fr)
+
+#side-by-side(
+  split: (1fr, 1fr), align: top,
+  card(title: [The call])[
+    #text(size: 0.72em, raw(lang: "typ",
+      "== Contents\n#contents()\n\n// or in two columns, and only part of it\n#contents(layout: \"1x2\", from: 1, to: 8)"))
+
+    Every entry links to its section slide, and back. In the talk the
+    click is a jump; on paper a PDF link.
+  ],
+  card(title: [What it looks like])[
+    #text(size: 0.8em)[
+      #contents(from: 1, to: 3)
+    ]
+
+    #text(size: 0.72em, fill: t.muted)[
+      Numbers and titles take the palette of the deck, not a colour of
+      their own.
+    ]
+  ],
+)
+
+#anim([`number:` and `title:` each take a function and replace the cell;
+       `number: none` drops the column.], at: 2, enter: "fade-up")
+
+#v(1fr)
+
 == bundle: three outputs, one run
 
 // The one function of the package this deck cannot show at work, and it gets a

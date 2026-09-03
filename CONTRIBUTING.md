@@ -43,6 +43,7 @@ AGGREGAT=/path/to/Typst-Schule bash .github/scripts/build-site.sh
 | `decklauf/sprung.js` | what a jump into a running transition leaves behind |
 | `pruefe-palette.py` | the contrast contract of the speaker palette |
 | `pruefe-rundgang.py` | every export is demonstrated in `tour.typ` |
+| `pruefe-inhalt.js` | `contents()` jumps to a section and back |
 | `pruefe-ueberlauf.py` | no example deck runs over its slide |
 | `pruefe-desmos.js` | the Desmos bridge, by hand (see below) |
 

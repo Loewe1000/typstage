@@ -104,6 +104,14 @@ jobs:
       - name: Kein Deck ragt aus seiner Folie
         run: python3 .github/scripts/pruefe-ueberlauf.py
 
+      # Springt das Inhaltsverzeichnis wirklich? Typst schreibt interne Ziele
+      # als erzeugte DOM-Namen, und ob der Klick auf dem richtigen Schritt
+      # landet, sagt nur der Browser. Der Rückweg ist der Teil, an dem eine
+      # Prüfung von Hand scheitert: steht man schon auf der Inhaltsfolie,
+      # bewegt sich nichts, und der Verweis sieht kaputt aus, obwohl er stimmt.
+      - name: Das Inhaltsverzeichnis springt hin und zurück
+        run: node .github/scripts/pruefe-inhalt.js
+
       # Das Kontrastgatter der Sprecherpalette. Ohne Browser und in einer
       # Sekunde: `contrast()` im Paket bewacht die Folienpaletten, die zwanzig
       # Farben der Sprecheransicht standen unter keiner Aufsicht.

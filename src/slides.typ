@@ -1,6 +1,6 @@
 // Slides, sections and what belongs to a single slide.
 
-#import "config.typ": accent, dark
+#import "themes.typ": lesbar, theme-state
 #import "internal.typ": (clock-state, deck-info, html-output, note-state, notiz-pruefen,
                         uebergang-pruefen,
                         step-cursor, step-jetzt, transition-state)
@@ -279,18 +279,35 @@
   let entries = all-entries.enumerate()
     .filter(((index, entry)) => index + 1 >= from and index + 1 <= last)
     .map(((index, entry)) => entry)
+  // Die Farben kommen aus dem Theme, nicht aus `config.typ`. Dort stehen die
+  // Konstanten der Vorgabe -- ein Verzeichnis, das sie liest, trägt auf
+  // `themes.night` orangene Kreise, während der Akzent des Themes cyan ist,
+  // und Titel in #23303f auf fast schwarzem Grund. Gemessen an einem Deck in
+  // beiden Themes: unter `default` fiel es nicht auf, weil dessen Akzent
+  // zufällig genau diese Konstante ist.
+  //
+  // `lesbar` wählt die Schrift auf dem Akzent so, wie es der Kontrastvertrag
+  // von jedem anderen Baustein des Pakets verlangt.
+  let t = theme-state.get()
   let number-render = if number == auto {
-    entry => ellipse(
-      text(fill: white)[#entry.number],
-      inset: (x: 0.1em, y: 0em),
-      fill: accent,
-      stroke: dark,
-    )
+    // Kein Kreis. Eine Ziffer in einer gefüllten Ellipse ist eine Form, die
+    // nichts sagt -- sie war zudem weiß auf Orange, was den Kontrastvertrag
+    // des Pakets (4,5) mit rund 3,0 verfehlt. Die naheliegende Rettung, die
+    // Ziffer dunkel zu setzen, liest sich auf Orange kaum besser.
+    //
+    // Also typografisch statt dekorativ: die Zahl in der ersten Farbe, die
+    // auf dem Papier trägt, tabellarische Ziffern, damit zwei- und
+    // einstellige Nummern untereinander stehen.
+    entry => text(
+      fill: lesbar(t.paper, t.accent, t.strong, t.ink),
+      weight: "medium",
+      features: (tnum: 1),
+    )[#entry.number.]
   } else if number == none { entry => [] }
   else { number }
   let title-render = if title == auto {
     (entry, destination) => link(destination)[
-      #text(fill: dark)[#entry.title]
+      #text(fill: t.ink)[#entry.title]
     ]
   } else { title }
   let item = entry => {

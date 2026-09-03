@@ -3657,7 +3657,9 @@ come:
 ]
 ```]
 
-Each entry carries `depth`, `number`, `title`, `first`, `last` and `count`.
+Each entry carries `depth`, `number`, `title`, `target`, `first`, `last`
+and `count`. `target` is the slide of the section itself -- what you need
+to link to it, as `contents()` does.
 `first`, `last` and `count` are *transitive*: a depth-1 section counts the
 slides of its sub-sections too, so a bar does not show a zero for every
 top-level heading. A section with nothing under it has `none` for `first` and
