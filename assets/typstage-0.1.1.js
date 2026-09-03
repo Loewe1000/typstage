@@ -1958,7 +1958,7 @@
   // Wo die angeheftete Uhr steht und wie gross sie ist. Bruchteile der
   // Buehne, keine Pixel: die Buehne ist in beiden Fenstern verschieden gross,
   // und die Uhr soll in beiden an derselben Stelle der Folie stehen.
-  function uhrOrt(art, x, y) {
+  function uhrOrt(art, x, y, s) {
     if (!UHR_KNOTEN) return;
     var fest = art === "fest";
     UHR_KNOTEN.dataset.art = fest ? "fest" : "voll";
@@ -1981,8 +1981,13 @@
     // `vh`/`vw` war die Uhr im Sprecherfenster viel zu gross fuer ihre kleine
     // Buehne: der Kasten folgte der Folie, die Schrift dem Fenster, und
     // dieselbe Uhr sah in beiden Fenstern verschieden aus.
-    if (UHR_ZAHL) UHR_ZAHL.style.fontSize = Math.round(b.width * 0.052) + "px";
-    if (UHR_WORT) UHR_WORT.style.fontSize = Math.round(b.width * 0.014) + "px";
+    // Der Faktor greift an der Schrift und nicht an einer Breite: der Kasten
+    // richtet sich nach seinen Ziffern, und die Ziffern nach der Buehne. So
+    // bleibt die Uhr in beiden Fenstern gleich gross, gleich wie gross das
+    // Fenster ist.
+    var f = +s > 0 ? +s : 1;
+    if (UHR_ZAHL) UHR_ZAHL.style.fontSize = Math.round(b.width * 0.052 * f) + "px";
+    if (UHR_WORT) UHR_WORT.style.fontSize = Math.round(b.width * 0.014 * f) + "px";
   }
 
   function uhrAus() {
@@ -2919,7 +2924,7 @@
       else uhrDauer(d.uhr);
       // Art und Ort kommen bei *jedem* Schlag mit und nicht nur beim Stempeln:
       // eine Uhr, die am Pult gerade verschoben wird, soll drueben mitwandern.
-      if (UHR) uhrOrt(d.uhrArt, d.uhrX, d.uhrY);
+      if (UHR) uhrOrt(d.uhrArt, d.uhrX, d.uhrY, d.uhrS);
     }
     if (FROST || document.documentElement.dataset.tsSchwarz || UHR) wacheAn();
     sichtMerken();
@@ -3143,6 +3148,10 @@
   // beiden Fenstern verschieden gross, und die Uhr soll in beiden an
   // derselben Stelle der *Folie* stehen.
   var SAAL_ART = "voll", SAAL_X = 0.72, SAAL_Y = 0.78;
+  // Wie gross die angeheftete Uhr ist, als Vielfaches ihrer Grundgroesse.
+  // Ein Faktor und keine Pixel, aus demselben Grund wie bei Ort und
+  // Bruchteilen: die Buehne ist in beiden Fenstern verschieden gross.
+  var SAAL_S = 1;
   var NOTIZ_PX = 21;
   var SCHWARZ = 0, EIS = 0;
   var VORSCHAU = "";
@@ -3377,7 +3386,7 @@
       return;
     }
     document.documentElement.dataset.tsClock = "1";
-    uhrOrt("fest", SAAL_X, SAAL_Y);
+    uhrOrt("fest", SAAL_X, SAAL_Y, SAAL_S);
     var drueber = SAAL_REST < 0;
     if (UHR_ZAHL) UHR_ZAHL.textContent =
       uhrText(Math.abs(Math.round(SAAL_REST)), drueber, false);
@@ -3394,16 +3403,69 @@
   function festZiehen() {
     if (ROLLE !== "speaker" || !UHR_KNOTEN) return;
     var greift = null;
+    // ── Rand oder Mitte ───────────────────────────────────────────────────
+    //
+    // Ein Zug am Rand zieht die Uhr groesser oder kleiner, einer in der Mitte
+    // schiebt sie. Kein sichtbarer Anfasser, sondern eine Randzone: die Uhr
+    // ist ein kleiner Kasten, und vier Ecken darauf waeren mehr Beiwerk als
+    // Uhr. Der Zeiger sagt, woran man ist.
+    var RAND = 12;
+    function amRand(ev) {
+      var r = UHR_KNOTEN.getBoundingClientRect();
+      return ev.clientX - r.left < RAND || r.right - ev.clientX < RAND ||
+             ev.clientY - r.top < RAND || r.bottom - ev.clientY < RAND;
+    }
     UHR_KNOTEN.addEventListener("pointerdown", function (ev) {
       if (UHR_KNOTEN.dataset.art !== "fest") return;
       var r = UHR_KNOTEN.getBoundingClientRect();
-      greift = { dx: ev.clientX - r.left, dy: ev.clientY - r.top };
+      if (amRand(ev)) {
+        // Gemessen wird der Abstand zur Mitte, nicht zu einer Kante. Damit
+        // zieht jede Kante und jede Ecke gleich, und es braucht keine
+        // Fallunterscheidung, welche gegriffen wurde.
+        var mx = r.left + r.width / 2, my = r.top + r.height / 2;
+        var d0 = Math.hypot(ev.clientX - mx, ev.clientY - my);
+        greift = { art: "groesse", d0: Math.max(8, d0), s0: SAAL_S };
+      } else {
+        greift = { art: "ort", dx: ev.clientX - r.left, dy: ev.clientY - r.top };
+      }
       try { UHR_KNOTEN.setPointerCapture(ev.pointerId); } catch (x) {}
       ev.preventDefault();
       ev.stopPropagation();
     });
+    // Ohne Zug sagt der Zeiger, was ein Zug taete.
+    UHR_KNOTEN.addEventListener("pointermove", function (ev) {
+      if (greift || UHR_KNOTEN.dataset.art !== "fest") return;
+      UHR_KNOTEN.style.cursor = amRand(ev) ? "nwse-resize" : "grab";
+    });
+    UHR_KNOTEN.addEventListener("pointerleave", function () {
+      UHR_KNOTEN.style.cursor = "";
+    });
     UHR_KNOTEN.addEventListener("pointermove", function (ev) {
       if (!greift) return;
+      if (greift.art === "groesse") {
+        var b0 = B.getBoundingClientRect();
+        if (!b0.width || !b0.height) return;
+        var r0 = UHR_KNOTEN.getBoundingClientRect();
+        var mx = r0.left + r0.width / 2, my = r0.top + r0.height / 2;
+        var d = Math.hypot(ev.clientX - mx, ev.clientY - my);
+        // Grenzen, damit die Uhr weder zum Punkt schrumpft noch die Folie
+        // verdeckt. Nach oben zusaetzlich das, was auf die Buehne passt.
+        var passt = Math.min(b0.width / Math.max(40, r0.width),
+                             b0.height / Math.max(24, r0.height)) * SAAL_S;
+        SAAL_S = Math.max(0.4, Math.min(Math.min(4, passt),
+                                        greift.s0 * d / greift.d0));
+        uhrOrt("fest", SAAL_X, SAAL_Y, SAAL_S);
+        // Eine gewachsene Uhr kann ueber den Rand geraten sein. Derselbe
+        // Riegel wie beim Schieben, sonst steht sie drueben halb daneben.
+        var r1 = UHR_KNOTEN.getBoundingClientRect();
+        SAAL_X = Math.max(0, Math.min(1 - r1.width / b0.width, SAAL_X));
+        SAAL_Y = Math.max(0, Math.min(1 - r1.height / b0.height, SAAL_Y));
+        uhrOrt("fest", SAAL_X, SAAL_Y, SAAL_S);
+        sichtSenden();
+        ev.preventDefault();
+        ev.stopPropagation();
+        return;
+      }
       var b = B.getBoundingClientRect();
       if (!b.width || !b.height) return;
       var r = UHR_KNOTEN.getBoundingClientRect();
@@ -3413,7 +3475,7 @@
       var y = (ev.clientY - greift.dy - b.top) / b.height;
       SAAL_X = Math.max(0, Math.min(1 - r.width / b.width, x));
       SAAL_Y = Math.max(0, Math.min(1 - r.height / b.height, y));
-      uhrOrt("fest", SAAL_X, SAAL_Y);
+      uhrOrt("fest", SAAL_X, SAAL_Y, SAAL_S);
       sichtSenden();
       ev.preventDefault();
       ev.stopPropagation();
@@ -3434,7 +3496,8 @@
     SICHT_GESENDET = Date.now();
     sende("sicht", { schwarz: SCHWARZ, frost: EIS,
                      uhr: SAAL_SEK, uhrLauf: SAAL_NR,
-                     uhrArt: SAAL_ART, uhrX: SAAL_X, uhrY: SAAL_Y });
+                     uhrArt: SAAL_ART, uhrX: SAAL_X, uhrY: SAAL_Y,
+                     uhrS: SAAL_S });
     lageZeigen();
   }
   // What holds on the other side also holds here, continuously and not
@@ -4880,8 +4943,75 @@
         t.textContent = titel;
         schild.appendChild(t);
       }
+      // ── Die Schrittleiste ─────────────────────────────────────────────
+      //
+      // Eine Kachel zeigt die Folie in ihrem letzten Schritt. Was davor
+      // passiert, sieht man in der Uebersicht sonst nicht -- und wer eine
+      // bestimmte Stelle sucht, will genau dorthin und nicht an den Anfang
+      // der Folie.
+      //
+      // Ein Feld je Schritt. Ueberfahren zeigt ihn in der Kachel, Klicken
+      // geht hin. Eine Folie mit nur einem Schritt bekommt keine Leiste:
+      // dort gibt es nichts zu waehlen, und ein Streifen, der immer voll
+      // ist, sagt nichts.
+      // Den Streifen bekommt jede Kachel, auch eine ohne Wahl -- sonst
+      // stuenden die Beschriftungen einer Reihe verschieden hoch, je nachdem
+      // wie viele Schritte die Folie daneben hat. Leer ist er unsichtbar,
+      // nimmt aber seinen Platz.
+      var n = letzterSchritt(i);
+      var leiste = document.createElement("div");
+      leiste.className = "ts-mini-schritte";
+      if (n < 2) {
+        leiste.dataset.leer = "1";
+        fach.appendChild(leiste);
+      } else {
+        // Die Bilder werden erst beim ersten Ueberfahren gebaut und dann
+        // behalten. `schrittBild` klont die ganze Folie; das fuer jeden
+        // Schritt jeder Folie im Voraus zu tun, zahlte den Preis auch dort,
+        // wo niemand hinsieht.
+        var bilder = [];
+        for (var sN = 1; sN <= n; sN++) {
+          (function (sk) {
+            var feld = document.createElement("button");
+            feld.type = "button";
+            feld.className = "ts-mini-schritt";
+            feld.dataset.schritt = String(sk);
+            feld.title = sk + "/" + n;
+            feld.addEventListener("mouseenter", function () {
+              if (!bilder[sk]) bilder[sk] = schrittBild(i, sk);
+              m.innerHTML = bilder[sk].innerHTML;
+            });
+            feld.addEventListener("click", function (e) {
+              // Wie bei der Kachel: hier erledigt, nicht weiterreichen.
+              e.stopPropagation();
+              OVERVIEW.removeAttribute("data-on");
+              for (var k = 0; k < STEPS.length; k++) {
+                if (STEPS[k].slide === i && STEPS[k].step === sk) {
+                  goto(k, true); return;
+                }
+              }
+            });
+            leiste.appendChild(feld);
+          })(sN);
+        }
+        // Beim Verlassen der Leiste steht wieder das Bild der ganzen Folie da,
+        // damit die Uebersicht nach dem Herumfahren nicht durcheinander ist.
+        leiste.addEventListener("mouseleave", function () {
+          if (!bilder[n]) bilder[n] = schrittBild(i, n);
+          m.innerHTML = bilder[n].innerHTML;
+        });
+        fach.appendChild(leiste);
+      }
       fach.appendChild(schild);
-      fach.addEventListener("click", function () {
+      fach.addEventListener("click", function (e) {
+        // Der Klick ist hier erledigt und darf nicht weiter nach oben. Sonst
+        // sieht ihn auch der Blätter-Klick am Fenster -- und dessen Wache
+        // ("ist die Uebersicht offen?") greift dann nicht mehr, weil die
+        // Zeile darunter sie gerade geschlossen hat. Gemessen: ein Klick auf
+        // eine Kachel in der rechten Haelfte landete einen Schritt zu weit,
+        // einer links blaetterte zurueck und wurde nur von der Untergrenze
+        // aufgehalten. Die Folie erschien kurz und wanderte weiter.
+        e.stopPropagation();
         OVERVIEW.removeAttribute("data-on");
         for (var k = 0; k < STEPS.length; k++) {
           if (STEPS[k].slide === i) { goto(k, true); return; }
@@ -4897,6 +5027,17 @@
     for (var i = 0; i < minis.length; i++) {
       if (i === f) minis[i].dataset.hier = "1"; else delete minis[i].dataset.hier;
     }
+    // Und in der Leiste der laufenden Folie das Feld des laufenden Schritts.
+    // Nur dort: zwei markierte Felder in zwei Folien saehen aus wie zwei
+    // Stellen, an denen der Vortrag steht.
+    var jetzt = STEPS[current].step;
+    OVERVIEW.querySelectorAll(".ts-mini-schritt[data-jetzt]").forEach(function (x) {
+      delete x.dataset.jetzt;
+    });
+    var fach = OVERVIEW.children[f];
+    var feld = fach && fach.querySelector(
+      '.ts-mini-schritt[data-schritt="' + jetzt + '"]');
+    if (feld) feld.dataset.jetzt = "1";
   }
 
   // ── Scaling ────────────────────────────────────────────────────────────────

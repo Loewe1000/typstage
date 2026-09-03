@@ -2128,6 +2128,12 @@ A click pages forward, a click in the left quarter pages back. The address bar
 carries the running step, `#12` being the twelfth, so a reloaded window stands
 in the same place and a number typed by hand jumps there.
 
+In the overview a click on a thumbnail goes to the *first* step of that slide.
+Below it stands a bar with one field per step: hovering shows that step in the
+thumbnail, clicking goes straight to it, and the running step carries the
+accent. A slide that reveals nothing has nothing to choose and gets no
+fields.
+
 === A frame that has the focus
 
 Click an embedded frame and it holds the focus: every key then lands inside it
@@ -2512,8 +2518,11 @@ uncovers the slide again.
 
 `⇧T` starts the *pinned clock*. It stands #emph[on] the slide and leaves the
 task underneath in place, so paging deliberately does not end it. In the
-presenter view it can be dragged with the mouse, and it travels along in the
-talk window.
+presenter view it takes the mouse: a drag in the middle moves it, a drag at
+the edge makes it larger or smaller, and the cursor says which of the two a
+drag would do. Place and size travel along to the talk window as fractions of
+the stage, so the clock stands in the same spot of the slide and at the same
+size, in a window of a different size.
 
 Both ask for the minutes first and only then run. `⇧←` and `⇧→` give a
 minute more or less; the same key again ends the clock.

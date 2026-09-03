@@ -2663,8 +2663,13 @@ derselben oder auf der nächsten Folie liegt.
 )
 
 Ein Klick in das linke Viertel des Fensters blättert zurück, jeder andere
-vorwärts; in einem eingebetteten Element bleibt der Klick bei diesem. In der
-Übersicht führt ein Klick auf ein Vorschaubild zu dieser Folie.
+vorwärts; in einem eingebetteten Element bleibt der Klick bei diesem.
+
+In der Übersicht führt ein Klick auf ein Vorschaubild zum *ersten* Schritt
+dieser Folie. Darunter steht eine Leiste mit einem Feld je Schritt: Überfahren
+zeigt den Schritt in der Kachel, Klicken springt genau dorthin, und der
+laufende Schritt trägt den Akzent. Eine Folie ohne Aufdecken hat nichts zu
+wählen und bekommt deshalb keine Felder.
 
 Die Adresszeile trägt den laufenden Schritt mit, `#12` etwa den zwölften. Ein
 neu geladenes Fenster steht damit wieder an derselben Stelle, und eine von Hand
@@ -2985,8 +2990,11 @@ Ziffern für die letzte Reihe: Der Saal macht Pause. Blättern beendet sie.
 
 `⇧T` startet die *angeheftete Uhr*. Sie steht #emph[auf] der Folie und lässt
 die Aufgabe darunter stehen; Blättern beendet sie nicht. In der
-Sprecheransicht lässt sie sich mit der Maus verschieben und wandert im
-Vortragsfenster mit.
+Sprecheransicht lässt sie sich mit der Maus anfassen: ein Zug in der Mitte
+verschiebt sie, ein Zug am Rand zieht sie größer oder kleiner. Der Zeiger sagt
+vorher, welches von beidem. Ort und Größe wandern im Vortragsfenster mit, als
+Bruchteile der Bühne -- die Uhr steht dort an derselben Stelle der Folie und
+gleich groß, obwohl das Fenster ein anderes ist.
 
 Beide fragen zuerst nach den Minuten und laufen erst danach. `⇧←` und
 `⇧→` geben eine Minute mehr oder weniger; derselbe Tastendruck noch
