@@ -161,20 +161,34 @@ html[data-ts-licht] .ts-mini-fach:hover .ts-mini-schild{color:var(--sp-satz)}
 .ts-mini{position:relative;background:#fafafa;border-radius:4px;overflow:hidden;
   cursor:pointer;outline:2px solid transparent;height:0;padding-bottom:var(--ts-ratio,56.25%)}
 .ts-mini[data-hier]{outline-color:#eb5e28}
-/* Die Schrittleiste unter einer Kachel. Ein Feld je Schritt, so breit wie
-   die Kachel es hergibt; der laufende Schritt traegt den Akzent. Keine
-   Zahlen darin -- bei zwoelf Schritten waeren sie unlesbar, und der Titel
-   des Feldes nennt sie ohnehin. */
-.ts-mini-schritte{display:flex;gap:2px;height:6px}
-.ts-mini-schritte[data-leer]{visibility:hidden}
-.ts-mini-schritt{flex:1 1 0;min-width:0;padding:0;border:0;border-radius:2px;
-  background:#2a3038;cursor:pointer;appearance:none}
-.ts-mini-schritt:hover{background:#6b7684}
-.ts-mini-schritt[data-jetzt]{background:#eb5e28}
-.ts-mini-schritt:focus-visible{outline:2px solid #eb5e28;outline-offset:1px}
-html[data-ts-licht] .ts-mini-schritt{background:var(--sp-marke)}
-html[data-ts-licht] .ts-mini-schritt:hover{background:var(--sp-leise)}
-html[data-ts-licht] .ts-mini-schritt[data-jetzt]{background:var(--sp-akzent)}
+/* Die Schrittzone im unteren Drittel der Kachel. Ein Feld je Schritt, dessen
+   Trefferflaeche die ganze Drittelhoehe ist -- die Marke unten sagt nur, wo
+   man steht. Die oberen zwei Drittel gehoeren der Folie: ein Klick dort geht
+   an ihren Anfang.
+
+   Die Marke ist immer zu sehen und nicht erst beim Ueberfahren. Wer die Zone
+   auf dem Weg zur Kachel streift, hat sie sonst schon ausgeloest, bevor er
+   wusste, dass es sie gibt. */
+.ts-mini-huelle{position:relative}
+.ts-mini-schritte{position:absolute;left:0;right:0;bottom:0;height:33%;
+  display:flex;gap:2px;align-items:flex-end;padding:0 3px 3px}
+.ts-mini-schritte[data-leer]{display:none}
+.ts-mini-schritt{flex:1 1 0;min-width:0;height:100%;padding:0;border:0;
+  background:none;cursor:pointer;appearance:none;position:relative}
+/* Die sichtbare Marke: ein Balken am unteren Rand des Feldes. */
+.ts-mini-schritt::after{content:"";position:absolute;left:0;right:0;bottom:0;
+  height:5px;border-radius:2.5px;background:#2a3038;opacity:.55;
+  transition:opacity .12s ease-out,height .12s ease-out}
+.ts-mini-schritt:hover::after{height:9px;opacity:1;background:#eb5e28}
+.ts-mini-schritt[data-jetzt]::after{background:#eb5e28;opacity:1}
+.ts-mini-schritt:focus-visible::after{outline:2px solid #eb5e28;outline-offset:1px}
+/* Solange der Zeiger in der Zone steht, faerbt sie sich schwach ein: dann ist
+   zu sehen, dass hier nicht die Folie gemeint ist, sondern ein Schritt. */
+.ts-mini-schritte:hover{background:linear-gradient(to top,
+  rgba(0,0,0,.28),rgba(0,0,0,0))}
+html[data-ts-licht] .ts-mini-schritt::after{background:var(--sp-marke)}
+html[data-ts-licht] .ts-mini-schritt:hover::after{background:var(--sp-akzent)}
+html[data-ts-licht] .ts-mini-schritt[data-jetzt]::after{background:var(--sp-akzent)}
 .ts-mini svg{position:absolute;inset:0;width:100%!important;height:100%!important;
   display:block}
 /* The preview takes the overlay layer along, so it can show a *step* and

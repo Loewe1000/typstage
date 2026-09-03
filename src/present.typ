@@ -279,9 +279,14 @@
 /// 2, and that is the rule this package always had: `=` opens a section,
 /// `==` a slide.
 ///
-/// `section-numbering:` controls the prefix shown on section slide titles. It
-/// accepts a numbering pattern such as `"1."`, `none`, or a function that
-/// receives the section number.
+/// `section-numbering:` puts a prefix on section slide titles. It takes a
+/// numbering pattern such as `"1."`, a function that receives the section
+/// number, or `none`.
+///
+/// `none` is the default, and deliberately: a deck that says nothing about
+/// numbering keeps the titles it had. Switching it on by default would have
+/// renumbered every deck already written -- measured on `gliedern`, "Where we
+/// are going" became "1. Where we are going" without anyone asking.
 ///
 /// ```typ
 /// #show: presentation.with(title: [Analysis], slide-level: 3)
@@ -443,7 +448,7 @@
   overflow: "none",
   drift: "error",
   slide-level: 2,
-  section-numbering: "1.",
+  section-numbering: none,
 ) = {
   // `..slides` would otherwise swallow any named argument without a word:
   // `presentation(pallete: palettes.dark)` did nothing and said nothing. The
@@ -818,6 +823,7 @@
     handout-body(all, facts, style, geo, thema-hell, per,
                  thema: if wechselt { thema } else { none }, overflow: overflow)
     ueberlauf-bericht(overflow)
+    cue-luecken-bericht()
     drift-bericht(drift)
   } else if target() != "html" {
     set page(width: geo.width, height: geo.height, margin: 0pt)
@@ -849,6 +855,7 @@
     }
     pages.join(pagebreak(weak: true))
     ueberlauf-bericht(overflow)
+    cue-luecken-bericht()
     drift-bericht(drift)
   } else {
     html-output.update(true)
@@ -1101,6 +1108,7 @@
     // Read back at the end of the deck, not at the first finding: whoever runs
     // the check before a talk wants the whole list in one go.
     ueberlauf-bericht(overflow)
+    cue-luecken-bericht()
     drift-bericht(drift)
 
     html.elem("div", attrs: (id: "ts-overview"), [])

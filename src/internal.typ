@@ -373,11 +373,59 @@
 /// its name with one on the slide before it, or the flight there is lost.
 /// The adaptive groups of a slide: name -> (start, count).
 ///
-/// `cue` records which steps its points were given; `cue-layer`
-/// looks it up so that it shares one. The coupling then falls out of the
-/// shared step -- swapping the step moves the point and everything tied to it
-/// at once, and nothing has to be linked by name.
-#let cue-gruppen = state("typstage-cue", (:))
+/// Die Punkte einer `cue`-Gruppe stehen als Funde im Dokument, nicht in
+/// einem Zustand: `cue-layer` und die Prüfung am Deckende fragen danach.
+///
+/// Kein Zustand, weil die Nummer eines Punktes aus dem entstünde, was schon
+/// eingetragen ist -- lesen und schreiben an derselben Stelle, und das
+/// konvergiert nicht. Gemessen vergab der erste Aufruf beim zweiten
+/// Auszeichnungslauf die 4, und der Punkt 1 verschwand. Dieselbe Lehre steht
+/// eine Handvoll Zeilen weiter oben bei `element-counter`.
+/// Der Schritt, auf dem eine `cue`-Gruppe beginnt -- je Folie und Name.
+///
+/// Nur der *erste* Aufruf einer Gruppe liest den Schrittzeiger; alle weiteren
+/// rechnen von hier aus. Läse jeder Aufruf den Zeiger, hinge er am vorigen,
+/// und die Kette wüchse mit jedem Schritt davor: gemessen brach Typst bei
+/// drei Aufrufen hinter einem `anim` nach fünf Layoutläufen ab, und der
+/// letzte Punkt blieb auf dem Schritt seines Vorgängers stehen.
+///
+/// Der erste Aufruf schreibt, was er gelesen hat, und liest beim nächsten
+/// Lauf denselben Wert wieder -- ein fester Punkt, keine Kette.
+#let cue-basis = state("typstage-cue-basis", (:))
+
+#let cue-luecken-bericht() = context {
+  let alle = query(<typstage-cue-punkt>).map(m => m.value)
+  let gruppen = (:)
+  for v in alle {
+    let k = str(v.folie) + "|" + v.name
+    gruppen.insert(k, gruppen.at(k, default: ()) + (v.nr,))
+  }
+  for (k, nrn) in gruppen {
+    let teile = k.split("|")
+    let folie = teile.first()
+    let name = teile.slice(1).join("|")
+    let sortiert = nrn.sorted()
+    // Zwei Punkte auf derselben Ziffer: der Saal ruft einen und bekommt
+    // beide, und welcher gemeint war, weiß niemand mehr.
+    let doppelt = sortiert.dedup()
+    assert(doppelt.len() == sortiert.len(), message:
+      "typstage: cue(\"" + name + "\") on slide " + folie + " gives a digit "
+      + "to two points. Two points cannot share one -- give the later call "
+      + "`nr:` a free number.")
+    // Ein Loch ist so still wie ein zehnter Punkt: `adTaste(3)` findet nichts,
+    // gibt `false` zurück, und der Tastendruck wird zum gewöhnlichen
+    // Blättern. Erst am Deckende zu beantworten, weil ein späterer Aufruf die
+    // Lücke noch füllen darf.
+    let fehlen = range(1, doppelt.last() + 1).filter(x => x not in doppelt)
+    assert(fehlen.len() == 0, message:
+      "typstage: cue(\"" + name + "\") on slide " + folie + " has no point "
+      + fehlen.map(str).join(", ") + ", but has " + str(doppelt.last())
+      + ". The room calls a point by its digit, and a digit with nothing "
+      + "behind it does nothing at all -- the keypress becomes an ordinary "
+      + "page turn. Number the points without a gap, or leave `nr:` out and "
+      + "let them count on by themselves.")
+  }
+}
 
 /// Dasselbe für `stagger`, damit `stagger-layer` den Schritt eines Stückes
 /// nachschlagen kann. Eingetragen wird nur, was einen Namen trägt.

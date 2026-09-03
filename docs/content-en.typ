@@ -597,8 +597,13 @@ point not yet named holds its place, so nothing jumps when it arrives.
 `cue-layer` hangs something on the same step -- a drawing layer, a picture, a
 sentence beside it:
 
-// check: folie davor
+// check: folie
 #show-code[```typ
+#cue("readings", start: 2)[
+  - positive and negative values
+  - lowest and highest value
+  - falling and rising
+]
 #cue-layer("readings", 1, [and what goes with it])
 ```]
 
@@ -2128,11 +2133,12 @@ A click pages forward, a click in the left quarter pages back. The address bar
 carries the running step, `#12` being the twelfth, so a reloaded window stands
 in the same place and a number typed by hand jumps there.
 
-In the overview a click on a thumbnail goes to the *first* step of that slide.
-Below it stands a bar with one field per step: hovering shows that step in the
-thumbnail, clicking goes straight to it, and the running step carries the
-accent. A slide that reveals nothing has nothing to choose and gets no
-fields.
+In the overview a tile is split. The upper two thirds belong to the slide: a
+click there goes to its *first* step. The lower third holds one field per step
+-- hovering shows that step in the thumbnail, clicking goes straight to it. The
+marks stand there always, not only on hover: whoever wants the start of the
+slide can see beforehand where not to aim. A slide that reveals nothing has
+nothing to choose and gets no fields.
 
 === A frame that has the focus
 
@@ -3712,8 +3718,9 @@ inclusive, one-based `from:` and `to:` range on multiple slides:
 its destination. Both renderers can therefore control their own typography.
 Use `number: none` to remove the number cell and let the title use the full
 item width.
-Section slide prefixes are controlled with `section-numbering:` on
-`presentation`; use `none`, a numbering pattern, or a function.
+Section slide titles carry no number of their own.
+`section-numbering:` on `presentation` puts one in front -- a numbering
+pattern such as `"1."`, or a function that receives the section number.
 
 = Handing it on
 

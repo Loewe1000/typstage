@@ -1,12 +1,13 @@
 // Appearing, moving and staggering.
 
-#import "internal.typ": (auto-morph-nr, cue-gruppen, deck-info,
+#import "internal.typ": (auto-morph-nr, cue-basis, deck-info,
                         drift-ausweg, drift-modus,
                         drift-satz, drift-toleranz, durchsichtig,
                         fit-meldung, fit-verbot, html-output, im-deck,
                         im-fit, kamera-index, kamera-liste, kurve, max-step,
                         name-of, offenes-ende, pin-index, pin-index-buch,
-                        pin-marker, platz-pruefen, selector, step-cursor,
+                        pin-marker, platz-pruefen, selector, slide-counter,
+                        step-cursor,
                         stagger-gruppen, szene-gruppen, track,
                         will-fuellen)
 
@@ -530,18 +531,21 @@
 ///
 /// Set, the list keeps its reading order: a point not yet named holds its
 /// place, so nothing jumps when it arrives later.
-#let cue(name, ..items, start: auto, spacing: 0.65em) = context {
+#let cue(name, ..items, start: auto, spacing: 0.65em, nr: auto) = context {
   assert(type(name) == str and name != "", message:
     "typstage: cue() wants a name as its first argument, so that "
     + "cue-layer() can point at the same group.")
   assert(items.named().len() == 0, message:
     "typstage: cue() does not know "
-    + items.named().keys().join(", ") + ". It takes start and spacing.")
+    + items.named().keys().join(", ") + ". It takes start, spacing and nr.")
   assert(im-fit.get() == 0, message: fit-meldung("cue"))
   // Eine 0 war hier schlimmer als anderswo: die Ziffer meldete Erfolg und
   // bewirkte nichts, weil der Schritt 0 der Folie in `STEPS` nicht vorkommt.
   assert(start == auto or (type(start) == int and start >= 1), message:
     "typstage: cue(start: …) counts from 1, not 0. Not " + repr(start))
+  assert(nr == auto or (type(nr) == int and nr >= 1), message:
+    "typstage: cue(nr: …) is the number of the first point of this call, "
+    + "counting from 1. Not " + repr(nr))
   let gegeben = items.pos()
   assert(gegeben.len() > 0, message: "typstage: cue() wants something to reveal")
   // A single piece can be a list: then its items are the points. The same
@@ -553,18 +557,89 @@
     teile.filter(c => c.func() in (list.item, enum.item))
   } else { () }
   let stuecke = if punkte.len() > 0 { punkte.map(p => p.body) } else { gegeben }
-  // `+ 1` wie bei `stagger`, `alternatives` und `build`: der Zähler steht auf
-  // dem zuletzt vergebenen Schritt, der erste eigene ist der danach. Ohne das
-  // beginnt eine Gruppe am Kopf der Folie bei null und teilt sich ihren ersten
-  // Punkt mit dem, was dort ohnehin schon steht.
-  let ab = if start == auto { step-cursor.get().first() + 1 } else { start }
-  // Recorded so that `cue-layer` finds the steps again.
-  cue-gruppen.update(g => g + ((name): (start: ab, anzahl: stuecke.len())))
+
+  // ── Eine Gruppe, mehrere Aufrufe ────────────────────────────────────────
+  //
+  // Zusammengehalten wird eine Gruppe von ihrem Namen, nicht von einem
+  // einzigen Aufruf. Jeder `cue("name")[…]` steuert Punkte bei und setzt sie
+  // dort, wo er steht -- freie Platzierung ist damit kein Sonderfall mehr,
+  // sondern fällt weg.
+  //
+  // Der Name trägt die Folie mit, und zwar bis in die Ausgabe: die Laufzeit
+  // sammelt die Punkte dokumentweit über `data-ad` ein und nimmt die Folie
+  // der Gruppe vom *ersten* Punkt. Ohne den Zusatz verschmölzen zwei
+  // gleichnamige Gruppen auf zwei Folien zu einer, die dann auf der falschen
+  // sitzt -- kein künftiges Problem, sondern das heutige Verhalten.
+  let folie = slide-counter.get().first()
+  let schluessel = str(folie) + "|" + name
+
+  // ── Die Nummer kommt aus einem Zähler, nicht aus dem Register ───────────
+  //
+  // Der nächstliegende Weg -- das Register lesen und die höchste Nummer um
+  // eins erhöhen -- konvergiert nicht. Typst läuft die Auszeichnung mehrfach,
+  // und ein `context`, der einen Zustand liest und eine daraus abgeleitete
+  // Zahl hineinschreibt, sieht im zweiten Durchgang sein eigenes Ergebnis:
+  // gemessen vergab der erste Aufruf beim zweiten Lauf die 4 und der Punkt 1
+  // verschwand. Ein Zähler hängt an der Stelle im Dokument und nicht an dem,
+  // was schon dasteht.
+  let zaehler = counter("typstage-cue-" + schluessel)
+  let bisher = zaehler.get().first()
+  let erste = if nr != auto { nr } else { bisher + 1 }
+  // Nur der erste Aufruf einer Gruppe liest den Schrittzeiger. Jeder weitere
+  // rechnet vom gemerkten Anfang aus -- sonst hängt Aufruf n an Aufruf n-1,
+  // und Typst gibt die Kette nach fünf Layoutläufen auf.
+  let basen = cue-basis.get()
+  let ab = if start != auto { start } else if schluessel in basen {
+    basen.at(schluessel) + erste - 1
+  } else { step-cursor.get().first() + 1 }
+  if start == auto and schluessel not in basen {
+    cue-basis.update(b => b + ((schluessel): ab - erste + 1))
+  }
+  // Die Schritte selbst reservieren, wie `stagger` und `alternatives` es tun.
+  //
+  // Ohne das schrieb `cue` den Schrittzeiger nie: er rückte erst weiter, wenn
+  // `anim-kern` ihn aus seinem `at` nachzog. Der nächste Aufruf derselben
+  // Gruppe las damit einen Wert, der von der Auszeichnung des vorigen
+  // Aufrufs abhing -- eine Kette, die Typst über mehrere Layoutläufe auflösen
+  // muss und nach fünf aufgibt. Gemessen an einem `anim` vor der Gruppe: die
+  // Punkte bekamen die Schritte 3, 4, 4 statt 3, 4, 5, der letzte blieb auf
+  // dem Wert seines Vorgängers stehen, und der Übersetzer meldete "document
+  // did not converge within five attempts". Ohne ein `anim` davor war die
+  // Kette kurz genug und alles sah richtig aus.
+  step-cursor.update(c => calc.max(c, ab + stuecke.len() - 1))
+  // Reines Erhöhen, wenn die Nummer nicht gepinnt ist: `m + n` hängt an
+  // nichts, was dieser Aufruf gelesen hat. Ein `max(m, erste - 1 + n)` hinge
+  // an `erste` und damit am gelesenen Stand -- gemessen meldete Typst dann
+  // `counter("typstage-cue-2|b") did not converge`, sobald fünf Aufrufe
+  // hinter zwei `anim` standen.
+  //
+  // Ein gepinntes `nr:` zieht den Zähler nach, aber aus dem Argument und
+  // nicht aus dem Gelesenen: nach `cue("a", nr: 4)` ist der nächste freie
+  // Punkt die 5 und nicht die 2.
+  if nr == auto {
+    zaehler.update(m => m + stuecke.len())
+  } else {
+    zaehler.update(m => calc.max(m, nr - 1 + stuecke.len()))
+  }
+  for i in range(stuecke.len()) {
+    assert(erste + i <= 9, message:
+      "typstage: cue(\"" + name + "\") would get a point " + str(erste + i)
+      + ", and the room calls points with the keys 1 to 9. Split the group, "
+      + "or reach the rest with the pointer instead of a digit.")
+    // Was der Punkt ist, steht als Fund im Dokument -- nicht in einem
+    // Zustand, den derselbe Aufruf auch liest. `cue-layer` und die Prüfung am
+    // Deckende fragen danach.
+    [#metadata((folie: folie, name: name, nr: erste + i, schritt: ab + i))
+     <typstage-cue-punkt>]
+  }
+
   for (i, b) in stuecke.enumerate() {
+    // `spacing` gilt innerhalb eines Aufrufs. Zwischen zwei Aufrufen steht
+    // nichts -- dort bestimmt das Layout, wo etwas hingehört.
     if i > 0 { v(spacing, weak: true) }
     block(anim-kern(
       if punkte.len() > 0 { list(b) } else { b },
-      at: str(ab + i) + "-", ad: name, ad-nr: i + 1))
+      at: str(ab + i) + "-", ad: schluessel, ad-nr: erste + i))
   }
 }
 
@@ -581,18 +656,27 @@
 /// looks up which step its point was given. Standing after them, the package
 /// says so rather than quietly doing nothing.
 #let cue-layer(name, number, body, enter: "fade") = context {
-  let g = cue-gruppen.get()
-  assert(name in g, message:
-    "typstage: cue-layer(\"" + name + "\") finds no group of that name. "
-    + "A cue() group has to stand before its layers in the source, "
-    + "because a layer looks up which step its point was given.")
-  let e = g.at(name)
-  assert(number >= 1 and number <= e.anzahl, message:
+  let folie = slide-counter.get().first()
+  // Gefragt wird das Dokument, nicht ein Zustand: die Punkte stehen als Funde
+  // darin, und ein Fund ist von der Reihenfolge der Auszeichnungsläufe
+  // unabhängig.
+  let da = query(<typstage-cue-punkt>).map(m => m.value)
+    .filter(v => v.folie == folie and v.name == name)
+  assert(da.len() > 0, message:
+    "typstage: cue-layer(\"" + name + "\") finds no group of that name on "
+    + "this slide. A cue() group has to stand before its layers in the "
+    + "source, because a layer looks up which step its point was given -- and "
+    + "a group belongs to one slide, so a name from the slide before does not "
+    + "reach here.")
+  let treffer = da.filter(v => v.nr == number)
+  let nrn = da.map(v => v.nr).sorted().dedup().map(str).join(", ")
+  assert(treffer.len() > 0, message:
     "typstage: cue-layer(\"" + name + "\", " + str(number) + ") -- that "
-    + "group has " + str(e.anzahl) + " point"
-    + (if e.anzahl == 1 { "" } else { "s" }) + ", so the number is out of range.")
-  anim-kern(body, at: str(e.start + number - 1) + "-", ad: name, ad-nr: number,
-            enter: enter)
+    + "point is not declared. The group has the point"
+    + (if da.len() == 1 { " " } else { "s " }) + nrn
+    + "; a layer can only follow a point that already stands.")
+  anim-kern(body, at: str(treffer.first().schritt) + "-",
+            ad: str(folie) + "|" + name, ad-nr: number, enter: enter)
 }
 
 /// Several things, one after another, one step apart.

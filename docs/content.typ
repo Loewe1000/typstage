@@ -741,8 +741,13 @@ seinen Platz frei, damit nichts springt.
 `cue-layer` hängt etwas an denselben Schritt -- eine Zeichenschicht, ein Bild,
 einen Satz daneben:
 
-// check: folie davor
+// check: folie
 #show-code[```typ
+#cue("ablesen", start: 2)[
+  - positive und negative Werte
+  - tiefster und höchster Wert
+  - Abnahme und Zunahme
+]
 #cue-layer("ablesen", 1, [dazu das Passende])
 ```]
 
@@ -2665,11 +2670,13 @@ derselben oder auf der nächsten Folie liegt.
 Ein Klick in das linke Viertel des Fensters blättert zurück, jeder andere
 vorwärts; in einem eingebetteten Element bleibt der Klick bei diesem.
 
-In der Übersicht führt ein Klick auf ein Vorschaubild zum *ersten* Schritt
-dieser Folie. Darunter steht eine Leiste mit einem Feld je Schritt: Überfahren
-zeigt den Schritt in der Kachel, Klicken springt genau dorthin, und der
-laufende Schritt trägt den Akzent. Eine Folie ohne Aufdecken hat nichts zu
-wählen und bekommt deshalb keine Felder.
+In der Übersicht ist eine Kachel zweigeteilt. Die oberen zwei Drittel gehören
+der Folie: ein Klick dort führt zu ihrem *ersten* Schritt. Im unteren Drittel
+liegt ein Feld je Schritt -- Überfahren zeigt den Schritt in der Kachel,
+Klicken springt genau dorthin. Die Marken stehen dort immer, nicht erst beim
+Überfahren: wer an den Anfang der Folie will, sieht vorher, wohin er nicht
+zielen darf. Eine Folie ohne Aufdecken hat nichts zu wählen und bekommt
+deshalb keine Felder.
 
 Die Adresszeile trägt den laufenden Schritt mit, `#12` etwa den zwölften. Ein
 neu geladenes Fenster steht damit wieder an derselben Stelle, und eine von Hand
@@ -4255,9 +4262,10 @@ lange Agenda kann mit dem inklusiven, bei eins beginnenden Bereich `from:` und
 `number:` ersetzt die komplette Nummernzelle und erhält einen
 Gliederungseintrag. `title:` ersetzt die komplette verknüpfte Titelzelle und
 erhält den Eintrag sowie sein Ziel. Beide Renderer können ihre Typografie
-vollständig selbst bestimmen. Der Präfix der Abschnittsfolien wird mit
-`section-numbering:` bei `presentation` gesteuert; möglich sind `none`, ein
-Nummerierungsmuster oder eine Funktion.
+vollständig selbst bestimmen. Abschnittsfolien tragen von sich aus keine
+Nummer. `section-numbering:` bei `presentation` setzt eine davor -- ein
+Nummerierungsmuster wie `"1."` oder eine eigene Funktion, die die
+Abschnittsnummer bekommt.
 Mit `number: none` lässt sich die Nummernzelle vollständig entfernen, sodass
 der Titel die gesamte Breite des Eintrags nutzt.
 

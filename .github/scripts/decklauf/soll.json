@@ -179,16 +179,16 @@
  ],
  "decks": {
   "tour": {
-   "folien": 37,
-   "schritte": 105,
-   "elemente": 99,
+   "folien": 38,
+   "schritte": 107,
+   "elemente": 100,
    "flieger": 190,
    "fliegerRueck": 113,
    "feder": 2,
    "federRueck": 2,
    "hash": 8,
    "hashStand": "0/0",
-   "sprecher": 192,
+   "sprecher": 228,
    "grund": [
     "#ffffff",
     "#c1361c",
@@ -219,6 +219,7 @@
     "#ffffff",
     "#ffffff",
     "#c1361c",
+    "#ffffff",
     "#ffffff",
     "#ffffff",
     "#ffffff",
@@ -332,12 +333,16 @@
     "88/0·1/0",
     "88/0·0/0",
     "89/0·1/0",
-    "90/0·2/0",
-    "91/0·1/0"
+    "89/0·0/0",
+    "90/0·1/0",
+    "91/0·2/0",
+    "92/0·1/0"
    ],
    "sichtbarRueck": [
-    "91/0·2/0",
-    "90/0·1/0",
+    "92/0·2/0",
+    "91/0·1/0",
+    "91/0·0/0",
+    "91/0·1/0",
     "90/0·0/0",
     "90/0·1/0",
     "89/0·0/0",
@@ -2000,11 +2005,11 @@
    "zeichnung": "3+3 Pfade · hinein/heraus · 0>1 · 0/0 offen · Sprung 0/1/6",
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
-    "darwin": "c21b10397df03f0c",
+    "darwin": "b2a15b5040541bdf",
     "linux": "da0405ea95d02712"
    },
    "satzBytes": {
-    "darwin": 1353259,
+    "darwin": 1354176,
     "linux": 1199042
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",

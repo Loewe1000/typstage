@@ -4960,7 +4960,13 @@
       var fach = document.createElement("figure");
       fach.className = "ts-mini-fach";
       var m = miniatur(i);
-      fach.appendChild(m);
+      // Eine Huelle um die Kachel, damit die Schrittzone darueber liegen kann.
+      // Nicht *in* der Kachel: beim Ueberfahren wird deren `innerHTML`
+      // ersetzt, und die Zone loeschte sich damit selbst.
+      var huelle = document.createElement("div");
+      huelle.className = "ts-mini-huelle";
+      huelle.appendChild(m);
+      fach.appendChild(huelle);
       // Nummer und Titel darunter. Ohne den Namen unterscheiden sich zwei
       // aehnliche Folien im Standbild kaum, und die Nummer ist ohnehin das,
       // wonach im Vortrag gegriffen wird.
@@ -4982,20 +4988,23 @@
       // bestimmte Stelle sucht, will genau dorthin und nicht an den Anfang
       // der Folie.
       //
-      // Ein Feld je Schritt. Ueberfahren zeigt ihn in der Kachel, Klicken
-      // geht hin. Eine Folie mit nur einem Schritt bekommt keine Leiste:
-      // dort gibt es nichts zu waehlen, und ein Streifen, der immer voll
-      // ist, sagt nichts.
-      // Den Streifen bekommt jede Kachel, auch eine ohne Wahl -- sonst
-      // stuenden die Beschriftungen einer Reihe verschieden hoch, je nachdem
-      // wie viele Schritte die Folie daneben hat. Leer ist er unsichtbar,
-      // nimmt aber seinen Platz.
+      // Die Zone liegt im unteren Drittel der Kachel, ein Feld je Schritt.
+      // Die oberen zwei Drittel gehoeren der Folie selbst: ein Klick dort
+      // geht an ihren Anfang. So braucht die Uebersicht keine zweite Zeile
+      // unter dem Bild, und der Griff nach einem Schritt liegt dort, wo man
+      // ohnehin hinsieht.
+      //
+      // Der Preis: man streift die Zone auf dem Weg zur Kachel. Deshalb ist
+      // die Marke *immer* zu sehen und nicht erst beim Ueberfahren -- wer
+      // an den Anfang will, sieht vorher, wohin er nicht zielen darf.
+      //
+      // Eine Folie mit einem Schritt bekommt keine Zone: dort gibt es nichts
+      // zu waehlen, und ein Streifen, der immer voll ist, sagt nichts.
       var n = letzterSchritt(i);
       var leiste = document.createElement("div");
       leiste.className = "ts-mini-schritte";
       if (n < 2) {
         leiste.dataset.leer = "1";
-        fach.appendChild(leiste);
       } else {
         // Die Bilder werden erst beim ersten Ueberfahren gebaut und dann
         // behalten. `schrittBild` klont die ganze Folie; das fuer jeden
@@ -5032,7 +5041,7 @@
           if (!bilder[n]) bilder[n] = schrittBild(i, n);
           m.innerHTML = bilder[n].innerHTML;
         });
-        fach.appendChild(leiste);
+        huelle.appendChild(leiste);
       }
       fach.appendChild(schild);
       fach.addEventListener("click", function (e) {

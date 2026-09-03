@@ -125,8 +125,9 @@ Long agendas can be split across slides with inclusive, one-based `from:` and
 The `number` and `title` parameters replace the complete number and linked
 title cells, so their typography and appearance can be controlled as a whole.
 Use `number: none` to remove the number cell entirely.
-`presentation.with(section-numbering: none)` hides section numbers, while a
-numbering pattern or function can provide a custom prefix.
+Section slide titles carry no number unless asked:
+`presentation.with(section-numbering: "1.")` puts one there, and a function
+gives a prefix of your own.
 
 Slides may also be handed over as arguments, `presentation(title-slide(…),
 section([…]), slide([Title])[…])`, for decks that are generated rather than
