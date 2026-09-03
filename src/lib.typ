@@ -27,7 +27,7 @@
   // What the deck knows about itself, so a deck can build its own chrome
   // instead of forking the theme. `info` says where it stands,
   // `deck-outline` how the whole thing is cut.
-  info, deck-outline,
+  info, deck-outline, contents,
 )
 #import "elements.typ": (alternatives, anim, build, camera, cue, cue-layer,
                          morph, pause, pin, scene, scene-layer, stagger,

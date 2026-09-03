@@ -6,7 +6,7 @@
 // The same source gives the animated presentation and a handout. Not shipped
 // with the package (see `exclude` in typst.toml).
 
-#import "@preview/typstage:0.1.1": *
+#import "src/lib.typ": *
 #import "@preview/cetz:0.5.2"
 
 #let card(fill: luma(96%), body) = block(
@@ -23,6 +23,14 @@
   // Try `assets: "split"` or `assets: (cdn: "https://…/")` to link the
   // runtime instead of inlining it.
   assets: "inline",
+)
+
+== Contents
+
+#contents(
+  layout: "1x2-fill",
+  number: entry => [#strong[#entry.number.]],
+  title: (entry, destination) => link(destination)[#entry.title],
 )
 
 == What this file shows

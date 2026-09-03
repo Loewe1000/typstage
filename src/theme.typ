@@ -204,6 +204,9 @@
   let schritt-summe = place(top + left, context {
     [#metadata(deck-info.get().nr) <typstage-slide-end>]
   })
+  let navigations-ziel = place(center + horizon, context {
+    [#metadata(deck-info.get().nr) <typstage-slide-target>]
+  })
   // Everything below is measured on the default canvas and scaled with it, so
   // a smaller or wider slide keeps its proportions.
   let k = geo.scale
@@ -223,7 +226,24 @@
   if s.kind == "title" {
     (t.title-slide)(t, s, geo)
   } else if s.kind == "section" {
-    (t.section)(t, s, geo)
+    let title = if s.section-numbering == none { s.title } else {
+      let prefix = if type(s.section-numbering) == function {
+        (s.section-numbering)(s.number)
+      } else {
+        numbering(s.section-numbering, s.number)
+      }
+      [#prefix #s.title]
+    }
+    (t.section)(t, s + (title: title), geo)
+    context {
+      let targets = query(<typstage-contents>)
+      if targets.len() > 0 {
+        place(bottom + right, dx: -m.right, dy: -m.bottom,
+          link(targets.first().location())[
+            #text(size: 11pt * k, fill: t.accent)[Back to contents]
+          ])
+      }
+    }
   } else {
     // A slide without a title gets no bar: `slide(none)[…]` or a bare
     // `==`. The body then moves up and gets the height the bar would
@@ -312,7 +332,7 @@
     }
   }
   // Last, because only here has the cursor seen every reveal of the slide.
-  schritt-summe
+  navigations-ziel + schritt-summe
 })
 
 /// A hook that wraps a document template around every body and every sprite.

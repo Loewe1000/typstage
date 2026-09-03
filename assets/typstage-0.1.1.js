@@ -108,6 +108,24 @@
     a.setAttribute("rel", "noopener");
   });
 
+  // Internal Typst links point at generated DOM ids. Resolve them to the
+  // containing slide so links such as "Back to contents" work in the talk.
+  document.querySelectorAll("a").forEach(function (a) {
+    var href = a.getAttribute("href") || a.getAttribute("xlink:href") || "";
+    if (!/^#/.test(href) || /^#slide-\d+$/.test(href)) return;
+    var target = document.getElementById(href.slice(1));
+    var slide = target && target.closest(".ts-slide");
+    if (!slide) return;
+    a.addEventListener("click", function (e) {
+      var index = SLIDES.indexOf(slide);
+      if (index < 0) return;
+      e.preventDefault();
+      for (var i = 0; i < STEPS.length; i++) {
+        if (STEPS[i].slide === index) { goto(i, true); return; }
+      }
+    });
+  });
+
   // ── The role, once and for good ───────────────────────────────────────────
   //
   // The same file carries two views: the talk and, with `#speaker` in the
@@ -4682,6 +4700,20 @@
     nachzueglerHoch();
   }
 
+  function gotoHash(hash, instant) {
+    var value = String(hash || "").replace(/^#/, "");
+    var slide = /^slide-(\d+)$/.exec(value);
+    if (slide) {
+      var wanted = +slide[1];
+      for (var i = 0; i < STEPS.length; i++) {
+        if (STEPS[i].slide === wanted) { goto(i, instant); return; }
+      }
+      return;
+    }
+    var n = +value - 1;
+    if (!isNaN(n)) goto(n, instant);
+  }
+
   // ── Slide transitions ─────────────────────────────────────────────────────
   //
 
@@ -5762,8 +5794,7 @@
     // In the speaker window the hash is the role, not a step number. It is
     // neither written nor read there.
     if (ROLLE === "speaker") return;
-    var n = +location.hash.slice(1) - 1;
-    if (!isNaN(n) && n !== current) goto(n, true);
+    gotoHash(location.hash, true);
   });
 
   fit();
@@ -5774,8 +5805,12 @@
   // The speaker view starts at the first slide and waits for the talk to
   // tell it where it stands. The talk itself takes the number from the
   // hash, this one time and never again after that.
-  goto(ROLLE === "speaker"
-       ? 0 : Math.max(0, (+location.hash.slice(1) || 1) - 1), true);
+  if (ROLLE === "speaker") goto(0, true);
+  else if (location.hash && /^#slide-\d+$/.test(location.hash)) {
+    gotoHash(location.hash, true);
+  } else {
+    goto(Math.max(0, (+location.hash.slice(1) || 1) - 1), true);
+  }
   // After the first `goto`, so `schwarzMedien` knows the slide, and still
   // before the first frame: that way the hall stays dark instead of
   // briefly flashing.

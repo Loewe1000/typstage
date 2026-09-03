@@ -1,5 +1,6 @@
 // Slides, sections and what belongs to a single slide.
 
+#import "config.typ": accent, dark
 #import "internal.typ": (clock-state, deck-info, html-output, note-state, notiz-pruefen,
                         uebergang-pruefen,
                         step-cursor, step-jetzt, transition-state)
@@ -229,6 +230,117 @@
     "typstage: deck-outline() reads how the deck is cut and therefore works "
     + "only inside a presentation.")
   stand.data.at("structure", default: ())
+}
+
+/// A linked contents list for the deck.
+///
+/// The target is a location rather than a page dictionary, so PDF readers can
+/// change pages without changing the reader's zoom. In HTML the runtime maps
+/// the generated internal target to the containing slide.
+/// `number` replaces the complete number cell and receives one outline entry.
+/// `title` replaces the complete linked title cell and receives the entry and
+/// its destination location. Both default to the built-in rendering.
+/// Set `number: none` to hide the number cell completely.
+/// Text styling is controlled by these two renderers as a whole.
+/// `layout: "1x1"` keeps one directory item per row; `layout: "1x2"` places
+/// directory items in two balanced columns; `layout: "1x2-fill"` fills the
+/// first column by available space before flowing into the second.
+/// `from` and `to` select an inclusive, one-based range of directory entries;
+/// `to: auto` selects through the final entry.
+///
+/// ```typ
+/// #contents(
+///   number: entry => [#strong[#entry.number.]],
+///   title: (entry, destination) => link(destination)[#entry.title],
+/// )
+/// ```
+#let contents(
+  layout: "1x1",
+  columns: (auto, 1fr),
+  row-gutter: 20pt,
+  column-gutter: 16pt,
+  from: 1,
+  to: auto,
+  number: auto,
+  title: auto,
+) = context {
+  assert(layout in ("1x1", "1x2", "1x2-fill"), message:
+    "typstage: contents(layout: ...) expects \"1x1\", \"1x2\" or "
+    + "\"1x2-fill\", not "
+    + repr(layout))
+  assert(type(from) == int and from >= 1, message:
+    "typstage: contents(from: ...) expects a positive entry number, not "
+    + repr(from))
+  assert(to == auto or (type(to) == int and to >= from), message:
+    "typstage: contents(to: ...) expects auto or an entry number >= from, not "
+    + repr(to))
+  let all-entries = deck-outline()
+  let last = if to == auto { all-entries.len() } else { to }
+  let entries = all-entries.enumerate()
+    .filter(((index, entry)) => index + 1 >= from and index + 1 <= last)
+    .map(((index, entry)) => entry)
+  let number-render = if number == auto {
+    entry => ellipse(
+      text(fill: white)[#entry.number],
+      inset: (x: 0.1em, y: 0em),
+      fill: accent,
+      stroke: dark,
+    )
+  } else if number == none { entry => [] }
+  else { number }
+  let title-render = if title == auto {
+    (entry, destination) => link(destination)[
+      #text(fill: dark)[#entry.title]
+    ]
+  } else { title }
+  let item = entry => {
+    let destination = query(<typstage-slide-target>)
+      .find(slide => slide.value == entry.target + 1)
+      .location()
+    if number == none {
+      grid(
+        columns: (1fr,),
+        title-render(entry, destination),
+      )
+    } else {
+      grid(
+        columns: columns,
+        column-gutter: column-gutter,
+        number-render(entry),
+        title-render(entry, destination),
+      )
+    }
+  }
+  let column-major = {
+    let rows = calc.div-euclid(entries.len() + 1, 2)
+    let ordered = ()
+    for i in range(rows) {
+      ordered.push(entries.at(i))
+      let second = i + rows
+      if second < entries.len() { ordered.push(entries.at(second)) }
+    }
+    ordered
+  }
+  let flow = entries.map(entry => block(below: row-gutter, item(entry))).join()
+  [
+    #metadata(none) <typstage-contents>
+    #if layout == "1x2-fill" {
+      std.columns(2, gutter: column-gutter)[#flow]
+    } else if layout == "1x2" {
+      grid(
+        columns: (1fr, 1fr),
+        row-gutter: row-gutter,
+        column-gutter: column-gutter,
+        ..column-major.map(item),
+      )
+    } else {
+      grid(
+        columns: (1fr,),
+        row-gutter: row-gutter,
+        ..entries.map(item),
+      )
+    }
+  ]
 }
 
 /// A note for the presenter view, which `n` opens in a second window.

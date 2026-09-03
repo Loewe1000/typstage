@@ -3680,6 +3680,39 @@ the slides, not into them; `examples/gliedern.typ` shows how.
   outputs. `deck-outline()` is the answer to it.
 ]
 
+=== `contents()`: a linked agenda
+
+`contents()` turns the deck outline into links that work in both HTML and PDF.
+Put it on a regular slide, since a section slide has no body:
+
+// check: folie
+#show-code[```typ
+== Contents
+#contents(layout: "1x2-fill")
+```]
+
+`layout: "1x1"` is the default single-column list. `layout: "1x2"` creates
+balanced columns, while `layout: "1x2-fill"` fills the first column by
+available height before flowing into the second. For a long agenda, use the
+inclusive, one-based `from:` and `to:` range on multiple slides:
+
+// check: folie
+#show-code[```typ
+== Contents 1
+#contents(layout: "1x2-fill", from: 1, to: 8)
+
+== Contents 2
+#contents(layout: "1x2-fill", from: 9, to: 16)
+```]
+
+`number:` replaces the complete number cell and receives one outline entry.
+`title:` replaces the complete linked title cell and receives the entry and
+its destination. Both renderers can therefore control their own typography.
+Use `number: none` to remove the number cell and let the title use the full
+item width.
+Section slide prefixes are controlled with `section-numbering:` on
+`presentation`; use `none`, a numbering pattern, or a function.
+
 = Handing it on
 
 Getting the talk to where it will be given.

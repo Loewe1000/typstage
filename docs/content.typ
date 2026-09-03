@@ -4223,6 +4223,41 @@ Folien; `examples/gliedern.typ` macht das vor.
   in *beiden* Ausgaben. `deck-outline()` ist die Antwort darauf.
 ]
 
+=== `contents()`: eine verknüpfte Agenda
+
+`contents()` macht aus der Gliederung Links, die in HTML und PDF funktionieren.
+Setze sie auf eine normale Folie, denn eine Abschnittsfolie hat keinen Rumpf:
+
+// check: folie
+#show-code[```typ
+== Inhalt
+#contents(layout: "1x2-fill")
+```]
+
+`layout: "1x1"` ist die standardmäßige einspaltige Liste. `layout: "1x2"`
+verteilt gleichmäßig auf zwei Spalten, während `layout: "1x2-fill"` die erste
+Spalte nach verfügbarer Höhe füllt und danach in die zweite fließt. Für eine
+lange Agenda kann mit dem inklusiven, bei eins beginnenden Bereich `from:` und
+`to:` auf mehrere Folien aufgeteilt werden:
+
+// check: folie
+#show-code[```typ
+== Inhalt 1
+#contents(layout: "1x2-fill", from: 1, to: 8)
+
+== Inhalt 2
+#contents(layout: "1x2-fill", from: 9, to: 16)
+```]
+
+`number:` ersetzt die komplette Nummernzelle und erhält einen
+Gliederungseintrag. `title:` ersetzt die komplette verknüpfte Titelzelle und
+erhält den Eintrag sowie sein Ziel. Beide Renderer können ihre Typografie
+vollständig selbst bestimmen. Der Präfix der Abschnittsfolien wird mit
+`section-numbering:` bei `presentation` gesteuert; möglich sind `none`, ein
+Nummerierungsmuster oder eine Funktion.
+Mit `number: none` lässt sich die Nummernzelle vollständig entfernen, sodass
+der Titel die gesamte Breite des Eintrags nutzt.
+
 = Weitergeben
 
 Das Ziel dieses Kapitels: den Vortrag dorthin bringen, wo er gehalten wird.

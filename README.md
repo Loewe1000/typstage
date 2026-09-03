@@ -108,6 +108,26 @@ section slides and `===` is the slide, so a semester fits into one file with
 its transition slides falling out by themselves. `info().levels` and
 `info().outline` hand the structure back for an agenda of your own.
 
+The built-in `contents()` turns that structure into a linked agenda in both
+HTML and PDF. Use `layout: "1x2"` for balanced columns or
+`layout: "1x2-fill"` to fill the first column before flowing into the second.
+Long agendas can be split across slides with inclusive, one-based `from:` and
+`to:` ranges:
+
+```typ
+== Contents 1
+#contents(layout: "1x2-fill", from: 1, to: 8)
+
+== Contents 2
+#contents(layout: "1x2-fill", from: 9, to: 16)
+```
+
+The `number` and `title` parameters replace the complete number and linked
+title cells, so their typography and appearance can be controlled as a whole.
+Use `number: none` to remove the number cell entirely.
+`presentation.with(section-numbering: none)` hides section numbers, while a
+numbering pattern or function can provide a custom prefix.
+
 Slides may also be handed over as arguments, `presentation(title-slide(…),
 section([…]), slide([Title])[…])`, for decks that are generated rather than
 written.
@@ -144,6 +164,7 @@ else, no Node, no bundler.
 | `presentation` | builds the deck: slides as arguments, or a show-rule body split at its headings |
 | `bundle` | writes talk, slide set and handout in a single compile |
 | `slide`, `section`, `title-slide` | the three kinds of slide |
+| `contents` | a linked agenda with configurable layout, ranges and cell renderers |
 | `anim`, `stagger`, `pause`, `alternatives` | reveal one thing, a series of things, everything after this point, one thing after another in the same place; `anim(after: "dimmed")` lets a point stay muted once its range is over, and `stagger(dim: true)` walks a list that way, the current point lit and the earlier ones quiet |
 | `build` | a CeTZ drawing or a lilaq diagram that comes into being step by step: the drawing is written once and set once per stage, and a piece that is not due yet stands there as air — alpha 0, invisible but still holding its room, so the picture never shifts |
 | `scene`, `scene-layer` | a drawing as a function of a value, plus the values at which the talk stops: Typst renders every stop and the frames in between, and a keypress pulls the picture from one stop to the next — manim's `ValueTracker` in the step model of a talk. `scene-layer` puts a sentence or a formula on the step of one particular stop |

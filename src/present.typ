@@ -279,6 +279,10 @@
 /// 2, and that is the rule this package always had: `=` opens a section,
 /// `==` a slide.
 ///
+/// `section-numbering:` controls the prefix shown on section slide titles. It
+/// accepts a numbering pattern such as `"1."`, `none`, or a function that
+/// receives the section number.
+///
 /// ```typ
 /// #show: presentation.with(title: [Analysis], slide-level: 3)
 /// = Part I
@@ -439,6 +443,7 @@
   overflow: "none",
   drift: "error",
   slide-level: 2,
+  section-numbering: "1.",
 ) = {
   // `..slides` would otherwise swallow any named argument without a word:
   // `presentation(pallete: palettes.dark)` did nothing and said nothing. The
@@ -448,11 +453,16 @@
     + slides.named().keys().join(", ")
     + ". It takes title, subtitle, author, date, assets, theme, palette, "
     + "transition, transition-duration, duration, speaker-view, style, width, "
-    + "height, margin, handout, overflow, drift and slide-level.")
+    + "height, margin, handout, overflow, drift, slide-level and "
+    + "section-numbering.")
   assert(type(slide-level) == int and slide-level >= 1, message:
     "typstage: slide-level is the heading depth at which a heading becomes a "
     + "slide, an integer from 1 upwards; 2 is the default. Not "
     + repr(slide-level))
+  assert(section-numbering == none or type(section-numbering) == str
+         or type(section-numbering) == function, message:
+    "typstage: section-numbering is a numbering pattern, none or a function "
+    + "receiving the section number. Not " + repr(section-numbering))
   assert(overflow in ("none", "error", "record"), message:
     "typstage: overflow is \"none\" (the default), \"error\" or \"record\", "
     + "not " + repr(overflow))
@@ -686,7 +696,8 @@
         }
       }
       raus.push((depth: tiefe, number: ebenen-satz.at(k).number,
-                 title: abschnitte.at(k).title,
+             title: abschnitte.at(k).title,
+             target: abschnitte.at(k).nr,
                  first: erste, last: letzte, count: wieviele))
       k += 1
     }
@@ -701,7 +712,9 @@
     for s in all {
       if s.kind != "section" { raus.push(s) } else {
         raus.push(s + (depth: abschnitte.at(k).depth,
-                       parents: abschnitte.at(k).parents))
+                       parents: abschnitte.at(k).parents,
+                       number: ebenen-satz.at(k).number,
+                       section-numbering: section-numbering))
         k += 1
       }
     }
