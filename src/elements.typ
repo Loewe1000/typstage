@@ -443,7 +443,14 @@
     // Ausserhalb eines Decks gibt es weder einen Zeiger noch eine Folie, nach
     // deren Nummer sich fragen liesse. `pin` daneben fragt aus demselben Grund.
     if im-deck() {
-      step-cursor.update(c => calc.max(c, letzter))
+      // Wie bei `scene`: rein, solange der Schritt aus dem Zähler kommt.
+      // `sel` ist dann `calc.max(c + 1, 2)` und der Halt danach eins mehr --
+      // beides Funktionen von `c` allein.
+      if at == auto {
+        step-cursor.update(c => calc.max(c, calc.max(c + 1, 2) + 1))
+      } else {
+        step-cursor.update(c => calc.max(c, letzter))
+      }
       // Erst ausrechnen, dann eintragen: in der Funktion, die `update`
       // bekommt, ist kein Kontext mehr bekannt.
       let wo = deck-info.get().nr
@@ -1461,7 +1468,20 @@
     // steht schon da --, jeder weitere einen Tastendruck; zusammen sind das
     // `stops.len() - 1` Schritte.
     let letzter = erster + stops.len() - 1
-    if im-deck() { step-cursor.update(c => calc.max(c, letzter)) }
+    // Der Vorschub rein, nicht aus dem Gelesenen: `erster` ist
+    // `calc.max(1, c)`, also ist `letzter` eine Funktion von `c` allein. Ein
+    // Update, das an einem gelesenen Zählerstand hängt, kostet das Dokument
+    // seine Konvergenz, sobald die Zeichnung etwas außerhalb des Flusses
+    // trägt -- gemessen zehn Meldungen bei drei Szenen, null mit dieser
+    // Zeile. Bei ausgeschriebenem `start:` hängt `letzter` am Argument und
+    // nicht am Zähler; dort bleibt es, wie es war.
+    if im-deck() {
+      if start == auto {
+        step-cursor.update(c => calc.max(c, calc.max(1, c) + stops.len() - 1))
+      } else {
+        step-cursor.update(c => calc.max(c, letzter))
+      }
+    }
     // Eingetragen, damit `scene-layer` die Schritte wiederfindet.
     if name != none {
       szene-gruppen.update(g => g + ((name): (start: erster, stops: stops.len())))

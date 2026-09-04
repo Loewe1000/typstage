@@ -45,17 +45,12 @@ FAELLE = {
     "alternatives":           'alternatives(%s, %s)' % (STUECK, STUECK),
     "tiles":                  'tiles(%s, %s)' % (STUECK, STUECK),
     "build":                  'build(k => %s, steps: 2)' % STUECK,
-}
-
-# Noch offen. Beide hängen am selben Mechanismus -- mit ausgeschriebenem
-# Schritt sind sie still --, aber der Weg über `at: auto` steht ihnen nicht
-# offen: eine `scene` ist *ein* Element über mehrere Schritte, und `camera`
-# ruft `track` gar nicht auf, sondern trägt seinen Schritt nur in eine Liste
-# ein. Die Probe hält sie fest, ohne den Lauf rot zu färben -- und schlägt an,
-# wenn einer von ihnen still wird: dann gehört er nach oben.
-OFFEN = {
     "scene":                  'scene("s" + str(w), t => %s, stops: (0, 1), tween: 4)' % STUECK,
 }
+
+# Nichts mehr offen. Bleibt als Fach stehen, damit ein neuer Fund hier landen
+# kann, statt den Lauf rot zu färben, bevor jemand ihn ansehen konnte.
+OFFEN = {}
 
 # `camera` zielt auf ein `pin` und braucht deshalb einen eigenen Rumpf.
 KAMERA = """#import "@preview/typstage:0.1.1": *
@@ -93,8 +88,10 @@ def main():
             os.makedirs(ziel, exist_ok=True)
             os.symlink(WURZEL, os.path.join(ziel, "0.1.1"))
         klagen = []
-        for name, aufruf in FAELLE.items():
-            n, fehler = messen(RUMPF.format(aufruf=aufruf), tmp, paket)
+        pflicht = [(name, RUMPF.format(aufruf=a)) for name, a in FAELLE.items()]
+        pflicht.append(("camera", KAMERA))
+        for name, quelle in pflicht:
+            n, fehler = messen(quelle, tmp, paket)
             if fehler is not None:
                 klagen.append("%s: übersetzt nicht -- %s" % (name, fehler))
             elif n:
@@ -104,9 +101,8 @@ def main():
                     "hereingereicht; mit `at: auto` vergibt track ihn selbst, "
                     "und die Messung bleibt stabil." % (name, n))
 
-        offene = [(name, RUMPF.format(aufruf=a)) for name, a in OFFEN.items()]
-        offene.append(("camera", KAMERA))
-        for name, quelle in offene:
+        for name, quelle in [
+                (name, RUMPF.format(aufruf=a)) for name, a in OFFEN.items()]:
             n, fehler = messen(quelle, tmp, paket)
             if fehler is not None:
                 klagen.append("%s (bekannt offen): übersetzt nicht -- %s"
@@ -124,8 +120,11 @@ def main():
             for k in klagen:
                 print("  - " + k)
             return 1
-    print("Konvergenz: %d Aufbauten stabil, %d bekannt offen"
-          % (len(FAELLE), len(OFFEN) + 1))
+    if OFFEN:
+        print("Konvergenz: %d Aufbauten stabil, %d bekannt offen"
+              % (len(FAELLE) + 1, len(OFFEN)))
+    else:
+        print("Konvergenz: %d Aufbauten, alle stabil" % (len(FAELLE) + 1))
     return 0
 
 

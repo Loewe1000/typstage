@@ -70,11 +70,15 @@ All notable changes to this package are recorded here. The format follows
   path, which they need for the absolute first step. Every example deck comes
   out with the same steps as before, down to the check deck's byte count.
 
-  Still open: `scene`, which is *one* element across several steps, and
-  `camera`, which never calls `track` at all but only writes its step into a
-  list. Both hang on the same mechanism -- an explicit step silences them --
-  but neither can take the `at: auto` route. `pruefe-konvergenz.py` records
-  them, and says so when one of them goes quiet.
+  `scene` and `camera` had the same symptom for a different reason: not the
+  `at` they hand in, but the *advance* they compute from what they read
+  (`step-cursor.update(c => calc.max(c, letzter))` with a read-derived
+  `letzter`). Both advances turn out to be plain functions of the cursor --
+  a scene begins at `calc.max(1, c)` and owns one step per stop -- and are now
+  written that way, so nothing read goes into them. Where `start:` or `at:`
+  names the step, it comes from the argument and the old line stays.
+  `pruefe-konvergenz.py` holds all nine constructs, `anim` among them as the
+  control that never had it.
 - **A `cue()` group no longer swallows the steps before it.** The forward arrow
   reveals the next point not yet named, and the group claimed the key as soon
   as its next point lay anywhere ahead -- not only when that point was the next
