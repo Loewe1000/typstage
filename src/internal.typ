@@ -391,41 +391,12 @@
 ///
 /// Der erste Aufruf schreibt, was er gelesen hat, und liest beim nächsten
 /// Lauf denselben Wert wieder -- ein fester Punkt, keine Kette.
+/// Je Gruppenname `(ab: <erster Schritt>, n: <Punkte bisher>)`, und zwar für
+/// *diese* Folie: geleert wird der Zustand am Anfang jeder Folie. Daran hängt,
+/// dass eine cue-Gruppe zu einer Folie gehört -- ohne ein Lesen des
+/// Folienzählers, das in einem gemessenen Element nicht konvergiert.
 #let cue-basis = state("typstage-cue-basis", (:))
 
-#let cue-luecken-bericht() = context {
-  let alle = query(<typstage-cue-punkt>).map(m => m.value)
-  let gruppen = (:)
-  for v in alle {
-    let k = str(v.folie) + "|" + v.name
-    gruppen.insert(k, gruppen.at(k, default: ()) + (v.nr,))
-  }
-  for (k, nrn) in gruppen {
-    let teile = k.split("|")
-    let folie = teile.first()
-    let name = teile.slice(1).join("|")
-    let sortiert = nrn.sorted()
-    // Zwei Punkte auf derselben Ziffer: der Saal ruft einen und bekommt
-    // beide, und welcher gemeint war, weiß niemand mehr.
-    let doppelt = sortiert.dedup()
-    assert(doppelt.len() == sortiert.len(), message:
-      "typstage: cue(\"" + name + "\") on slide " + folie + " gives a digit "
-      + "to two points. Two points cannot share one -- give the later call "
-      + "`nr:` a free number.")
-    // Ein Loch ist so still wie ein zehnter Punkt: `adTaste(3)` findet nichts,
-    // gibt `false` zurück, und der Tastendruck wird zum gewöhnlichen
-    // Blättern. Erst am Deckende zu beantworten, weil ein späterer Aufruf die
-    // Lücke noch füllen darf.
-    let fehlen = range(1, doppelt.last() + 1).filter(x => x not in doppelt)
-    assert(fehlen.len() == 0, message:
-      "typstage: cue(\"" + name + "\") on slide " + folie + " has no point "
-      + fehlen.map(str).join(", ") + ", but has " + str(doppelt.last())
-      + ". The room calls a point by its digit, and a digit with nothing "
-      + "behind it does nothing at all -- the keypress becomes an ordinary "
-      + "page turn. Number the points without a gap, or leave `nr:` out and "
-      + "let them count on by themselves.")
-  }
-}
 
 /// Dasselbe für `stagger`, damit `stagger-layer` den Schritt eines Stückes
 /// nachschlagen kann. Eingetragen wird nur, was einen Namen trägt.
@@ -604,6 +575,39 @@
 /// looks up across the whole document. A query sees every slide at once and
 /// has to be able to tell them apart.
 #let slide-counter = counter("typstage-slide")
+
+#let cue-luecken-bericht() = context {
+  // Hier darf gelesen werden: das läuft am Deckende und nicht in einem
+  // gemessenen Element. Deshalb steht die Prüfung hier und nicht in `cue`,
+  // das die Folie gar nicht kennen darf.
+  //
+  // Nach Folie *und* Name getrennt, denn die Ziffern beginnen auf jeder Folie
+  // wieder bei 1: ohne die Folie im Schlüssel sähen zwei gleichnamige Gruppen
+  // wie eine mit lauter doppelten Ziffern aus.
+  let gruppen = (:)
+  for m in query(<typstage-cue-punkt>) {
+    let folie = slide-counter.at(m.location()).first()
+    let schluessel = str(folie) + "|" + m.value.name
+    gruppen.insert(schluessel, gruppen.at(schluessel, default: ()) + (m.value.nr,))
+  }
+  for (schluessel, nrn) in gruppen {
+    let name = schluessel.split("|").slice(1).join("|")
+    let sortiert = nrn.sorted()
+    let doppelt = sortiert.dedup()
+    assert(doppelt.len() == sortiert.len(), message:
+      "typstage: cue(\"" + name + "\") gives a digit to two points on one "
+      + "slide. Two points cannot share one -- give the later call `nr:` a "
+      + "free number.")
+    let fehlen = range(1, doppelt.last() + 1).filter(x => x not in doppelt)
+    assert(fehlen.len() == 0, message:
+      "typstage: cue(\"" + name + "\") has no point "
+      + fehlen.map(str).join(", ") + ", but has " + str(doppelt.last())
+      + ". The room calls a point by its digit, and a digit with nothing "
+      + "behind it does nothing at all -- the keypress becomes an ordinary "
+      + "page turn. Number the points without a gap, or leave `nr:` out and "
+      + "let them count on by themselves.")
+  }
+}
 
 /// What the deck knows about itself, written once per slide.
 ///

@@ -2005,11 +2005,11 @@
    "zeichnung": "3+3 Pfade · hinein/heraus · 0>1 · 0/0 offen · Sprung 0/1/6",
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
-    "darwin": "b2a15b5040541bdf",
+    "darwin": "7c2fd55bea5e6e07",
     "linux": "da0405ea95d02712"
    },
    "satzBytes": {
-    "darwin": 1354176,
+    "darwin": 1354152,
     "linux": 1199042
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",

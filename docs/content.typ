@@ -736,6 +736,12 @@ viele Schritte, wie sie Punkte hat; die Reihenfolge ändert daran nichts. Beim
 Setzen behält die Liste ihre Leserichtung -- ein noch ungenannter Punkt hält
 seinen Platz frei, damit nichts springt.
 
+Ein Name gehört zu *einer* Folie. Derselbe Name auf der nächsten Folie ist eine
+neue Gruppe, die wieder bei der `1` beginnt -- man kann also auf jeder
+Übungsfolie `cue("markieren", …)` schreiben, ohne die Namen durchzunummerieren.
+Mehrere `cue`-Aufrufe auf derselben Folie unter demselben Namen bilden dagegen
+zusammen eine Gruppe und zählen weiter.
+
 === Was mit dem Punkt zugleich erscheint
 
 `cue-layer` hängt etwas an denselben Schritt -- eine Zeichenschicht, ein Bild,
@@ -772,8 +778,10 @@ Paket einen Fehler.
 #info[
   Der Pfeil nach rechts deckt den nächsten *noch ungenannten* Punkt auf, in der
   geschriebenen Reihenfolge; wer eine Ziffer drückt, bekommt diesen Punkt.
-  Beides mischt sich frei. Erst wenn die Gruppe voll ist, führt der Pfeil
-  weiter. Ein Schritt zurück gibt den zuletzt genannten Punkt wieder frei.
+  Beides mischt sich frei. Solange auf der Folie noch gewöhnliche Schritte vor
+  der Gruppe stehen, blättert der Pfeil sie ab; er greift erst in die Gruppe,
+  wenn deren nächster Punkt der nächste Halt ist. Und erst wenn die Gruppe voll
+  ist, führt der Pfeil weiter. Ein Schritt zurück gibt den zuletzt genannten Punkt wieder frei.
 
   In der Sprecheransicht steht jeder noch offene Punkt blass da, mit seiner
   Ziffer auf dem Aufzählungspunkt; im Saal ist er unsichtbar.

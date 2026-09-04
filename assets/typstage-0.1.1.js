@@ -5432,37 +5432,48 @@
 
   function adSammeln() {
     AD = {};
+    // Geschluesselt nach Folie *und* Name, nicht nach Name allein. Eine Gruppe
+    // gehoert zu einer Folie, und die Ziffern beginnen auf jeder Folie wieder
+    // bei 1 -- zwei gleichnamige Gruppen auf zwei Folien sind zwei Gruppen mit
+    // je einer 1. Unter dem blossen Namen verschmolzen sie zu einer, die dann
+    // auf der falschen Folie sass und deren zweite Haelfte auf keine Taste
+    // mehr hoerte.
+    //
+    // Die Folie kommt aus dem DOM und nicht aus der Auszeichnung: Typst darf
+    // sie nicht mitliefern, weil ein gelesener Folienzaehler in einem
+    // gemessenen Element das Dokument um seine Konvergenz braechte. Hier steht
+    // sie ohnehin, in `SLIDES`.
     [].forEach.call(document.querySelectorAll(".ts-el[data-ad]"), function (el) {
+      var si = SLIDES.findIndex(function (sec) { return sec.contains(el); });
       var name = el.dataset.ad;
-      var g = AD[name] || (AD[name] = { reihen: {}, plaetze: [], folge: [] });
+      var key = si + "|" + name;
+      var g = AD[key]
+        || (AD[key] = { name: name, folie: si, reihen: {}, plaetze: [], folge: [] });
       var nr = +el.dataset.adNr;
       (g.reihen[nr] || (g.reihen[nr] = [])).push(el);
       // The step the point was written for. Remembered once, because
       // `data-at` is what gets rewritten below.
       if (!el.dataset.adPlatz) el.dataset.adPlatz = el.dataset.at;
     });
-    Object.keys(AD).forEach(function (name) {
-      var g = AD[name];
+    Object.keys(AD).forEach(function (key) {
+      var g = AD[key];
       g.plaetze = Object.keys(g.reihen)
         .map(function (nr) { return g.reihen[nr][0].dataset.adPlatz; })
         .sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); });
       g.aus = (STEPS.length + 2) + "-";
-      // Auf welcher Folie die Gruppe steht. Gebraucht, um beim
-      // Zurueckblaettern zu wissen, ob man vor ihr, in ihr oder hinter ihr ist.
-      var erst = g.reihen[Object.keys(g.reihen)[0]][0];
-      g.folie = SLIDES.findIndex(function (sec) { return sec.contains(erst); });
     });
     // Nothing has been called out yet, so every point stands aside. Without
     // this the first point would simply appear on its own step, which is the
     // behaviour an adaptive group exists to replace.
-    Object.keys(AD).forEach(function (name) { adStellen(name, false); });
+    Object.keys(AD).forEach(function (key) { adStellen(key, false); });
     adSprecher();
   }
 
   // `malen` is false while the deck is being set up: there is no current step
   // yet, and `goto` would have nothing to go to.
-  function adStellen(name, malen) {
-    var g = AD[name];
+  // `schluessel` ist "Folie|Name", nicht der Name: siehe `adSammeln`.
+  function adStellen(schluessel, malen) {
+    var g = AD[schluessel];
     if (!g) return;
     Object.keys(g.reihen).forEach(function (nr) {
       var p = g.folge.indexOf(+nr);
@@ -5484,8 +5495,8 @@
   // value cannot be re-recorded from here.
   function adSprecher() {
     if (ROLLE !== "speaker") return;
-    Object.keys(AD).forEach(function (name) {
-      var g = AD[name];
+    Object.keys(AD).forEach(function (key) {
+      var g = AD[key];
       Object.keys(g.reihen).forEach(function (nr) {
         var offen = g.folge.indexOf(+nr) < 0;
         g.reihen[nr].forEach(function (el, i) {
@@ -5521,12 +5532,12 @@
           // Ziffer im Bild, obwohl jede angelegt worden war.
           if (i > 0) return;
           var eig = el.parentNode
-            && el.parentNode.querySelector(':scope > .ts-ad-nr[data-fuer="' + name + "-" + nr + '"]');
+            && el.parentNode.querySelector(':scope > .ts-ad-nr[data-fuer="' + key + "-" + nr + '"]');
           if (eig) eig.remove();
           if (!offen) return;
           var b = document.createElement("span");
           b.className = "ts-ad-nr";
-          b.dataset.fuer = name + "-" + nr;
+          b.dataset.fuer = key + "-" + nr;
           b.textContent = nr;
           b.style.left = el.style.left;
           b.style.top = el.style.top;
@@ -5598,9 +5609,9 @@
   function adRueck() {
     if (!STEPS[current]) return;
     var si = STEPS[current].slide, schritt = STEPS[current].step;
-    Object.keys(AD).forEach(function (name) {
-      var g = AD[name];
-      if (name === adFrisch) return;
+    Object.keys(AD).forEach(function (schluessel) {
+      var g = AD[schluessel];
+      if (schluessel === adFrisch) return;
       var erlaubt;
       if (g.folie < 0 || si < g.folie) { erlaubt = 0; }
       else if (si > g.folie) { erlaubt = g.folge.length; }
@@ -5630,19 +5641,33 @@
       .filter(function (n) { return g.folge.indexOf(n) < 0; })
       .sort(function (a, b) { return a - b; });
     if (!offen.length) return false;
-    // Nur vorwärts. Wer über den Hash oder `End` hinter die Gruppe gesprungen
-    // ist, soll mit dem Pfeil nicht rückwärts in sie hineinfallen.
+    // Nur vorwärts, und nur wenn die Gruppe an der Reihe ist. `platz <= hier`
+    // haelt sie zurueck, wenn jemand ueber den Hash oder `End` hinter sie
+    // gesprungen ist -- mit dem Pfeil soll er nicht rueckwaerts hineinfallen.
+    // `platz > hier + 1` haelt sie zurueck, solange vor ihr noch gewoehnliche
+    // Schritte stehen: dann faellt der Tastendruck durch und `goto(current+1)`
+    // blaettert einen Halt weiter, bis ihr erster Punkt der naechste Halt ist.
+    //
+    // Ohne die zweite Haelfte greift die Gruppe auf *jedem* Schritt davor, und
+    // `adTaste` springt auf den Schritt ihres Punktes -- gemessen an einem Deck
+    // mit zwei Fragen und einem Zahlenstrahl vor der Gruppe: ein Pfeil von
+    // Schritt 1 landete auf 4 und verschluckte beide Halte dazwischen. Solange
+    // jede Probe ihre Gruppe auf Schritt 1 beginnen liess, war der Fehler nicht
+    // zu sehen, weil dort der erste Punkt zufaellig der naechste Halt ist.
     var platz = parseInt(g.plaetze[g.folge.length], 10);
-    if (!(platz >= STEPS[current].step)) return false;
+    var hier = STEPS[current].step;
+    if (platz <= hier || platz > hier + 1) return false;
     return adTaste(offen[0]);
   }
 
   // Which groups are on the slide the deck is standing on.
+  // Gibt Schluessel zurueck, keine Namen -- alles, was damit weiterarbeitet,
+  // greift auf `AD` zu.
   function adHier() {
     var sec = SLIDES[STEPS[current].slide];
-    return Object.keys(AD).filter(function (name) {
-      return Object.keys(AD[name].reihen).some(function (nr) {
-        return AD[name].reihen[nr].some(function (el) { return sec.contains(el); });
+    return Object.keys(AD).filter(function (schluessel) {
+      return Object.keys(AD[schluessel].reihen).some(function (nr) {
+        return AD[schluessel].reihen[nr].some(function (el) { return sec.contains(el); });
       });
     });
   }
@@ -5986,10 +6011,10 @@
       // Reihenfolge, in der sie fielen, `plaetze` die Schritte innerhalb der
       // Folie, die die Gruppe zu vergeben hat.
       adaptiv: function () {
-        return Object.keys(AD).map(function (name) {
-          var g = AD[name];
+        return Object.keys(AD).map(function (key) {
+          var g = AD[key];
           return {
-            name: name, folie: g.folie,
+            name: g.name, folie: g.folie,
             nummern: Object.keys(g.reihen).map(Number)
               .sort(function (a, b) { return a - b; }),
             plaetze: g.plaetze.slice(),

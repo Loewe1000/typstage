@@ -112,6 +112,22 @@ jobs:
       - name: Das Inhaltsverzeichnis springt hin und zurück
         run: node .github/scripts/pruefe-inhalt.js
 
+      # Nimmt eine cue-Gruppe den Vorwärtspfeil erst, wenn sie an der Reihe
+      # ist? Sichtbar wird das nur, wenn vor der Gruppe noch gewöhnliche
+      # Schritte stehen. Solange jede Probe ihre Gruppe auf Schritt 1 beginnen
+      # ließ, war ein zu früher Zugriff von richtigem Verhalten nicht zu
+      # unterscheiden -- gemeldet wurde er aus einem echten Deck, in dem ein
+      # Pfeil von Schritt 1 auf 4 sprang und zwei Halte verschluckte.
+      - name: Eine cue-Gruppe greift erst, wenn sie dran ist
+        run: node .github/scripts/pruefe-cue-pfeil.js
+
+      # Und bleibt sie auf ihrer Folie? Zwei gleichnamige Gruppen auf zwei
+      # Folien sind zwei Gruppen, jede mit ihrer eigenen 1. Diese Probe fehlte,
+      # als die Trennung einmal am Folienpräfix im Schlüssel hing und dieser
+      # Präfix entfernt wurde -- sie prüft die Zusicherung, nicht das Mittel.
+      - name: Eine cue-Gruppe bleibt auf ihrer Folie
+        run: node .github/scripts/pruefe-cue-folien.js
+
       # Das Kontrastgatter der Sprecherpalette. Ohne Browser und in einer
       # Sekunde: `contrast()` im Paket bewacht die Folienpaletten, die zwanzig
       # Farben der Sprecheransicht standen unter keiner Aufsicht.

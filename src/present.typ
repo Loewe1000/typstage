@@ -844,6 +844,8 @@
                  // too, so that `info().step.total` reports the same number in
                  // both outputs. It has to start over on every slide.
                  + step-cursor.update(0)
+                 // Und die Basen der cue-Gruppen, aus demselben Grund.
+                 + cue-basis.update(_ => (:))
                  // Nothing on a page sits inside a reveal, so the step being
                  // laid out is the first one. Said out loud for the sake of
                  // `bundle()`, where the browser document ran first and left
@@ -909,6 +911,9 @@
         deck-info.update(hier)
         element-counter.update(0)
         step-cursor.update(0)
+        // Und die Basen der cue-Gruppen: daran haengt, dass eine Gruppe zu
+        // einer Folie gehoert.
+        cue-basis.update(_ => (:))
         step-here.update(())
         sprite-number.update(none)
         sprites.update(())

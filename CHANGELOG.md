@@ -32,6 +32,17 @@ All notable changes to this package are recorded here. The format follows
 
 ### Changed
 
+- **`cue()`: one group, many calls -- and a group belongs to one slide.** A group
+  is held together by its name, not by a single call: every `cue("name")[…]`
+  contributes points and sets them where it stands, so placing a point freely is
+  no longer a special case but simply what happens. Numbers count on across the
+  calls of one slide; `start:` and `spacing:` apply per call, and between two
+  calls the layout decides. The same name on the next slide is a new group that
+  starts again at `1`, so every exercise slide can say `cue("marks", …)` without
+  numbering the names apart. `cue-layer` now points at a declared point rather
+  than at a number within a span. A tenth point on one slide is refused: the room
+  calls with the keys 1 to 9, and a digit with nothing behind it silently becomes
+  an ordinary page turn.
 - **The runtime files are now `typstage-0.1.1.css` and `typstage-0.1.1.js`.**
   The name carries the version so a CDN can hold several releases side by side
   and no browser serves a stale one from its cache. A deck with
@@ -40,6 +51,17 @@ All notable changes to this package are recorded here. The format follows
 
 ### Fixed
 
+- **A `cue()` group no longer swallows the steps before it.** The forward arrow
+  reveals the next point not yet named, and the group claimed the key as soon
+  as its next point lay anywhere ahead -- not only when that point was the next
+  stop. On a slide with ordinary steps before the group, one arrow therefore
+  jumped straight to the group's first point and skipped every stop between.
+  The arrow now falls through and pages normally until the group is due. Every
+  probe so far began its group on step 1, where the first point *is* the next
+  stop and a premature claim cannot be told from correct behaviour; reported
+  from a lesson deck whose three marks came after two questions and a number
+  line. Jumping behind the group by hash or `End` still does not fall back
+  into it.
 - **A centred `anim` on paper.** `anim(align(center, …))` inside a grid column
   was centred in the browser and flush left in the PDF, from one source. The
   HTML branch widens content that wants to centre itself to the room it has;

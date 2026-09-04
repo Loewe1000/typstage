@@ -592,6 +592,11 @@ as it has points, whatever the order, so the progress bar, `info().step.total`, 
 overflow check and the handout are untouched. The list keeps its reading order: a
 point not yet named holds its place, so nothing jumps when it arrives.
 
+A name belongs to *one* slide. The same name on the next slide is a new group
+starting again at `1`, so every exercise slide can say `cue("marks", …)` without
+numbering the names apart. Several `cue` calls on the same slide under the same
+name do form one group and count on.
+
 === What appears together with a point
 
 `cue-layer` hangs something on the same step -- a drawing layer, a picture, a
@@ -623,8 +628,10 @@ otherwise the package says so.
 
 #info[
   The forward arrow reveals the next point *not yet named*, so paging alone behaves
-  like a staggered list, and arrow and digits mix freely. Only once the group is
-  full does the arrow carry on. One step back frees the point named last, and
+  like a staggered list, and arrow and digits mix freely. As long as ordinary steps
+  still stand before the group, the arrow pages through those; it reaches into the
+  group only once its next point is the next stop. Only when the group is full does
+  the arrow carry on. One step back frees the point named last, and
   leaving the slide backwards leaves the group untouched for the next visit. In the
   speaker view every point still open stands there pale, with its digit on the
   bullet; in the hall it is invisible.

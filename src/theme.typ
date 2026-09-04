@@ -25,9 +25,9 @@
 // says so: "content labelled multiple times", and the last one is used.
 
 #import "config.typ": *
-#import "internal.typ": (deck-info, html-output, note-state, plain-text,
-                        slide-counter, sprite-number, step-cursor, step-here,
-                        ueberlauf-pruefen, umgebungs-block)
+#import "internal.typ": (cue-basis, deck-info, html-output, note-state,
+                        plain-text, slide-counter, sprite-number, step-cursor,
+                        step-here, ueberlauf-pruefen, umgebungs-block)
 #import "slides.typ": info
 #import "themes.typ": font-args, sichtbar, theme-state
 #import "richtung.typ": am-anfang, am-ende
@@ -455,6 +455,13 @@
       deck-info.update(item.fakten)
       if wechselt { theme-state.update(thema(item.slide)) }
       step-cursor.update(0)
+      // Und die Basen der cue-Gruppen. Dass eine Gruppe zu *einer* Folie
+      // gehoert, haengt an dieser Zeile: geleert wird hier, gelesen in `cue`,
+      // und damit zaehlt jede Folie ihre Punkte von 1. Der Weg ueber den
+      // Folienzaehler waere ein Lesen von Introspektion in gemessenem Inhalt
+      // und braechte das Dokument um seine Konvergenz -- ein reines
+      // Schreiben an dieser Stelle nicht.
+      cue-basis.update(_ => (:))
       step-here.update(())
       sprite-number.update(none)
       // The slide's own `speaker-note` may overwrite this while it is laid
