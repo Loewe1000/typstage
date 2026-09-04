@@ -49,6 +49,19 @@ AGGREGAT=/path/to/Typst-Schule bash .github/scripts/build-site.sh
 | `pruefe-ueberlauf.py` | no example deck runs over its slide |
 | `pruefe-desmos.js` | the Desmos bridge, by hand (see below) |
 
+A full deck run takes about 25 minutes, longer than a laptop stays awake. On
+macOS the browser harness therefore holds an idle-sleep guard for as long as
+the run lives (`caffeinate -i -w`), because a run that loses the CPU halfway
+looks exactly like one that has crashed -- measured once as three hours
+without a line of output, from a run that was perfectly fine. Closing the lid
+still sleeps.
+
+The same harness sweeps stale browser profiles out of the temp directory when
+it starts: anything named `typstage-*` and older than six hours. `SIGKILL`
+cannot be caught, so a run someone kills hard leaves its profile behind, and
+the only place left to collect it is the start of the next run. Measured on
+one development machine before this existed: 4306 leftover profiles, 912 MB.
+
 `pruefe-desmos.js` is run by hand too, and for the same kind of reason: it
 loads Desmos' script from desmos.com and needs an API key. Neither belongs
 in a run that has to be green on every push. It builds its own deck, drives

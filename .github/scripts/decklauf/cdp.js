@@ -11,6 +11,55 @@ const fs = require("fs"), os = require("os"), path = require("path");
 const schlaf = ms => new Promise(r => setTimeout(r, ms));
 
 // =============================================================================
+// Was ein harter Abbruch hinterlässt -- und was ein schlafender Rechner kostet
+// =============================================================================
+// Beides einmal je Prozess, beim ersten `starte()`.
+
+let einmalGetan = false;
+
+// SIGKILL lässt sich nicht abfangen, und ein Lauf, den jemand mit `kill -9`
+// wegräumt oder den der Rechner im Schlaf verliert, kommt an `exit` und an
+// den Signalhaken unten vorbei. Der einzige Ort, an dem sich das noch
+// einsammeln lässt, ist der Start des *nächsten* Laufs.
+//
+// Gemessen auf dem Entwicklungsrechner: 4306 liegengebliebene Profile, 912 MB,
+// aus abgebrochenen Läufen über mehrere Monate. Die Altersschwelle trennt sie
+// von den Profilen laufender Nachbarn -- ein voller Decklauf dauert rund 25
+// Minuten, sechs Stunden sind also reichlich Abstand.
+const ALTER_STUNDEN = 6;
+function alteProfileFegen() {
+  const grenze = Date.now() - ALTER_STUNDEN * 3600 * 1000;
+  let weg = 0;
+  let namen;
+  try { namen = fs.readdirSync(os.tmpdir()); } catch (e) { return; }
+  for (const name of namen) {
+    if (!name.startsWith("typstage-")) continue;
+    const ordner = path.join(os.tmpdir(), name);
+    try {
+      const st = fs.statSync(ordner);
+      if (!st.isDirectory() || st.mtimeMs > grenze) continue;
+      fs.rmSync(ordner, { recursive: true, force: true });
+      weg++;
+    } catch (e) { /* schon weg, oder nicht unser Recht */ }
+  }
+  if (weg) console.error("(" + weg + " liegengebliebene Profile aufgeräumt)");
+}
+
+// Ein voller Lauf dauert länger, als ein Laptop wach bleibt. Schläft der
+// Rechner mittendrin ein, steht der Lauf still und sieht aus wie abgestürzt --
+// gemessen: drei Stunden ohne eine Zeile Ausgabe, und der Lauf war völlig in
+// Ordnung. `-w` bindet die Wache an diesen Prozess, sie endet also mit ihm,
+// auch wenn er abstürzt. `-i` hält nur den Leerlaufschlaf auf; wer den Deckel
+// zuklappt, schläft weiterhin.
+function wachHalten() {
+  if (process.platform !== "darwin") return;
+  try {
+    spawn("caffeinate", ["-i", "-w", String(process.pid)],
+          { detached: true, stdio: "ignore" }).unref();
+  } catch (e) { /* ohne caffeinate lief es bisher auch */ }
+}
+
+// =============================================================================
 // Aufräumen, auch wenn der Lauf nicht bis `ende()` kommt
 // =============================================================================
 // Jeder Browser bekommt ein eigenes Profil im Temp-Verzeichnis, und ein Profil
@@ -55,6 +104,7 @@ async function starte(binaer) {
     `--user-data-dir=${profil}`, "--window-size=1600,900",
     `--remote-debugging-port=${port}`, "about:blank"
   ], { stdio: "ignore" });
+  if (!einmalGetan) { einmalGetan = true; alteProfileFegen(); wachHalten(); }
   aufraeumenAnmelden(profil, kind);
 
   let ziel = null;
