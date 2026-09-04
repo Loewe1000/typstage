@@ -22,8 +22,8 @@
 /// the sprite record rather than in `extra`, which becomes markup attributes.
 #let anim-kern(body, at: auto, enter: "fade-up", exit: "fade",
                after: "hidden", duration: auto, delay: 0, easing: none,
-               dim-freiwillig: false, ad: none, ad-nr: none) = track(
-  "anim", body, at: at, dim-freiwillig: dim-freiwillig, extra: (
+               dim-freiwillig: false, ad: none, ad-nr: none, boden: 2) = track(
+  "anim", body, at: at, dim-freiwillig: dim-freiwillig, boden: boden, extra: (
     // Membership in an adaptive group. `none` never travels into the markup,
     // so an ordinary element gains no new attribute.
     ad: ad, "ad-nr": ad-nr,
@@ -595,7 +595,7 @@
   // `anim-kern` ihn aus seinem `at` nachzog, und der nächste Aufruf las einen
   // Wert, der von der Auszeichnung des vorigen abhing. Gemessen bekamen drei
   // Punkte hinter einem `anim` die Schritte 3, 4, 4 statt 3, 4, 5.
-  step-cursor.update(c => calc.max(c, ab + stuecke.len() - 1))
+  if start != auto { step-cursor.update(c => calc.max(c, ab + stuecke.len() - 1)) }
   // Fortgeschrieben wird aus den Argumenten, nicht aus dem Gelesenen. Ein
   // `n` das an `erste` hinge, hinge am gelesenen Stand -- gemessen meldete
   // Typst dann "did not converge", sobald fünf Aufrufe hinter zwei `anim`
@@ -643,7 +643,8 @@
     if i > 0 { v(spacing, weak: true) }
     block(anim-kern(
       if punkte.len() > 0 { list(b) } else { b },
-      at: str(ab + i) + "-", ad: name, ad-nr: erste + i))
+      at: if start == auto { auto } else { str(ab + i) + "-" },
+      boden: 1, ad: name, ad-nr: erste + i))
   }
 }
 
@@ -766,7 +767,28 @@
     "typstage: stagger(stride: …) is how many steps lie between two items, a "
     + "whole number from 0 upwards; 0 puts them all on the same step. Not "
     + repr(stride))
-  let start = if start == auto { step-cursor.get().first() + 1 } else { start }
+  // ── Die Schritte von `track` vergeben lassen ───────────────────────────
+  //
+  // Ein aus dem gelesenen Schrittzeiger *berechnetes* `at` bringt die Messung
+  // um ihre Konvergenz, sobald der Körper etwas außerhalb des Flusses trägt --
+  // gemessen an drei Aufrufen mit einem `place(dx: …)` darin: neun Meldungen
+  // „a measured element did not stabilize". `anim` entgeht dem, weil `track`
+  // bei `at: auto` erst rein vorrückt und den Stand dann in seinem *eigenen*
+  // context liest; der Wert entsteht dort, wo er gebraucht wird, statt von
+  // außen hereingereicht zu werden.
+  //
+  // Genau diesen Weg nimmt eine Kette aus lauter Einzelschritten jetzt auch:
+  // je Stück ein `at: auto`, und `track` zählt weiter. Gemessen kommt dabei
+  // dieselbe Schrittfolge heraus wie vorher, nur ohne die Meldungen.
+  //
+  // Nur für den Fall, der ohne den absoluten Anfang auskommt: `stride: 1`
+  // (sonst liegen Lücken dazwischen, die `track` nicht kennt), kein `dim`
+  // (das setzt einen einzelnen Schritt statt einer offenen Spanne), kein
+  // `morph` und kein Name (beide tragen den Anfang weiter).
+  let auto-kette = (start == auto and stride == 1 and not dim
+                    and morph == false and name == none)
+  let start = if start != auto { start } else if auto-kette { 0 } else {
+    step-cursor.get().first() + 1 }
   // `..items` would otherwise swallow any named argument without a word: a
   // typo in `stride:` would stagger on the default and say nothing.
   assert(items.named().len() == 0,
@@ -827,7 +849,8 @@
     }
     for (i, b) in gegeben.enumerate() {
       block(if morph == false {
-        anim-kern(b, at: bereich(start + i * stride), after: ruhe,
+        anim-kern(b, at: if auto-kette { auto } else { bereich(start + i * stride) },
+                  boden: 1, after: ruhe,
                   dim-freiwillig: dim, enter: enter, duration: duration,
                   easing: takt, delay: i * stagger)
       } else {
@@ -873,7 +896,8 @@
         align: (end + top, std.start + top),
         marks.at(i), p.body,
       ),
-      at: bereich(start + i * stride), after: ruhe, dim-freiwillig: dim,
+      at: if auto-kette { auto } else { bereich(start + i * stride) },
+      boden: 1, after: ruhe, dim-freiwillig: dim,
       enter: enter, duration: duration, easing: takt, delay: i * stagger,
     )
   }

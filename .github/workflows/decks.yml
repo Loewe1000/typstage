@@ -128,6 +128,15 @@ jobs:
       - name: Eine cue-Gruppe bleibt auf ihrer Folie
         run: node .github/scripts/pruefe-cue-folien.js
 
+      # Konvergiert das Deck? Typst läuft die Auszeichnung bis zu fünfmal und
+      # gibt dann auf -- übersetzt aber trotzdem, mit irgendeinem
+      # Zwischenstand. Diese Probe hält die Aufbauten fest, die es einmal
+      # zerrissen hat: ein Schritt, der aus dem gelesenen Schrittzeiger
+      # berechnet und hereingereicht wird, dazu etwas außerhalb des Flusses
+      # im Körper.
+      - name: Die Aufdeckketten konvergieren
+        run: python3 .github/scripts/pruefe-konvergenz.py
+
       # Das Kontrastgatter der Sprecherpalette. Ohne Browser und in einer
       # Sekunde: `contrast()` im Paket bewacht die Folienpaletten, die zwanzig
       # Farben der Sprecheransicht standen unter keiner Aufsicht.

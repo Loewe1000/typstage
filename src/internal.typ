@@ -569,7 +569,11 @@
 /// über ihr teilte.
 ///
 /// Nur `auto` ist betroffen. Wer seinen Schritt ausschreibt, bekommt ihn.
-#let schritt-vorruecken() = step-cursor.update(c => calc.max(c + 1, 2))
+/// Ein Schritt weiter. `boden` ist die kleinste Nummer, die dabei
+/// herauskommen darf: 2 für ein `anim`, das erst *nach* dem Folienaufschlag
+/// kommt, 1 für eine Kette wie `stagger` oder `cue`, deren erstes Stück
+/// bewusst schon dasteht, wenn die Folie erscheint.
+#let schritt-vorruecken(boden: 2) = step-cursor.update(c => calc.max(c + 1, boden))
 
 /// Which slide we are on. Only used to scope things that a companion package
 /// looks up across the whole document. A query sees every slide at once and
@@ -1230,7 +1234,7 @@
 } }
 
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
-           width: auto, dim-freiwillig: false) = {
+           width: auto, dim-freiwillig: false, boden: 2) = {
   // Der eine Trichter, durch den jeder Auftritt und jeder Abgang muss --
   // `anim`, `stagger`, `alternatives`, `cue`, `build`, `scene`, `flipbook`,
   // `embed`, `video`, `tiles`. Deshalb steht die Prüfung hier und nicht
@@ -1267,7 +1271,7 @@
       + kind + "().")
     let innen = track(kind, body.body, at: at, extra: extra,
                       raw-frames: raw-frames, inline: inline, width: width,
-                      dim-freiwillig: dim-freiwillig)
+                      dim-freiwillig: dim-freiwillig, boden: boden)
     let dx = body.at("dx", default: 0pt)
     let dy = body.at("dy", default: 0pt)
     // Eine nicht genannte Ausrichtung ist nicht dasselbe wie `auto`. Ein
@@ -1325,7 +1329,7 @@
   // only moves where its update stands in the document. Left in the `let` it
   // would join into the value instead of reaching the page.
   let zaehlen = if im-deck() {
-    if at == auto { schritt-vorruecken() }
+    if at == auto { schritt-vorruecken(boden: boden) }
     else if kind == "anim" {
       step-cursor.update(c => calc.max(c, max-step(selector(at))))
     }

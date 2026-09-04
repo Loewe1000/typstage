@@ -51,6 +51,21 @@ All notable changes to this package are recorded here. The format follows
 
 ### Fixed
 
+- **`stagger` and `cue` let `track` hand out their steps.** A chain that read
+  the step cursor and passed a *computed* `at` into a tracked element cost the
+  document its convergence, as soon as the revealed body carried something out
+  of the flow -- a `place` with an offset -- inside a box of fixed size.
+  Measured on a class-5 number-line deck: five warnings for `cue`, nine for
+  three `stagger` calls, and Typst giving up after five layout passes. `anim`
+  never had it, because at `at: auto` it advances the cursor with a plain
+  update and reads the value inside `track`'s own context: the number comes
+  into being where it is used rather than being handed in from outside. Both
+  now take that same path where they can, and the step floor travels with it
+  (2 for an `anim`, which comes *after* the slide appears; 1 for a chain whose
+  first piece is already there). `stride`, `dim`, `morph`, a named group and an
+  explicit `start:` keep the old path, which they need for the absolute first
+  step. Every example deck comes out with the same steps as before, down to
+  the check deck's byte count.
 - **A `cue()` group no longer swallows the steps before it.** The forward arrow
   reveals the next point not yet named, and the group claimed the key as soon
   as its next point lay anywhere ahead -- not only when that point was the next

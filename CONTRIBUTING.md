@@ -46,6 +46,7 @@ AGGREGAT=/path/to/Typst-Schule bash .github/scripts/build-site.sh
 | `pruefe-inhalt.js` | `contents()` jumps to a section and back |
 | `pruefe-cue-pfeil.js` | a `cue()` group claims the arrow only when due |
 | `pruefe-cue-folien.js` | a `cue()` group stays on its slide, a layer on its point |
+| `pruefe-konvergenz.py` | the reveal chains converge within five passes |
 | `pruefe-ueberlauf.py` | no example deck runs over its slide |
 | `pruefe-desmos.js` | the Desmos bridge, by hand (see below) |
 
