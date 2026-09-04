@@ -42,7 +42,32 @@ FAELLE = {
     "stagger, drei Aufrufe":  'stagger(%s)' % STUECK,
     "anim, drei Aufrufe":     'anim(%s)' % STUECK,
     "cue im place":           'place(top + left, dx: w * 100pt, cue("g", %s))' % STUECK,
+    "alternatives":           'alternatives(%s, %s)' % (STUECK, STUECK),
+    "tiles":                  'tiles(%s, %s)' % (STUECK, STUECK),
+    "build":                  'build(k => %s, steps: 2)' % STUECK,
 }
+
+# Noch offen. Beide hängen am selben Mechanismus -- mit ausgeschriebenem
+# Schritt sind sie still --, aber der Weg über `at: auto` steht ihnen nicht
+# offen: eine `scene` ist *ein* Element über mehrere Schritte, und `camera`
+# ruft `track` gar nicht auf, sondern trägt seinen Schritt nur in eine Liste
+# ein. Die Probe hält sie fest, ohne den Lauf rot zu färben -- und schlägt an,
+# wenn einer von ihnen still wird: dann gehört er nach oben.
+OFFEN = {
+    "scene":                  'scene("s" + str(w), t => %s, stops: (0, 1), tween: 4)' % STUECK,
+}
+
+# `camera` zielt auf ein `pin` und braucht deshalb einen eigenen Rumpf.
+KAMERA = """#import "@preview/typstage:0.1.1": *
+#show: presentation.with(title: [Konvergenz])
+
+== Folie
+#box(width: 600pt, height: 216pt, {{
+  anim[Davor]
+  place(top + left, pin(<ziel>, {stueck}))
+  for w in (0, 1, 2) {{ camera(<ziel>) }}
+}})
+""".format(stueck=STUECK)
 
 
 def messen(quelle, ordner, paketpfad):
@@ -78,12 +103,29 @@ def main():
                     "gelesenen Schrittzeiger berechnet und an track "
                     "hereingereicht; mit `at: auto` vergibt track ihn selbst, "
                     "und die Messung bleibt stabil." % (name, n))
+
+        offene = [(name, RUMPF.format(aufruf=a)) for name, a in OFFEN.items()]
+        offene.append(("camera", KAMERA))
+        for name, quelle in offene:
+            n, fehler = messen(quelle, tmp, paket)
+            if fehler is not None:
+                klagen.append("%s (bekannt offen): übersetzt nicht -- %s"
+                              % (name, fehler))
+            elif not n:
+                klagen.append(
+                    "%s steht als bekannt offen in dieser Probe, meldet aber "
+                    "nichts mehr. Entweder ist es behoben -- dann gehört es "
+                    "nach oben zu den Fällen, die sauber sein müssen -- oder "
+                    "der Aufbau trifft es nicht mehr." % name)
+            else:
+                print("  bekannt offen: %s (%d Meldungen)" % (name, n))
         if klagen:
             print("Konvergenz: %d Beanstandung(en)" % len(klagen))
             for k in klagen:
                 print("  - " + k)
             return 1
-    print("Konvergenz: %d Aufbauten, alle stabil" % len(FAELLE))
+    print("Konvergenz: %d Aufbauten stabil, %d bekannt offen"
+          % (len(FAELLE), len(OFFEN) + 1))
     return 0
 
 

@@ -51,7 +51,7 @@ All notable changes to this package are recorded here. The format follows
 
 ### Fixed
 
-- **`stagger` and `cue` let `track` hand out their steps.** A chain that read
+- **The reveal chains let `track` hand out their steps.** A chain that read
   the step cursor and passed a *computed* `at` into a tracked element cost the
   document its convergence, as soon as the revealed body carried something out
   of the flow -- a `place` with an offset -- inside a box of fixed size.
@@ -60,12 +60,21 @@ All notable changes to this package are recorded here. The format follows
   never had it, because at `at: auto` it advances the cursor with a plain
   update and reads the value inside `track`'s own context: the number comes
   into being where it is used rather than being handed in from outside. Both
-  now take that same path where they can, and the step floor travels with it
-  (2 for an `anim`, which comes *after* the slide appears; 1 for a chain whose
-  first piece is already there). `stride`, `dim`, `morph`, a named group and an
-  explicit `start:` keep the old path, which they need for the absolute first
-  step. Every example deck comes out with the same steps as before, down to
-  the check deck's byte count.
+  now take that same path where they can, and so do `alternatives`, `tiles` and
+  `build`. Two more things travel with the step: the floor (2 for an `anim`,
+  which comes *after* the slide appears; 1 for a chain whose first piece is
+  already there) and whether the step is an open span or a single one --
+  `alternatives` and `build` let every stage step aside when the next one
+  comes, and only the last one stays. `stride` other than 1, `dim`, `morph`, a
+  named group, an `at:` list of its own and an explicit `start:` keep the old
+  path, which they need for the absolute first step. Every example deck comes
+  out with the same steps as before, down to the check deck's byte count.
+
+  Still open: `scene`, which is *one* element across several steps, and
+  `camera`, which never calls `track` at all but only writes its step into a
+  list. Both hang on the same mechanism -- an explicit step silences them --
+  but neither can take the `at: auto` route. `pruefe-konvergenz.py` records
+  them, and says so when one of them goes quiet.
 - **A `cue()` group no longer swallows the steps before it.** The forward arrow
   reveals the next point not yet named, and the group claimed the key as soon
   as its next point lay anywhere ahead -- not only when that point was the next

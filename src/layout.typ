@@ -330,6 +330,12 @@
   // Resolved once and then incremented, not `auto` per tile, since
   // otherwise `stride: 0` (all on the same step) could not be expressed at
   // all.
+  // Bei `stride: 1` vergibt `track` die Schritte selbst (`at: auto`). Ein aus
+  // dem gelesenen Zeiger gerechnetes und hereingereichtes `at` kostet das
+  // Dokument sonst seine Konvergenz, sobald eine Kachel etwas außerhalb des
+  // Flusses trägt. Bei anderem `stride` liegen Lücken dazwischen, die `track`
+  // nicht kennt -- dort bleibt der alte Weg.
+  let auto-kette = at == auto and stride == 1
   let start = if at == auto { step-cursor.get().first() + 1 } else { at }
   // Einmal aufgelöst und nicht je Kachel: die Meldung soll `tiles` heißen und
   // nicht `anim`, und ein Name, den es nicht gibt, ist einmal falsch und nicht
@@ -343,7 +349,8 @@
     align: align,
     ..kacheln.enumerate().map(((i, k)) => anim-kern(
       k,
-      at: start + i * stride,
+      at: if auto-kette { auto } else { start + i * stride },
+      boden: 1,
       enter: enter,
       duration: duration,
       easing: takt,

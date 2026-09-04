@@ -22,8 +22,10 @@
 /// the sprite record rather than in `extra`, which becomes markup attributes.
 #let anim-kern(body, at: auto, enter: "fade-up", exit: "fade",
                after: "hidden", duration: auto, delay: 0, easing: none,
-               dim-freiwillig: false, ad: none, ad-nr: none, boden: 2) = track(
-  "anim", body, at: at, dim-freiwillig: dim-freiwillig, boden: boden, extra: (
+               dim-freiwillig: false, ad: none, ad-nr: none, boden: 2,
+               offen: true) = track(
+  "anim", body, at: at, dim-freiwillig: dim-freiwillig, boden: boden,
+  offen: offen, extra: (
     // Membership in an adaptive group. `none` never travels into the markup,
     // so an ordinary element gains no new attribute.
     ad: ad, "ad-nr": ad-nr,
@@ -274,6 +276,11 @@
       }
     }
     let last = items.len() - 1
+    // Die Schritte von `track` vergeben lassen, statt sie aus dem gelesenen
+    // Zeiger zu rechnen und hereinzureichen -- das kostet das Dokument sonst
+    // seine Konvergenz, sobald eine Fassung etwas außerhalb des Flusses trägt.
+    // `offen` nur für die letzte: jede andere tritt ab, wenn die nächste kommt.
+    let auto-kette = start == auto and morph == false
     // Mit `morph:` traegt jede Fassung denselben Namen. Die Bereiche
     // ueberschneiden sich nicht, und damit ist jeder Schrittwechsel ein Flug
     // von der einen auf die naechste -- dieselbe Maschinerie wie ueber den
@@ -291,7 +298,10 @@
         // one step, `"3-"` is from there on.
         let at = if i == last { str(first + i) + "-" } else { str(first + i) }
         place(align, if morph == false {
-          anim(v, at: at, enter: enter, duration: duration, easing: easing)
+          anim-kern(v, at: if auto-kette { auto } else { at },
+                    boden: 1, offen: i == last,
+                    enter: enter, duration: duration,
+                    easing: kurve(easing, "anim"))
         } else {
           morph-fn(mname, v, at: at, duration: duration, inline: inline)
         })
@@ -1181,6 +1191,11 @@
       }
     }
     let letzte = steps - 1
+    // Wie bei `alternatives`: die Schritte von `track` vergeben lassen, statt
+    // sie aus dem gelesenen Zeiger zu rechnen und hereinzureichen. Nur wenn
+    // die Stufen lückenlos aufeinanderfolgen -- ein ausgeschriebenes `at:`
+    // nennt eigene Nummern mit Lücken dazwischen, die `track` nicht kennt.
+    let auto-kette = at == auto and start == auto
     block(width: breite, height: hoehe, {
       for (i, s) in stufen.enumerate() {
         // Jede Stufe hält genau ihren Schritt, die letzte den Rest der Folie.
@@ -1193,9 +1208,10 @@
           if i == letzte { str(at.at(i)) + "-" }
           else { str(at.at(i)) + "-" + str(at.at(i + 1) - 1) }
         } else if i == letzte { str(erster + i) + "-" } else { str(erster + i) }
-        place(top + std.start, anim-kern(s, at: bereich, enter: enter,
-                                    exit: "hold", duration: duration,
-                                    easing: takt))
+        place(top + std.start, anim-kern(
+          s, at: if auto-kette { auto } else { bereich },
+          boden: 1, offen: i == letzte,
+          enter: enter, exit: "hold", duration: duration, easing: takt))
       }
     })
   })

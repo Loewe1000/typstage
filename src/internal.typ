@@ -573,7 +573,10 @@
 /// herauskommen darf: 2 für ein `anim`, das erst *nach* dem Folienaufschlag
 /// kommt, 1 für eine Kette wie `stagger` oder `cue`, deren erstes Stück
 /// bewusst schon dasteht, wenn die Folie erscheint.
-#let schritt-vorruecken(boden: 2) = step-cursor.update(c => calc.max(c + 1, boden))
+/// `um` ist, wie weit gerückt wird: 1 für ein Element, das einen eigenen
+/// Schritt bekommt, 0 für eines, das auf dem *aktuellen* beginnt -- eine
+/// `scene` etwa fängt dort an, wo der Vortrag gerade steht.
+#let schritt-vorruecken(boden: 2, um: 1) = step-cursor.update(c => calc.max(c + um, boden))
 
 /// Which slide we are on. Only used to scope things that a companion package
 /// looks up across the whole document. A query sees every slide at once and
@@ -1234,7 +1237,8 @@
 } }
 
 #let track(kind, body, at: "1-", extra: (:), raw-frames: none, inline: false,
-           width: auto, dim-freiwillig: false, boden: 2) = {
+           width: auto, dim-freiwillig: false, boden: 2, offen: true,
+           vorruecken: 1) = {
   // Der eine Trichter, durch den jeder Auftritt und jeder Abgang muss --
   // `anim`, `stagger`, `alternatives`, `cue`, `build`, `scene`, `flipbook`,
   // `embed`, `video`, `tiles`. Deshalb steht die Prüfung hier und nicht
@@ -1271,7 +1275,8 @@
       + kind + "().")
     let innen = track(kind, body.body, at: at, extra: extra,
                       raw-frames: raw-frames, inline: inline, width: width,
-                      dim-freiwillig: dim-freiwillig, boden: boden)
+                      dim-freiwillig: dim-freiwillig, boden: boden, offen: offen,
+                      vorruecken: vorruecken)
     let dx = body.at("dx", default: 0pt)
     let dy = body.at("dy", default: 0pt)
     // Eine nicht genannte Ausrichtung ist nicht dasselbe wie `auto`. Ein
@@ -1329,7 +1334,7 @@
   // only moves where its update stands in the document. Left in the `let` it
   // would join into the value instead of reaching the page.
   let zaehlen = if im-deck() {
-    if at == auto { schritt-vorruecken(boden: boden) }
+    if at == auto { schritt-vorruecken(boden: boden, um: vorruecken) }
     else if kind == "anim" {
       step-cursor.update(c => calc.max(c, max-step(selector(at))))
     }
@@ -1360,8 +1365,11 @@
   element-counter.step()
   context {
     let n = element-counter.get().first()
+    // `offen: false` gibt einen einzelnen Schritt statt einer offenen Spanne --
+    // was `alternatives` für alle Fassungen außer der letzten braucht: eine
+    // Fassung tritt ab, wenn die nächste kommt, sie bleibt nicht liegen.
     let selected = if at == auto {
-      str(step-cursor.get().first()) + "-"
+      str(step-cursor.get().first()) + (if offen { "-" } else { "" })
     } else { selector(at) }
     // The step this element first stands on, and what `info().step.number`
     // reads inside its body. It travels into the sprite as well, because the
