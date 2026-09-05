@@ -299,6 +299,19 @@ output and falls away by itself. Where a frame or an applet stands in the browse
 a `fallback` (any content at all, a CeTZ drawing, an image) and a `link` that is
 clickable in the PDF.
 
+Or one page per step, so the paper turns the way the talk does:
+
+```typ
+#show: presentation.with(pages: "step")
+```
+
+Everything that reveals takes part -- `#pause`, `anim`, `stagger`, `tiles`,
+`alternatives`, `build`, `cue` and `scene`, which gets a page per stop rather
+than per tween frame. A piece not yet due keeps its space, so nothing shifts
+from page to page. A camera move gets no page of its own: on paper there is no
+camera, and its page would stand there twice. Expect two to three pages per
+slide.
+
 One argument turns the slide set into a handout:
 
 ```typ
@@ -358,12 +371,14 @@ runtime once for all of them. The manual has the numbers.
   37 slides. In exchange no font has to load and the layout cannot drift.
 - **`#pause` is read at the top level of a slide body only.** Inside a grid
   cell, a table or a figure it is not seen, so reach for `anim` there.
-- **GeoGebra is not in the box.** A typeset applet is an empty frame that
-  fetches GeoGebra from `geogebra.org` when the page is shown. Without a
+- **GeoGebra and Desmos are not in the box.** A typeset applet is an empty frame
+  that fetches GeoGebra from `geogebra.org` when the page is shown. Without a
   network it stays empty, the viewer's browser talks to that host, and what
   runs in the frame is under GeoGebra's terms rather than this package's MIT
   licence. `codebase` points the frame somewhere else, at a local copy for
-  instance. The PDF fetches nothing.
+  instance. Desmos rides the same bridge and adds one condition of its own: its
+  script is handed out only against an API key, which you pass as `api-key` and
+  which travels into the page. The PDF fetches nothing in either case.
 - **German in places.** The manual is fuller in German than in English, and
   the API comments are mixed German and English. The two strings the runtime shows for itself,
   the `?` help line and the note of a slide that has none, follow the
@@ -444,7 +459,7 @@ generated from the built pages so its anchors cannot go stale.
 fifteen that are checked for failing as they should. The example decks are then
 driven through a real browser, step by step, and compared against recorded
 values.
-[`CONTRIBUTING.md`](https://github.com/Loewe1000/typstage/blob/4661ec0303ff2c03458d8c3ad5d0886c6b06829f/CONTRIBUTING.md)
+[`CONTRIBUTING.md`](https://github.com/Loewe1000/typstage/blob/5b125f417960679cf4d6e4b9d1b5bed115562f03/CONTRIBUTING.md)
 describes how, and how to build the manual and the site yourself.
 
 ## GeoGebra
