@@ -449,6 +449,7 @@
   drift: "error",
   slide-level: 2,
   section-numbering: none,
+  pages: "slide",
 ) = {
   // `..slides` would otherwise swallow any named argument without a word:
   // `presentation(pallete: palettes.dark)` did nothing and said nothing. The
@@ -458,8 +459,12 @@
     + slides.named().keys().join(", ")
     + ". It takes title, subtitle, author, date, assets, theme, palette, "
     + "transition, transition-duration, duration, speaker-view, style, width, "
-    + "height, margin, handout, overflow, drift, slide-level and "
-    + "section-numbering.")
+    + "height, margin, handout, overflow, drift, slide-level, "
+    + "section-numbering and pages.")
+  assert(pages in ("slide", "step"), message:
+    "typstage: pages is \"slide\" -- one page per slide, every tracked "
+    + "element in its final state -- or \"step\": one page per step, so the "
+    + "PDF unfolds the way the talk does. Not " + repr(pages))
   assert(type(slide-level) == int and slide-level >= 1, message:
     "typstage: slide-level is the heading depth at which a heading becomes a "
     + "slide, an integer from 1 upwards; 2 is the default. Not "
@@ -819,6 +824,7 @@
            message: "typstage: handout takes true or 1 to 6 slides per page")
     theme-state.update(thema-hell)
     html-output.update(false)
+    papier-modus.update(pages)
     drift-modus.update(drift)
     handout-body(all, facts, style, geo, thema-hell, per,
                  thema: if wechselt { thema } else { none }, overflow: overflow)
@@ -835,10 +841,44 @@
     // stayed in `hide()` and was missing from the PDF. Measured on a bundle
     // with an `anim` and an `alternatives`, and the same for the handout above.
     html-output.update(false)
+    papier-modus.update(pages)
     drift-modus.update(drift)
-    let pages = ()
-    for (i, s) in all.enumerate() {
-      pages.push(slide-counter.step()
+    // `pages: "step"` setzt jede Folie so oft, wie sie Schritte hat. Wie
+    // viele das sind, sagt `papier-zahlen` -- ein Zustand und keine Marke,
+    // denn jede Seite einer Folie schriebe die Marke erneut, ihre Zahl wüchse
+    // mit der Seitenzahl, und daran gibt Typst auf.
+    //
+    // Im ersten Layoutlauf ist der Zustand leer, dann steht eine Seite je
+    // Folie da; im zweiten stimmt die Folge. Deshalb ein `context` um die
+    // ganze Schleife.
+    context {
+      let zahlen = papier-zahlen.final()
+
+      let seiten = ()
+      for (i, s) in all.enumerate() {
+        let nr = facts.at(i).nr
+        // Eine Folie, eine Seite: gesetzt wird der *letzte* Schritt, und das
+        // ist genau der Endzustand, den das Handbuch verspricht -- eine
+        // `alternatives` zeigt ihre letzte Fassung, ein `build` seine letzte
+        // Stufe. Mit `none` stünden alle Fassungen übereinander.
+        let n = zahlen.at(str(nr), default: 1)
+        // Jeder Schritt eine Seite -- bis auf die, die eine Kamerafahrt für
+        // sich belegt: auf Papier gibt es keine Kamera, ihre Seite stünde also
+        // zweimal identisch da. Schritt 1 bleibt immer, das ist die Folie, wie
+        // sie aufschlägt.
+        let schritte = if pages != "step" { (n,) } else { range(1, n + 1) }
+        for (j, k) in schritte.enumerate() {
+          // Der Folienzähler nur auf der ersten Seite einer Folie: die
+          // weiteren Seiten sind dieselbe Folie, nicht die nächste.
+          // Eine Seite, die eine Kamerafahrt für sich belegt, bleibt leer --
+          // auf Papier gibt es keine Kamera, sie stünde also zweimal identisch
+          // da. Zwei schwache Umbrüche um nichts fallen zusammen, die Seite
+          // entsteht gar nicht erst.
+          //
+          // Entschieden wird das *in* der Seite und nicht an der Seitenzahl:
+          // hinge die Zahl der Seiten an der Kameraliste, liefe das Dokument
+          // in eine Rückkopplung und konvergierte nicht.
+          seiten.push((if j == 0 { slide-counter.step() } else { none })
                  + deck-info.update(facts.at(i))
                  // Nothing is revealed on paper, but the cursor counts here
                  // too, so that `info().step.total` reports the same number in
@@ -846,16 +886,15 @@
                  + step-cursor.update(0)
                  // Und die Basen der cue-Gruppen, aus demselben Grund.
                  + cue-basis.update(_ => (:))
-                 // Nothing on a page sits inside a reveal, so the step being
-                 // laid out is the first one. Said out loud for the sake of
-                 // `bundle()`, where the browser document ran first and left
-                 // its last value standing.
                  + step-here.update(())
                  + sprite-number.update(none)
                  + (if wechselt { theme-state.update(thema(s)) } else { none })
-                 + slide-body(s, style, geo, thema(s), overflow: overflow))
+                 + slide-body(s, style, geo, thema(s), overflow: overflow,
+                              schritt: k))
+        }
+      }
+      seiten.join(pagebreak(weak: true))
     }
-    pages.join(pagebreak(weak: true))
     ueberlauf-bericht(overflow)
     cue-luecken-bericht()
     drift-bericht(drift)

@@ -137,6 +137,12 @@ jobs:
       - name: Die Aufdeckketten konvergieren
         run: python3 .github/scripts/pruefe-konvergenz.py
 
+      # Deckt `pages: "step"` das PDF Schritt für Schritt auf, und bleibt die
+      # Vorgabe eine Seite je Folie? Gezählt über die PNG-Ausgabe, damit kein
+      # PDF-Werkzeug auf dem Prüfrechner vorausgesetzt wird.
+      - name: Das PDF kann Schritt für Schritt
+        run: python3 .github/scripts/pruefe-schrittseiten.py
+
       # Das Kontrastgatter der Sprecherpalette. Ohne Browser und in einer
       # Sekunde: `contrast()` im Paket bewacht die Folienpaletten, die zwanzig
       # Farben der Sprecheransicht standen unter keiner Aufsicht.

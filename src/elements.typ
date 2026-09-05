@@ -1,6 +1,7 @@
 // Appearing, moving and staggering.
 
 #import "internal.typ": (auto-morph-nr, cue-basis, deck-info,
+                        papier-modus, papier-schritt,
                         drift-ausweg, drift-modus,
                         drift-satz, drift-toleranz, durchsichtig,
                         fit-meldung, fit-verbot, html-output, im-deck,
@@ -23,9 +24,9 @@
 #let anim-kern(body, at: auto, enter: "fade-up", exit: "fade",
                after: "hidden", duration: auto, delay: 0, easing: none,
                dim-freiwillig: false, ad: none, ad-nr: none, boden: 2,
-               offen: true) = track(
+               offen: true, vorruecken: 1) = track(
   "anim", body, at: at, dim-freiwillig: dim-freiwillig, boden: boden,
-  offen: offen, extra: (
+  offen: offen, vorruecken: vorruecken, extra: (
     // Membership in an adaptive group. `none` never travels into the markup,
     // so an ordinary element gains no new attribute.
     ad: ad, "ad-nr": ad-nr,
@@ -269,10 +270,32 @@
       // of them stood there. Every version is one step, and
       // `info().step.total` has to report the same count in both outputs.
       return {
-        if im-deck() {
+        // Kein eigener Vorschub mehr, wenn `track` die Schritte vergibt:
+        // sonst hinge das Update am gelesenen `first` -- dieselbe Kette, die
+        // im Browserzweig die Konvergenz kostete.
+        if im-deck() and start != auto {
           step-cursor.update(c => calc.max(c, first + items.len() - 1))
         }
-        block(width: w, height: h, place(align, items.last()))
+        // Jede Fassung als verfolgtes Element, wie im Browserzweig -- dann
+        // entscheidet `track`, was auf dem gesetzten Schritt zu sehen ist, und
+        // meldet den Halt. Selbst lesen kann `alternatives` den Schritt hier
+        // nicht: die Lesung stünde in einem `layout`, und darin löst sie sich
+        // erst am Dokumentende auf. Gemessen: auf allen drei Seiten der
+        // Endwert. Übereinander liegen die Fassungen gefahrlos, weil die
+        // unzutreffenden `hide` bekommen und nur ihren Platz behalten.
+        let letzt = items.len() - 1
+        block(width: w, height: h, {
+          for (i, v) in items.enumerate() {
+            place(align, anim-kern(
+              v,
+              at: if start == auto { auto } else {
+                if i == letzt { str(first + i) + "-" } else { str(first + i) }
+              },
+              boden: 1, offen: i == letzt,
+              enter: enter, duration: duration,
+              easing: kurve(easing, "anim")))
+          }
+        })
       }
     }
     let last = items.len() - 1
@@ -442,7 +465,9 @@
     let letzter = max-step(sel) + (if offenes-ende(sel) { 0 } else { 1 })
     // Ausserhalb eines Decks gibt es weder einen Zeiger noch eine Folie, nach
     // deren Nummer sich fragen liesse. `pin` daneben fragt aus demselben Grund.
-    if im-deck() {
+    // In der Schrittfassung auf Papier belegt eine Fahrt keinen Schritt: sie
+    // zeigt dort nichts, und ihre Seite stünde sonst zweimal identisch da.
+    if im-deck() and not (not html-output.get() and papier-modus.get() == "step") {
       // Wie bei `scene`: rein, solange der Schritt aus dem Zähler kommt.
       // `sel` ist dann `calc.max(c + 1, 2)` und der Halt danach eins mehr --
       // beides Funktionen von `c` allein.
@@ -1185,7 +1210,8 @@
       // Nur die letzte Stufe, und der Zähler läuft trotzdem. Genau wie
       // `alternatives`: auf Papier steht die Zeichnung fertig da.
       return {
-        if im-deck() {
+        // Kein eigener Vorschub, wenn `track` die Schritte vergibt.
+        if im-deck() and not (at == auto and start == auto) {
           step-cursor.update(c => calc.max(c,
             if at != auto { at.last() } else { erster + steps - 1 }))
         }
@@ -1194,7 +1220,24 @@
         // `align` in der Stufe den Platz, in dem es ausrichten wollte.
         // Gemessen an `place(top + left, align(center, rect))` in einem Block
         // voller Breite: die Tinte lag bei x = 39 statt bei x = 312.
-        block(width: breite, height: hoehe, stufen.last())
+        // Jede Stufe als verfolgtes Element, wie im Browserzweig: `track`
+        // entscheidet, welche auf dem gesetzten Schritt steht, und meldet den
+        // Halt. Selbst lesen kann `build` den Schritt hier nicht -- die Lesung
+        // stünde in einem `layout` und löste sich erst am Dokumentende auf.
+        let letzt = steps - 1
+        let stufen-von(i) = if at != auto { at.at(i) } else { erster + i }
+        block(width: breite, height: hoehe, {
+          for (i, st) in stufen.enumerate() {
+            let bereich = if i == letzt { str(stufen-von(i)) + "-" } else {
+              str(stufen-von(i)) + "-" + str(stufen-von(i + 1) - 1)
+            }
+            place(top + std.start, anim-kern(
+              st,
+              at: if at == auto and start == auto { auto } else { bereich },
+              boden: 1, offen: i == letzt,
+              enter: enter, exit: "hold", duration: duration, easing: takt))
+          }
+        })
       }
     }
     let letzte = steps - 1
@@ -1475,7 +1518,7 @@
     // trägt -- gemessen zehn Meldungen bei drei Szenen, null mit dieser
     // Zeile. Bei ausgeschriebenem `start:` hängt `letzter` am Argument und
     // nicht am Zähler; dort bleibt es, wie es war.
-    if im-deck() {
+    if im-deck() and (html-output.get() or start != auto) {
       if start == auto {
         step-cursor.update(c => calc.max(c, calc.max(1, c) + stops.len() - 1))
       } else {
@@ -1490,8 +1533,29 @@
       // Auf Papier ein Standbild, und zwar der letzte Halt: eine Seite zeigt
       // alle Schritte auf einmal, und das ist der Zustand, in dem die Szene
       // die Folie verlässt. Genau wie `alternatives`.
-      block(width: width, height: height,
-            if still == auto { male(stops.last()) } else { still })
+      // Eine Szene vergibt einen Schritt je Halt. Auf Papier steht jeder Halt
+      // als eigenes verfolgtes Element da -- `track` zeigt den, der gerade an
+      // der Reihe ist. Ein ausgeschriebenes `still` ersetzt die ganze Szene und
+      // hat keine Schritte.
+      if still != auto {
+        block(width: width, height: height, still)
+      } else {
+        block(width: width, height: height, {
+          for i in range(stops.len()) {
+            place(top + left, anim-kern(
+              male(stops.at(i)),
+              at: if start == auto { auto } else {
+                if i == stops.len() - 1 { str(erster + i) + "-" }
+                else { str(erster + i) }
+              },
+              // Die Szene beginnt auf dem *aktuellen* Schritt, nicht auf dem
+              // nächsten -- deshalb rückt der erste Halt nicht vor.
+              boden: 1, vorruecken: if i == 0 { 0 } else { 1 },
+              offen: i == stops.len() - 1,
+              enter: enter))
+          }
+        })
+      }
     } else {
       // Einmal gemalt, nicht zweimal: das Standbild der Folie ist dasselbe
       // Bild wie das erste der Reihe, und ein Bild ist ein ganzes Layout.

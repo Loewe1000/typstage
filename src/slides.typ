@@ -2,6 +2,7 @@
 
 #import "themes.typ": lesbar, theme-state
 #import "internal.typ": (clock-state, deck-info, html-output, note-state, notiz-pruefen,
+                        papier-zahlen,
                         uebergang-pruefen,
                         step-cursor, step-jetzt, transition-state)
 
@@ -195,9 +196,15 @@
   // number, and the cursor is read at that mark. The same forward reference as
   // "page 3 of 12", and read straight off the counter rather than passed
   // through a state, which would cost one layout run too many.
-  let ende = query(<typstage-slide-end>).find(e => e.value == stand.nr)
-  let gesamt = if ende == none { 1 } else {
-    calc.max(1, step-cursor.at(ende.location()).first())
+  let gesamt = if not html-output.get() {
+    // Auf Papier aus dem Zustand: dort gibt es die Marke nicht, weil eine
+    // Folie mehrere Seiten setzen kann.
+    papier-zahlen.final().at(str(stand.nr), default: 1)
+  } else {
+    let ende = query(<typstage-slide-end>).find(e => e.value == stand.nr)
+    if ende == none { 1 } else {
+      calc.max(1, step-cursor.at(ende.location()).first())
+    }
   }
   stand.data + (step: (
     // Paged output has no current step. Every page shows the slide in its

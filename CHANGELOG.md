@@ -30,6 +30,25 @@ All notable changes to this package are recorded here. The format follows
   worked case; `steps` and `start` are refused beside `at`, rather than
   silently losing to it.
 
+- **`pages: "step"` -- a PDF that unfolds.** The PDF has one page per slide and
+  every tracked element in its final state; `pages: "step"` gives one page per
+  step instead, so the paper turns the way the talk does. Asked for on the
+  forum. `#pause`, `anim`, `stagger`, `tiles`, `alternatives`, `build`, `cue`
+  and `scene` all take part -- a scene has one page per stop, not per tween
+  frame. Hidden pieces keep their space, so nothing reflows from page to page.
+  A camera move is left out: on paper there is no camera, and its page would
+  stand there twice; in this mode it claims no step of its own. The example
+  decks run about 2 to 3 pages per slide.
+
+  The default is unchanged, down to the check deck's byte count. On the way
+  three feedback loops had to go, all of the same shape -- the page count must
+  not depend on anything that only comes into being while the pages are being
+  set, or the document never converges. The step count per slide is therefore
+  a state and not a mark (a mark would be laid down again by every page, and
+  its count would grow with them), and `alternatives`, `build` and `scene` now
+  hand their versions to `track` on paper as well, rather than picking one
+  themselves.
+
 ### Changed
 
 - **`cue()`: one group, many calls -- and a group belongs to one slide.** A group

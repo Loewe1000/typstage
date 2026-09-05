@@ -26,6 +26,8 @@
 
 #import "config.typ": *
 #import "internal.typ": (cue-basis, deck-info, html-output, note-state,
+                        papier-schritt,
+                        papier-zahlen,
                         plain-text, slide-counter, sprite-number, step-cursor,
                         step-here, ueberlauf-pruefen, umgebungs-block)
 #import "slides.typ": info
@@ -178,9 +180,16 @@
   })
 }
 
-#let slide-body(s, style, geo, t, chrome: true, overflow: "none") = block(
+/// `schritt` ist der Schritt, der gerade gesetzt wird, oder `none` für alles
+/// auf einmal. Er wird hier gesetzt und nicht von außen: gäbe man ihn nur über
+/// den Zustand mit, bekämen alle Seiten einer Folie denselben Aufruf mit
+/// denselben Argumenten -- und Typst gibt für gleichen Inhalt das gemerkte
+/// Layout zurück, also viermal dieselbe Seite.
+#let slide-body(s, style, geo, t, chrome: true, overflow: "none",
+                schritt: none) = block(
   width: geo.width, height: geo.height,
 {
+  papier-schritt.update(schritt)
   // A mark at the end of the slide, so that a footer inside it can ask the
   // step cursor how far it got. The mark carries the slide's running number,
   // which is what `info()` matches on.
@@ -201,8 +210,25 @@
   //
   // Machinery, not a shape, so it is named like the bridge's marker and not
   // like the `ts-` labels a deck restyles.
+  // Diese Marke nur einmal je Folie: ihre Zahl darf nicht mit der Seitenzahl
+  // wachsen, sonst konvergiert das Dokument nicht.
   let schritt-summe = place(top + left, context {
-    [#metadata(deck-info.get().nr) <typstage-slide-end>]
+    // Nur einmal je Folie: `info()` fragt diese Marke ab, und ihre Zahl darf
+    // nicht mit der Seitenzahl wachsen.
+    // Nur im Browser. Auf Papier setzt jede Folie mehrere Seiten, und die
+    // Marke käme je Seite noch einmal -- ihre Zahl wüchse mit der Seitenzahl,
+    // die Seitenzahl hängt an ihr, und daran gibt Typst auf. Dort sagt
+    // `papier-zahlen` dasselbe, ohne zu wachsen.
+    if html-output.get() {
+      [#metadata(deck-info.get().nr) <typstage-slide-end>]
+    }
+    // Die Halte dieser Folie und ihre Schrittzahl unter ihre Nummer schreiben.
+    // Hier und nicht im Element selbst: dort kostete die Folienlesung die
+    // Konvergenz.
+    let nr = str(deck-info.get().nr)
+    let n = calc.max(1, step-cursor.get().first())
+    papier-zahlen.update(d => if d.at(nr, default: none) == n { d }
+                              else { d + ((nr): n) })
   })
   let navigations-ziel = place(center + horizon, context {
     [#metadata(deck-info.get().nr) <typstage-slide-target>]

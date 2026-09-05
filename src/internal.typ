@@ -397,6 +397,12 @@
 /// Folienzählers, das in einem gemessenen Element nicht konvergiert.
 #let cue-basis = state("typstage-cue-basis", (:))
 
+/// Welcher Schritt gerade auf Papier gesetzt wird, oder `none` für die
+/// gewohnte Fassung: eine Seite je Folie, alles in seinem Endzustand.
+///
+/// Nur der Papierzweig liest ihn. Im Browser bewegt die Laufzeit die Schritte.
+#let papier-schritt = state("typstage-papier-schritt", none)
+
 
 /// Dasselbe für `stagger`, damit `stagger-layer` den Schritt eines Stückes
 /// nachschlagen kann. Eingetragen wird nur, was einen Namen trägt.
@@ -649,6 +655,38 @@
 ///
 /// Must be called inside a context.
 #let im-deck() = deck-info.get() != none
+
+/// Meldet einen Halt an: einen Schritt, auf dem sich auf Papier etwas ändert.
+///
+/// `pages: "step"` setzt nur diese Schritte. Was auf Papier nichts zeigt --
+/// eine Kamerafahrt etwa -- meldet sich nie und bekommt deshalb auch keine
+/// eigene Seite, statt zweimal identisch dazustehen.
+#let papier-zahlen = state("typstage-papier-zahlen", (:))
+
+/// `"slide"` oder `"step"`, einmal am Anfang des Papierzweigs gesetzt.
+///
+/// Gebraucht von `camera`: in der Schrittfassung belegt eine Kamerafahrt auf
+/// Papier keinen Schritt. Sie zeigt dort nämlich nichts -- "on paper there is
+/// no camera" --, und ihre Seite stünde zweimal identisch da. Sie erst
+/// belegen und die Seite dann wieder wegzunehmen ginge nicht: die Seitenzahl
+/// hinge dann an einer Liste, die beim Setzen der Seiten entsteht, und das
+/// Dokument liefe in eine Rückkopplung, die Typst nach fünf Läufen aufgibt.
+#let papier-modus = state("typstage-papier-modus", "slide")
+
+#let papier-halt(von, bis) = {
+  let schluessel = str(von) + "|" + repr(bis)
+  papier-halte-roh.update(d => if schluessel in d { d } else {
+    d + ((schluessel): (von: von, bis: bis))
+  })
+}
+
+/// Steht ein Element mit dieser Spanne auf dem Schritt, der gerade gesetzt
+/// wird? Ausserhalb von `pages: "step"` steht alles.
+#let papier-zeigt(von, bis) = {
+  let k = papier-schritt.get()
+  k == none or (k >= von and (bis == none or k <= bis))
+}
+
 
 /// The steps the content being laid out right now stands inside, innermost
 /// last. Empty outside any tracked element.
@@ -1357,9 +1395,22 @@
   // asked in the first place. Measured: all seventeen example decks come out
   // of the PDF pixel for pixel as before.
   if not html-output.get() {
-    return zaehlen + (if not inline and width == auto and will-fuellen(body) {
+    let leib = if not inline and width == auto and will-fuellen(body) {
       block(width: 100%, body)
-    } else { body })
+    } else { body }
+    // `zaehlen` zuerst, der `context` danach: so liest er den Zeiger, nachdem
+    // dieses Element ihn weitergestellt hat. Nachgemessen an einem Deck mit
+    // zwei `anim` und einem dreiteiligen `stagger`: 2, 3 und 1, 2, 3.
+    return zaehlen + context {
+      let selected = if at == auto {
+        str(step-cursor.get().first()) + (if offen { "-" } else { "" })
+      } else { selector(at) }
+      let von = min-step(selected)
+      let bis = if offenes-ende(selected) { none } else { max-step(selected) }
+      // `hide` statt Weglassen: der Platz bleibt stehen, und die Seiten einer
+      // Folie liegen übereinander, statt bei jedem Schritt neu umzubrechen.
+      if papier-zeigt(von, bis) { leib } else { hide(leib) }
+    }
   }
   zaehlen
   element-counter.step()

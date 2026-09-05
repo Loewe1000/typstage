@@ -7,8 +7,9 @@ Präsentation für den Browser -- und aus derselben Quelle eine PDF. Der Satz
 dahinter lautet: *Typst setzt, der Browser bewegt.* Typst setzt jede Folie als
 SVG und schreibt sie so in die HTML-Datei; im Browser steht sie deshalb genau
 wie auf dem Papier. Was sich bewegen soll, meldet man im Quelltext an. Eine
-Folie bleibt dabei eine Folie: die PDF hat eine Seite je Folie, nicht eine je
-Schritt.
+Folie bleibt dabei eine Folie: die PDF hat eine Seite je Folie -- oder, mit
+`pages: "step"`, eine je Schritt, sodass das Papier so umblättert wie der
+Vortrag.
 
 == Fünf Wörter, die dieses Handbuch benutzt
 
@@ -376,6 +377,37 @@ Rechnung.
 ```]
 
 Zu sehen ist sie in der Sprecheransicht und im Handout neben ihrer Folie.
+
+== Eine PDF, die sich aufdeckt
+
+`pages: "step"` setzt eine Seite je Schritt statt eine je Folie. Was noch nicht
+da ist, ist noch nicht da, und was abgetreten ist, ist fort -- das Papier
+blättert um wie der Vortrag.
+
+// check: dokument
+#show-code[```typ
+#import "@preview/typstage:0.1.1": *
+#show: presentation.with(
+  title: [Wie hoch ist der Turm?],
+  pages: "step",
+)
+
+== Zwei Wege
+#stagger([Der Schatten], [Der Winkel])
+```]
+
+Alles, was aufdeckt, macht mit: `#pause`, `anim`, `stagger`, `tiles`,
+`alternatives`, `build`, `cue` und `scene` -- eine Szene bekommt eine Seite je
+Halt, nicht je Zwischenbild. Ein Stück, das noch nicht an der Reihe ist, behält
+seinen Platz; von Seite zu Seite verrutscht also nichts.
+
+Zweierlei ist zu wissen. Eine `cue`-Gruppe wird an der Tastatur gerufen, auf
+Papier kann sie deshalb nur der geschriebenen Reihenfolge folgen. Und eine
+Kamerafahrt bekommt keine eigene Seite: auf Papier gibt es keine Kamera, ihre
+Seite stünde also zweimal gleich da.
+
+Rechne mit zwei bis drei Seiten je Folie -- so kommen die Beispieldecks heraus.
+
 
 == Das Handout
 

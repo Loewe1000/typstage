@@ -9,8 +9,9 @@ one on paper. Whatever is meant to move is marked in the source, and a small
 runtime animates it.
 
 A slide therefore stays a slide, not a stack of intermediate states. The PDF
-has one page per slide, not one per step, and whatever belongs to the motion
-alone falls away on paper.
+has one page per slide, and whatever belongs to the motion alone falls away on
+paper -- or, with `pages: "step"`, one page per step, so the paper turns the
+way the talk does.
 
 == Five words this manual uses
 
@@ -341,6 +342,35 @@ calculation, one slide per line.
 
 It appears in the speaker view -- opened in a second window with `n` -- and in
 the handout, beside its slide.
+
+== A PDF that unfolds
+
+`pages: "step"` sets one page per step instead of one per slide. What is not
+there yet is not there yet, and what has gone is gone -- the paper turns the
+way the talk does.
+
+// check: dokument
+#show-code[```typ
+#import "@preview/typstage:0.1.1": *
+#show: presentation.with(
+  title: [How tall is the tower?],
+  pages: "step",
+)
+
+== Two ways
+#stagger([The shadow], [The angle])
+```]
+
+Everything that reveals takes part: `#pause`, `anim`, `stagger`, `tiles`,
+`alternatives`, `build`, `cue` and `scene` -- a scene gets one page per stop,
+not one per tween frame. A piece that is not due yet keeps its space, so
+nothing shifts from one page to the next.
+
+Two things are worth knowing. A `cue` group is called out at the keyboard, so
+on paper it can only follow the written order. And a camera move has no page
+of its own: on paper there is no camera, so its page would stand there twice.
+
+Expect two to three pages per slide -- the example decks come out at that.
 
 == The handout
 
