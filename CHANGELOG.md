@@ -30,6 +30,24 @@ All notable changes to this package are recorded here. The format follows
   worked case; `steps` and `start` are refused beside `at`, rather than
   silently losing to it.
 
+- **`contents()` -- a table of contents that jumps.** One call sets a directory
+  of the section slides, and every entry links to its slide: `layout` puts the
+  entries in one column or two (`"1x2-fill"` fills the first before flowing
+  into the second), `from` and `to` pick a range, `number` and `title` take
+  render functions of your own. A section slide carries a link back. Numbers
+  come from `section-numbering`, off by default; give it a numbering pattern or
+  a function of the section number to switch it on. Contributed as a pull
+  request and rebuilt: the entries now take the deck's own palette rather than
+  a fixed pair of colours, and the contrast contract holds for them like for
+  everything else.
+- **A step bar under every tile in the overview.** One field per step: hovering
+  shows that step in the tile, clicking jumps straight to it, the running step
+  carries the accent. The lower third of a tile belongs to the bar, the upper
+  two thirds go to the start of the slide. Slides with a single step have
+  nothing to choose and get no fields -- of fourteen tiles in the tour, nine
+  would have carried an empty bar. The pinned clock can be resized at its
+  edges, too; the middle still moves it, and the cursor says beforehand which
+  of the two a drag would do.
 - **`pages: "step"` -- a PDF that unfolds.** The PDF has one page per slide and
   every tracked element in its final state; `pages: "step"` gives one page per
   step instead, so the paper turns the way the talk does. Asked for on the
@@ -98,6 +116,12 @@ All notable changes to this package are recorded here. The format follows
   names the step, it comes from the argument and the old line stays.
   `pruefe-konvergenz.py` holds all nine constructs, `anim` among them as the
   control that never had it.
+- **A click on a tile in the overview no longer pages on as well.** The tile
+  appeared and the deck moved a step further -- measured, a click on tile 3
+  landed on step 4. The cause was not the click but its neighbour: `pointerdown`
+  closed the overview, and the `click` that followed fell through to the stage,
+  where a click means paging. The overview now closes on the click itself, and
+  that click is used up.
 - **A `cue()` group no longer swallows the steps before it.** The forward arrow
   reveals the next point not yet named, and the group claimed the key as soon
   as its next point lay anywhere ahead -- not only when that point was the next
