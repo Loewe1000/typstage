@@ -23,41 +23,30 @@
 #let hier = t.accent
 #let leise = t.muted
 
-// The contents slide, built once and shown four times. It takes the current
-// section's number rather than a heading of its own, so the same function
-// serves as the opening overview and as the divider between parts.
-#let wegweiser(jetzt: none) = context {
+// The contents slide, built once and shown four times. It asks the deck where
+// it stands rather than being told, so the same call serves as the opening
+// overview and as the divider between parts -- and no number is kept by hand.
+#let wegweiser() = context {
   let teile = deck-outline().filter(a => a.depth == 1)
-  let n = info().slide.total
+  let jetzt = info().section.number
   set text(size: 1.05em)
   grid(
-    columns: (auto, 1fr, auto),
+    columns: (auto, 1fr),
     column-gutter: 18pt,
     row-gutter: 14pt,
-    // The count is set smaller than the row it belongs to, and a grid puts
-    // every cell at the top of its row. Left alone, "3 slides" floated a
-    // dozen pixels above the baseline of its own line; `bottom` puts it back
-    // on it. Right-aligned as well, so the column has an edge instead of a
-    // ragged one.
-    align: (auto, auto, right + bottom),
     ..teile
       .map(a => {
-        let da = jetzt != none and a.number == jetzt
-        let farbe = if da { hier } else { leise }
+        let da = a.number == jetzt
         (
-          text(fill: farbe, weight: if da { "bold" } else { "regular" },
+          text(fill: if da { hier } else { leise },
+               weight: if da { "bold" } else { "regular" },
                size: 1.2em)[#a.number],
           text(fill: if da { t.ink } else { leise },
                weight: if da { "bold" } else { "regular" })[#a.title],
-          text(fill: leise, size: 0.8em)[
-            #a.count #if a.count == 1 [slide] else [slides]
-          ],
         )
       })
       .flatten()
   )
-  v(0.8em)
-  text(fill: leise, size: 0.8em)[#n slides in all]
 }
 
 #show: presentation.with(
@@ -118,7 +107,7 @@
   the loud line -- nobody has to be told which one it is.
 ]
 
-#wegweiser(jetzt: 2)
+#wegweiser()
 
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -150,7 +139,7 @@
 
 == Where we are
 
-#wegweiser(jetzt: 3)
+#wegweiser()
 
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -170,4 +159,4 @@
 
 == Where we are
 
-#wegweiser(jetzt: 4)
+#wegweiser()

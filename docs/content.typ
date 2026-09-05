@@ -4271,6 +4271,17 @@ Folien; `examples/gliedern.typ` macht das vor.
   nichts: die Überschriftennotation zerlegt den Rumpf an seinen Überschriften
   und kopiert `depth` und `body` heraus, das Element selbst fällt weg. Das gilt
   in *beiden* Ausgaben. `deck-outline()` ist die Antwort darauf.
+
+  Einen Schritt weiter warten zwei weitere Fallstricke, beide von einem
+  Begleitpaket auf die harte Tour gefunden. Jede Folie wird in einem
+  `html.frame` gesetzt, und darin fällt ein `location` auf Seite 1 bei (0, 0)
+  zusammen -- wer nach Seiten gruppiert, sieht also eine einzige Gruppe für das
+  ganze Deck, auch im PDF. Und `target()` meldet in diesem Rahmen `"paged"`,
+  während eine HTML-Datei geschrieben wird; auch damit lassen sich die beiden
+  Ausgaben nicht unterscheiden. `info()` und `deck-outline()` umgehen beides:
+  sie tragen die Gliederung selbst, statt sie aus dem Dokument zurückzulesen.
+  `info().levels` beantwortet insbesondere „in welchem Abschnitt steht diese
+  Folie" ohne eine einzige Abfrage.
 ]
 
 === `contents()`: eine verknüpfte Agenda
@@ -4299,10 +4310,41 @@ lange Agenda kann mit dem inklusiven, bei eins beginnenden Bereich `from:` und
 #contents(layout: "1x2-fill", from: 9, to: 16)
 ```]
 
+Hat ein Deck mehr als eine Gliederungsebene, rücken die tieferen ein.
+`indent:` nimmt ein eigenes Maß oder `none`, dann steht alles bündig:
+
+// check: folie
+#show-code[```typ
+== Inhalt
+#contents(indent: none)
+```]
+
+`highlight: true` sagt, wo der Vortrag steht: der laufende Teil und das
+laufende Kapitel behalten die volle Tinte, alles davor und danach tritt zurück.
+Das ist die Agenda zwischen zwei Teilen -- die, die der Klasse zeigt, wie weit
+sie gekommen ist.
+
+// check: folie
+#show-code[```typ
+== Wo wir stehen
+#contents(highlight: true)
+```]
+
 `number:` ersetzt die komplette Nummernzelle und erhält einen
 Gliederungseintrag. `title:` ersetzt die komplette verknüpfte Titelzelle und
 erhält den Eintrag sowie sein Ziel. Beide Renderer können ihre Typografie
-vollständig selbst bestimmen. Abschnittsfolien tragen von sich aus keine
+vollständig selbst bestimmen. Jeder Eintrag trägt dabei `when` -- `"past"`,
+`"running"` oder `"coming"` --, sodass eine eigene Hervorhebung ohne eigene
+Rechnerei auskommt:
+
+// check: folie
+#show-code[```typ
+== Inhalt
+#contents(title: (eintrag, ziel) => link(ziel, text(
+  fill: if eintrag.when == "running" { blue } else { gray },
+  eintrag.title,
+)))
+```] Abschnittsfolien tragen von sich aus keine
 Nummer. `section-numbering:` bei `presentation` setzt eine davor -- ein
 Nummerierungsmuster wie `"1."` oder eine eigene Funktion, die die
 Abschnittsnummer bekommt.

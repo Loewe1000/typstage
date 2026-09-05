@@ -1260,7 +1260,7 @@ and the wrong two find each other), the piece gets a name instead.
   split: (1fr, 1fr), align: top,
   card(title: [The call])[
     #text(size: 0.72em, raw(lang: "typ",
-      "== Contents\n#contents()\n\n// or in two columns, and only part of it\n#contents(layout: \"1x2\", from: 1, to: 8)"))
+      "== Contents\n#contents()\n\n// part of it, and saying where we stand\n#contents(from: 1, to: 8, highlight: true)"))
 
     Every entry links to its section slide, and back. In the talk the
     click is a jump; on paper a PDF link.
@@ -1271,8 +1271,8 @@ and the wrong two find each other), the piece gets a name instead.
     ]
 
     #text(size: 0.72em, fill: t.muted)[
-      Numbers and titles take the palette of the deck, not a colour of
-      their own.
+      Numbers and titles take the palette of the deck. A deeper level
+      steps in; `highlight: true` marks where the talk stands.
     ]
   ],
 )

@@ -270,6 +270,8 @@
   to: auto,
   number: auto,
   title: auto,
+  indent: auto,
+  highlight: false,
 ) = context {
   assert(layout in ("1x1", "1x2", "1x2-fill"), message:
     "typstage: contents(layout: ...) expects \"1x1\", \"1x2\" or "
@@ -281,6 +283,13 @@
   assert(to == auto or (type(to) == int and to >= from), message:
     "typstage: contents(to: ...) expects auto or an entry number >= from, not "
     + repr(to))
+  assert(indent == auto or indent == none or type(indent) == length, message:
+    "typstage: contents(indent: ...) is how far a deeper level steps in: a "
+    + "length, `auto` for the default, or `none` to set every level flush. "
+    + "Not " + repr(indent))
+  assert(type(highlight) == bool, message:
+    "typstage: contents(highlight: ...) is true or false -- whether the "
+    + "entries say where the talk stands. Not " + repr(highlight))
   let all-entries = deck-outline()
   let last = if to == auto { all-entries.len() } else { to }
   let entries = all-entries.enumerate()
@@ -296,6 +305,26 @@
   // `lesbar` wählt die Schrift auf dem Akzent so, wie es der Kontrastvertrag
   // von jedem anderen Baustein des Pakets verlangt.
   let t = theme-state.get()
+  // ── Wo der Vortrag gerade steht ─────────────────────────────────────────
+  //
+  // `levels` nennt je Ebene den laufenden Abschnitt; die Nummer eines Eintrags
+  // damit verglichen sagt, ob er vorbei ist, läuft oder noch kommt. So ist das
+  // Datenmodell entworfen -- `contents()` hat es bisher nur nicht genutzt.
+  // Jeder Eintrag bekommt das als `when` mit, auch die eigenen
+  // Renderfunktionen: wer die Hervorhebung anders will, baut sie sich daraus.
+  let ebenen = info().levels
+  let wann = eintrag => {
+    if eintrag.depth > ebenen.len() { return "coming" }
+    let hier = ebenen.at(eintrag.depth - 1).number
+    if eintrag.number < hier { "past" }
+    else if eintrag.number == hier { "running" }
+    else { "coming" }
+  }
+  let schritt = if indent == auto { 1.4em } else if indent == none { 0pt }
+                else { indent }
+  // Gedämpft, was nicht läuft -- und nur wenn `highlight` an ist. Sonst sieht
+  // ein Verzeichnis aus wie bisher.
+  let blass = farbe => farbe.transparentize(55%)
   let number-render = if number == auto {
     // Kein Kreis. Eine Ziffer in einer gefüllten Ellipse ist eine Form, die
     // nichts sagt -- sie war zudem weiß auf Orange, was den Kontrastvertrag
@@ -306,7 +335,10 @@
     // auf dem Papier trägt, tabellarische Ziffern, damit zwei- und
     // einstellige Nummern untereinander stehen.
     entry => text(
-      fill: lesbar(t.paper, t.accent, t.strong, t.ink),
+      fill: {
+        let f = lesbar(t.paper, t.accent, t.strong, t.ink)
+        if highlight and entry.when != "running" { blass(f) } else { f }
+      },
       weight: "medium",
       features: (tnum: 1),
     )[#entry.number.]
@@ -314,10 +346,14 @@
   else { number }
   let title-render = if title == auto {
     (entry, destination) => link(destination)[
-      #text(fill: t.ink)[#entry.title]
+      #text(fill: if highlight and entry.when != "running" { blass(t.ink) }
+                  else { t.ink },
+            weight: if highlight and entry.when == "running" { "medium" }
+                    else { "regular" })[#entry.title]
     ]
   } else { title }
-  let item = entry => {
+  let gesetzt = roh => {
+    let entry = roh + (when: wann(roh))
     let destination = query(<typstage-slide-target>)
       .find(slide => slide.value == entry.target + 1)
       .location()
@@ -334,6 +370,10 @@
         title-render(entry, destination),
       )
     }
+  }
+  let item = roh => {
+    let einzug = schritt * (roh.depth - 1)
+    if einzug == 0pt { gesetzt(roh) } else { pad(left: einzug, gesetzt(roh)) }
   }
   let column-major = {
     let rows = calc.div-euclid(entries.len() + 1, 2)

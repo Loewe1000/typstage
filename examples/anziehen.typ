@@ -90,6 +90,18 @@
 
 == A palette is not a design
 
+=== Where we are going
+
+#speaker-note[
+  Thirty seconds, no more. The list is not typed out: it is the deck's own
+  outline, so it cannot fall out of step with the slides it names. The two
+  levels are set apart by the indent -- parts flush, chapters stepped in.
+]
+
+#v(1fr)
+#contents()
+#v(1fr)
+
 === A theme says how, a palette says what
 
 #speaker-note[
@@ -279,6 +291,18 @@
 = Shape
 
 == The labels
+
+=== Halfway
+
+#speaker-note[
+  The same list again, now saying where we stand: colour is behind us, shape
+  is running. One argument does that -- `highlight: true` -- and the running
+  part and chapter keep the full ink while the rest steps back.
+]
+
+#v(1fr)
+#contents(highlight: true)
+#v(1fr)
 
 === Every shape the package draws carries one
 

@@ -40,6 +40,16 @@ All notable changes to this package are recorded here. The format follows
   request and rebuilt: the entries now take the deck's own palette rather than
   a fixed pair of colours, and the contrast contract holds for them like for
   everything else.
+- **`contents(indent: …)` and `contents(highlight: true)`.** A deck with more
+  than one structure level now indents the deeper entries instead of setting
+  them flush, where two entries could carry the same number and the outline
+  said nothing about its own shape; `indent: none` brings the old flat setting
+  back. `highlight: true` says where the talk stands -- the running part and
+  chapter keep the full ink, everything before and after steps back, which is
+  the agenda between two parts. Every entry also carries `when` (`"past"`,
+  `"running"`, `"coming"`), so a highlight of your own needs no arithmetic:
+  the comparison against `info().levels` was already described in the docs and
+  is now done for you. Asked for after 0.1.1 went up for review.
 - **A step bar under every tile in the overview.** One field per step: hovering
   shows that step in the tile, clicking jumps straight to it, the running step
   carries the accent. The lower third of a tile belongs to the bar, the upper

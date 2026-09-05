@@ -3723,6 +3723,16 @@ the slides, not into them; `examples/gliedern.typ` shows how.
   nothing: the heading notation splits the body at its headings and copies
   `depth` and `body` out, dropping the element itself. That holds in *both*
   outputs. `deck-outline()` is the answer to it.
+
+  Two more traps wait one step further in, and both were found the hard way by
+  a companion package. Every slide is set inside an `html.frame`, and in there
+  a `location` collapses to page 1 at (0, 0) -- so anything that groups by page
+  sees one group for the whole deck, in the PDF as well. And `target()` reports
+  `"paged"` inside that frame even while an HTML file is being written, so it
+  cannot be used to tell the two apart either. `info()` and `deck-outline()`
+  avoid both: they carry the structure themselves instead of reading it back
+  out of the document. `info().levels` in particular answers "which section is
+  this slide in" without a single query.
 ]
 
 === `contents()`: a linked agenda
@@ -3750,9 +3760,39 @@ inclusive, one-based `from:` and `to:` range on multiple slides:
 #contents(layout: "1x2-fill", from: 9, to: 16)
 ```]
 
+A deck with more than one structure level indents the deeper ones. `indent:`
+takes a length of your own, or `none` to set every level flush:
+
+// check: folie
+#show-code[```typ
+== Contents
+#contents(indent: none)
+```]
+
+`highlight: true` says where the talk stands: the running part and chapter keep
+the full ink, everything before and after steps back. That is the agenda between
+two parts, the one that shows the audience how far along they are.
+
+// check: folie
+#show-code[```typ
+== Where we are
+#contents(highlight: true)
+```]
+
 `number:` replaces the complete number cell and receives one outline entry.
 `title:` replaces the complete linked title cell and receives the entry and
 its destination. Both renderers can therefore control their own typography.
+Every entry carries `when`, which is `"past"`, `"running"` or `"coming"` --
+so a highlight of your own needs no arithmetic of its own:
+
+// check: folie
+#show-code[```typ
+== Contents
+#contents(title: (entry, to) => link(to, text(
+  fill: if entry.when == "running" { blue } else { gray },
+  entry.title,
+)))
+```]
 Use `number: none` to remove the number cell and let the title use the full
 item width.
 Section slide titles carry no number of their own.

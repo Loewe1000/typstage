@@ -438,6 +438,16 @@ comparison is on the screen rather than in my prose.
 [s]: https://typst.app/universe/package/slydekit
 [te]: https://github.com/touying-typ/touying-exporter
 [sl]: https://typst.app/universe/package/slipst
+[n]: https://typst.app/universe/package/navigator
+
+**And one that builds on it.** [navigator][n] adds a transition roadmap and a
+miniframes-style navigation bar, and ships examples for both against typstage.
+Getting there turned up something worth knowing for anyone writing a companion
+package: typstage renders each slide inside an `html.frame`, and in there a
+`location` collapses to page 1 at (0, 0) while `target()` still reports
+`"paged"`. Anything that groups headings by page therefore sees one group for
+the whole deck. `info()` and `deck-outline()` sidestep that — they carry the
+deck's structure themselves rather than reading it back out of Typst.
 
 ## Documentation
 

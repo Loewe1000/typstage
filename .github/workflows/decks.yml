@@ -143,6 +143,12 @@ jobs:
       - name: Das PDF kann Schritt für Schritt
         run: python3 .github/scripts/pruefe-schrittseiten.py
 
+      # Zeigt das Verzeichnis seine Ebenen und die Stelle, an der der Vortrag
+      # steht? Das Prüfdeck prüft sich selbst: eine Renderfunktion, die
+      # abbricht, sobald ein `when` nicht stimmt.
+      - name: Das Verzeichnis kennt Ebenen und Stand
+        run: python3 .github/scripts/pruefe-verzeichnis.py
+
       # Das Kontrastgatter der Sprecherpalette. Ohne Browser und in einer
       # Sekunde: `contrast()` im Paket bewacht die Folienpaletten, die zwanzig
       # Farben der Sprecheransicht standen unter keiner Aufsicht.
