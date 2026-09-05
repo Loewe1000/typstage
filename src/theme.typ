@@ -230,9 +230,21 @@
     papier-zahlen.update(d => if d.at(nr, default: none) == n { d }
                               else { d + ((nr): n) })
   })
-  let navigations-ziel = place(center + horizon, context {
+  // Nur auf der ersten Seite einer Folie. `contents()` fragt diese Marke ab;
+  // käme sie je Seite noch einmal, wüchse ihre Zahl mit der Seitenzahl, und
+  // die Seitenzahl hängt an dem, was die Folie an Schritten hat -- eine
+  // Rückkopplung, die Typst nach fünf Läufen aufgibt. Gemessen an einem Deck
+  // mit `contents()` und `pages: "step"`: "query for elements labelled
+  // `typstage-slide-target` did not stabilize".
+  //
+  // Geprüft wird das Argument und nicht der Zustand: ein Vergleich, keine
+  // Lesung. Der Verweis führt damit auf die erste Seite der Folie, und das ist
+  // die richtige -- dort schlägt sie auf.
+  let navigations-ziel = if schritt != none and schritt != 1 { none } else {
+  place(center + horizon, context {
     [#metadata(deck-info.get().nr) <typstage-slide-target>]
   })
+  }
   // Everything below is measured on the default canvas and scaled with it, so
   // a smaller or wider slide keeps its proportions.
   let k = geo.scale

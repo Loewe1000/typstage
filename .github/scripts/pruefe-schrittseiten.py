@@ -30,6 +30,14 @@ FAELLE = {
     "scene": ('== A\n#scene("s", t => box(width: 100pt, height: 60pt, '
               'place(top + left, dx: t * 20pt, [o])), stops: (0, 1, 2), tween: 4)\n', 2, 4),
     "zwei Folien": ("== A\n#anim[eins]\n== B\n#stagger([a], [b])\n", 3, 5),
+    # `contents()` setzt Marken auf die Abschnittsfolien. Kämen sie je Seite
+    # noch einmal, wüchse ihre Zahl mit der Seitenzahl -- und die Seitenzahl
+    # hängt an den Schritten. Gemessen, bevor die Marke auf die erste Seite
+    # beschränkt wurde: "query for elements labelled `typstage-slide-target`
+    # did not stabilize".
+    "contents": ("= Ein Abschnitt\n== Aufdecken\n#anim[eins]\n"
+                 "#stagger([a], [b])\n#alternatives([p], [q])\n"
+                 "== Verzeichnis\n#contents()\n", 4, 9),
     # Die Fahrt belegt in der Schrittfassung keinen Schritt: vier statt sechs.
     "kamera": ("== A\n#anim[eins]\n#pin(<z>, [Ziel])\n#camera(<z>)\n#anim[zwei]\n", 2, 4),
 }
