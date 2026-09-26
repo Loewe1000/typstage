@@ -8,7 +8,7 @@
 //   typst compile theme-night.typ theme-night.html --format html --features html
 //   typst compile theme-night.typ theme-night.pdf
 
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 
 // A theme is a dictionary, so its colours are available to the deck itself.
 #let t = themes.night

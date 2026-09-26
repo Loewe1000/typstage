@@ -29,8 +29,8 @@ HTMLHeadElement.prototype.appendChild=function(n){
   const video=fs.readFileSync(path.join(root,'examples/demo.mp4'));
   server=http.createServer((req,res)=>{let data=req.url.endsWith('.wav')?wav:req.url.endsWith('.mp4')?video:null;if(data){res.setHeader('Content-Type',req.url.endsWith('.wav')?'audio/wav':'video/mp4');res.setHeader('Accept-Ranges','bytes');let m=/bytes=(\d+)-(\d*)/.exec(req.headers.range||'');if(m){let a=+m[1],z=m[2]?+m[2]:data.length-1;res.statusCode=206;res.setHeader('Content-Range','bytes '+a+'-'+z+'/'+data.length);data=data.subarray(a,z+1)}res.setHeader('Content-Length',data.length);res.end(data)}else{res.setHeader('Content-Type','text/html');res.end(html)}});
   await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+server.address().port;
-  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.1.2'));
-  const source=`#import "@preview/typstage:0.1.2": *
+  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.1.3'));
+  const source=`#import "@preview/typstage:0.1.3": *
 #show: presentation.with(title: [Clips])
 == Video
 #video("demo.mp4", start: 0.5, end: 1.2, autoplay: false)
@@ -49,7 +49,7 @@ HTMLHeadElement.prototype.appendChild=function(n){
   compile(source,'deck');html=fs.readFileSync(path.join(tmp,'deck.html'),'utf8').replace('<head>','<head>'+fixture);
   execFileSync('typst',['compile','--package-path',path.join(tmp,'pkg'),'--root',tmp,path.join(tmp,'deck.typ'),path.join(tmp,'deck.pdf')],{stdio:'pipe'});
   for(const params of ['start: -1','start: 2, end: 2','start: 3, end: 2','end: "75"','loop: 2']){
-   assert.throws(()=>compile('#import "@preview/typstage:0.1.2": *\n#show: presentation\n== Invalid\n#audio("a.wav", '+params+')','bad'),undefined,'reject '+params);
+   assert.throws(()=>compile('#import "@preview/typstage:0.1.3": *\n#show: presentation\n== Invalid\n#audio("a.wav", '+params+')','bad'),undefined,'reject '+params);
   }
   b=await starte(process.env.CHROME||(process.platform==='darwin'?'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome':'google-chrome'));
   await b.navigiere(url);await schlaf(700);

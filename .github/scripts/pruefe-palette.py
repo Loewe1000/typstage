@@ -96,7 +96,7 @@ def lies(pfad):
     return (aus, s), None
 
 def main():
-    css = arg("--css", os.path.join(WURZEL, "assets", "typstage-0.1.2.css"))
+    css = arg("--css", os.path.join(WURZEL, "assets", "typstage-0.1.3.css"))
     daten, fehler = lies(css)
     if fehler:
         print("FEHLER: " + fehler, file=sys.stderr)

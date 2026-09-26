@@ -50,7 +50,7 @@ Text.
 == Und noch eine
 Text.
 `;
-const KOPF = `#import "@preview/typstage:0.1.2": *
+const KOPF = `#import "@preview/typstage:0.1.3": *
 #show: presentation.with(theme: themes.night, title: [Inhalt]`;
 const DECK = KOPF + ")" + RUMPF;
 // Die Funktionsform, weil sie am meisten zusagt: sie bekommt `location` und
@@ -73,7 +73,7 @@ const klick = h => `(function(){
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-inhalt-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.2"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.3"));
   }
   const uebersetze = (name, quelle) => {
     fs.writeFileSync(path.join(tmp, name + ".typ"), quelle);

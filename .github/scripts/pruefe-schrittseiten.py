@@ -49,7 +49,7 @@ import json, os, re, shutil, subprocess, sys, tempfile
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-KOPF = '#import "@preview/typstage:0.1.2": *\n#show: presentation.with(title: [P], pages: "{modus}")\n'
+KOPF = '#import "@preview/typstage:0.1.3": *\n#show: presentation.with(title: [P], pages: "{modus}")\n'
 
 # name -> (Rumpf, Seiten bei "slide", Seiten bei "step")
 FAELLE = {
@@ -224,7 +224,7 @@ def beispiele(paketpfad):
 # Ein Deck, das hinter jede Nummer eine Marke mit dem Zählerstand legt. Die
 # Marke liest nur und fließt in nichts zurück, was gesetzt wird.
 ZAEHLDECK = (
-    '#import "@preview/typstage:0.1.2": *\n'
+    '#import "@preview/typstage:0.1.3": *\n'
     '#set heading(numbering: "1.1")\n'
     '#show: presentation.with(title: [P], pages: "{modus}")\n'
     '#set math.equation(numbering: "(1)")\n'
@@ -355,7 +355,7 @@ def browser_pruefen(tmp, paket, klagen):
 # Zwei Folien genügen: auf der zweiten kommt die Verschiebung aus der ersten
 # schon einen Lauf zu spät an.
 BUENDEL = (
-    '#import "@preview/typstage:0.1.2": *\n'
+    '#import "@preview/typstage:0.1.3": *\n'
     '#bundle(title: [P], pages: "step")[\n'
     '#set math.equation(numbering: "(1)")\n'
     '== Eins\n$ a = 1 $\n#pause\n$ b = 2 $\n'
@@ -395,7 +395,7 @@ def buendel_pruefen(tmp, paket, klagen):
 # allein, bei `stagger(morph: true)` schon vorher. Das HTML allein und die PDF
 # allein blieben still.
 MORPH_BUENDEL = (
-    '#import "@preview/typstage:0.1.2": *\n'
+    '#import "@preview/typstage:0.1.3": *\n'
     '#bundle(title: [P])[\n'
     '== Eins\n#alternatives(morph: true, $a + b$, $b + a$, $c$)\n'
     '== Zwei\n#stagger(morph: true, $a + b$, $b + a$, $c$)\n'
@@ -429,7 +429,7 @@ def main():
         for raum in ("schule", "preview"):
             ziel = os.path.join(paket, raum, "typstage")
             os.makedirs(ziel, exist_ok=True)
-            os.symlink(WURZEL, os.path.join(ziel, "0.1.2"))
+            os.symlink(WURZEL, os.path.join(ziel, "0.1.3"))
         klagen = []
         for name, (rumpf, soll_folie, soll_schritt) in FAELLE.items():
             for modus, soll in (("slide", soll_folie), ("step", soll_schritt)):

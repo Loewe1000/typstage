@@ -23,7 +23,7 @@ import os, re, subprocess, sys, tempfile
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-RUMPF = """#import "@preview/typstage:0.1.2": *
+RUMPF = """#import "@preview/typstage:0.1.3": *
 #show: presentation.with(title: [Konvergenz])
 
 == Folie
@@ -71,7 +71,7 @@ FAELLE = {
 # und die Prüfung am Deckende meldete "would get a point 10". Ebenso ein
 # einziger Punkt mit `nr: 1` in einem `anim`, auch ohne Folie danach: die
 # Kopie legte die 1 ein zweites Mal ab, "gives a digit to two points".
-WIRT = """#import "@preview/typstage:0.1.2": *
+WIRT = """#import "@preview/typstage:0.1.3": *
 #show: presentation.with(title: [Konvergenz])
 
 == Folie
@@ -94,7 +94,7 @@ WIRTE = {
 # diese Probe zählte elf Meldungen bei der Kachel und neun beim `anim`, und
 # die zweite Folie legte R und T im Browser beide auf Schritt 6. Mit einem
 # eigenen Namen war es still, und mit einer bloßen Textfolie dahinter auch.
-FOLGE = """#import "@preview/typstage:0.1.2": *
+FOLGE = """#import "@preview/typstage:0.1.3": *
 #show: presentation.with(title: [Konvergenz])
 
 == Folie
@@ -116,7 +116,7 @@ FOLGEN = {
 OFFEN = {}
 
 # `camera` zielt auf ein `pin` und braucht deshalb einen eigenen Rumpf.
-KAMERA = """#import "@preview/typstage:0.1.2": *
+KAMERA = """#import "@preview/typstage:0.1.3": *
 #show: presentation.with(title: [Konvergenz])
 
 == Folie
@@ -149,7 +149,7 @@ def main():
         for raum in ("schule", "preview"):
             ziel = os.path.join(paket, raum, "typstage")
             os.makedirs(ziel, exist_ok=True)
-            os.symlink(WURZEL, os.path.join(ziel, "0.1.2"))
+            os.symlink(WURZEL, os.path.join(ziel, "0.1.3"))
         klagen = []
         pflicht = [(name, RUMPF.format(aufruf=a)) for name, a in FAELLE.items()]
         pflicht += [(name, WIRT.format(aufruf=a)) for name, a in WIRTE.items()]

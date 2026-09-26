@@ -33,7 +33,7 @@ const arg = (n, v) => { const i = process.argv.indexOf(n); return i > 0 ? proces
 const CHROME = arg("--browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 
-const DECK = `#import "@preview/typstage:0.1.2": *
+const DECK = `#import "@preview/typstage:0.1.3": *
 #show: presentation.with(
   theme: themes.lesson, title: [Klang],
   room: (sounds: (a: "ton.wav")),
@@ -46,7 +46,7 @@ Ein Satz.
 Noch einer.
 `;
 
-const DECK_FEHLT = `#import "@preview/typstage:0.1.2": *
+const DECK_FEHLT = `#import "@preview/typstage:0.1.3": *
 #show: presentation.with(
   theme: themes.lesson, title: [Fehlt],
   room: (sounds: (a: "gibt-es-nicht.wav")),
@@ -95,7 +95,7 @@ const lage = `JSON.stringify((function(){
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-klang-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(raum === "schule" ? path.join(paket, "schule") : path.join(paket, "preview"), "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.2"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.3"));
   }
   const ordner = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-klang-"));
   tonDatei(path.join(ordner, "ton.wav"));

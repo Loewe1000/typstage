@@ -1,4 +1,4 @@
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 
 #show: presentation.with(
   title: [Der Satz des Pythagoras],

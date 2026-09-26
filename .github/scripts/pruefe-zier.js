@@ -86,7 +86,7 @@
 //      stand unleserlich klein 512 px neben ihrem Ort.
 //
 // Jede der Behebungen einzeln zurückgenommen lässt die Probe klagen; die
-// Stellen stehen in CHANGELOG.md unter 0.1.2, „Fixed". Was in beiden
+// Stellen stehen in CHANGELOG.md unter 0.1.3, „Fixed". Was in beiden
 // Ausgaben gleich falsch stand, sieht sie nicht, denn sie misst die eine
 // gegen die andere: ein Block, den eine Label-Regel des Decks in die Zier
 // legt, verlor dort unter `#set block(inset: …)` seinen Einzug, und die
@@ -133,7 +133,7 @@ const FARBE = {
   blau: (r, g, b) => b - Math.max(r, g) > 40,
 };
 
-const KOPF = `#import "@preview/typstage:0.1.2": *
+const KOPF = `#import "@preview/typstage:0.1.3": *
 #show <ts-slide-number>: set text(fill: rgb("#ff00ff"))
 #show <ts-slide-header-text>: set text(fill: rgb("#00ffff"))
 #show <ts-slide-footer-rule>: set rect(fill: rgb("#00ff00"))
@@ -327,7 +327,7 @@ function paketpfad() {
   const pp = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-zier-pk-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(pp, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(pp, raum, "typstage", "0.1.2"), "dir");
+    fs.symlinkSync(WURZEL, path.join(pp, raum, "typstage", "0.1.3"), "dir");
   }
   return pp;
 }

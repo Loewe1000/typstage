@@ -10,7 +10,7 @@
 // ein Zeichenpaket, damit diese Probe an keinem Download hängt: ein nacktes
 // `rect` trägt seine Größe genauso in sich wie eine CeTZ-Leinwand.
 
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 
 #show: presentation.with(theme: themes.lesson)
 

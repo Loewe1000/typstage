@@ -46,7 +46,7 @@ import tempfile
 from pathlib import Path
 
 WURZEL = Path(__file__).resolve().parents[2]
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 
 def paketwurzel(tmp):

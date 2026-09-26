@@ -8,10 +8,10 @@ const root = path.resolve(__dirname, '../..');
  let b;
  try {
   const pkg = path.join(tmp,'pkg/preview/typstage');
-  fs.mkdirSync(pkg,{recursive:true}); fs.symlinkSync(root,path.join(pkg,'0.1.2'));
+  fs.mkdirSync(pkg,{recursive:true}); fs.symlinkSync(root,path.join(pkg,'0.1.3'));
   fs.copyFileSync(path.join(root,'examples/demo.mp4'),path.join(tmp,'demo.mp4'));
   fs.copyFileSync(path.join(root,'examples/medien/airhorn.mp3'),path.join(tmp,'sound.mp3'));
-  fs.writeFileSync(path.join(tmp,'deck.typ'), `#import "@preview/typstage:0.1.2": *
+  fs.writeFileSync(path.join(tmp,'deck.typ'), `#import "@preview/typstage:0.1.3": *
 #show: presentation.with(title: [Regression], speaker-view: (shortcuts: false), room: (sounds: (a: "sound.mp3")))
 == Cue
 #cue("g", [A], [B], [C])

@@ -29,8 +29,8 @@ HTMLHeadElement.prototype.appendChild=function(n){
 (async()=>{
  let b,server;const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'typstage-youtube-'));
  try{
-  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.1.2'));
-  fs.writeFileSync(path.join(tmp,'deck.typ'),`#import "@preview/typstage:0.1.2": *
+  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.1.3'));
+  fs.writeFileSync(path.join(tmp,'deck.typ'),`#import "@preview/typstage:0.1.3": *
 #show: presentation.with(title: [YouTube])
 == Video
 #embed(url: "https://www.youtube.com/embed/M7lc1UVf-VE", width: 480pt, height: 270pt)

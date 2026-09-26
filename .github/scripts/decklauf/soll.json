@@ -6,7 +6,7 @@
   "",
   "flieger und fliegerRueck sind die Zahl der Geister, die die Flüge des",
   "Hin- und des Rückwegs erzeugen, gezählt in der Laufzeit an der Stelle, an",
-  "der sie entstehen (FLUG in assets/typstage-0.1.2.js).",
+  "der sie entstehen (FLUG in assets/typstage-0.1.3.js).",
   "",
   "Das ist NICHT die alte dritte Zahl der Reihe folien/schritte/flieger. Die",
   "wurde am DOM abgelesen, an #ts-fly, und fly() räumt seine Geister per",
@@ -49,7 +49,7 @@
   "",
   "feder und federRueck sind die Zahl der Pfade, die sich auf dem Hin- und auf",
   "dem Rueckweg selbst gezeichnet haben (enter: \"draw\"). Gezaehlt wie flieger:",
-  "in der Laufzeit, dort wo sie entstehen (FEDER in assets/typstage-0.1.2.js),",
+  "in der Laufzeit, dort wo sie entstehen (FEDER in assets/typstage-0.1.3.js),",
   "und nicht am DOM. Sie stehen bei allen Decks; nur das Pruefdeck zeichnet,",
   "bei den anderen sind sie 0 -- und das ist selbst eine Aussage, denn ein Deck,",
   "das ploetzlich zeichnet, hat sich veraendert.",
@@ -174,12 +174,12 @@
   "Laufzeitwoerter um 97, drei neue Schluessel und zwei laengere Hilfetexte.",
   "Ihre linux-Werte waren schon fort und sind es geblieben.",
   "",
-  "Der Sprung auf 0.1.2 hat pruefdeck/satz und satzBytes um 999 Bytes bewegt,",
+  "Der Sprung auf 0.1.3 hat pruefdeck/satz und satzBytes um 999 Bytes bewegt,",
   "und zwar allein durch EIN Zeichen: pruefdeck.typ:25 setzt",
   "author: [typstage #runtime-version], die Titelfolie zeigt also die Nummer.",
   "Aus der 1 wurde eine 2, und weil eine Folie als SVG mit Glyphenverweisen",
   "gesetzt wird, kommt die Pfaddefinition der neuen Ziffer dazu. Im HTML nach",
-  "\"0.1.2\" zu greppen findet deshalb nichts -- der Text steht dort nicht als",
+  "\"0.1.3\" zu greppen findet deshalb nichts -- der Text steht dort nicht als",
   "Text. Gemessen, indem dasselbe Deck gegen beide Staende uebersetzt und die",
   "erste abweichende Stelle gesucht wurde: ein einziger <use>-Verweis.",
   "sprecher und alle anderen Werte stehen unveraendert; die linux-Werte von",
@@ -283,7 +283,7 @@
   "2026-09-21: Aufdeckungen beginnen automatisch bei Schritt 2; Tour und zwei Handouts ergänzt. Animationsproben beginnen an der ersten sichtbaren Stufe. Presenter-DOM-Zuwachs auch auf Linux berücksichtigt, bestehende Plattformdifferenz beibehalten."
  ],
  "decks": {
-  "0.1.2-ho-unterrichten": {
+  "0.1.3-ho-unterrichten": {
    "folien": 12,
    "schritte": 21,
    "elemente": 9,
@@ -355,7 +355,7 @@
    ],
    "fehler": []
   },
-  "0.1.2-ho-vortragen": {
+  "0.1.3-ho-vortragen": {
    "folien": 15,
    "schritte": 47,
    "elemente": 105,

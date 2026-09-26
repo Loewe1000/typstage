@@ -24,7 +24,7 @@ const CHROME = arg("--browser",
 // Folie 1 bekommt sieben Schritte: 1 leer, 2/3/4 die `anim`, 5/6/7 die Punkte.
 // Die Folie danach ist nötig, damit ein Übersprung sichtbar wird, statt am
 // Deckende aufzulaufen.
-const DECK = `#import "@preview/typstage:0.1.2": *
+const DECK = `#import "@preview/typstage:0.1.3": *
 #show: presentation.with(title: [Pfeil])
 
 == Vor der Gruppe
@@ -46,7 +46,7 @@ const PFEIL = " -> ";
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-pfeil-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.2"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.3"));
   }
   fs.writeFileSync(path.join(tmp, "deck.typ"), DECK);
   try {

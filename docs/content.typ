@@ -337,7 +337,7 @@ dieses Dokument eine Präsentation ist.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 #show: presentation.with(title: [Wie hoch ist der Turm?])
 ```]
 
@@ -519,7 +519,7 @@ blättert um wie der Vortrag.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 #show: presentation.with(
   title: [Wie hoch ist der Turm?],
   pages: "step",
@@ -571,7 +571,7 @@ je Seite, die Notiz daneben, und wo keine steht, Linien.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 #show: presentation.with(
   title: [Wie hoch ist der Turm?],
   handout: 3,
@@ -587,7 +587,7 @@ Fünfundvierzig Zeilen, und nichts darin, das nicht oben erklärt wurde.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 
 #show: presentation.with(
   title: [Wie hoch ist der Turm?],
@@ -1904,7 +1904,7 @@ nicht bewegen kann -- eine Konstruktion, ein Video, eine gezeichnete Bewegung.
 die Konstruktion, rechts die Stichpunkte, darunter die Befehle.
 
 #show-code[```typ
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 
 #show: presentation.with(theme: themes.lesson)
 
@@ -2218,7 +2218,7 @@ Farben ändern, den Ausschnitt verschieben, eine Bewegung anstoßen.
 Folienrumpf und geben selbst nichts aus.
 
 #show-code[```typ
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 
 #presentation(
   slide([Ferngesteuert], {
@@ -2579,7 +2579,7 @@ not for commercial use.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 
 #presentation(
   slide([Eine Parabel], {
@@ -3659,8 +3659,8 @@ Laufzeitumgebung, die die Bewegung ausführt. Wo sie herkommen, sagt `assets`:
   [`"inline"`], [Beide Dateien stehen im HTML. Eine einzige Datei, die sich
     verschicken, auf einen Stick legen und ohne Netz öffnen lässt. Vorgabe --
     und für den Unterricht meist die richtige Wahl.],
-  [`"split"`], [Das HTML verweist auf `typstage-0.1.2.css` und
-    `typstage-0.1.2.js` daneben. Angebracht, wo mehrere Vorträge in einem
+  [`"split"`], [Das HTML verweist auf `typstage-0.1.3.css` und
+    `typstage-0.1.3.js` daneben. Angebracht, wo mehrere Vorträge in einem
     Ordner liegen: Der Browser lädt die Laufzeit einmal für alle.],
   [`(cdn: …)`], [Dieselben Namen unter der angegebenen Adresse. Für eine
     Website, die viele Vorträge trägt.],
@@ -3678,7 +3678,7 @@ Bündel-Export gibt sie im selben Lauf aus:
 
 // check: ganz ziel=bundle
 #show-code[```typ
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 
 #document("vortrag.html", title: "Der Satz des Pythagoras")[
   #show: presentation.with(title: [Der Satz des Pythagoras], assets: "split")
@@ -3867,7 +3867,7 @@ verschieden:
     )
   },
   source: ```typ
-  #import "@preview/typstage:0.1.2": themes
+  #import "@preview/typstage:0.1.3": themes
   #themes.night.accent      // die Signalfarbe des Themes, als Farbe
   ```,
   width: 12cm,
@@ -4525,7 +4525,7 @@ Abschnittsfolie, Ersatzfläche eines Videos --, trägt ein festes Typst-Label.
 Eine gewöhnliche `show`-Regel genügt dann, kein Theme-Schlüssel, kein Fork.
 
 #show-code[```typ
-#import "@preview/typstage:0.1.2": *
+#import "@preview/typstage:0.1.3": *
 
 #show label("ts-slide-header-band"): set rect(fill: rgb("#4c1d95"))
 #show label("ts-slide-title"): set text(fill: rgb("#fde047"), style: "italic")

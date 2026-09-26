@@ -7,7 +7,7 @@ const receiver=`<script>window.received=[];addEventListener('message',e=>{let d=
 (async()=>{
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'typstage-ggb-steps-'));let b;
  try {
-  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.1.2'));
+  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.1.3'));
   const src=path.join(root,'examples/geogebra-sprecher.typ'),out=path.join(tmp,'deck.html');
   const args=['compile','--package-path',path.join(tmp,'pkg'),'--root',root,src];
   execFileSync('typst',[...args,out,'--features','html','--format','html','--input','typstage-overflow=error'],{stdio:'pipe'});

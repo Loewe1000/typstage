@@ -67,7 +67,7 @@ const CHROME = arg("--browser",
 // dahinter" weit auseinanderliegen, klein genug für einen Prüflauf.
 const SEKUNDEN = 60;
 
-const DECK = `#import "@preview/typstage:0.1.2": *
+const DECK = `#import "@preview/typstage:0.1.3": *
 #show: presentation.with(
   theme: themes.lesson, title: [Frist],
   room: (bell: "08:15"),
@@ -111,7 +111,7 @@ function bauen(paket, ordner) {
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-frist-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.2"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.3"));
   }
   const ordner = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-frist-"));
   let deck;
