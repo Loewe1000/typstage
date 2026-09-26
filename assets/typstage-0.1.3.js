@@ -444,16 +444,58 @@
   // In rounds: a nested element has no mark in the background, the outer
   // element's hide() swallows it, but it has one in the outer element's
   // sprite. That one has to be placed first.
+  // ── Leinwand und Ausschnitt ───────────────────────────────────────────────
+  //
+  // Zwei Rechtecke: Der AUSSCHNITT ist die Bühne, das, was der Saal sieht, und
+  // er schneidet ab. Die LEINWAND ist, worauf die Folie gesetzt ist; sie ist
+  // mindestens so groß und wächst mit dem Inhalt nach rechts und nach unten.
+  // Ihre linke obere Ecke ist die des Ausschnitts.
+  //
+  // Gesagt wird sie nirgends: Typst schreibt die Maße der Leinwand als
+  // `viewBox` in das SVG der Folie, und CFG kennt die Folie. Das Verhältnis
+  // der beiden ist alles, was es braucht.
+  function leinwandVon(f) {
+    var svg = f.querySelector(".ts-bg svg");
+    if (!svg) return null;
+    var vb = (svg.getAttribute("viewBox") || "").split(/[\s,]+/);
+    if (vb.length !== 4) return null;
+    var w = +vb[2], h = +vb[3];
+    if (!(w > 0) || !(h > 0)) return null;
+    // Eine halbe Punktbreite Unterschied ist Rundung, keine Leinwand.
+    if (w <= CFG.width + 0.5 && h <= CFG.height + 0.5) return null;
+    return { w: w, h: h };
+  }
+
+  // Die Ebenen einer Folie auf ihre Leinwand stellen. Ohne Leinwand bleiben
+  // sie, wie das Stilblatt sie setzt: über der ganzen Bühne.
+  function leinwandStellen(f) {
+    var lw = leinwandVon(f);
+    [f.querySelector(".ts-bg"), f.querySelector(".ts-ov")].forEach(function (el) {
+      if (!el) return;
+      if (!lw) {
+        el.style.width = ""; el.style.height = "";
+        return;
+      }
+      el.style.width = (lw.w / CFG.width * 100) + "%";
+      el.style.height = (lw.h / CFG.height * 100) + "%";
+    });
+  }
+
   function stelle(i) {
     var svg = SLIDES[i].querySelector(".ts-bg svg");
     if (!svg) return;
+    leinwandStellen(SLIDES[i]);
     var bezug = svg.getBoundingClientRect();
     if (!bezug.width) return;
     var offen = [].slice.call(SLIDES[i].querySelectorAll(".ts-el"));
     for (var runde = 0; runde < 4 && offen.length; runde++) {
       var karte = marken(SLIDES[i], bezug);
       var rest = [];
-      var skala = bezug.width / CFG.width;   // screen pixels per point
+      // Bildschirmpunkte je Folienpunkt. Gegen die LEINWAND gerechnet: `bezug`
+      // ist das SVG, und das ist so breit wie sie. Ohne Leinwand sind beide
+      // dasselbe.
+      var lw0 = leinwandVon(SLIDES[i]);
+      var skala = bezug.width / (lw0 ? lw0.w : CFG.width);
       offen.forEach(function (el) {
         var r = karte[+el.dataset.n];
         if (!r) { rest.push(el); return; }
@@ -645,6 +687,62 @@
          + ((0.5 - cy * s) * 100).toFixed(4) + "%) scale(" + s.toFixed(5) + ")";
   }
 
+  // ── Der Ausschnitt folgt dem, was aufgedeckt wird ────────────────────────
+  //
+  // Eine Folie mit Leinwand zeigt dem Saal ihren Ausschnitt, und was ein
+  // Schritt darunter oder daneben aufdeckt, läge sonst ungesehen im Dunkeln.
+  // Gefahren wird deshalb so weit, wie es nötig ist, und keinen Punkt weiter:
+  // Was schon zu sehen ist, bewegt sich nicht.
+  //
+  // Gerechnet wird in Prozent der Ebene, und das ist kein Umweg: Die Sprites
+  // tragen ihre Lage ohnehin so (`setzen`), und die Ebene trägt die Fahrt als
+  // `translate` in denselben Prozenten. Ein `getBoundingClientRect` wäre die
+  // Lage NACH der laufenden Fahrt und rechnete sich selbst mit.
+  function neuAufSchritt(f, schritt) {
+    var neu = [];
+    f.querySelectorAll(".ts-el").forEach(function (el) {
+      if (!el.style.height) return;                 // noch nicht gestellt
+      if (!(zustand(el, schritt) > 0)) return;
+      if (schritt > 0 && zustand(el, schritt - 1) > 0) return;
+      var x = parseFloat(el.style.left), y = parseFloat(el.style.top);
+      var w = parseFloat(el.style.width), h = parseFloat(el.style.height);
+      if ([x, y, w, h].some(function (z) { return !isFinite(z); })) return;
+      neu.push({ x: x, y: y, w: w, h: h });
+    });
+    return neu;
+  }
+
+  function folgeFahrt(f, schritt) {
+    var lw = leinwandVon(f);
+    if (!lw) return "";
+    var neu = neuAufSchritt(f, schritt);
+    if (!neu.length) return f.tsFolge || "";
+    // Der Ausschnitt in Prozent der Leinwand, und wo er gerade steht.
+    var sichtB = CFG.width / lw.w * 100, sichtH = CFG.height / lw.h * 100;
+    var stand = f.tsFolgeStand || { x: 0, y: 0 };
+    // Das Rechteck um alles, was dieser Schritt bringt.
+    var l = Math.min.apply(null, neu.map(function (r) { return r.x; }));
+    var o = Math.min.apply(null, neu.map(function (r) { return r.y; }));
+    var re = Math.max.apply(null, neu.map(function (r) { return r.x + r.w; }));
+    var u = Math.max.apply(null, neu.map(function (r) { return r.y + r.h; }));
+    // Ein Rand, damit das Neue nicht an der Kante klebt: ein Zwanzigstel des
+    // Ausschnitts, aber nie mehr, als noch Platz ist.
+    var randX = Math.min(sichtB / 20, Math.max(0, (sichtB - (re - l)) / 2));
+    var randY = Math.min(sichtH / 20, Math.max(0, (sichtH - (u - o)) / 2));
+    var x = stand.x, y = stand.y;
+    if (l - randX < x) x = l - randX;
+    else if (re + randX > x + sichtB) x = re + randX - sichtB;
+    if (o - randY < y) y = o - randY;
+    else if (u + randY > y + sichtH) y = u + randY - sichtH;
+    // Nicht über die Leinwand hinaus.
+    x = Math.max(0, Math.min(x, 100 - sichtB));
+    y = Math.max(0, Math.min(y, 100 - sichtH));
+    f.tsFolgeStand = { x: x, y: y };
+    f.tsFolge = (x || y)
+      ? "translate(" + (-x).toFixed(4) + "%," + (-y).toFixed(4) + "%)" : "";
+    return f.tsFolge;
+  }
+
   // Welche Fahrt auf einem Schritt gilt. Die letzte, die ihn deckt: zwei
   // Fahrten koennen sich ueberlappen, und dann gewinnt die spaetere im
   // Quelltext -- eine Regel, die man lesen kann, statt zweier Kameras, die
@@ -691,7 +789,7 @@
     // Hauszeit wieder heraus.
     var w = k || f.tsKamZuletzt;
     if (k) f.tsKamZuletzt = k;
-    var bis = k ? kameraFahrt(f, k) : "";
+    var bis = k ? kameraFahrt(f, k) : folgeFahrt(f, schritt);
     var d = (w && +w.duration) || 700;
     var takt = (w && w.easing) || EASE;
     var still = sofort || wenigerBewegung();

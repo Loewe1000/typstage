@@ -2473,6 +2473,60 @@ spent is the time the way back still needs.
   picture changes without movement there.
 ]
 
+== When the content runs past the slide
+
+A slide is a viewport. The body is laid out on a canvas, and normally the two
+are the same size: what fits on the slide stands on it.
+
+Where the content reaches further, the canvas grows with it -- without a
+measure for it written anywhere. Two things make it grow:
+
+/ A flow that runs on: a calculation continuing line by line, a list longer
+  than the slide. The canvas grows downwards.
+/ A `place` at the top level of the body: a box with `dx: 780pt` stands beside
+  the slide. The canvas grows sideways.
+
+In the talk the stage shows the viewport, and the view follows whatever is
+being revealed: as long as the new step is in sight the picture stands still;
+as soon as it would run out of the bottom, the view pans after it. The slide's
+head -- band or title line -- does not travel along. It sits as its own layer
+above the canvas so the title stays put while the calculation passes under it.
+
+#show-code[```typ
+== A calculation, step by step
+#stagger(dim: true)[
+  $ 3x + 5 = 20 $
+][
+  $ 3x = 15 $
+][
+  $ x = 5 $
+][
+  // … and so on, past the slide
+]
+```]
+
+On paper there is nothing to pan. There the whole canvas goes onto the page,
+fitted and centred, with a line underneath saying what happens in the talk:
+"canvas 1 × 1.29 slides, panned in the talk". The same holds for the handout
+and for `pages: "step"` -- a slide larger than its viewport stands complete in
+its frame there too.
+
+#info[
+  *Only a `place` at the top level counts.* One inside a `box`, a grid cell or
+  an `anim` measures its offset against that container, and from the outside
+  the two cannot be told apart. To put something beside the slide, write the
+  `place` straight into the slide body. Its anchor counts: `place(bottom +
+  right, dx: 20pt)` stands 20pt beyond the bottom right corner of the body,
+  not 20pt beyond the top left one. A `place` without an anchor stands at its
+  spot in the flow, which cannot be known from outside; it counts as
+  `top + left`.
+
+  *The overflow check still reports it.* It asks whether the body runs past
+  the viewport, and here it does. It is off by default (`overflow: "none"`);
+  whoever switches it on wants exactly that answer. Where the panning is
+  wanted, leave it off.
+]
+
 = Giving the talk
 
 Everything that happens between opening the file and the last slide, including
@@ -3928,7 +3982,7 @@ reaches it there. Under `progress: "tick"` such a rule reaches both outputs.
   one puts it *inside* -- and inside the rectangle there is no second rectangle
   for it to reach.
 
-  For the 18 type labels the two spellings are equivalent: what sits inside the
+  For the 19 type labels the two spellings are equivalent: what sits inside the
   matched element there is the text, and a rule reaches that from within.
 ]
 
@@ -3940,9 +3994,9 @@ and every moving piece.
 
 The `style` hook does *not*. It is wrapped around the slide *body*, and header,
 footer, progress and the two whole-picture slides are built beside it. Measured,
-all 41 rules one by one: from `style` exactly the 13 that stand in the body take
+all 42 rules one by one: from `style` exactly the 13 that stand in the body take
 effect -- `ts-card…`, `ts-callout…`, `ts-statement` and the three `ts-media-…`
-surfaces. The other 28 stay silent, without a warning.
+surfaces. The other 29 stay silent, without a warning.
 
 #warning[
   A `show` rule written *after* `#show: presentation` does not reach a tracked
@@ -4140,6 +4194,8 @@ A section slide has no subtitle in typstage, so the list names none.
     [`block`],
   [`ts-handout-lines`], [The writing lines beside or below it], [`line`],
   [`ts-handout-note`], [The speaker note, where there is one], [`text`],
+  [`ts-canvas-note`], [The margin note under a slide whose canvas is larger
+    than the slide itself -- on paper only], [`text`],
 )
 
 #info[

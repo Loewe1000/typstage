@@ -1813,6 +1813,38 @@ and the wrong two find each other), the piece gets a name instead.
 
 #v(1fr)
 
+== When the slide is not enough
+
+// The only slide of this deck that stands on a canvas larger than itself, and
+// it has to: a slide that says the view pans has to pan. The calculation runs
+// on line by line past the bottom edge; nothing here declares a size. In the
+// talk the first steps stand still and the view follows from the step that
+// would leave the stage; the head stays where it is, as its own layer. On
+// paper the whole canvas comes onto the page, fitted, with the line
+// underneath that says what happens in the talk -- that line is what the
+// reader of the PDF sees instead of the pan.
+#stagger(dim: true)[
+  A slide is a viewport. The body is laid out on a canvas, and normally the
+  two are the same size.
+][
+  $ 3x + 5 = 20 $
+][
+  $ 3x = 15 $
+][
+  $ x = 5 $
+][
+  $ "and the check:" quad 3 dot 5 + 5 = 20 $
+][
+  $ 2y - 4 = 10 $
+][
+  $ 2y = 14 $
+][
+  $ y = 7 $
+][
+  The canvas grew with the calculation, and the view came along. The title
+  above did not: it stays put while the lines pass under it.
+]
+
 == On paper: an outline, and a page per step
 
 // Two things the PDF of this deck does without a line of its own. It carries

@@ -26,7 +26,7 @@
 
 #import "config.typ": *
 #import "internal.typ": (cue-basis, deck-info, folien-notizen, html-output,
-                        leerer-titel, titel-hat-text,
+                        leerer-titel, titel-hat-text, leinwand, platzierungen,
                         marker, nackt, note-state, notiz-marke-ab,
                         papier-modus, papier-schritt, papier-verborgen,
                         papier-zahlen, im-dokument,
@@ -301,8 +301,72 @@
 /// 10pt)` vor `presentation` rückte sonst auf Papier alles darin um 10pt ein,
 /// den Grund der Folie und die Zier eingeschlossen -- die Zier dort, aber nicht
 /// im Browser (siehe `slide-chrome`).
+/// Wie hoch der Kopf einer Folie baut: Band, Titelzeile oder nur der Rand.
+///
+/// Steht hier und nicht mitten in `slide-body`, weil die Leinwand dieselbe
+/// Rechnung braucht: Sie muss wissen, wo der Rumpf beginnt, um zu sagen, wie
+/// weit er nach unten reicht.
+#let kopf-hoehe(s, t, geo) = {
+  let k = geo.scale
+  let m = margins(geo)
+  let titel = not leerer-titel(s.title)
+  let randlos = s.at("bleed", default: none)
+  if not titel { return m.top }
+  if t.header == "band" { return t.band-height * k }
+  let strich = if t.rule-size > 0pt {
+    t.rule-size * k + t.title-size * 0.34 * k
+  } else { 0pt }
+  let lauf = if randlos == none { lauf-hoehe(t, k) } else { 0pt }
+  m.top + lauf + t.title-size * 1.35 * k + strich
+}
+
+/// Was der Kopf einer Folie zeichnet: Band und Titel, oder Titelzeile und
+/// Strich. `none`, wenn die Folie keinen Titel trägt.
+///
+/// Steht für sich, weil ihn zwei setzen: `slide-body` mitten in der Folie --
+/// und, sobald die Folie auf einer Leinwand steht, `kopf-ebene` als eigene
+/// Schicht über ihr. Die schwenkt nicht mit: Eine Rechnung, die nach unten
+/// weiterläuft, nähme den Titel sonst mit hinaus, und gerade er soll stehen
+/// bleiben.
+#let kopf-teile(s, t, geo) = {
+  if leerer-titel(s.title) { return none }
+  let k = geo.scale
+  let m = margins(geo)
+  let inner = geo.width - m.left - m.right
+  let bar = t.band-height * k
+  let randlos = s.at("bleed", default: none)
+  let lauf = if randlos == none { lauf-hoehe(t, k) } else { 0pt }
+  let titel-text = text(
+    ..font-args(t.title-font), size: t.title-size * k, weight: t.weight,
+    fill: t.title-fill, tracking: t.tracking * k, [#s.title <ts-slide-title>],
+  )
+  if t.header == "band" {
+    place(top + left, {
+      set rect(fill: t.strong, stroke: none)
+      [#rect(width: 100%, height: bar) <ts-slide-header-band>]
+    })
+    am-anfang(top, m,
+      block(width: inner, height: bar, align(start + horizon, titel-text)))
+  } else {
+    // The same trap as in the callout: without `above`/`below` set, the
+    // paragraph spacing would additionally sit between the title and
+    // the line, and the line would slide towards the content instead
+    // of the title.
+    am-anfang(top, m, dy: m.top + lauf, block(width: inner, {
+      block(above: 0pt, below: 0pt, titel-text)
+      if t.rule-size > 0pt {
+        block(above: t.title-size * 0.34 * k, below: 0pt, {
+          set rect(fill: t.rule-fill, stroke: none)
+          [#rect(width: 100%, height: t.rule-size * k) <ts-slide-title-rule>]
+        })
+      }
+    }))
+  }
+}
+
 #let slide-body(s, style, geo, t, chrome: true, overflow: "none",
-                schritt: none, nr: none, buchtiefe: 1) = block(
+                schritt: none, nr: none, buchtiefe: 1, rumpf-hoehe: auto,
+                kopf-oben: true) = block(
   ..nackt, width: geo.width, height: geo.height,
 {
   // Ueberschriften, die ein Deck selbst in einen Folienrumpf schreibt, tragen
@@ -525,10 +589,6 @@
     let kopf = if not titel { m.top } else if t.header == "band" { bar } else {
       m.top + lauf + t.title-size * 1.35 * k + strich
     }
-    let titel-text = text(
-      ..font-args(t.title-font), size: t.title-size * k, weight: t.weight,
-      fill: t.title-fill, tracking: t.tracking * k, [#s.title <ts-slide-title>],
-    )
     {
       set rect(fill: t.paper, stroke: none)
       [#rect(width: 100%, height: 100%) <ts-slide-ground>]
@@ -569,28 +629,10 @@
         [#metadata(none) <typstage-bleed-ende>]
       }))
     }
-    if titel and t.header == "band" {
-      place(top + left, {
-        set rect(fill: t.strong, stroke: none)
-        [#rect(width: 100%, height: bar) <ts-slide-header-band>]
-      })
-      am-anfang(top, m,
-        block(width: inner, height: bar, align(start + horizon, titel-text)))
-    } else if titel {
-      // The same trap as in the callout: without `above`/`below` set, the
-      // paragraph spacing would additionally sit between the title and
-      // the line, and the line would slide towards the content instead
-      // of the title.
-      am-anfang(top, m, dy: m.top + lauf, block(width: inner, {
-        block(above: 0pt, below: 0pt, titel-text)
-        if t.rule-size > 0pt {
-          block(above: t.title-size * 0.34 * k, below: 0pt, {
-            set rect(fill: t.rule-fill, stroke: none)
-            [#rect(width: 100%, height: t.rule-size * k) <ts-slide-title-rule>]
-          })
-        }
-      }))
-    }
+    // Der Kopf -- es sei denn, er steht schon als eigene Schicht über der
+    // Folie (`kopf-ebene`). Dann bliebe er hier auf der Leinwand liegen und
+    // schwenkte unter der Schicht hindurch.
+    if kopf-oben { kopf-teile(s, t, geo) }
     // `slide-chrome` draws the footer and the progress indicator. In the
     // PDF they belong on the page and are drawn along with it here; in
     // the browser they sit as their own layer above the stage, so that
@@ -624,8 +666,16 @@
     // the right, every line sat on the left while the lists and columns
     // around it were already mirrored. `am-anfang` hands down `start`.
     let raum = geo.height - kopf - (t.head-gap + t.foot-gap) * k
+    // Der Kasten des Rumpfs. Sonst so hoch wie der Platz zwischen Kopf und
+    // Fuß; höher, wenn `mit-leinwand` gemessen hat, dass der Fluss weiter
+    // reicht. Das muss so sein: Ein Kasten mit fester Höhe stapelt, was nicht
+    // hineinpasst, an seiner Unterkante übereinander, statt es weiterlaufen
+    // zu lassen -- eine Rechnung, die über die Folie hinausgeht, käme als
+    // Haufen überlappender Blöcke an statt als das, wohin die Ansicht
+    // fahren soll.
     am-anfang(top, m, dy: kopf + t.head-gap * k,
-      block(width: inner, height: raum, style(s.body)))
+      block(width: inner, height: if rumpf-hoehe == auto { raum } else { rumpf-hoehe },
+            style(s.body)))
     // Die Anmerkungen der Folie, unter dem Rumpf und über der Fußzeile.
     //
     // Gefragt wird die Abfrage und nicht der Rumpf. Ein Gang durch den Inhalt
@@ -797,7 +847,14 @@
     // `place` and has no body block to overrun.
     if overflow != "none" {
       place(top + left, context ueberlauf-pruefen(
-        deck-info.get().data.slide.number, style(s.body), inner, raum,
+        deck-info.get().data.slide.number, style(s.body), inner,
+        // Gegen den Ausschnitt und nicht gegen die gewachsene Leinwand.
+        // Gemessen ist der Melder sonst tot: Er fragt nur nach der Höhe, und
+        // auf einer Leinwand ist die Höhe des Rumpfs immer die des Rumpfs.
+        // `overflow` steht per Vorgabe auf `"none"` -- wer ihn anschaltet,
+        // will wissen, wo der Inhalt über die Folie hinausgeht, und das ist
+        // auch dann eine Auskunft, wenn die Ansicht im Vortrag hinterherfährt.
+        raum,
         // The step is read off the slide's own reveals, and on paper there
         // are none: every step stands on the page at once.
         //
@@ -844,6 +901,232 @@
   // Last, because only here has the cursor seen every reveal of the slide.
   navigations-ziel + schritt-summe + lesezeichen
 })
+
+/// Die Folie auf ihrer Leinwand.
+///
+/// Zwei Rechtecke (siehe `leinwand`): Der Ausschnitt ist die Folie, und er
+/// schneidet ab; die Leinwand ist, worauf der Rumpf steht. Gewöhnlich sind
+/// beide gleich groß, und dann ist das hier genau `slide-body` und sonst
+/// nichts -- kein zusätzlicher Block, kein Kontext, keine Messung. Erst wenn
+/// der Inhalt über den Ausschnitt hinausgeht, entsteht eine Leinwand.
+///
+/// Sie entsteht aus dem Inhalt und nicht aus einer Angabe: gemessen wird der
+/// Fluss des Rumpfs -- eine Rechnung, die untereinander weiterläuft, macht die
+/// Leinwand nach unten größer -- und jedes `place` der obersten Ebene. Der
+/// Weg ist von `animo` übernommen, das dieselben zwei Rechtecke kennt; dort
+/// steht auch die Messung, warum der Rumpfkasten mitwachsen MUSS statt fest zu
+/// bleiben (`slide-body`, `rumpf-hoehe`).
+///
+/// `fuer-papier` sagt, wohin es geht: Auf Papier gibt es nichts zu schwenken,
+/// also wird die ganze Leinwand auf die Seite eingepasst und trägt eine Zeile,
+/// die es sagt. Im Browser bleibt sie in voller Größe, und die Bühne zeigt den
+/// Ausschnitt.
+#let leinwand-mass(s, style, geo, t) = {
+  // Titel- und Abschnittsfolien haben keinen Rumpf, der wachsen könnte.
+  if s.at("kind", default: "slide") != "slide" or s.at("body", default: none) == none {
+    return none
+  }
+  {
+    let k = geo.scale
+    // Alles in Punkten, bevor gerechnet wird. Ein Theme darf seine Maße in
+    // `em` angeben -- `themes.lesson` tut es --, und zwei Längen mit `em`
+    // darin lassen sich nicht vergleichen: „cannot compare 13.2pt with
+    // 388.16pt + -3em", gemessen an drei Aufbauten von `pruefe-zier.js`.
+    // `slide-body` kommt ohne diese Auflösung aus, weil es seine Längen nur
+    // weiterreicht und nie zwei davon gegeneinander hält.
+    //
+    // Aufgelöst wird wie im Satz: die Größe des Themas gegen die des
+    // Dokuments (`set text(size: t.size * k)` in `slide-body` tut genau das),
+    // und jedes weitere `em` des Themas gegen die Größe des Themas.
+    let doc-groesse = text.size
+    let thema-groesse = (t.size * k).abs + (t.size * k).em * doc-groesse
+    //
+    // `gegen` ist der Bezug für einen Prozentanteil: `place(dx: 50%)` und ein
+    // `margin: 5%` rechnen gegen die Seite, auf der sie stehen. Ein `place`
+    // gibt seinen Versatz ohnehin als relative Länge her, auch wenn nur
+    // `20pt` dasteht.
+    let pt(l, gegen: 0pt) = {
+      let r = if type(l) == length { l + 0% } else { l }
+      r.length.abs + r.length.em * thema-groesse + gegen * (r.ratio / 100%)
+    }
+    // Die Folienmaße gegen die Größe des Dokuments: Der Kasten der Folie
+    // steht in `slide-body` vor dessen `set text` und rechnet so.
+    let folie = (width: geo.width.abs + geo.width.em * doc-groesse,
+                 height: geo.height.abs + geo.height.em * doc-groesse)
+    let m = margins(geo)
+    let m = (left: pt(m.left), right: pt(m.right),
+             top: pt(m.top), bottom: pt(m.bottom))
+    let inner = folie.width - m.left - m.right
+    let kopf = pt(kopf-hoehe(s, t, geo))
+    let raum = folie.height - kopf - pt((t.head-gap + t.foot-gap) * k)
+    // Der Fluss, an der Breite des Rumpfs gemessen und ohne Höhe begrenzt.
+    //
+    // Gemessen wird MIT der Schrift des Themas. Ohne diese Zeile misst Typst
+    // in der Schrift des Dokuments -- gemessen an einer Rechnung, die über die
+    // Folie hinausläuft: 228pt statt der wahren Höhe, und die Leinwand wäre
+    // nie gewachsen.
+    let fluss = measure(block(width: inner, {
+      set text(..font-args(t.font), size: t.size * k, fill: t.ink)
+      style(s.body)
+    }))
+    let hoch = calc.max(raum, fluss.height)
+    // Und die platzierten Stücke, in denselben Koordinaten wie der Rumpf.
+    //
+    // Der Anker zählt mit: `place(bottom + right, dx: 20pt)` steht nicht 20pt
+    // von der linken oberen Ecke, sondern 20pt hinter der rechten unteren des
+    // Rumpfkastens. Ohne diese Rechnung bekäme eine Folie mit einem solchen
+    // `place` eine Leinwand, die es gar nicht braucht -- gemessen an
+    // `pruefe-zier.js`, wo genau dieser Aufruf steht.
+    //
+    // `auto` (ein `place` ohne Anker) steht an seiner Stelle im Fluss, und die
+    // ist von hier aus nicht zu erfahren; es zählt wie `top + left`.
+    let anker(a, feld) = {
+      if a == auto { return none }
+      let teil = if feld == "x" { a.x } else { a.y }
+      if teil == auto { none } else { teil }
+    }
+    let versatz(teil, platz) = {
+      if teil == center or teil == horizon { platz / 2 }
+      else if teil == right or teil == end or teil == bottom { platz }
+      else { 0pt }
+    }
+    let rumpf-oben = kopf + pt(t.head-gap * k)
+    let stuecke = platzierungen(s.body).map(pl => {
+      let mp = measure(pl.body)
+      (x: m.left + versatz(anker(pl.ausrichtung, "x"), inner - mp.width)
+          + pt(pl.dx, gegen: inner),
+       y: rumpf-oben + versatz(anker(pl.ausrichtung, "y"), hoch - mp.height)
+          + pt(pl.dy, gegen: hoch),
+       width: mp.width, height: mp.height)
+    })
+    // Unter dem Fluss bleibt derselbe Fuß wie auf einer gewöhnlichen Folie:
+    // Sonst endete die Leinwand an der letzten Zeile, und die Leiste läge auf
+    // ihr.
+    let lw = leinwand(folie, (x: m.left, y: rumpf-oben,
+                              width: inner,
+                              height: hoch + pt(t.foot-gap * k)), stuecke)
+    if not lw.gewachsen { return none }
+    // `folie` reist mit: die Maße des Ausschnitts in Punkten. Das Einpassen
+    // auf Papier teilt durch sie, und eine Division mit `em` darin ginge
+    // ebensowenig auf wie der Vergleich oben.
+    lw + (rumpf-hoehe: hoch, folie: folie)
+  }
+}
+
+/// Die Folie auf ihrer Leinwand, mit dem Maß aus `leinwand-mass`.
+///
+/// Zwei Stücke statt einem, weil das Maß zweimal gebraucht wird: Im Browser
+/// hängt auch die Kopfschicht daran, und eine zweite Messung je Folie kostete
+/// einen Layoutdurchgang, den das Paket nicht hat (siehe CONTRIBUTING,
+/// „Konvergenz").
+#let auf-leinwand(s, style, geo, t, lw, fuer-papier: false, ..args) = {
+  {
+    let k = geo.scale
+    let hoch = lw.rumpf-hoehe
+    // Der Grund über die ganze Leinwand, und darauf das Titelband, so breit
+    // wie sie: Der Grund von `slide-body` deckt nur den Ausschnitt, und das
+    // Band zieht es mit `width: 100%` -- also auch nur bis zur Folienkante.
+    // Ohne diese Unterlage stünde alles daneben auf dem Weiß der Seite, und
+    // der Schwenk liefe aus dem Band heraus.
+    let bar = if not leerer-titel(s.title) and t.header == "band" {
+      t.band-height * k
+    } else { 0pt }
+    let unterlage = {
+      place(top + left, {
+        set rect(fill: t.paper, stroke: none)
+        rect(width: lw.width, height: lw.height)
+      })
+      if bar > 0pt {
+        place(top + left, dy: -lw.oben, {
+          set rect(fill: t.strong, stroke: none)
+          rect(width: lw.width, height: bar)
+        })
+      }
+    }
+    let inhalt = block(..nackt, width: lw.width, height: lw.height, {
+      unterlage
+      place(top + left, dx: -lw.links, dy: -lw.oben,
+            slide-body(s, style, geo, t, rumpf-hoehe: hoch,
+                       // Auf Papier zeichnet die Zier unten die ganze
+                       // Leinwand ein und nicht die Folie: Die Seite ist ein
+                       // Bild, und eine Leiste quer durch seine Mitte läse
+                       // sich wie ein Strich durch die Rechnung.
+                       chrome: if fuer-papier { false } else { true },
+                       ..args))
+    })
+    if not fuer-papier { return inhalt }
+    // Die Zier auf Papier, an der Leinwand ausgerichtet.
+    let geo-lw = geo
+    geo-lw.width = lw.width
+    geo-lw.height = lw.height
+    let inhalt = block(..nackt, width: lw.width, height: lw.height, {
+      place(top + left, inhalt)
+      place(top + left, slide-chrome(geo-lw, t))
+    })
+    // Einpassen: die ganze Leinwand auf die Seite, mittig, und in dem Rand,
+    // der dabei frei bleibt, die Zeile, die sagt, was im Vortrag geschieht.
+    // Eingepasst wird in die Seite MINUS einem Streifen für die Zeile unten:
+    // Passte die Leinwand in die ganze Seite, stünde die Zeile auf dem Bild.
+    let seite = lw.folie
+    let streifen = 11pt * k
+    let f = calc.min(seite.width / lw.width, (seite.height - streifen) / lw.height)
+    block(..nackt, width: seite.width, height: seite.height, {
+      place(top + center, dy: (seite.height - streifen - lw.height * f) / 2,
+            scale(inhalt, x: f * 100%, y: f * 100%, reflow: false,
+                  origin: top + center))
+      // Die Marke macht die Zeile auffindbar: Die Papierprobe fragt mit
+      // `typst query` nach ihr, statt den Text aus dem PDF zu klauben.
+      //
+      // Der Satz kommt aus dem Wörterbuch und nicht von hier: Ein deutsches
+      // Deck trug sonst eine englische Zeile unter seiner Folie, während
+      // alles andere daneben seiner Sprache folgt.
+      place(bottom + center, dy: -2pt,
+            [#text(size: 8pt * k, fill: t.muted,
+                 doc-word("canvas-note")(
+                   str(calc.round(lw.width / seite.width, digits: 2)),
+                   str(calc.round(lw.height / seite.height, digits: 2))))
+              <ts-canvas-note>])
+    })
+  }
+}
+
+/// Die Folie, gewachsen oder nicht -- für alles außer dem Browser.
+///
+/// Auf Papier gibt es keine Kopfschicht: Die ganze Leinwand steht auf der
+/// Seite, und der Kopf steht da, wo er hingehört. Deshalb reicht hier die eine
+/// Funktion, und nur `present.typ` nimmt für HTML die zwei Stücke auseinander.
+#let mit-leinwand(s, style, geo, t, fuer-papier: false, ..args) = context {
+  let lw = leinwand-mass(s, style, geo, t)
+  if lw == none { slide-body(s, style, geo, t, ..args) }
+  else { auf-leinwand(s, style, geo, t, lw, fuer-papier: fuer-papier, ..args) }
+}
+
+/// Der Kopf als eigene Schicht über der Leinwand.
+///
+/// Nur für den Browser, und nur für eine Folie, deren Leinwand gewachsen ist:
+/// Die Bühne schwenkt über die Leinwand, und ohne diese Schicht führe der
+/// Titel mit hinaus. Sie liegt über allem, was schwenkt, und deckt den Kopf
+/// ab -- eine Rechnung, die nach oben aus dem Bild fährt, verschwindet unter
+/// ihr statt durch den Titel hindurch.
+///
+/// `none`, wenn die Folie keinen Titel trägt: Dann gibt es nichts anzuheften,
+/// und `present.typ` setzt die Schicht gar nicht erst.
+#let kopf-ebene(s, geo, t) = {
+  let teile = kopf-teile(s, t, geo)
+  if teile == none { return none }
+  block(..nackt, width: geo.width, height: kopf-hoehe(s, t, geo), {
+    // Der Grund unter dem Kopf, damit nichts durch ihn hindurchfährt. Nicht
+    // auf einer Folie mit `bleed`: Dort reicht das Bild bis an die Kante, und
+    // ein Streifen in Papierfarbe läge mitten darin.
+    if s.at("bleed", default: none) == none {
+      place(top + left, {
+        set rect(fill: t.paper, stroke: none)
+        rect(width: 100%, height: 100%)
+      })
+    }
+    teile
+  })
+}
 
 /// A hook that wraps a document template around every body and every sprite.
 /// Both have to receive the same typography: they are laid out separately.
@@ -957,8 +1240,14 @@
         // is the right edge, the slide slid left by the overhang and the
         // frame showed nothing. The slide inside places its own parts with
         // `start` again, so nothing in it reads from the wrong side.
+        // Über `mit-leinwand` und nicht direkt über `slide-body`: Eine Folie,
+        // deren Inhalt über den Ausschnitt hinausgeht, kommt auf Papier
+        // eingepasst und mit ihrer Randnotiz -- auf dem Handzettel genauso wie
+        // auf der Folienseite. Ohne das stünde hier der Ausschnitt, und was
+        // daneben liegt, hätte der Rahmen weggeschnitten.
         align(top + left, scale(w / geo.width * 100%, origin: top + left,
-              slide-body(item.slide, style, geo, thema(item.slide),
+              mit-leinwand(item.slide, style, geo, thema(item.slide),
+                         fuer-papier: true,
                          overflow: overflow, nr: item.fakten.nr,
                          buchtiefe: if item.slide.kind == "section" {
                            item.slide.at("depth", default: 1)

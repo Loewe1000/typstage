@@ -3,8 +3,8 @@
 #import "config.typ": *
 #import "internal.typ": *
 #import "slides.typ": *
-#import "theme.typ": (fortschritt-stil, handout-body, slide-body,
-                     slide-chrome)
+#import "theme.typ": (auf-leinwand, fortschritt-stil, handout-body, kopf-ebene,
+                     leinwand-mass, slide-body, mit-leinwand, slide-chrome)
 #import "themes.typ": mit-palette, theme-state, themes
 #import "palettes.typ": palette-pruefen
 #import "render.typ": *
@@ -1532,7 +1532,7 @@
                  // von Seite zu Seite weiter.
                  + counter(footnote).update(0)
                  + (if wechselt { theme-state.update(thema(s)) } else { none })
-                 + slide-body(s, style, geo, thema(s),
+                 + mit-leinwand(s, style, geo, thema(s), fuer-papier: true,
                               overflow: ueberlauf-papier,
                               schritt: k, nr: nr,
                               // Abschnitte auf ihrer Ebene, Folien eine
@@ -1686,11 +1686,32 @@
         } else { "" }
         html.elem("section", attrs: (class: "ts-slide")
                     + (if name != "" { (data-titel: name) } else { (:) }), {
-          html.elem("div", attrs: (class: "ts-bg"), {
-            counter(footnote).update(0)
-            html.frame(slide-body(s, style, geo, thema(s), chrome: false,
-                                  overflow: overflow, nr: hier.nr))
-          })
+          // Das Maß der Leinwand wird hier genommen und nicht erst im
+          // Rahmen: Zwei hängen daran -- die Folie selbst und, wenn sie
+          // gewachsen ist, die Kopfschicht darüber. Zweimal messen kostete
+          // einen Layoutdurchgang je Folie.
+          context {
+            let t = thema(s)
+            let lw = leinwand-mass(s, style, geo, t)
+            // Der Kopf wird nur angeheftet, wo überhaupt geschwenkt wird:
+            // Eine gewöhnliche Folie bekommt keine zweite Schicht und bleibt
+            // Byte für Byte, was sie war.
+            let kopf = if lw == none { none } else { kopf-ebene(s, geo, t) }
+            html.elem("div", attrs: (class: "ts-bg"), {
+              counter(footnote).update(0)
+              html.frame(if lw == none {
+                slide-body(s, style, geo, t, chrome: false,
+                           overflow: overflow, nr: hier.nr)
+              } else {
+                auf-leinwand(s, style, geo, t, lw, chrome: false,
+                             overflow: overflow, nr: hier.nr,
+                             kopf-oben: kopf == none)
+              })
+            })
+            if kopf != none {
+              html.elem("div", attrs: (class: "ts-kopf"), html.frame(kopf))
+            }
+          }
           // Second chrome, only for the browser's own print view. There each
           // slide stands on its own page, there is no transition. And the
           // layer above the stage cannot travel along there, because the

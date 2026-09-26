@@ -65,6 +65,26 @@ def messen(deck, paketpfad, aus):
     # gehört ungekürzt gemeldet, sonst sucht man an der falschen Stelle.
     return ["übersetzt nicht: " + " ".join(text.split())[:300]]
 
+# Was übersteht und übersteht soll. Seit 0.1.3 wächst die Leinwand einer Folie
+# mit ihrem Inhalt: Was über den Ausschnitt hinausgeht, wird im Vortrag
+# geschwenkt und kommt auf Papier eingepasst auf die Seite. Der Melder sagt
+# davon nichts anderes als vorher -- er hält die Höhe des Rumpfes gegen den
+# Raum der Folie --, und für eine Folie, die das mit Absicht tut, ist seine
+# Meldung die richtige Auskunft und kein Fund.
+#
+# Je Deck die Folien, die es angeht, mit dem Grund. Nur diese eine Folie steht
+# hier: Der Rundgang muss die Leinwand vorführen, und eine Folie, die sagt, die
+# Ansicht fahre mit, muss mitfahren.
+GEWOLLT = {
+    "tour": {40: "„When the slide is not enough“ führt die wachsende "
+                 "Leinwand vor und läuft dafür über den Ausschnitt hinaus"},
+}
+
+def gewollt(name, fund):
+    """`True`, wenn dieser Fund für dieses Deck vorgesehen ist."""
+    m = re.match(r"slide (\d+)", fund)
+    return bool(m) and int(m.group(1)) in GEWOLLT.get(name, {})
+
 def main():
     nur = arg("--deck")
     eigener = arg("--paketpfad") is None
@@ -80,6 +100,12 @@ def main():
             name = d[:-4]
             funde = messen(os.path.join(ordner, d), paketpfad,
                            os.path.join(aus, name + ".html"))
+            vorgesehen = [f for f in funde if gewollt(name, f)]
+            funde = [f for f in funde if not gewollt(name, f)]
+            for f in vorgesehen:
+                nr = int(re.match(r"slide (\d+)", f).group(1))
+                print(f"  {name}: Folie {nr} steht mit Absicht über "
+                      f"({GEWOLLT[name][nr]})")
             if funde:
                 schlimm += 1
                 print(f"  {name}: {len(funde)} Fund(e)")

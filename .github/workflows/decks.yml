@@ -136,6 +136,13 @@ jobs:
       - name: Bewegungen lassen sich unterbrechen und umkehren
         run: node .github/scripts/pruefe-unterbrechen.js
 
+      # Eine Rechnung, die über die Folie hinausläuft, und ein `place` neben
+      # ihr: Wächst das Blatt mit dem Inhalt, folgt die Ansicht dem
+      # aufgedeckten Schritt, bleibt der Kopf stehen -- und kommt auf Papier
+      # alles auf die Seite?
+      - name: Die Folie wächst mit ihrem Inhalt
+        run: node .github/scripts/pruefe-leinwand.js
+
       # Ein `pin` ist die ausdrückliche Ansage, dass zwei Stücke dasselbe sind.
       # Vier Decks: fasst er alle seine Zeichen, reisen sie gemeinsam, reist er
       # auch über der Glyphengrenze, und kommt die eigene Grenze an?

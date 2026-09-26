@@ -20,12 +20,42 @@ All notable changes to this package are recorded here. The format follows
   Within one name the shape decides before the reading order, so the sigma
   finds the sigma. The same rectangle is as small on paper, so this was never a
   fault of the browser.
+- **The chosen pen shows its ring in the tool band too.** In the speaker view's
+  wide layout the swatches stand in their own band, and there the selected one
+  carried two shadow layers instead of three: the contour was missing, the one
+  that exists because the near-white swatch has the same colour as the gap
+  separating it from the ring. Measured with `decklauf/pult.js` at nine window
+  sizes: two layers, gap against ring 0.00, in both the light and the dark
+  image. It now carries contour, gap and ring, like the swatch in the upright
+  tile.
 - **A name travels, however long the formula.** Above the glyph limit
   `match: "auto"` moves the whole thing as one block, and a pinned piece then
   jumped to its new place without a flight. Reported in issue #17 on a formula
   of 50 and 49 glyphs -- one ingredient shorter, and the same flight was right.
   Above the limit the named pieces now fly while everything else changes in
   place.
+
+### Added
+
+- **A slide grows with its content, and the view follows.** A slide is a
+  viewport; the body is laid out on a canvas, and the two are normally the same
+  size. Where the flow runs on past the bottom -- a calculation revealed line by
+  line -- or where a `place` at the top level of the body sits beside the slide,
+  the canvas now grows with it. Nothing is declared: the size comes out of the
+  content, the way `animo` derives it, whose two rectangles this follows. In the
+  talk the stage keeps showing the viewport and pans after whatever is being
+  revealed: measured in Chrome on a 1600-pixel stage, a nine-step calculation on
+  a canvas 1.083 slides high stands still for eight steps and pans by 7.56
+  percent of the layer for the ninth, which would otherwise have stood 16 pixels
+  below the stage. The slide's head -- band or title line -- does not travel
+  along: it is set as its own layer above the canvas, so the title stays put
+  while the calculation passes under it. On paper there is nothing to pan, so
+  the whole canvas goes onto the page, fitted and centred, with a line
+  underneath that says what happens in the talk ("canvas 1 × 1.29 slides, panned
+  in the talk", in the deck's language, labelled `ts-canvas-note`); the handout
+  and `pages: "step"` do the same. A slide that fits its viewport is untouched
+  in both outputs and carries no extra layer.
+  `.github/scripts/pruefe-leinwand.js` measures three decks on five points.
 
 ### Changed
 
@@ -48,7 +78,7 @@ All notable changes to this package are recorded here. The format follows
   `prefers-reduced-motion: reduce` nothing changes: there is no movement there
   to interrupt.
 
-- **Four checks caught up with what 0.1.2 changed.** Automatic reveal chains
+- **Seven checks caught up with what 0.1.2 changed.** Automatic reveal chains
   start at step 2 since 0.1.2, and on paper that means a step page before the
   chain's first piece -- the slide as the hall sees it on entering.
   `pruefe-papierregel.py` and `pruefe-schrittseiten.py` still held the old
@@ -61,6 +91,15 @@ All notable changes to this package are recorded here. The format follows
   handout examples stop failing with "duplicate argument", and it finds the
   call even when an argument stands on the same line. `pruefe-rundgang.py` was
   short of a slide for `audio`, which the tour now has, with a recording on it.
+  `decklauf/zwei-fenster.js` was red on two more of them: it pressed `l` for
+  light/dark, which moved to `Shift+L` in 0.1.2 (`l` seeks ten seconds in the
+  media plan), and it entered the scene slide on its empty first step, so the
+  first press only brought the scene to the stop it was already showing --
+  "frame 0 -> 0". It now presses `Shift+L` and measures from the first stop;
+  the run reads "frame 0 -> 9 in both windows" and is clean. `decklauf/pult.js`
+  pressed the same `l` to reach the light image, so its light pass measured the
+  dark one twice and reported `color-scheme: dark` where it wanted light; with
+  `Shift+L` the pass is real, and it promptly found the missing contour above.
 
 - **The glyph limit is 120, and a deck may set it.** It was 48, which also
   moved formulas as a block that fly perfectly well one glyph at a time.

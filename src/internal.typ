@@ -1326,6 +1326,69 @@
 /// Der Inhalt einer `bleed`-Marke: `box` > Folge > erstes Kind `metadata`.
 #let bleed-inhalt(c) = c.body.children.first().value
 
+/// Die Leinwand einer Folie: das kleinste Rechteck um den Ausschnitt und
+/// alles, was der Inhalt darüber hinaus beansprucht.
+///
+/// Zwei Rechtecke, und der Unterschied ist die ganze Sache. Der AUSSCHNITT ist,
+/// was der Saal sieht, und er schneidet ab. Die LEINWAND ist, worauf der Rumpf
+/// gesetzt wird; sie ist mindestens so groß wie der Ausschnitt und wächst mit
+/// dem Inhalt. Eine Folie, die nichts über den Ausschnitt hinauslegt, hat
+/// beides gleich groß und ist von einer Folie ohne Leinwand nicht zu
+/// unterscheiden.
+///
+/// Gerechnet in Punkten, die Ecke des Ausschnitts links oben bei (0, 0).
+/// `rumpf` ist der Kasten des Flusses (x, y, Breite, Höhe), `stuecke` sind die
+/// schon gemessenen Kästen der platzierten Stücke in denselben Koordinaten.
+#let leinwand(geo, rumpf, stuecke) = {
+  let l = 0pt
+  let o = 0pt
+  let r = geo.width
+  let u = geo.height
+  for kasten in (rumpf,) + stuecke {
+    l = calc.min(l, kasten.x)
+    o = calc.min(o, kasten.y)
+    r = calc.max(r, kasten.x + kasten.width)
+    u = calc.max(u, kasten.y + kasten.height)
+  }
+  // Gewachsen erst, wenn es sich lohnt: Ein halber Punkt ist die Rundung
+  // einer Messung und keine Leinwand. Ohne diese Schwelle bekäme eine Folie,
+  // deren Fluss den Raum auf den letzten Punkt füllt, eine Leinwand von einem
+  // halben Punkt Überstand -- und damit eine Kopfschicht, einen Schwenk und
+  // auf Papier eine Randnotiz.
+  let schwelle = 0.5pt
+  (links: l, oben: o, rechts: r, unten: u, width: r - l, height: u - o,
+   gewachsen: l < -schwelle or o < -schwelle
+              or r > geo.width + schwelle or u > geo.height + schwelle)
+}
+
+/// Die `place`-Aufrufe der obersten Ebene eines Rumpfs, mit Versatz und Inhalt.
+///
+/// Derselbe flache Gang wie bei den `bleed`-Marken. Ein `place` gibt seine
+/// Felder her -- `dx`, `dy`, `alignment`, `body` --, und damit lässt sich sein
+/// Kasten ausrechnen, ohne dass das Deck etwas Eigenes dafür schreiben muss.
+///
+/// Die Grenze steht im Handbuch: Ein `place` in einem `box`, einer Rasterzelle
+/// oder in einem `anim` rechnet seinen Versatz gegen diesen Behälter und nicht
+/// gegen den Rumpf, und von hier aus ist beides nicht zu unterscheiden. Solcher
+/// Inhalt zählt für die Leinwand nicht -- wer ihn hinausstellen will, schreibt
+/// sein `place` auf die oberste Ebene des Rumpfs.
+#let platzierungen(c) = {
+  if type(c) != content { return () }
+  let art = repr(c.func())
+  if art == "place" {
+    return ((dx: c.at("dx", default: 0pt), dy: c.at("dy", default: 0pt),
+             ausrichtung: c.at("alignment", default: auto),
+             body: c.at("body", default: [])),)
+  }
+  if art == "sequence" and c.has("children") {
+    let aus = ()
+    for k in c.children { aus += platzierungen(k) }
+    return aus
+  }
+  if art == "styled" and c.has("child") { return platzierungen(c.child) }
+  ()
+}
+
 /// Zieht die `bleed`-Marken aus der obersten Ebene eines Folienrumpfs.
 ///
 /// Der flache Gang von `pause-tokens`: in Folgen und in `styled` hinein, und
@@ -1822,12 +1885,14 @@
   assert(funde.len() == 0, message:
     "typstage: " + str(funde.len())
     + (if funde.len() == 1 { " slide runs" } else { " slides run" })
-    + " over the room the body has. A slide is a frame of fixed size: in the "
-    + "browser what sticks out is cut away or drawn beside the slide, on "
-    + "paper it stands over the edge. Neither is seen while writing.\n"
+    + " over the room the body has. The slide is a viewport: what runs past "
+    + "it grows the canvas, so in the talk the view pans after it and on "
+    + "paper the whole canvas is fitted onto the page. Neither is seen while "
+    + "writing, which is what this check is for.\n"
     + funde.map(zeile).join("\n")
     + "\nShorten the slide, split it, or put the block that does not fit into "
-    + "fit(). overflow: \"record\" files the same records for querying and "
+    + "fit(). If the panning is what you want, leave overflow at its default. "
+    + "overflow: \"record\" files the same records for querying and "
     + "carries on instead of stopping.")
 } }
 

@@ -334,6 +334,13 @@ const szeneBild = `(function () {
       sagt("szene", "keine Szene im Prüfdeck gefunden");
     } else {
       await schlaf(1100);
+      // Ein Druck, bevor gemessen wird: Seit 0.1.2 hat eine Folie mit
+      // Aufdeckkette einen leeren Anfangsschritt, und `zurSzene` steigt auf
+      // genau dem ein. Die Szene steht dort auf ihrem ersten Halt, und der
+      // erste Druck bringt sie ebenfalls dorthin -- gemessen "Bild 0 -> 0",
+      // und die Probe klagte seither ueber etwas, das so gewollt ist.
+      await sprecher.taste("ArrowRight");
+      await schlaf(1400);
       const erst = [await halle.ev(szeneBild), await sprecher.ev(szeneBild)];
       if (erst[0] !== erst[1]) {
         sagt("szene", "beim Betreten steht die Halle auf Bild " + erst[0]
@@ -478,10 +485,14 @@ const szeneBild = `(function () {
       sagt("licht", "dunkel ist nicht die Vorgabe: bei heller Systemeinstellung "
         + JSON.stringify(l1) + ", bei dunkler " + JSON.stringify(l2));
     }
-    await sprecher.taste("l"); await schlaf(400);
+    // `Shift+L` und nicht `l`: Seit 0.1.2 liegt hell/dunkel auf der grossen
+    // Taste -- `l` allein springt im Medienplan zehn Sekunden vor. Diese Probe
+    // drueckte weiter die kleine und meldete seither zwei Abweichungen fuer
+    // etwas, das so gewollt ist.
+    await sprecher.taste("L", 8); await schlaf(400);
     const l3 = await sprecher.ev(grundVon);
     if (!/^hell /.test(l3)) {
-      sagt("licht", "`l` hat dem dunklen Bild nicht widersprochen: "
+      sagt("licht", "`Shift+L` hat dem dunklen Bild nicht widersprochen: "
         + JSON.stringify(l3));
     }
     // Zwei Bilder muessen auch zwei Bilder sein, sonst hiesse `l` nichts.
@@ -498,14 +509,14 @@ const szeneBild = `(function () {
     await schlaf(300);
     const l4 = await sprecher.ev(grundVon);
     if (l4 !== l3) {
-      sagt("licht", "die Systemeinstellung hat die Wahl von `l` ueberfahren: "
+      sagt("licht", "die Systemeinstellung hat die Wahl von `Shift+L` ueberfahren: "
         + JSON.stringify(l3) + " -> " + JSON.stringify(l4));
     }
-    await sprecher.taste("l"); await schlaf(300);
+    await sprecher.taste("L", 8); await schlaf(300);
     await sprecher.ruf("Emulation.setEmulatedMedia", { features: [] });
     await schlaf(300);
     console.log("Licht: " + nH.length + " Farben in beiden · " + l1 + " · " + l2
-      + " · nach `l` " + l3);
+      + " · nach `Shift+L` " + l3);
 
     // ── Die Kachel der laufenden Folie ist die Zeichenflaeche ─────────────
     //

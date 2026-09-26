@@ -25,6 +25,13 @@ html,body{margin:0;height:100%;background:#0f1116;overflow:hidden;
 .ts-bg,.ts-ov,.ts-mini svg{transform-origin:0 0}
 .ts-bg svg{width:100%!important;height:100%!important;display:block}
 .ts-ov{position:absolute;inset:0;pointer-events:none}
+/* Der Kopf einer gewachsenen Folie. Er liegt ueber allem, was schwenkt, und
+   schwenkt selbst nicht mit: Eine Rechnung, die nach unten weiterlaeuft,
+   naehme den Titel sonst mit aus dem Bild. Nur eine Folie, deren Leinwand
+   groesser ist als der Ausschnitt, traegt diese Schicht ueberhaupt. */
+.ts-kopf{position:absolute;top:0;left:0;width:100%;pointer-events:none;z-index:2}
+.ts-kopf svg{width:100%!important;height:auto!important;display:block;
+  overflow:visible!important}
 .ts-el{position:absolute;opacity:0;transform-origin:50% 50%;pointer-events:none}
 .ts-el[data-hold]{visibility:hidden}
 .ts-el svg{width:100%!important;height:100%!important;display:block;
@@ -870,8 +877,19 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
    Flaeche des gewaehlten Werkzeugs, steht im hellen Bild mit 1,09 auf
    `--sp-grund` und waere dort so gut wie unsichtbar; auf der Kachel misst
    sie 1,33. Gemessen, nicht geschaetzt. */
+/* Dieselben drei Schichten wie in der senkrechten Kachel, und aus demselben
+   Grund: die Kante zuerst, dann der Spalt, dann der Ring. Hier stand sie
+   nicht, und der fast weisse Tupfen verlor im hellen Bild seinen Umriss --
+   er hat dieselbe Farbe wie der Spalt, der ihn vom Ring trennt. Gemessen
+   mit `decklauf/pult.js`: zwei Schatten statt drei, Spalt gegen Ring 0,00
+   in beiden Bildern. Die Hoehe bleibt, anders als dort, die der Nachbarn:
+   das Band ist eine Zeile, und ein Tupfen, der herauswaechst, zoege sie
+   mit. */
 .ts-sp-werkzeugleiste .ts-sp-tupf[data-an]{height:22px;
-  box-shadow:0 0 0 2px var(--sp-kachel),0 0 0 4px var(--sp-satz)}
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--tupf) var(--sp-tupf-kante),
+                                 var(--sp-satz)),
+             0 0 0 2px var(--sp-kachel),
+             0 0 0 4px var(--sp-satz)}
 /* Vier Spalten: die Werkzeuge haben ihr eigenes Band, die Zeile traegt nur
    noch Zahlen. */
 .ts-sp-uhren{grid-template-columns:repeat(4,minmax(0,1fr))}

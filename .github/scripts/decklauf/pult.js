@@ -208,7 +208,12 @@ const FOKUS = `(() => {
         for (let i = 0; i < 3; i++) {
           const ist = await c.ev("document.documentElement.dataset.tsLicht");
           if (ist === (licht === "light" ? "hell" : "dunkel")) return;
-          await c.taste("l");
+          // `Shift+L`: Seit 0.1.2 liegt hell/dunkel auf der grossen Taste, `l`
+          // allein springt im Medienplan zehn Sekunden vor. Mit der kleinen
+          // blieb der helle Durchgang dunkel, und dieser Lauf mass zweimal
+          // dasselbe Bild -- genau der Zustand, den der Absatz darueber
+          // abstellen wollte.
+          await c.taste("L", 8);
           await schlaf(400);
         }
       };

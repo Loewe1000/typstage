@@ -76,13 +76,22 @@
 /// for the Typst side, where `callout` and `embed` each carry a label. They
 /// used to be fixed in English, while everything next to them followed
 /// `text.lang`.
+///
+/// `canvas-note` ist die einzige, die etwas mitbekommt: die zwei Maße des
+/// Blatts, in Folien gerechnet. Deshalb steht dort eine Funktion und kein
+/// fertiger Satz -- die Zahlen stehen in jeder Sprache woanders. Für die drei
+/// Sprachen, die von rechts lesen, gibt es sie nicht; dort greift der
+/// englische Rückfall, wie bei jedem fehlenden Schlüssel.
 #let doc-words = (
   de: (note: [Merke], embedded: [Eingebetteter Inhalt],
-       back-to-contents: [Zurück zum Verzeichnis]),
+       back-to-contents: [Zurück zum Verzeichnis],
+       canvas-note: (b, h) => [Blatt #b × #h Folien, im Vortrag geschwenkt]),
   en: (note: [Note], embedded: [Embedded content],
-       back-to-contents: [Back to contents]),
+       back-to-contents: [Back to contents],
+       canvas-note: (b, h) => [canvas #b × #h slides, panned in the talk]),
   fr: (note: [À retenir], embedded: [Contenu intégré],
-       back-to-contents: [Retour au sommaire]),
+       back-to-contents: [Retour au sommaire],
+       canvas-note: (b, h) => [toile #b × #h diapositives, parcourue pendant l'exposé]),
   // Three languages that read from the right, so a deck in one of them does
   // not carry an English tab on its callout while everything else mirrors.
   ar: (note: [ملاحظة], embedded: [محتوى مضمّن],

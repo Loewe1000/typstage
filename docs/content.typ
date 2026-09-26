@@ -3024,6 +3024,61 @@ Rückweg noch braucht.
   wechselt das Bild ohne Bewegung.
 ]
 
+== Wenn der Inhalt über die Folie hinausgeht
+
+Eine Folie ist ein Ausschnitt. Gesetzt wird der Rumpf auf ein Blatt, und
+gewöhnlich sind beide gleich groß: Was auf die Folie passt, steht darauf.
+
+Reicht der Inhalt weiter, wächst das Blatt mit ihm -- ohne dass irgendwo ein
+Maß dafür stünde. Zwei Dinge lassen es wachsen:
+
+/ Ein Fluss, der weiterläuft: Eine Rechnung, die untereinander weitergeht,
+  eine Liste, die länger ist als die Folie. Das Blatt wird nach unten größer.
+/ Ein `place` auf der obersten Ebene des Rumpfs: Ein Kasten mit `dx: 780pt`
+  steht rechts neben der Folie. Das Blatt wird zur Seite größer.
+
+Im Vortrag zeigt die Bühne den Ausschnitt, und die Ansicht folgt dem, was
+gerade aufgedeckt wird: Solange der neue Schritt zu sehen ist, steht das Bild
+still; sobald er unten aus dem Ausschnitt liefe, schwenkt die Ansicht ihm
+nach. Der Kopf der Folie -- Band oder Titelzeile -- schwenkt nicht mit. Er
+liegt als eigene Schicht über dem Blatt, damit der Titel stehen bleibt, wenn
+die Rechnung unter ihm durchfährt.
+
+#show-code[```typ
+== Eine Rechnung, Schritt für Schritt
+#stagger(dim: true)[
+  $ 3x + 5 = 20 $
+][
+  $ 3x = 15 $
+][
+  $ x = 5 $
+][
+  // … und so weiter, über die Folie hinaus
+]
+```]
+
+Auf Papier gibt es nichts zu schwenken. Dort kommt das ganze Blatt auf die
+Seite, eingepasst und mittig, und darunter steht eine Zeile, die sagt, was im
+Vortrag geschieht: „Blatt 1 × 1.29 Folien, im Vortrag geschwenkt". Für den
+Handzettel und für `pages: "step"` gilt dasselbe -- eine Folie, die größer ist
+als ihr Ausschnitt, steht auch dort vollständig in ihrem Rahmen.
+
+#info[
+  *Nur ein `place` auf der obersten Ebene zählt.* Eines in einem `box`, einer
+  Rasterzelle oder in einem `anim` rechnet seinen Versatz gegen diesen
+  Behälter, und von außen ist das nicht zu unterscheiden. Wer etwas neben die
+  Folie stellen will, schreibt sein `place` unmittelbar in den Folienrumpf.
+  Sein Anker zählt dabei mit: `place(bottom + right, dx: 20pt)` steht 20pt
+  hinter der rechten unteren Ecke des Rumpfes, nicht 20pt hinter der linken
+  oberen. Ein `place` ohne Anker steht an seiner Stelle im Fluss, und die ist
+  von außen nicht zu erfahren; es zählt wie `top + left`.
+
+  *Die Überlaufprüfung meldet es weiterhin.* Sie fragt, ob der Rumpf über den
+  Ausschnitt hinausgeht, und das tut er hier. Sie steht per Vorgabe auf
+  `overflow: "none"`; wer sie anschaltet, will genau diese Auskunft. Ist das
+  Schwenken gewollt, bleibt sie aus.
+]
+
 = Den Vortrag halten
 
 Alles, was zwischen dem Öffnen der Datei und der letzten Folie geschieht,
@@ -4598,7 +4653,7 @@ eine solche Regel beide Ausgaben.
   ```
 
   Die Kurzform legt die Stilregel *um* das gefundene Element, die Langform
-  *hinein* -- und im Rechteck steckt kein zweites Rechteck. Bei den 18
+  *hinein* -- und im Rechteck steckt kein zweites Rechteck. Bei den 19
   Schrift-Labels sind beide Schreibweisen gleichwertig.
 ]
 
@@ -4610,9 +4665,9 @@ Element.
 
 `style` erreicht das nicht: der Haken liegt um den *Folienrumpf*, und Kopf,
 Fuß, Fortschritt sowie Titel- und Abschnittsfolie entstehen daneben. Gemessen,
-jede der 41 Regeln einzeln: aus `style` heraus wirken genau die 13, die im
+jede der 42 Regeln einzeln: aus `style` heraus wirken genau die 13, die im
 Folienrumpf stehen -- `ts-card…`, `ts-callout…`, `ts-statement` und die drei
-`ts-media-…`. Die übrigen 28 bleiben dort stumm, ohne Warnung.
+`ts-media-…`. Die übrigen 29 bleiben dort stumm, ohne Warnung.
 
 #warning[
   Eine `show`-Regel *hinter* `#show: presentation` erreicht ein getracktes
@@ -4786,6 +4841,8 @@ tut nichts.
     Handout-Seite], [`block`],
   [`ts-handout-lines`], [die Schreiblinien daneben oder darunter], [`line`],
   [`ts-handout-note`], [die Sprechernotiz, wo es eine gibt], [`text`],
+  [`ts-canvas-note`], [die Randnotiz unter einer Folie, deren Leinwand größer
+    ist als sie selbst -- nur auf Papier], [`text`],
 )
 
 #info[
