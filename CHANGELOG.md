@@ -57,6 +57,16 @@ All notable changes to this package are recorded here. The format follows
   in both outputs and carries no extra layer.
   `.github/scripts/pruefe-leinwand.js` measures three decks on five points.
 
+- **The address names the slide and the step on it.** Until 0.1.2 the running
+  step over the whole deck stood in the hash (`#7`), so a link to a sub-step
+  held only until a slide was inserted in front of it: on this package's tour,
+  one slide before number 43 moves every address behind it on by that slide's
+  step count. It now reads `#slide-3` and `#slide-3-2`, counted from one, and
+  a step that no longer exists lands on the last step of its slide instead of
+  nowhere. The old form is still read, so bookmarks from 0.1.2 keep working;
+  `#speaker` stays untouched in the speaker window.
+  `.github/scripts/pruefe-tiefenlink.js` measures two decks on six points.
+
 ### Changed
 
 - **A movement can be interrupted and reversed.** A reveal takes half a

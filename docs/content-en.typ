@@ -4661,6 +4661,27 @@ decks that is about half of what visitors load.
 takes a dictionary, not a bare string: a string falls through unread, and the
 page then links names that are not there.
 
+== The address of a step
+
+The address bar says where the talk stands -- not only which slide, but which
+step on it:
+
+#show-code[```typ
+// talk.html#slide-3      slide 3, its first step
+// talk.html#slide-3-2    slide 3, second step
+// talk.html#speaker      the speaker view
+```]
+
+The link can be copied and passed on; whoever opens it stands exactly there.
+The numbers are the slide numbers, counted from one, and a step that does not
+(or no longer) exist leads to the last one of its slide rather than nowhere.
+
+#info[
+  *Until 0.1.2 the running step over the whole deck stood there* (`#7`). Such a
+  link held only until the next slide was inserted: everything behind it moved
+  on. It is still read, so old bookmarks keep working, but no longer written.
+]
+
 == Hosting
 
 The HTML file is static. Anything that serves files serves it: GitHub Pages, a

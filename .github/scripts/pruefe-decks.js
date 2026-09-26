@@ -498,6 +498,10 @@ const SOLL_HINWEIS = [
   "Pruefdecks waechst: typst query <ts-canvas-note> findet dort nichts. Ihre",
   "linux-Werte waren schon fort und sind es geblieben.",
   "",
+  "Die Adresse eines Schritts (#slide-3-2 statt #7) hat keinen Sollwert",
+  "bewegt: Der Lauf steigt ueber die alte Form #8 ein, und die wird weiter",
+  "gelesen -- hash und hashStand stehen in allen Decks unveraendert.",
+  "",
   "Dieser Absatz stand einmal von Hand in soll.json und war nach dem ersten",
   "--neu-soll fort: was hier nicht steht, ueberlebt keine Neuaufnahme."
 ];

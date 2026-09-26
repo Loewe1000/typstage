@@ -143,6 +143,11 @@ jobs:
       - name: Die Folie wächst mit ihrem Inhalt
         run: node .github/scripts/pruefe-leinwand.js
 
+      # Und ob ein Link auf einen Teilschritt ihn trifft -- auch dann noch,
+      # wenn vorne eine Folie eingeschoben wurde.
+      - name: Die Adresse nennt Folie und Schritt
+        run: node .github/scripts/pruefe-tiefenlink.js
+
       # Ein `pin` ist die ausdrückliche Ansage, dass zwei Stücke dasselbe sind.
       # Vier Decks: fasst er alle seine Zeichen, reisen sie gemeinsam, reist er
       # auch über der Glyphengrenze, und kommt die eigene Grenze an?

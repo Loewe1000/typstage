@@ -3740,6 +3740,28 @@ Verzeichnis heraus; ein leerer Eintrag ist schlechter als keiner.
   einmal aufgesucht werden.
 ]
 
+== Die Adresse eines Schritts
+
+Im Adressfeld steht, wo der Vortrag gerade ist -- nicht nur, welche Folie,
+sondern welcher Schritt darauf:
+
+#show-code[```typ
+// vortrag.html#slide-3      Folie 3, ihr erster Schritt
+// vortrag.html#slide-3-2    Folie 3, zweiter Schritt
+// vortrag.html#speaker      die Sprecheransicht
+```]
+
+Der Link lässt sich kopieren und weitergeben; wer ihn öffnet, steht genau
+dort. Die Zahlen sind die der Folien, von eins an gezählt, und ein Schritt,
+den es nicht (mehr) gibt, führt auf den letzten seiner Folie statt ins Leere.
+
+#info[
+  *Bis 0.1.2 stand dort der laufende Schritt über das ganze Deck* (`#7`). So
+  ein Link hielt nur bis zur nächsten eingefügten Folie: Alles dahinter rückte
+  weiter. Er wird weiter gelesen, damit alte Lesezeichen gelten, aber nicht
+  mehr geschrieben.
+]
+
 == Die HTML weitergeben
 
 Zur HTML-Ausgabe gehören zwei Dateien: eine Stilvorlage und die

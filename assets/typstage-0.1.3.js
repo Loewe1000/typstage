@@ -112,7 +112,7 @@
   // containing slide so links such as "Back to contents" work in the talk.
   document.querySelectorAll("a").forEach(function (a) {
     var href = a.getAttribute("href") || a.getAttribute("xlink:href") || "";
-    if (!/^#/.test(href) || /^#slide-\d+$/.test(href)) return;
+    if (!/^#/.test(href) || /^#slide-\d+(-\d+)?$/.test(href)) return;
     var target = document.getElementById(href.slice(1));
     var slide = target && target.closest(".ts-slide");
     if (!slide) return;
@@ -6336,8 +6336,9 @@
     // The running step belongs in the hash, but only in the talk window.
     // In the speaker window `#speaker` sits there, and that has to stay:
     // whoever reloads wants the speaker view back, not the talk.
-    if (ROLLE !== "speaker" && location.hash !== "#" + (n + 1)) {
-      history.replaceState(null, "", "#" + (n + 1));
+    if (ROLLE !== "speaker") {
+      var wunsch = hashFuer(dst.slide, dst.step);
+      if (location.hash !== wunsch) history.replaceState(null, "", wunsch);
     }
     melde(n);
     sprecherStand();
@@ -6360,16 +6361,37 @@
 
   function gotoHash(hash, instant) {
     var value = String(hash || "").replace(/^#/, "");
-    var slide = /^slide-(\d+)$/.exec(value);
+    var slide = /^slide-(\d+)(?:-(\d+))?$/.exec(value);
     if (slide) {
-      var wanted = +slide[1];
+      var folie = +slide[1] - 1;
+      var schritt = slide[2] ? +slide[2] : 1;
+      // Der letzte Schritt dieser Folie, falls der gewuenschte nicht (mehr)
+      // da ist: Ein Link auf `#slide-3-9` soll auf Folie 3 landen und nicht
+      // ins Leere, wenn die Folie inzwischen kuerzer ist.
+      var treffer = -1;
       for (var i = 0; i < STEPS.length; i++) {
-        if (STEPS[i].slide === wanted) { goto(i, instant); return; }
+        if (STEPS[i].slide !== folie) continue;
+        if (STEPS[i].step <= schritt || treffer < 0) treffer = i;
       }
+      if (treffer >= 0) goto(treffer, instant);
       return;
     }
+    // Die alte Form: der laufende Schritt ueber das ganze Deck. Sie wird
+    // nicht mehr geschrieben, aber gelesen -- Lesezeichen aus 0.1.2 tragen
+    // sie, und ein Link, der einmal galt, soll gelten bleiben.
     var n = +value - 1;
     if (!isNaN(n)) goto(n, instant);
+  }
+
+  // Die Adresse eines Schritts: Folie und Schritt darin, beide von eins an
+  // gezaehlt, und der erste Schritt ohne Nummer (`#slide-3`).
+  //
+  // Nicht der laufende Index ueber das ganze Deck, der bis 0.1.2 im Feld
+  // stand: Wer eine Folie einfuegt, verschiebt damit jeden Link, der dahinter
+  // zeigt -- gemessen ruecken auf dem Rundgang durch eine Folie vor Nummer 43
+  // saemtliche Adressen dahinter um deren Schrittzahl weiter.
+  function hashFuer(folie, schritt) {
+    return "#slide-" + (folie + 1) + (schritt > 1 ? "-" + schritt : "");
   }
 
   // ── Slide transitions ─────────────────────────────────────────────────────
@@ -7711,7 +7733,7 @@
   // tell it where it stands. The talk itself takes the number from the
   // hash, this one time and never again after that.
   if (ROLLE === "speaker") goto(0, true);
-  else if (location.hash && /^#slide-\d+$/.test(location.hash)) {
+  else if (location.hash && /^#slide-\d+(-\d+)?$/.test(location.hash)) {
     gotoHash(location.hash, true);
   } else {
     goto(Math.max(0, (+location.hash.slice(1) || 1) - 1), true);
@@ -7936,7 +7958,10 @@
       elemente: document.querySelectorAll(".ts-el").length,
 
       // Where the talk stands. `schritt` counts from zero like `goto`, `hash`
-      // is the number in the address, which counts from one.
+      // is the same step counted from one -- the number that stood in the
+      // address until 0.1.2. Seit 0.1.3 steht dort die Folie und der Schritt
+      // darin (`#slide-3-2`); wer die Adresse selbst messen will, liest
+      // `location.hash`.
       stand: function () {
         var st = current >= 0 ? STEPS[current] : null;
         return {
