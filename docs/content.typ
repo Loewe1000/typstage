@@ -2901,13 +2901,34 @@ zählt bei gleichem Namen dagegen nur der letzte.
   table.header([`match`], [Bedeutung]),
   [`"auto"`],
   [Zeichenweise, sofern beide Seiten Zeichen enthalten und keine von beiden
-   mehr als 48; sonst als ein Block. Die Vorgabe.],
+   mehr als 120; sonst als ein Block. Die Vorgabe.],
   [`"glyph"`],
   [Immer zeichenweise, auch bei vielen Zeichen.],
   [`"block"`],
   [Immer als ein Rechteck: Das ganze Objekt wandert und wird dabei verzerrt.
    Das Richtige für Bilder, Zeichnungen und alles, was keine Schrift ist.],
 )
+
+Die Grenze von 120 Zeichen ist eine Frage des Aussehens und der Kosten: Jedes
+Zeichen kostet zwei Geister, und eine sehr lange Formel, Zeichen für Zeichen
+umgelegt, wirkt als Schwarm und nicht als Bewegung. Gemessen in Chrome auf
+einer Bühne von 1600 px: 51 Zeichen fliegen ohne ein ausgefallenes Bild, bei
+121 Zeichen fällt eines aus, bei 261 stockt der Flug um 117 ms. Ein Deck mit
+langen Formeln setzt die Grenze selbst:
+
+#show-code[```typ
+#show: presentation.with(morph: (glyph-limit: 400))
+```]
+
+*Was einen Namen trägt, reist immer.* Ein `pin` ist die ausdrückliche Ansage,
+dass zwei Stücke zusammengehören, und die gilt auch über der Grenze: Dort
+fliegen die benannten Stücke, und der Rest wechselt an Ort und Stelle.
+
+Ein `pin` darf dabei mehrere Zeichen fassen -- `#pin(<s>, $sum_(i=1)^n$)` --,
+und sie reisen gemeinsam: Jedes Zeichen der Gruppe findet sein Gegenstück in
+der Gruppe drüben, Summenzeichen zu Summenzeichen und Grenze zu Grenze.
+Solange die Gruppe drüben gleich angeordnet ist, ziehen sie als ein Stück;
+steht sie anders, geht jedes Zeichen an seinen eigenen neuen Platz.
 
 `duration` gibt die Dauer des Fluges in Millisekunden an (Vorgabe 900). Der
 Wert der Zielfolie gilt, sonst der der Quelle, sonst `duration` der

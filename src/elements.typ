@@ -441,6 +441,15 @@
 /// else works as before. A pin with no counterpart on the other slide falls
 /// back to shape matching without complaint.
 ///
+/// A pin may hold several glyphs: `#pin(<s>, $sum_(i=1)^n$)` takes the sigma
+/// and its limits along together, each finding its counterpart inside the
+/// group on the other side.
+///
+/// And a name always travels. Above the deck's glyph limit -- 120 by default,
+/// `presentation(morph: (glyph-limit: …))` sets it -- a `morph` no longer
+/// pairs everything one by one, but the named pieces still fly while the rest
+/// changes in place.
+///
 /// The name is a string or a label.
 #let pin(name, body) = {
   let n = name-of(name)

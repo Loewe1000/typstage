@@ -1142,22 +1142,58 @@
     return { left: l, top: o, right: r, bottom: un, width: r - l, height: un - o };
   }
 
+  // Der Name eines `pin` am Baum abgelesen statt am Rechteck.
+  //
+  // Typst setzt den Kasten eines `pin` als eine Gruppe, in der zuerst der
+  // Markierungspfad steht und danach die Glyphen seines Inhalts. Die
+  // Zugehoerigkeit steht damit im Dokument selbst; die naechste Gruppe
+  // aufwaerts, die einen Marker traegt, ist der Pin, und verschachtelte Pins
+  // ordnen sich von selbst, weil die innere Gruppe zuerst kommt.
+  //
+  // Gemessen, warum das noetig ist: Der Marker ist der *Rahmen* des Kastens,
+  // und der ist bei Mathematik kleiner als das, was gezeichnet wird. Bei
+  // `#pin(<s>, $sum_(i=1)^n$)` ist er 21.9 Punkte hoch, die Summe mit ihren
+  // Grenzen reicht ueber 49 -- von fuenf Zeichen lagen zwei darin. Die drei
+  // uebrigen galten als ungepinnt, suchten sich ihren Partner ueber die Form
+  // und flogen einzeln davon: Issue #18, "the limits can visibly separate
+  // from the sigma". Auf Papier ist der Rahmen genauso klein, der Fehler war
+  // also keiner des Browsers.
+  function pinAusBaum(u, wurzel) {
+    var n = u.parentNode;
+    while (n && n !== wurzel && n.nodeType === 1) {
+      var k = n.children;
+      for (var i = 0; i < k.length; i++) {
+        if (!k[i].tagName || k[i].tagName.toLowerCase() !== "path") continue;
+        var f = (k[i].getAttribute("fill") || "").toLowerCase();
+        if (f.length === 9 && f.slice(0, 3) === "#fd" && f.slice(7) === "00") {
+          return parseInt(f.slice(3, 7), 16);
+        }
+      }
+      n = n.parentNode;
+    }
+    return null;
+  }
+
   function glyphs(el) {
     var out = [], felder = pinFelder(el);
     el.querySelectorAll("use").forEach(function (u) {
       var r = glyphKasten(u);
       if (!r || r.width <= 0 || r.height <= 0) return;
       var id = u.getAttribute("xlink:href") || u.getAttribute("href") || "";
-      // The glyph belongs to the pin in whose field its center lies. With
-      // nested pins the smallest one wins, otherwise a pin around the whole
-      // term would swallow the names of the characters inside it.
-      var mx = r.left + r.width / 2, my = r.top + r.height / 2;
-      var pin = null, klein = Infinity;
-      for (var i = 0; i < felder.length; i++) {
-        var q = felder[i].r;
-        if (mx < q.left || mx > q.right || my < q.top || my > q.bottom) continue;
-        var a = q.width * q.height;
-        if (a < klein) { klein = a; pin = felder[i].id; }
+      // Zuerst am Baum. Findet sich dort keine Gruppe mit Marker -- etwa
+      // weil eine kuenftige Fassung von Typst anders schachtelt --, gilt
+      // weiter die Geometrie: die Glyphe gehoert dem Feld, in dem ihre Mitte
+      // liegt, und bei verschachtelten Feldern dem kleinsten davon.
+      var pin = pinAusBaum(u, el);
+      if (pin === null) {
+        var mx = r.left + r.width / 2, my = r.top + r.height / 2;
+        var klein = Infinity;
+        for (var i = 0; i < felder.length; i++) {
+          var q = felder[i].r;
+          if (mx < q.left || mx > q.right || my < q.top || my > q.bottom) continue;
+          var a = q.width * q.height;
+          if (a < klein) { klein = a; pin = felder[i].id; }
+        }
       }
       out.push({ id: id, sig: signatur(id), r: r, node: u, pin: pin });
     });
@@ -1167,7 +1203,11 @@
   // First in reading order by shape, then whatever is left goes to its
   // nearest counterpart, otherwise a glyph would be dropped merely because
   // it changed places.
-  function pairs(a, b) {
+  // `nurPins` laesst die Formsuche aus: dann reisen allein die benannten
+  // Stuecke, und alles andere blendet an seinem Platz aus und am neuen ein.
+  // Das ist der Weg fuer eine Formel ueber der Glyphengrenze unten -- sie
+  // fliegt nicht Zeichen fuer Zeichen, aber was einen Namen traegt, reist.
+  function pairs(a, b, nurPins) {
     var frei = b.slice(), zug = [];
     // Pins first: equal names find each other before the shape is
     // consulted. A pin without a counterpart then falls back to the shape
@@ -1175,12 +1215,20 @@
     var fest = [];
     a.forEach(function (g) {
       if (g.pin === null || g.pin === undefined) return;
+      // Innerhalb eines Namens zaehlt die Form zuerst und die Reihenfolge
+      // danach. Ein `pin` um mehrere Zeichen -- `sum_(i=1)^n` -- hat auf
+      // beiden Seiten dieselben Zeichen; ohne die Formsuche traefe das
+      // Summenzeichen auf die erste freie Glyphe der Gruppe, und das ist
+      // je nach Reihenfolge im Dokument die untere Grenze.
+      var t = -1;
       for (var i = 0; i < frei.length; i++) {
-        if (frei[i].pin === g.pin) {
-          fest.push([g, frei[i]]);
-          frei.splice(i, 1);
-          return;
-        }
+        if (frei[i].pin !== g.pin) continue;
+        if (frei[i].sig === g.sig) { t = i; break; }
+        if (t < 0) t = i;
+      }
+      if (t >= 0) {
+        fest.push([g, frei[t]]);
+        frei.splice(t, 1);
       }
     });
     function gepinnt(g) {
@@ -1190,6 +1238,7 @@
     a.forEach(function (g) {
       var p = gepinnt(g);
       if (p) { zug.push([g, p]); return; }
+      if (nurPins) { zug.push([g, null]); return; }
       var t = -1;
       for (var i = 0; i < frei.length; i++) if (frei[i].sig === g.sig) { t = i; break; }
       if (t < 0) { zug.push([g, null]); return; }
@@ -1483,6 +1532,10 @@
   // happened to have cleaned up by then. A running total cannot be asked at
   // the wrong moment.
   var FLUG = 0;
+  // Und was der letzte Flug je `morph` entschieden hat. Nur fuer `pruef`:
+  // die Wahl zwischen Block und Zeichen fuer Zeichen faellt mitten im Flug
+  // und ist hinterher an nichts mehr abzulesen.
+  var LETZTER_FLUG = [];
 
   //
   function finishTransitionNow() {
@@ -1582,6 +1635,7 @@
     // name gives, and it is the same route a jump already takes.
     NACHZUEGLER = [];
     NACHZUEGLER_DAUER = 0;
+    LETZTER_FLUG = [];
     if (wenigerBewegung()) return false;
     flyTimers.forEach(function (t) { clearTimeout(t); });
     flyTimers = [];
@@ -1616,8 +1670,38 @@
       var wie = dst.dataset.match;
       if (!wie || wie === "auto") wie = src.dataset.match || "auto";
       var qg = glyphs(src), zg = glyphs(dst);
+      // Die Glyphengrenze: Darueber legt `"auto"` die Formel als Block um.
+      // Eine lange Formel Zeichen fuer Zeichen umzulegen ist nicht mehr eine
+      // Bewegung, sondern ein Schwarm, und jedes Zeichen kostet zwei Geister.
+      // Gemessen in Chrome auf 1600x900 mit `match: "glyph"`: 24 Zeichen 48
+      // Geister und kein ausgefallenes Bild, 51 Zeichen 102 Geister ebenso,
+      // 121 Zeichen 242 Geister und ein Bildabstand von 33 ms, 261 Zeichen
+      // 522 Geister und 117 ms Stocken. Die Vorgabe steht deshalb bei 120 --
+      // vorher 48, was auch eine Formel umlegte, die noch flüssig fliegt --
+      // und `presentation(morph: (glyph-limit: …))` stellt sie um.
+      //
+      // Was ein Deck aber ausdruecklich benannt hat, reist auf jeden Fall.
+      // Aus Issue #17: eine Formel mit 50 und 49 Zeichen lag einen Namen
+      // ueber der Grenze, und die gepinnten Stuecke sprangen ohne Flug an
+      // ihren neuen Platz -- dieselbe Formel ohne eine ihrer vier Zutaten
+      // (29 bis 42 Zeichen) flog richtig. Ein `pin` ist die ausdrueckliche
+      // Ansage "dieses Stueck gehoert zu jenem"; eine Zahl, die das
+      // stillschweigend aushebelt, ist keine gute Vorgabe. Ueber der Grenze
+      // reisen deshalb die benannten Stuecke, und der Rest wechselt an Ort
+      // und Stelle (`nurPins`) -- ohne Schwarm und ohne die Kosten.
+      var grenze = Math.max(1, +((CFG.morph || {}).glyphLimit) || 120);
+      var klein = qg.length <= grenze && zg.length <= grenze;
+      var benannt = qg.some(function (g) { return g.pin !== null && g.pin !== undefined; }) &&
+        zg.some(function (g) { return g.pin !== null && g.pin !== undefined; });
       var perGlyph = wie !== "block" && qg.length > 0 && zg.length > 0 &&
-        (wie === "glyph" || (qg.length <= 48 && zg.length <= 48));
+        (wie === "glyph" || klein || benannt);
+      var nurPins = perGlyph && !klein && wie !== "glyph";
+      var bericht = {
+        name: dst.dataset.name || null, match: wie,
+        glyphen: [qg.length, zg.length], grenze: grenze, benannt: benannt,
+        jeGlyphe: perGlyph, nurPins: !!nurPins, gepaart: 0, gruppen: []
+      };
+      LETZTER_FLUG.push(bericht);
 
       // Die Quelle wird für die Dauer des Fluges verborgen -- der Geist
       // übernimmt ihre Stelle. Eine Quelle, die stehen bleibt, nicht: dort
@@ -1656,7 +1740,29 @@
       };
 
       if (perGlyph) {
-        var p = pairs(qg, zg);
+        var p = pairs(qg, zg, nurPins);
+        // Die benannten Gruppen, fuer `pruef.flug()`: welcher Name wie viele
+        // Zeichen traegt. Die Zahl ist der Beweis, dass ein `pin` um mehrere
+        // Zeichen wirklich alle fasst -- vor der Behebung zu Issue #18 waren
+        // es bei `$sum_(i=1)^n$` zwei von fuenf.
+        var gruppen = {};
+        var dazu = function (k, r) {
+          if (!k) return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+          return { left: Math.min(k.left, r.left), top: Math.min(k.top, r.top),
+                   right: Math.max(k.right, r.right), bottom: Math.max(k.bottom, r.bottom) };
+        };
+        p.zug.forEach(function (paar) {
+          var g = paar[0], z = paar[1];
+          if (!z || g.pin === null || g.pin === undefined || z.pin !== g.pin) return;
+          var gr = gruppen[g.pin] || (gruppen[g.pin] = { n: 0, q: null, z: null });
+          gr.n++;
+          gr.q = dazu(gr.q, g.r);
+          gr.z = dazu(gr.z, z.r);
+        });
+        bericht.gepaart = p.zug.filter(function (x) { return !!x[1]; }).length;
+        bericht.gruppen = Object.keys(gruppen).map(function (k) {
+          return { pin: +k, glyphen: gruppen[k].n };
+        });
         p.zug.forEach(function (paar) {
           var g = paar[0], z = paar[1];
           if (!z) {
@@ -1667,6 +1773,24 @@
             return;
           }
 
+          // Jedes Zeichen geht seinen eigenen Weg, auch innerhalb einer
+          // benannten Gruppe.
+          //
+          // Ein gemeinsamer Weg fuer die ganze Gruppe -- aus ihrem Rechteck
+          // hier in ihr Rechteck dort -- war gebaut und ist wieder
+          // ausgebaut: Er stimmt nur, solange die Gruppe innen gleich
+          // angeordnet bleibt, und dann ist er ohnehin derselbe Weg wie der
+          // einzelne (gemessen: 0.004 px Unterschied). Aendert sich die
+          // Anordnung, wird er falsch. Gemessen an `$sum_(i=1)^n$` gegen
+          // `$sum_(i=1)^(n + m + k)$`: das Rechteck der Gruppe wird 1.71-mal
+          // so breit, und mit ihm kaeme jedes Zeichen -- auch das
+          // Summenzeichen, das seine Groesse behaelt -- um 71 Prozent
+          // vergroessert an und spraenge bei der Landung zurueck.
+          //
+          // Zusammen reist die Gruppe deshalb nicht ueber einen gemeinsamen
+          // Weg, sondern weil die Zuordnung stimmt: Sigma zu Sigma, Grenze zu
+          // Grenze. Das war der Fehler in Issue #18, und er steckte in der
+          // Zugehoerigkeit (siehe `pinAusBaum`), nicht im Weg.
           var zx = z.r.left - g.r.left, zy = z.r.top - g.r.top;
           var sx = z.r.width / g.r.width, sy = z.r.height / g.r.height;
           var path = [
@@ -1682,6 +1806,13 @@
 
           var ghost = glyphGeist(g, stage);
           attach(ghost);
+          // Der Name am Geist. Von aussen sind Geister sonst namenlos, und
+          // ob eine Gruppe wirklich als ein Stueck reist, laesst sich nur an
+          // ihren Wegen ablesen: dieselbe Gruppe, derselbe Weg.
+          if (g.pin !== null && g.pin !== undefined) {
+            ank.dataset.pin = g.pin;
+            ghost.dataset.pin = g.pin;
+          }
           ghost.animate(path, timing);
           ghost.animate([{ opacity: 1 }, { opacity: 0 }], window);
         });
@@ -7402,7 +7533,7 @@
       // direkt nach `#ts-punkt`, `.ts-punkt-kern` und `--ts-zeiger`, und wer
       // einen dieser drei Namen umbenannt haette, haette still gemessene
       // Nullen bekommen statt einer Klage.
-      fassung: 5,
+      fassung: 6,
       // Was zuletzt gespielt wurde, und wie oft ueberhaupt. Ohne den Zaehler
       // liesse sich "hat gespielt" nicht von "spielte schon vorher" trennen.
       klang: function () {
@@ -7424,6 +7555,14 @@
       // unter demselben Namen gewann der spaetere, und diese Probe bekam aus
       // `JSON.stringify(pruef.punkt())` schlicht `false` -- ein stiller
       // Fehlgriff der Art, gegen die `fassung` steht.
+      // Was der letzte Flug getan hat: je `morph` die Glyphenzahl beider
+      // Seiten, die geltende Grenze, ob Zeichen fuer Zeichen geflogen wurde,
+      // ob dabei nur die benannten Stuecke reisten, und die gepinnten
+      // Gruppen mit ihrer Groesse. Von aussen ist das sonst nicht zu sehen:
+      // ein Flug dauert 900 ms, und wer ihn fotografiert, sieht Geister,
+      // aber nicht, welche Glyphe zu welchem Namen gehoert. Genau daran
+      // haengen die beiden gemeldeten Fehler (#17 und #18).
+      flug: function () { return LETZTER_FLUG; },
       zeiger: function () {
         var aus = !!PUNKT_AUS;
         var farbe = getComputedStyle(document.documentElement)

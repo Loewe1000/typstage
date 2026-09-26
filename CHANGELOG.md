@@ -6,6 +6,27 @@ All notable changes to this package are recorded here. The format follows
 
 ## [0.1.3] — unreleased
 
+### Fixed
+
+- **A `pin` holds every glyph of its content.** `pin` marks its content with an
+  invisible rectangle, and the runtime asked which glyph's centre lay inside
+  it. In maths that rectangle is smaller than what is drawn: around
+  `$sum_(i=1)^n$` it is 21.9 points high while the sigma and its limits reach
+  over 49, so two of five glyphs counted as pinned and the other three looked
+  for a partner by shape and flew off on their own. Reported in issue #18,
+  "the limits can visibly separate from the sigma". A glyph now takes its name
+  from the document tree -- Typst sets a `pin` as a group that holds its marker
+  and its glyphs side by side -- and the rectangle remains only as a fallback.
+  Within one name the shape decides before the reading order, so the sigma
+  finds the sigma. The same rectangle is as small on paper, so this was never a
+  fault of the browser.
+- **A name travels, however long the formula.** Above the glyph limit
+  `match: "auto"` moves the whole thing as one block, and a pinned piece then
+  jumped to its new place without a flight. Reported in issue #17 on a formula
+  of 50 and 49 glyphs -- one ingredient shorter, and the same flight was right.
+  Above the limit the named pieces now fly while everything else changes in
+  place.
+
 ### Changed
 
 - **Three checks caught up with what 0.1.2 changed.** Automatic reveal chains
@@ -18,6 +39,20 @@ All notable changes to this package are recorded here. The format follows
   handout examples stop failing with "duplicate argument", and it finds the
   call even when an argument stands on the same line. `pruefe-rundgang.py` was
   short of a slide for `audio`, which the tour now has, with a recording on it.
+
+- **The glyph limit is 120, and a deck may set it.** It was 48, which also
+  moved formulas as a block that fly perfectly well one glyph at a time.
+  Measured in Chrome on a 1600-pixel stage: 24 glyphs cost 48 ghosts and drop
+  no frame, 51 glyphs 102 ghosts and none either, 121 glyphs 242 ghosts and one
+  frame, 261 glyphs 522 ghosts and a stall of 117 ms. None of the seventeen
+  example decks carries a flight between 49 and 120 glyphs, so their flights
+  are unchanged. `presentation(morph: (glyph-limit: 400))` sets it per deck,
+  and the manuals now describe the limit, which they never did.
+- **`typstage.pruef.flug()` reports the last flight**, per morph: the glyph
+  count of both sides, the limit in force, whether it flew glyph by glyph,
+  whether only the named pieces travelled, and the pinned groups with their
+  size. `pruef.fassung` is 6. `.github/scripts/pruefe-morph-pin.js` holds all
+  of this against four decks; five mutations make it complain.
 
 ## [0.1.2] — 2026-09-25
 

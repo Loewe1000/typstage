@@ -553,6 +553,15 @@
 /// Media controls show play/pause and a timeline. `k` toggles playback,
 /// `j`/`l` seek ten seconds; `Shift+L` switches the presenter's light theme.
 ///
+/// `morph` holds what magic move needs to know about this deck. It knows
+/// `glyph-limit`: up to how many glyphs `match: "auto"` pairs one by one
+/// before it moves the whole thing as one block, 120 by default. A `pin`
+/// travels above that limit as well.
+///
+/// ```typ
+/// #show: presentation.with(morph: (glyph-limit: 400))
+/// ```
+///
 /// `room` is the counterpart: what reaches the hall, as opposed to what only
 /// the speaker sees. It knows `clock` (how coarsely the class clock reads,
 /// and whether the digit keys start it), `sounds` (a key, a sound file),
@@ -661,6 +670,7 @@
   transition: "slide",
   speaker-view: (:),
   room: (:),
+  morph: (:),
   transition-duration: 420,
   duration: 520,
   style: it => it,
@@ -785,6 +795,23 @@
         "typstage: speaker-view.pen.colors is a non-empty list of colours, "
         + "written as colours and not as strings. Not " + repr(stift.colors))
     }
+  }
+  // Wie weit ein Flug Zeichen fuer Zeichen geht. Ueber `glyph-limit` legt
+  // `match: "auto"` die Formel als Block um; ein benanntes Stueck (`pin`)
+  // reist immer, ganz gleich wie lang die Formel ist.
+  assert(type(morph) == dictionary, message:
+    "typstage: morph takes a dictionary, not " + str(type(morph))
+    + ". It knows glyph-limit.")
+  for k in morph.keys() {
+    assert(k == "glyph-limit", message:
+      "typstage: morph has no entry \"" + k + "\". It takes glyph-limit (up "
+      + "to how many glyphs `match: \"auto\"` pairs one by one before it "
+      + "moves the whole thing as one block).")
+  }
+  if "glyph-limit" in morph {
+    assert(type(morph.glyph-limit) == int and morph.glyph-limit >= 1,
+      message: "typstage: morph.glyph-limit is a whole number of glyphs, at "
+        + "least 1. Not " + repr(morph.glyph-limit))
   }
   // Was der Saal sieht und hoert. Das Gegenstueck zu `speaker-view`: dort
   // steht, was nur der Vortragende sieht, hier, was im Raum ankommt. Der Name
@@ -1951,6 +1978,13 @@
             json.encode((kind: transition))
           } else { json.encode(transition) })
         + ",\"transitionDuration\":" + json.encode(transition-duration)
+        // Wie viele Zeichen `match: "auto"` einzeln umlegt. Gemessen auf
+        // einem schnellen Rechner: bei 121 Zeichen faellt hoechstens ein Bild
+        // aus, bei 261 stockt der Flug um 116 ms. Die Vorgabe steht deshalb
+        // bei 120, und ein Deck mit langen Formeln stellt sie um.
+        + ",\"morph\":" + json.encode((
+            glyphLimit: morph.at("glyph-limit", default: 120),
+          ))
         + ",\"width\":" + json.encode(geo.width.pt())
         + ",\"height\":" + json.encode(geo.height.pt())
         // Die Signalfarbe, das einzige Stueck Palette, das die Laufzeit

@@ -2332,6 +2332,28 @@ flight carries on past the edge of the slide.
 other, and where that is not enough, proximity decides. `"glyph"` forces it per
 glyph, `"block"` moves the whole thing as one rectangle.
 
+`"auto"` pairs per glyph as long as neither side carries more than 120 glyphs,
+and moves the whole thing as one block above that. The limit is a question of
+looks and of cost: every glyph costs two ghosts, and a very long formula taken
+apart character by character reads as a swarm rather than as a movement.
+Measured in Chrome on a 1600-pixel stage: 51 glyphs fly without dropping a
+frame, at 121 glyphs one frame goes, at 261 the flight stalls for 117 ms. A
+deck of long formulas sets the limit itself:
+
+#show-code[```typ
+#show: presentation.with(morph: (glyph-limit: 400))
+```]
+
+Whatever carries a name travels regardless. A `pin` says outright that two
+pieces belong together, and that holds above the limit too: there the named
+pieces fly and everything else changes in place.
+
+A `pin` may hold several glyphs -- `#pin(<s>, $sum_(i=1)^n$)` -- and they
+travel together: each glyph of the group finds its counterpart within the group
+on the other side, sigma to sigma and limit to limit. As long as the group is
+arranged the same way over there they move as one piece; where it is arranged
+differently, each glyph goes to its own new place.
+
 #tip[
   `"block"` is the right answer more often than it looks. A picture or a table
   has no glyphs worth pairing, and per-glyph matching there gives a swarm rather
