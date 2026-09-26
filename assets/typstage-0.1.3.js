@@ -915,6 +915,56 @@
     federWeg(el);
   }
 
+  // ── Unterbrechen ──────────────────────────────────────────────────────────
+  //
+  // Wer mitten in einer Einblendung weiterblättert, soll nicht sehen, wie das
+  // Bild an den Anfang zurückspringt und von dort neu läuft. `clearAnims`
+  // nimmt einer laufenden Animation den Lauf, und das Element steht danach
+  // auf seinem Ruhewert -- der neue Lauf begann bisher dort, wo der alte
+  // begonnen hatte, und nicht dort, wo das Auge das Element zuletzt gesehen
+  // hat. Drei kleine Helfer ändern das: `standJetzt` liest, wo es steht,
+  // `abJetzt` setzt den neuen Lauf dort an, `restDauer` gibt ihm die Zeit,
+  // die der Rest des Weges noch wert ist.
+
+  // Wo ein Element in diesem Augenblick wirklich steht -- oder `null`, wenn
+  // gerade nichts läuft und der Ruhewert ohnehin gilt. `getComputedStyle`
+  // löst auch mitten in einer Animation auf, was der Browser zeichnet.
+  function standJetzt(el) {
+    var laeuft = el.getAnimations().some(function (a) {
+      return a.playState === "running" || a.playState === "paused";
+    });
+    if (!laeuft) return null;
+    var s = getComputedStyle(el);
+    var stand = { opacity: s.opacity };
+    if (s.transform && s.transform !== "none") stand.transform = s.transform;
+    if (s.filter && s.filter !== "none") stand.filter = s.filter;
+    return stand;
+  }
+
+  // Der Anfang des neuen Laufs: die Werte des Effekts, überschrieben von dem,
+  // was gerade zu sehen ist. Überschrieben und nicht ersetzt, damit ein
+  // Effekt, der etwas setzt, das gerade nicht in Bewegung ist, es behält.
+  function abJetzt(anfang, stand) {
+    if (!stand) return anfang;
+    var neu = {}, k;
+    for (k in anfang) neu[k] = anfang[k];
+    for (k in stand) neu[k] = stand[k];
+    return neu;
+  }
+
+  // Und wie lange der Rest noch dauert. Wer bei vier Fünfteln unterbricht, hat
+  // nur noch ein Fünftel des Weges vor sich; die volle Dauer noch einmal wäre
+  // ein Nachschleppen, und beim Umkehren sähe es aus, als hinge das Bild. Ein
+  // Viertel bleibt als Untergrenze: darunter ist keine Bewegung mehr zu sehen,
+  // sondern ein Ruck.
+  function restDauer(dur, stand, anfang, ziel) {
+    if (!stand || anfang.opacity == null || ziel.opacity == null) return dur;
+    var weg = Math.abs(+ziel.opacity - +anfang.opacity);
+    if (!weg) return dur;
+    var rest = Math.abs(+ziel.opacity - parseFloat(stand.opacity));
+    return Math.max(dur * 0.25, dur * Math.min(1, rest / weg));
+  }
+
   // Die Kurve, auf der ein Element sich bewegt.
   //
   // Aufgeloest ist sie schon: `easing:` laesst den Namen in Typst zu einer
@@ -941,6 +991,7 @@
   }
 
   function fadeIn(el, name, dur, delay) {
+    var stand = standJetzt(el);
     clearAnims(el);
     // "none" means no effect. Animating from 1 to 1 would not merely be
     // pointless: played backwards it would keep the element visible.
@@ -955,9 +1006,16 @@
     // lang: die Striche zeichnen sich, alles ohne Kontur blendet auf.
     if (name === "draw") feder(el, dur, delay, false, takt(el));
     var f = effekt(name);
+    // Was gerade zu sehen ist, BEVOR `clearAnims` es wegnimmt -- oben in
+    // dieser Funktion steht der Abbruch, hier der Blick darauf ist zu spät.
+    // Deshalb hat `fadeIn` ihn schon gelesen und reicht ihn als `stand`
+    // herein.
     el.style.opacity = "";
-    var a = el.animate([f[0], f[1]],
-      { duration: dur, delay: delay, easing: takt(el), fill: "both" });
+    var a = el.animate([abJetzt(f[0], stand), f[1]],
+      { duration: restDauer(dur, stand, f[0], f[1]),
+        // Ein Element, das schon in Bewegung ist, wartet nicht noch einmal:
+        // die Verzögerung gehört dem ersten Auftritt.
+        delay: stand ? 0 : delay, easing: takt(el), fill: "both" });
     a.onfinish = function () { el.style.opacity = "1"; a.cancel(); };
   }
 
@@ -979,6 +1037,7 @@
   var DIM = 0.65;
 
   function fadeOut(el, name, dur, von) {
+    var stand = standJetzt(el);
     clearAnims(el);
     if (name === "none") { el.style.opacity = "0"; return; }
     // Ein Warten dauert so lange wie der Eintritt, den es abwartet. `goto`
@@ -1004,8 +1063,9 @@
       for (var k in f[1]) ab[k] = f[1][k];
       ab.opacity = von;
     }
-    var a = el.animate([ab, f[0]],
-      { duration: dur, easing: takt(el), fill: "both" });
+    var a = el.animate([abJetzt(ab, stand), f[0]],
+      { duration: restDauer(dur, stand, ab, f[0]), easing: takt(el),
+        fill: "both" });
     a.onfinish = function () { el.style.opacity = "0"; try { a.cancel(); } catch (e) {} };
   }
 
@@ -1013,9 +1073,11 @@
   // not an entrance and not a departure: the point does not move, it only
   // steps back or comes forward again.
   function fadeTo(el, von, bis, dur) {
+    var stand = standJetzt(el);
     clearAnims(el);
-    var a = el.animate([{ opacity: von }, { opacity: bis }],
-      { duration: dur, easing: takt(el), fill: "both" });
+    var a = el.animate([abJetzt({ opacity: von }, stand), { opacity: bis }],
+      { duration: restDauer(dur, stand, { opacity: von }, { opacity: bis }),
+        easing: takt(el), fill: "both" });
     a.onfinish = function () {
       el.style.opacity = String(bis); try { a.cancel(); } catch (e) {}
     };
@@ -1532,21 +1594,42 @@
   // happened to have cleaned up by then. A running total cannot be asked at
   // the wrong moment.
   var FLUG = 0;
+  // Die Flüge, die gerade in der Luft sind. Gebraucht zum Umkehren: Wer
+  // zurückblättert, während ein `morph` noch fliegt, meint den Weg zurück,
+  // und dafür muss die Laufzeit den laufenden Flug noch in der Hand haben --
+  // seine Geister, seine Animationen und die beiden Elemente, zwischen denen
+  // er steht.
+  var LAUFENDE_FLUEGE = [];
   // Und was der letzte Flug je `morph` entschieden hat. Nur fuer `pruef`:
   // die Wahl zwischen Block und Zeichen fuer Zeichen faellt mitten im Flug
   // und ist hinterher an nichts mehr abzulesen.
   var LETZTER_FLUG = [];
 
+  // Einen laufenden Folienwechsel beenden.
   //
-  function finishTransitionNow() {
+  // `hart` (die Vorgabe) nimmt ihm den Lauf und setzt beide Folien auf ihre
+  // Ruhelage: so muss ein Sprung anfangen, der ohne Bewegung irgendwohin
+  // setzt. Sanft (`false`) räumt nur ab, was ohnehin fertig ist, und lässt
+  // einen Wechsel, der noch läuft, in Ruhe -- der Flug, der gleich beginnt,
+  // und der Wechsel, der ihm folgt, entscheiden dann darüber: umkehren oder
+  // dort ansetzen, wo das Bild steht. Vorher brach der Flug jeden laufenden
+  // Wechsel ab, und genau daran sprang das Bild beim Zurückblättern.
+  function finishTransitionNow(hart) {
     SLIDES.forEach(function (f) {
+      // Nicht `mo_aus` fragen: das trägt nur die Folie, die GEHT. Die, die
+      // hereinkommt, hat ihre eigene Animation und sonst nichts, und genau
+      // sie sprang, solange hier nur der Abgang zählte.
+      var laeuft = f.getAnimations().some(function (a) {
+        return a.playState === "running";
+      });
+      if (hart === false && laeuft) return;
       if (f.mo_zeit) { clearTimeout(f.mo_zeit); f.mo_zeit = null; }
       if (f.mo_aus) { try { f.mo_aus.cancel(); } catch (e) {} f.mo_aus = null; }
       f.getAnimations().forEach(function (a) { try { a.cancel(); } catch (e) {} });
       delete f.dataset.off;
       resetStyle(f);
     });
-    B.style.perspective = "";
+    if (hart !== false) B.style.perspective = "";
   }
 
   // Die zwei Wege in einen Flug. Beide sammeln nur ein, was fliegen soll, und
@@ -1639,16 +1722,76 @@
     if (wenigerBewegung()) return false;
     flyTimers.forEach(function (t) { clearTimeout(t); });
     flyTimers = [];
-    finishTransitionNow();
-    while (FLY.firstChild) FLY.removeChild(FLY.firstChild);
+    finishTransitionNow(false);
+
+    // ── Einen laufenden Flug umkehren, statt ihn abzubrechen ────────────────
+    //
+    // Wer mitten im Flug zurückblättert, meint den Weg zurück und nicht einen
+    // zweiten Flug von vorn. Bisher wurden die Geister weggeräumt, die
+    // Elemente wieder sichtbar gesetzt und ein neuer Flug begonnen -- das Bild
+    // sprang dabei an die Ruhelage und lief von dort. Ist der neue Flug die
+    // Umkehrung des laufenden (dieselben zwei Elemente, Quelle und Ziel
+    // vertauscht), läuft jetzt derselbe Flug rückwärts weiter: `playbackRate`
+    // auf -1, und was an Zeit schon verstrichen ist, ist zugleich die Zeit,
+    // die der Rückweg noch braucht.
+    var umgekehrt = {};
+    if (LAUFENDE_FLUEGE.length) {
+      ziele.forEach(function (dst) {
+        var src = quellen[dst.dataset.name];
+        if (!src) return;
+        LAUFENDE_FLUEGE.forEach(function (lauf) {
+          if (lauf.fertig || lauf.src !== dst || lauf.dst !== src) return;
+          lauf.fertig = true;
+          umgekehrt[dst.dataset.name] = true;
+          var gelaufen = 0;
+          lauf.anims.forEach(function (a) {
+            try {
+              gelaufen = Math.max(gelaufen, +a.currentTime || 0);
+              a.playbackRate = -1;
+            } catch (e) {}
+          });
+          // Die Rollen tauschen mit der Richtung: am Ende steht wieder da,
+          // was am Anfang dastand.
+          delete lauf.dst.dataset.hold;
+          lauf.src.dataset.hold = "1";
+          flyTimers.push(setTimeout(function () {
+            delete lauf.src.dataset.hold;
+            delete lauf.dst.dataset.hold;
+            lauf.geister.forEach(function (g) { g.remove(); });
+          }, Math.max(60, gelaufen)));
+        });
+      });
+    }
+    // Alles, was nicht umgekehrt weiterläuft, geht. Nicht schlagartig: ein
+    // Geist, der mitten auf der Bahn verschwindet, ist derselbe Sprung von
+    // vorhin, nur in der Luft. Er blendet an seinem Platz aus, während der
+    // neue Flug beginnt.
+    LAUFENDE_FLUEGE.forEach(function (lauf) {
+      if (lauf.fertig) return;
+      lauf.fertig = true;
+      delete lauf.src.dataset.hold;
+      delete lauf.dst.dataset.hold;
+      lauf.geister.forEach(function (g) {
+        try {
+          g.getAnimations().forEach(function (a) { a.pause(); });
+          g.animate([{ opacity: 1 }, { opacity: 0 }],
+                    { duration: 180, easing: "ease-out", fill: "forwards" });
+        } catch (e) {}
+        flyTimers.push(setTimeout(function () { g.remove(); }, 200));
+      });
+    });
+    LAUFENDE_FLUEGE = LAUFENDE_FLUEGE.filter(function (l) { return !l.fertig; });
+
     document.querySelectorAll(".ts-el[data-hold]").forEach(function (e) {
-      delete e.dataset.hold;
+      if (!umgekehrt[e.dataset.name]) delete e.dataset.hold;
     });
     var stage = B.getBoundingClientRect();
     var any = false;
 
     ziele.forEach(function (dst) {
       var src = quellen[dst.dataset.name];
+      // Umgekehrt weiterlaufende Flüge brauchen keinen zweiten Flug.
+      if (umgekehrt[dst.dataset.name]) { any = true; return; }
       // Dasselbe Element auf beiden Seiten heisst: es steht auf beiden
       // Schritten und geht nirgendwohin. Beim Folienwechsel kann das nicht
       // vorkommen, innerhalb einer Folie sehr wohl -- ein `morph` mit
@@ -1895,7 +2038,18 @@
         ghost.animate([{ opacity: 1 }, { opacity: 0 }], window);
       }
 
+      // Vorgemerkt, solange er fliegt.
+      var anims = [];
+      ghosts.forEach(function (g) {
+        try { anims = anims.concat(g.getAnimations()); } catch (e) {}
+      });
+      var lauf = { src: src, dst: dst, geister: ghosts, anims: anims,
+                   fertig: false };
+      LAUFENDE_FLUEGE.push(lauf);
+
       flyTimers.push(setTimeout(function () {
+        lauf.fertig = true;
+        LAUFENDE_FLUEGE = LAUFENDE_FLUEGE.filter(function (l) { return l !== lauf; });
         delete src.dataset.hold;
         delete dst.dataset.hold;
         ghosts.forEach(function (g) { g.remove(); });
@@ -6254,9 +6408,46 @@
     return x;
   }
 
+  // Der Folienwechsel, der gerade läuft: die beiden Folien und ihre beiden
+  // Animationen. Wie bei den Flügen gebraucht, um ihn umkehren zu können,
+  // statt ihn abzubrechen.
+  var LAUFENDER_WECHSEL = null;
+
   function transition(alt, neu, back, instant, hasMorph) {
     neu.dataset.on = "1";
     SLIDES.forEach(function (f) { if (f !== neu) delete f.dataset.on; });
+
+    // ── Den laufenden Wechsel umkehren ─────────────────────────────────────
+    //
+    // Wer mitten im Wechsel zurückblättert, meint den Weg zurück. Abgebrochen
+    // und neu begonnen sprang das Bild dabei an die Ruhelage der Zielfolie;
+    // rückwärts weitergelaufen fährt es einfach dorthin zurück, wo es
+    // hergekommen ist. Die Zeit, die schon gelaufen ist, ist zugleich die
+    // Zeit, die der Rückweg noch braucht.
+    var lauf = LAUFENDER_WECHSEL;
+    if (!instant && lauf && lauf.alt === neu && lauf.neu === alt
+        && lauf.anims.length) {
+      LAUFENDER_WECHSEL = null;
+      if (lauf.zeit) { clearTimeout(lauf.zeit); lauf.zeit = null; }
+      var gelaufen = 0;
+      lauf.anims.forEach(function (a) {
+        try {
+          gelaufen = Math.max(gelaufen, +a.currentTime || 0);
+          a.playbackRate = -1;
+        } catch (e) {}
+      });
+      var fertig = function () {
+        lauf.anims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
+        delete lauf.alt.dataset.off;
+        delete lauf.neu.dataset.off;
+        resetStyle(lauf.alt); resetStyle(lauf.neu);
+        B.style.perspective = "";
+        if (neu.mo_aus) { neu.mo_aus = null; }
+        neu.mo_zeit = null;
+      };
+      neu.mo_zeit = setTimeout(fertig, Math.max(60, gelaufen) + 40);
+      return;
+    }
 
     if (alt.mo_zeit) { clearTimeout(alt.mo_zeit); alt.mo_zeit = null; }
     if (alt.mo_aus) { try { alt.mo_aus.cancel(); } catch (e) {} alt.mo_aus = null; }
@@ -6296,14 +6487,26 @@
     neu.style.zIndex = kind.oben === "alt" ? "1" : "2";
     alt.style.zIndex = kind.oben === "alt" ? "2" : "1";
 
-    var e = neu.animate(kind.rein, { duration: d, easing: EASE, fill: "both" });
+    // Wo die beiden Folien gerade stehen, falls noch etwas lief: ein Wechsel,
+    // der einen anderen ablöst (nicht umkehrt), beginnt dort und nicht an der
+    // Ruhelage.
+    var standNeu = standJetzt(neu), standAlt = standJetzt(alt);
+    var rein = kind.rein.slice(), raus = kind.raus.slice();
+    if (standNeu) rein[0] = abJetzt(rein[0], standNeu);
+    if (standAlt) raus[0] = abJetzt(raus[0], standAlt);
+
+    var e = neu.animate(rein, { duration: d, easing: EASE, fill: "both" });
     e.onfinish = function () { try { e.cancel(); } catch (x) {} };
 
     alt.dataset.off = "1";
-    var a = alt.animate(kind.raus, { duration: d, easing: EASE, fill: "both" });
+    var a = alt.animate(raus, { duration: d, easing: EASE, fill: "both" });
     alt.mo_aus = a;
+    LAUFENDER_WECHSEL = { alt: alt, neu: neu, anims: [e, a], zeit: null };
     var done = function () {
       if (alt.mo_aus !== a) return;
+      if (LAUFENDER_WECHSEL && LAUFENDER_WECHSEL.anims[1] === a) {
+        LAUFENDER_WECHSEL = null;
+      }
       try { a.cancel(); } catch (x) {}
       try { e.cancel(); } catch (x) {}
       delete alt.dataset.off;
@@ -6314,6 +6517,7 @@
     };
     a.onfinish = done;
     alt.mo_zeit = setTimeout(done, d + 80);
+    LAUFENDER_WECHSEL.zeit = alt.mo_zeit;
   }
 
   function resetStyle(f) {

@@ -461,6 +461,24 @@ const SOLL_HINWEIS = [
   "satz schneidet sie heraus. Neu aufgenommen wurde allein fuer diesen",
   "Absatz.",
   "",
+  "Der Sprung auf 0.1.3 und die Folie zu audio im Rundgang haben zwei Decks",
+  "bewegt und kein anderes. pruefdeck/satz und satzBytes: 1362363 auf",
+  "1364569. Davon gehen 629 Bytes auf den Sprung zurueck, und sie haengen an",
+  "einem einzigen Zeichen -- die Titelfolie des Pruefdecks zeigt",
+  "typstage #runtime-version, aus der 2 wird eine 3, und eine Folie wird als",
+  "SVG mit Glyphverweisen gesetzt, also kommt die Pfaddefinition der neuen",
+  "Ziffer dazu (gemessen: erste Abweichung ist genau dieser use-Verweis).",
+  "Die uebrigen 1577 Bytes waren schon vorher offen: derselbe Aufruf auf dem",
+  "veroeffentlichten 0.1.2 (5776a82) ergibt 1363940 Bytes, festgeschrieben",
+  "standen 1362363. Der Decklauf haette dort also ebenfalls geklagt.",
+  "tour: folien 50 auf 51, schritte 149 auf 155, elemente 125 auf 131 -- die",
+  "Folie zu audio mit ihren vier Punkten und dem Klangknoten, dazu der",
+  "dritte Schritt auf der pin-Folie, der das Listing zur Glyphengrenze",
+  "zeigt. grund, sichtbar und sichtbarRueck tragen die neuen Eintraege.",
+  "sprecher 387 auf 385: die Vorschau der naechsten Folie steht jetzt auf",
+  "einer anderen Folie, weil die Audio-Folie vor der ends-at-Folie liegt,",
+  "und deren Aufbau zaehlt zwei Knoten weniger.",
+  "",
   "Dieser Absatz stand einmal von Hand in soll.json und war nach dem ersten",
   "--neu-soll fort: was hier nicht steht, ueberlebt keine Neuaufnahme."
 ];
@@ -1198,7 +1216,7 @@ async function uhrProbe(b, datei) {
 // ── Der Durchlauf, als ein Stück Seitencode ─────────────────────────────────
 const DURCHLAUF = `(async function () {
   var p = typstage.pruef, S = typstage.steps;
-  if (p.fassung !== 5) return JSON.stringify({ fassungFehler: p.fassung });
+  if (p.fassung !== 6) return JSON.stringify({ fassungFehler: p.fassung });
   p.uhr(${UHR});
   var vor = [], zurueck = [], fristen = 0, flyDom = 0, flyDomRueck = 0;
   var FLY = document.getElementById("ts-fly");
@@ -1928,7 +1946,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
     }
     const r = JSON.parse(await b.ev(DURCHLAUF));
     if (r.fassungFehler) {
-      z.maengel.push("Messfläche in Fassung " + r.fassungFehler + ", erwartet 5");
+      z.maengel.push("Messfläche in Fassung " + r.fassungFehler + ", erwartet 6");
       bericht.push(z); schlecht++; continue;
     }
 

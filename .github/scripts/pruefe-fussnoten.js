@@ -90,10 +90,13 @@ const anmerkungen = (folie) => `(function(){
       + "Anmerkung vom ersten Schritt an da und lässt sich nicht einblenden.");
   } else {
     const spannen = erste.map(a => a.at).join(" ");
-    if (spannen !== "1- 1- 3-") {
-      klagen.push("die Anmerkungen gelten ab " + spannen + " statt ab 1- 1- 3-."
+    // Seit 0.1.2 beginnt eine Kette mit `at: auto` bei Schritt zwei: Das
+    // erste Stück des `stagger` steht auf Schritt zwei, das dritte auf vier.
+    // Die Anmerkung zur Fußnote im Grundtext bleibt bei eins.
+    if (spannen !== "1- 2- 4-") {
+      klagen.push("die Anmerkungen gelten ab " + spannen + " statt ab 1- 2- 4-."
         + " Die dritte Fußnote steht im letzten Teil eines dreiteiligen"
-        + " `stagger` und erscheint dort erst auf Schritt drei.");
+        + " `stagger` und erscheint dort erst auf Schritt vier.");
     }
     if (erste[2].deckkraft > 0.05) {
       klagen.push("die dritte Anmerkung steht schon auf Schritt eins mit"
@@ -102,16 +105,19 @@ const anmerkungen = (folie) => `(function(){
     }
   }
 
-  // Bis zum dritten Schritt der Folie.
+  // Bis zum vierten Schritt der Folie: dort steht das dritte Stück der Kette.
+  await b.taste("ArrowRight"); await schlaf(700);
   await b.taste("ArrowRight"); await schlaf(700);
   await b.taste("ArrowRight"); await schlaf(1200);
   const dritte = JSON.parse(await b.ev(anmerkungen(1)));
   if (dritte.length === 3 && dritte[2].deckkraft < 0.95) {
-    klagen.push("die dritte Anmerkung steht auf Schritt drei nur mit Deckkraft "
+    klagen.push("die dritte Anmerkung steht auf Schritt vier nur mit Deckkraft "
       + dritte[2].deckkraft + ". Dort ist ihre Marke da, also gehört sie dazu.");
   }
 
-  // Auf die verschachtelte Folie, Schritt zwei: die erste Fassung ist fort.
+  // Auf die verschachtelte Folie, zur zweiten Fassung: die erste ist fort.
+  // Ein Druck mehr als früher, weil die Fassungen bei Schritt zwei beginnen.
+  await b.taste("ArrowRight"); await schlaf(700);
   await b.taste("ArrowRight"); await schlaf(700);
   await b.taste("ArrowRight"); await schlaf(1200);
   const innen = JSON.parse(await b.ev(anmerkungen(2)));
@@ -121,12 +127,12 @@ const anmerkungen = (folie) => `(function(){
   } else {
     if (innen[0].deckkraft > 0.05) {
       klagen.push("die Anmerkung aus dem `anim` in der ersten Fassung steht auf"
-        + " Schritt zwei mit Deckkraft " + innen[0].deckkraft + " (data-at "
+        + " diesem Schritt mit Deckkraft " + innen[0].deckkraft + " (data-at "
         + innen[0].at + "). Ihre Fassung ist dort fort, und mit ihr die Marke.");
     }
     if (innen[1].deckkraft < 0.95) {
-      klagen.push("die Anmerkung der zweiten Fassung steht auf Schritt zwei nur"
-        + " mit Deckkraft " + innen[1].deckkraft + ".");
+      klagen.push("die Anmerkung der zweiten Fassung steht dort nur mit"
+        + " Deckkraft " + innen[1].deckkraft + ".");
     }
   }
 

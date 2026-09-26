@@ -3001,6 +3001,29 @@ Umformungskette heißt das: nichts eigens abschalten.
   wenn nichts geschieht.
 ]
 
+== Mitten in der Bewegung
+
+Eine Aufdeckung dauert eine halbe Sekunde, ein Flug fast eine, ein
+Folienwechsel eine knappe halbe. Wer zügig vorführt, drückt in dieser Zeit
+schon die nächste Taste, und das darf nichts kaputt machen.
+
+*Weiterblättern unterbricht, ohne zu springen.* Die neue Bewegung beginnt
+dort, wo das Bild gerade steht, und nicht bei dem Wert, mit dem die alte
+angefangen hat. Sie bekommt dafür auch nur die Zeit, die der Rest des Weges
+noch wert ist -- wer bei vier Fünfteln unterbricht, sieht das letzte Fünftel
+und nicht die volle Dauer noch einmal.
+
+*Zurückblättern kehrt um.* Eine laufende Aufdeckung, ein laufender Flug und
+ein laufender Folienwechsel laufen rückwärts weiter statt neu zu beginnen: Der
+Geist fährt seine Bahn zurück, die Folie schiebt sich dorthin zurück, woher
+sie kam. Die Zeit, die schon verstrichen ist, ist zugleich die Zeit, die der
+Rückweg noch braucht.
+
+#info[
+  Unter `prefers-reduced-motion: reduce` gibt es nichts zu unterbrechen: Dort
+  wechselt das Bild ohne Bewegung.
+]
+
 = Den Vortrag halten
 
 Alles, was zwischen dem Öffnen der Datei und der letzten Folie geschieht,

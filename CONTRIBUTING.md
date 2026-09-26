@@ -69,6 +69,8 @@ readers who are not in this repository.
 | `pruefe-ueberlauf.py` | no example deck runs over its slide |
 | `pruefe-vollbild.py` | `bleed` reaches the edges and takes the chrome off, a slide without a title has no running header, what may stand above `bleed` is kept, and every misplaced `bleed` stops with its message |
 | `pruefe-vollbild.js` | sprites inside `bleed` sit on the canvas, morphs fly on and off it, the progress bar hides and comes back, the print view carries no chrome there |
+| `pruefe-unterbrechen.js` | a reveal, a flight and a slide change, each interrupted 300 ms in: the picture carries on from where it stands, and paging back reverses the running movement instead of restarting it |
+| `pruefe-morph-pin.js` | a `pin` holds every glyph of its content, its glyphs travel together, a named piece travels above the glyph limit while the rest changes in place, an unnamed formula above it still moves as a block, `morph: (glyph-limit: …)` arrives, and the default is 120 |
 | `pruefe-zier.js` | number, running header, footer line and progress bar stand in the browser where they stand on the PDF page -- with margins and a theme size in `em`, under a deck's `set place`, `set block` and `set page(flipped: true)`, moved with `move` as the manual shows, and at 3200 pixels; revealed pieces, a line without area, a scene, a flip book and footnotes -- one with a block of its own -- too under a deck-wide `set block`, one after the show rule and one that sets a width; a scene, a flip book, a `morph` in a line and a run behind `#pause` under `set box` and `set rect`; and a long footnote under a margin and under a theme size in `em` |
 | `pruefe-desmos.js` | the Desmos bridge, by hand (see below) |
 

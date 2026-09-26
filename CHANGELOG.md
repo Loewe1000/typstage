@@ -29,12 +29,34 @@ All notable changes to this package are recorded here. The format follows
 
 ### Changed
 
-- **Three checks caught up with what 0.1.2 changed.** Automatic reveal chains
+- **A movement can be interrupted and reversed.** A reveal takes half a
+  second, a flight close to one, a slide change a short half, and whoever
+  presents briskly presses the next key while that is still running. Until now
+  the running animation was cancelled and the new one began where the old one
+  had begun, not where the eye had last seen the picture. Measured in Chrome on
+  a 1600-pixel stage, paging back 300 ms into the movement: the opacity of a
+  reveal jumped by 0.76, from 0.20 to 0.99, before fading; the ghost of a
+  flight jumped 648 pixels to the resting place of its target; the incoming
+  slide jumped 25 pixels. A new movement now starts from where the picture
+  stands and gets the time the rest of the way is worth, and where the new
+  movement is the reverse of the running one -- paging back -- the running one
+  continues backwards instead: the ghost travels back along its path, the
+  slide slides back out. The same three measurements now read 0.04, 49 pixels
+  (the per-frame speed of the flight itself) and 3 pixels.
+  `.github/scripts/pruefe-unterbrechen.js` measures all three frame by frame
+  and counts only what is visible; three mutations make it complain. Under
+  `prefers-reduced-motion: reduce` nothing changes: there is no movement there
+  to interrupt.
+
+- **Four checks caught up with what 0.1.2 changed.** Automatic reveal chains
   start at step 2 since 0.1.2, and on paper that means a step page before the
   chain's first piece -- the slide as the hall sees it on entering.
   `pruefe-papierregel.py` and `pruefe-schrittseiten.py` still held the old
   expectations and had been failing since, 8 and 18 complaints, in the released
-  0.1.2 as well; they now carry the new counts and say why. The step-page check
+  0.1.2 as well; they now carry the new counts and say why.
+  `pruefe-fussnoten.js` paged by a fixed number of presses and looked for the
+  notes a step too early: the ranges read `1- 2- 4-` where it expected
+  `1- 1- 3-`, and it now pages one step further for each chain. The step-page check
   also writes a variant only where the deck does not set it already, so the two
   handout examples stop failing with "duplicate argument", and it finds the
   call even when an argument stands on the same line. `pruefe-rundgang.py` was

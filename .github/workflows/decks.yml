@@ -130,6 +130,18 @@ jobs:
       - name: Die Zier steht im Browser wie im PDF
         run: node .github/scripts/pruefe-zier.js
 
+      # Eine halbe Sekunde Aufdeckung, eine Sekunde Flug, eine knappe halbe
+      # Folienwechsel: Wer zügig vorführt, blättert mitten hinein. Drei Decks,
+      # Bild für Bild gemessen -- springt das Bild, oder läuft es weiter?
+      - name: Bewegungen lassen sich unterbrechen und umkehren
+        run: node .github/scripts/pruefe-unterbrechen.js
+
+      # Ein `pin` ist die ausdrückliche Ansage, dass zwei Stücke dasselbe sind.
+      # Vier Decks: fasst er alle seine Zeichen, reisen sie gemeinsam, reist er
+      # auch über der Glyphengrenze, und kommt die eigene Grenze an?
+      - name: Ein Name reist, als Gruppe und über der Grenze
+        run: node .github/scripts/pruefe-morph-pin.js
+
       # Springt das Inhaltsverzeichnis wirklich? Typst schreibt interne Ziele
       # als erzeugte DOM-Namen, und ob der Klick auf dem richtigen Schritt
       # landet, sagt nur der Browser. Der Rückweg ist der Teil, an dem eine

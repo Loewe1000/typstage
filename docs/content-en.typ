@@ -2452,6 +2452,27 @@ mirrored rather than again.
 away the very object flying across it. A chain of transformations therefore
 needs no transition switched off by hand.
 
+== In the middle of a movement
+
+A reveal takes half a second, a flight close to one, a slide change a short
+half. Anyone presenting briskly presses the next key while that is still
+running, and it must not break anything.
+
+Paging on interrupts without a jump: the new movement starts where the picture
+stands, not at the value the old one started from, and it gets the time the
+rest of the way is worth -- interrupt at four fifths and you see the last
+fifth, not the full duration over again.
+
+Paging back reverses. A running reveal, a running flight and a running slide
+change continue backwards instead of starting afresh: the ghost travels back
+along its path, the slide slides back where it came from. The time already
+spent is the time the way back still needs.
+
+#info[
+  Under `prefers-reduced-motion: reduce` there is nothing to interrupt: the
+  picture changes without movement there.
+]
+
 = Giving the talk
 
 Everything that happens between opening the file and the last slide, including
