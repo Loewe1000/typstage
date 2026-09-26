@@ -6,6 +6,19 @@ All notable changes to this package are recorded here. The format follows
 
 ## [0.1.3] — unreleased
 
+### Changed
+
+- **Three checks caught up with what 0.1.2 changed.** Automatic reveal chains
+  start at step 2 since 0.1.2, and on paper that means a step page before the
+  chain's first piece -- the slide as the hall sees it on entering.
+  `pruefe-papierregel.py` and `pruefe-schrittseiten.py` still held the old
+  expectations and had been failing since, 8 and 18 complaints, in the released
+  0.1.2 as well; they now carry the new counts and say why. The step-page check
+  also writes a variant only where the deck does not set it already, so the two
+  handout examples stop failing with "duplicate argument", and it finds the
+  call even when an argument stands on the same line. `pruefe-rundgang.py` was
+  short of a slide for `audio`, which the tour now has, with a recording on it.
+
 ## [0.1.2] — 2026-09-25
 
 ### Presenter controls and automatic reveals (breaking)

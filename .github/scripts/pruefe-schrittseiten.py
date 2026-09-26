@@ -54,30 +54,30 @@ KOPF = '#import "@preview/typstage:0.1.3": *\n#show: presentation.with(title: [P
 # name -> (Rumpf, Seiten bei "slide", Seiten bei "step")
 FAELLE = {
     "anim": ("== A\n#anim[eins]\n#anim[zwei]\n", 2, 4),
-    "stagger": ("== A\n#stagger([a], [b], [c])\n", 2, 4),
+    "stagger": ("== A\n#stagger([a], [b], [c])\n", 2, 5),
     # `stride`, `name` und `morph` lasen den Schrittzeiger und rechneten jedem
     # Stück sein `at` aus. Gemessen, bevor sie `track` die Schritte vergeben
     # ließen: `stride: 2` sieben Meldungen und zehn Seiten statt fünf, `name:`
     # sieben Meldungen und sechs Seiten statt drei. Und `morph` reservierte
     # seine Schritte gar nicht: das `anim` danach fiel auf den Schritt des
     # zweiten Stücks, und die Schrittfassung hatte drei Seiten statt fünf.
-    "stagger stride 2": ("== A\n#stagger(stride: 2, [a], [b], [c])\n", 2, 6),
+    "stagger stride 2": ("== A\n#stagger(stride: 2, [a], [b], [c])\n", 2, 7),
     "stagger name mit Schicht": ('== A\n#anim[x]\n#stagger(name: "g", [a], [b])\n'
                                  '#stagger-layer("g", 2)[s]\n', 2, 5),
     "stagger morph, danach anim": ("== A\n#stagger(morph: true, [a], [b], [c])\n"
-                                   "#anim[d]\n", 2, 5),
+                                   "#anim[d]\n", 2, 6),
     # Dasselbe in `tiles`: jedes `stride` außer 1 las den Zeiger. Gemessen,
     # bevor `track` die Schritte vergab: `stride: 2` acht Meldungen und zehn
     # Seiten statt fünf, `stride: 0` mit einem `anim` dahinter neun Meldungen
     # und vier Seiten statt zwei.
-    "tiles stride 2": ("== A\n#tiles(stride: 2, [a], [b], [c])\n", 2, 6),
+    "tiles stride 2": ("== A\n#tiles(stride: 2, [a], [b], [c])\n", 2, 7),
     "tiles stride 0, danach anim": ("== A\n#tiles(stride: 0, [a], [b])\n"
-                                    "#anim[d]\n", 2, 3),
-    "alternatives": ("== A\n#alternatives([p], [q], [r])\n", 2, 4),
-    "build": ("== A\n#build(from => [#for i in range(3) { if from(i + 1) [S#{i + 1} ] }], steps: 3)\n", 2, 4),
+                                    "#anim[d]\n", 2, 4),
+    "alternatives": ("== A\n#alternatives([p], [q], [r])\n", 2, 5),
+    "build": ("== A\n#build(from => [#for i in range(3) { if from(i + 1) [S#{i + 1} ] }], steps: 3)\n", 2, 5),
     "scene": ('== A\n#scene("s", t => box(width: 100pt, height: 60pt, '
-              'place(top + left, dx: t * 20pt, [o])), stops: (0, 1, 2), tween: 4)\n', 2, 4),
-    "zwei Folien": ("== A\n#anim[eins]\n== B\n#stagger([a], [b])\n", 3, 5),
+              'place(top + left, dx: t * 20pt, [o])), stops: (0, 1, 2), tween: 4)\n', 2, 5),
+    "zwei Folien": ("== A\n#anim[eins]\n== B\n#stagger([a], [b])\n", 3, 6),
     # `contents()` setzt Marken auf die Abschnittsfolien. Kämen sie je Seite
     # noch einmal, wüchse ihre Zahl mit der Seitenzahl -- und die Seitenzahl
     # hängt an den Schritten. Gemessen, bevor die Marke auf die erste Seite
@@ -100,11 +100,11 @@ FAELLE = {
     # eine neue Identität, und das Dokument konvergierte nicht.
     "Szene mit Schicht hinter Schritten": (
         '== A\n#anim(at: 2)[x]\n== B\n#scene("s", x => box(width: 100pt, '
-        'height: 40pt), stops: (1, 2, 3, 4))\n#scene-layer("s", 2)[s]\n', 3, 7),
+        'height: 40pt), stops: (1, 2, 3, 4))\n#scene-layer("s", 2)[s]\n', 3, 8),
     "zwei Schrittfolien vor einer Szene": (
         '== A\n#anim(at: 2)[x]\n== B\n#anim(at: 2)[y]\n== C\n#scene("s", '
         'x => box(width: 100pt, height: 40pt), stops: (1, 2, 3, 4))\n'
-        '#scene-layer("s", 1)[s]\n', 4, 9),
+        '#scene-layer("s", 1)[s]\n', 4, 10),
     # Eine Szene mit Schicht in einer Fassung von `alternatives`. Die Fassung
     # wird gemessen, und eine Messung zieht einen Lauf später nach; das war
     # für die Schicht einer zu viel. Gemessen, bevor `scene-layer` seine
@@ -115,16 +115,16 @@ FAELLE = {
     "Szene mit Schicht in einer Fassung, Folie danach": (
         '== A\n#alternatives([p], [#scene("s", x => box(width: 100pt, '
         'height: 40pt), stops: (1, 2, 3))\n#scene-layer("s", 2)[s]], [r])\n'
-        '== B\nx\n', 3, 7),
+        '== B\nx\n', 3, 8),
     "drei Folien mit Szene und Schicht in einer Fassung": (''.join(
         '== %s\n#alternatives([p], [#scene("s", x => box(width: 100pt, '
         'height: 40pt), stops: (1, 2, 3))\n#scene-layer("s", 2)[s]], [r])\n'
-        % n for n in "ABC"), 4, 16),
+        % n for n in "ABC"), 4, 19),
     # Fünf Punkte und nicht vier: eine Seite, die in einem Layoutlauf neu
     # hinzukam, las den Stand der Gruppe mit allen Punkten schon darin, und
     # erst ab dem fünften lag die Ziffer über 9. Die Prüfung darauf stand in
     # `cue` selbst, schlug an, und die Seite fiel aus.
-    "cue mit fünf Punkten": ('== A\n#cue("g")[\n- a\n- b\n- c\n- d\n- e\n]\n', 2, 6),
+    "cue mit fünf Punkten": ('== A\n#cue("g")[\n- a\n- b\n- c\n- d\n- e\n]\n', 2, 7),
     # Ein Verweis auf ein Label einer Folie mit Schritten. Jede Schrittseite
     # setzte das Label noch einmal, und Typst brach ab: "label `<abb>` occurs
     # multiple times in the document". Einmal im Rumpf selbst, einmal in einem
@@ -142,7 +142,7 @@ FAELLE = {
     "Label in einer Schicht": (
         '== A\n#anim(at: 2)[x]\n== B\n#scene("s", x => box(width: 100pt, '
         'height: 20pt), stops: (1, 2, 3))\n#scene-layer("s", 2)[$ s = 1 $ <g>]\n'
-        '== C\n#anim[y]\n', 4, 8),
+        '== C\n#anim[y]\n', 4, 9),
 }
 
 # Und die siebzehn Beispieldecks, als Handzettel und unter `pages: "step"`.
@@ -152,8 +152,33 @@ FAELLE = {
 # konvergiert -- geprüft hatte das niemand. Ein Deck, das seinen Aufruf
 # nicht in der erwarteten Form schreibt, ist eine Beanstandung und kein
 # stiller Ausfall.
-KOPF_ZEILE = re.compile(r'^(#show: presentation\.with\(|#presentation\()$', re.M)
+# Der Aufruf, hinter den die Fassung geschrieben wird. Das Argument darf in
+# derselben Zeile weitergehen: die beiden Handzettel-Beispiele schreiben
+# `#show: presentation.with(handout: 2,` und waren der Probe sonst nicht
+# zugänglich ("kein eindeutiger Aufruf").
+KOPF_ZEILE = re.compile(r'^(#show: presentation\.with\(|#presentation\()', re.M)
 FASSUNGEN = {"step": 'pages: "step",', "handout": "handout: 2,"}
+
+
+def kopf_klammer(quelle):
+    """Was in der Klammer von `presentation(…)` steht.
+
+    Gebraucht, um eine Fassung nicht zweimal zu setzen: ein Deck, das
+    `handout: 2` schon im Aufruf trägt, bekommt es nicht noch einmal.
+    """
+    m = KOPF_ZEILE.search(quelle)
+    if m is None:
+        return ""
+    i, tiefe = m.end() - 1, 0
+    while i < len(quelle):
+        if quelle[i] in "([{":
+            tiefe += 1
+        elif quelle[i] in ")]}":
+            tiefe -= 1
+            if tiefe == 0:
+                return quelle[m.end():i]
+        i += 1
+    return quelle[m.end():]
 
 
 def setzen(quelle, ordner, paketpfad):
@@ -203,9 +228,17 @@ def beispiele(paketpfad):
             for fassung, zeile in FASSUNGEN.items():
                 datei = os.path.join(schatten, "examples",
                                      deck[:-4] + "--" + fassung + ".typ")
+                # Was das Deck selbst schon setzt, wird nicht noch einmal
+                # gesetzt: die beiden Handzettel-Beispiele tragen `handout: 2`
+                # im Aufruf, und ein zweites Mal hieße "duplicate argument".
+                # Sie laufen dann in ihrer eigenen Fassung durch die Probe,
+                # und das ist genau die Fassung, um die es bei ihnen geht.
+                schluessel = zeile.split(":")[0].strip()
+                quelle_f = quelle if schluessel + ":" in kopf_klammer(quelle) \
+                    else KOPF_ZEILE.sub(lambda m: m.group(1) + "\n  " + zeile,
+                                        quelle, count=1)
                 with open(datei, "w", encoding="utf-8") as f:
-                    f.write(KOPF_ZEILE.sub(lambda m: m.group(1) + "\n  " + zeile,
-                                           quelle, count=1))
+                    f.write(quelle_f)
                 lauf = subprocess.run(
                     ["typst", "compile", "--package-path", paketpfad,
                      "--root", schatten, datei, os.path.join(schatten, "x.pdf")],
@@ -318,7 +351,7 @@ BROWSER = {
     # danach bekam Schritt 2, mitten in der Umformung, und die Folie hatte drei
     # Schritte gegen vier Seiten auf Papier. Mit `start: 2` fünf gegen zwei.
     "alternatives morph, danach anim": (
-        "== A\n#alternatives(morph: true, [p], [q], [r])\n#anim[d]\n", [1, 4]),
+        "== A\n#alternatives(morph: true, [p], [q], [r])\n#anim[d]\n", [1, 5]),
     "alternatives morph mit start, danach anim": (
         "== A\n#alternatives(morph: true, start: 2, [p], [q], [r])\n#anim[d]\n",
         [1, 5]),

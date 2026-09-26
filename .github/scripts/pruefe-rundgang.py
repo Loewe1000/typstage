@@ -110,6 +110,12 @@ SCHLUESSEL = {
 }
 
 SCHLUESSEL_ZITAT = {
+    "morph": "`morph: (glyph-limit: …)` zu setzen hieße, dem Rundgang eine "
+             "Formel von über 120 Zeichen zu geben, nur damit die Zahl etwas "
+             "tut -- die längste hier hat 48. Die Folie „pin: when the wrong "
+             "signs fly\" zitiert den Aufruf und sagt, wofür er gut ist",
+    "glyph-limit": "steht im selben Listing wie `morph` und aus demselben "
+                   "Grund",
     "digits": "`digits: false` nähme dem Rundgang die Zifferntasten, die er "
               "auf seiner Uhrenfolie vorführt; das Listing dort zitiert es",
     "pages": "`pages: \"step\"` gäbe dem PDF des Rundgangs eine Seite je "

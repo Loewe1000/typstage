@@ -20,6 +20,13 @@ je Folie druckte von `stagger(dim: true)[Eins][Zwei][Drei]` nur noch „Drei",
 ohne Meldung und mit der richtigen Seitenzahl. Der Handzettel druckte die
 Fassungen einer `alternatives` übereinander.
 
+Seit 0.1.2 beginnt eine Kette mit `at: auto` bei Schritt ZWEI, auch am Kopf
+einer Folie ("Automatic reveal chains start at step 2", dort als Bruch
+angekündigt). Auf Papier heißt das: Vor dem ersten Stück einer solchen Kette
+steht eine Schrittseite, auf der von ihr noch nichts steht -- die Folie, wie
+sie der Saal beim Betreten sieht. Die Erwartungen unten tragen diese leere
+Seite; wer sie nicht will, schreibt `at: 1` bzw. `start: 1`.
+
 Dazu die Schichten: eine `scene-layer` und eine `cue-layer` stehen auf der
 Schrittseite ihres Halts bzw. Punktes und nicht früher. Beides stand vorher
 falsch, weil das Dokument unter `pages: "step"` nicht konvergierte und Typst
@@ -40,7 +47,7 @@ FAELLE = {
     "stagger dim": (
         "== A\n#stagger(dim: true)[EINS][ZWEI][DREI]\n",
         {"slide": ["EINS ZWEI DREI"], "handout": ["EINS ZWEI DREI"],
-         "step": ["EINS", "EINS ZWEI", "EINS ZWEI DREI"]}),
+         "step": ["", "EINS", "EINS ZWEI", "EINS ZWEI DREI"]}),
     "anim after dimmed": (
         '== A\n#anim(at: "1", after: "dimmed")[EINS]\n#anim[ZWEI]\n',
         {"slide": ["EINS ZWEI"], "handout": ["EINS ZWEI"],
@@ -81,7 +88,7 @@ FAELLE = {
     "Fußnoten in Fassungen": (
         "== A\n#alternatives([EINS#footnote[NOTEINS]], [ZWEI#footnote[NOTZWEI]])\n",
         {"slide": ["ZWEI2 NOTZWEI"], "handout": ["ZWEI2 NOTZWEI"],
-         "step": ["EINS1 NOTEINS", "ZWEI2 NOTZWEI"]}),
+         "step": ["", "EINS1 NOTEINS", "ZWEI2 NOTZWEI"]}),
     # Dasselbe für die Stufen eines `build` und die Halte einer `scene`.
     "Fußnoten in Stufen und Halten": (
         "== A\n#build(from => if from(2) [BZWEI#footnote[NBZWEI]] "
@@ -90,17 +97,18 @@ FAELLE = {
         "[SH#x#footnote[NSH#x]], stops: (1, 2))\n",
         {"slide": ["BZWEI2 NBZWEI", "SH22 NSH2"],
          "handout": ["BZWEI2 NBZWEI", "SH22 NSH2"],
-         "step": ["BEINS1 NBEINS", "BZWEI2 NBZWEI", "SH11 NSH1", "SH22 NSH2"]}),
+         "step": ["", "BEINS1 NBEINS", "BZWEI2 NBZWEI", "", "SH11 NSH1",
+                  "SH22 NSH2"]}),
     # Eine Kette in einer Fassung: ihre Anmerkung geht mit der Fassung.
     "Fußnote in einer Kette in einer Fassung": (
         '== A\n#alternatives([EINS #anim(at: "1-")[INNEN#footnote[NOTINNEN]]], '
         "[ZWEI#footnote[NOTZWEI]])\n",
         {"slide": ["ZWEI2 NOTZWEI"], "handout": ["ZWEI2 NOTZWEI"],
-         "step": ["EINS INNEN1 NOTINNEN", "ZWEI2 NOTZWEI"]}),
+         "step": ["", "EINS INNEN1 NOTINNEN", "ZWEI2 NOTZWEI"]}),
     "alternatives": (
         "== A\n#alternatives([ALPHA], [BETA], [GAMMA])\n",
         {"slide": ["GAMMA"], "handout": ["GAMMA"],
-         "step": ["ALPHA", "BETA", "GAMMA"]}),
+         "step": ["", "ALPHA", "BETA", "GAMMA"]}),
     # `build` reicht dem Rumpf eine Frage und keine Zahl: `from(i)` ist wahr,
     # sobald Stufe i erreicht ist. Jede Stufe schreibt hier nur ihren eigenen
     # Namen -- zeichnete sie das Ganze bis dorthin, sähen übereinandergelegte
@@ -110,7 +118,7 @@ FAELLE = {
         "if from(i + 1) and (i == 2 or not from(i + 2)) [ST#(i + 1)] }], "
         "steps: 3)\n",
         {"slide": ["ST3"], "handout": ["ST3"],
-         "step": ["ST1", "ST2", "ST3"]}),
+         "step": ["", "ST1", "ST2", "ST3"]}),
     "Szene mit Schichten hinter einer Schrittfolie": (
         '== A\n#anim(at: 2)[VORNE]\n'
         '== B\n#scene("s", x => box(width: 100pt, height: 40pt), '
@@ -118,12 +126,12 @@ FAELLE = {
         '#scene-layer("s", 1)[LA]\n#scene-layer("s", 2)[LB]\n'
         '#scene-layer("s", 3)[LC]\n',
         {"slide": ["VORNE", "LA LB LC"], "handout": ["VORNE", "LA LB LC"],
-         "step": ["", "VORNE", "LA", "LA LB", "LA LB LC"]}),
+         "step": ["", "VORNE", "", "LA", "LA LB", "LA LB LC"]}),
     "cue mit fünf Punkten und Schichten": (
         '== A\n#cue("g")[\n- PA\n- PB\n- PC\n- PD\n- PE\n]\n'
         '#cue-layer("g", 1)[QA]\n#cue-layer("g", 5)[QE]\n',
         {"slide": ["PA PB PC PD PE QA QE"], "handout": ["PA PB PC PD PE QA QE"],
-         "step": ["PA QA", "PA PB QA", "PA PB PC QA", "PA PB PC PD QA",
+         "step": ["", "PA QA", "PA PB QA", "PA PB PC QA", "PA PB PC PD QA",
                   "PA PB PC PD PE QA QE"]}),
 }
 

@@ -423,6 +423,20 @@ and the wrong two find each other), the piece gets a name instead.
     quietly stay where they were.
   ])), at: "2-", enter: "fade")
 
+// What a name is worth beyond the pairing, and the one number behind it. A
+// formula of more than 120 glyphs moves as one block -- per glyph it would
+// read as a swarm, and every glyph costs two ghosts -- but the named pieces
+// travel even there. The listing is quoted and not set: this deck's longest
+// formula has 48 glyphs, so the number would have nothing to do here.
+#anim(align(center, block(width: 78%, {
+  set text(size: 0.78em, fill: t.muted)
+  [A name also outlasts length: above 120 glyphs a formula moves as one block,
+   and the pinned pieces still fly. A deck of long formulas raises the limit:]
+  v(0.4em)
+  text(size: 0.92em, raw(lang: "typ",
+    "#show: presentation.with(morph: (glyph-limit: 400))"))
+})), at: "3-", enter: "fade")
+
 #v(0.5fr)
 
 == morph: without leaving the slide
@@ -1422,6 +1436,47 @@ and the wrong two find each other), the piece gets a name instead.
     #align(center, text(size: 0.6em, fill: t.muted)[
       the first twelve milliseconds: three sawtooth tones
     ])
+  ],
+)
+
+#v(1fr)
+
+== audio: a recording the slide carries
+
+// The other way round from `room.sounds`: not a key that signals, but a
+// recording the slide holds -- an interview, a bar of music, a pupil's own
+// reading. It stands on the slide with the browser's own controls, and the
+// presenter view can start, pause and seek it from the other window. On paper
+// there is nothing to play, so the box says what it is.
+//
+// The file is the horn again: this deck ships one sound, and a tour that
+// carries a second recording only to show a second name is a heavier download
+// for nothing.
+
+#speaker-note[
+  The presenter's media row drives this one: `k` plays and pauses, `j` and `l`
+  seek ten seconds. It is the slide's own recording, so the hall hears it
+  whether or not the speaker view is open.
+]
+
+#v(1fr)
+
+#side-by-side(
+  split: (1fr, 1fr), align: top,
+  stagger[
+    - `audio(…)` puts a recording on the slide, with controls the browser
+      draws.
+    - `start` and `end` cut a passage out of a longer file, `loop` repeats it.
+    - `at:` reveals it like anything else, and `autoplay` starts it as the
+      slide arrives.
+    - On paper a labelled box stands in its place, the same way a video shows
+      its poster.
+  ],
+  card(title: [The call])[
+    #text(size: 0.72em, raw(lang: "typ",
+      "#audio(\"medien/airhorn.mp3\", width: 260pt)\n\n// a passage, repeated:\n// #audio(\"talk.mp3\", start: 12, end: 20, loop: true)"))
+    #v(0.7em)
+    #align(center, audio("medien/airhorn.mp3", width: 260pt))
   ],
 )
 
