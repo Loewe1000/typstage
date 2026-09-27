@@ -86,8 +86,19 @@ All notable changes to this package are recorded here. The format follows
   continues backwards instead: the ghost travels back along its path, the
   slide slides back out. The same three measurements now read 0.04, 49 pixels
   (the per-frame speed of the flight itself) and 3 pixels.
-  `.github/scripts/pruefe-unterbrechen.js` measures all three frame by frame
-  and counts only what is visible; three mutations make it complain. Under
+  A drawing (`enter: "draw"`) turns around where the pen stands, too: the dash
+  offset is read before the running animation is cancelled, and the return
+  trip gets the time the rest of the stroke is worth. Measured on a stroke of
+  508 pixels, reversed 400 ms in: it used to jump 400 pixels in one frame --
+  cancelling left the path fully drawn -- and now the largest step between two
+  frames is 14, which is the pen's own speed.
+  And nothing stands twice any more while it travels: which of a morph's two
+  ends is hidden is now counted rather than set and deleted, so a flight that
+  is cleaning up cannot pull the curtain away from the flight that has just
+  begun. Measured on the tour, paging 15 → 16 → 15 quickly: the target stood
+  visible for 370 ms under its own 28 ghosts.
+  `.github/scripts/pruefe-unterbrechen.js` measures all of this frame by frame
+  and counts only what is visible; five mutations make it complain. Under
   `prefers-reduced-motion: reduce` nothing changes: there is no movement there
   to interrupt.
 

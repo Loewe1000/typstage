@@ -961,6 +961,24 @@
     });
   }
 
+  // Wo die Feder in diesem Augenblick steht: je Pfad der Strichversatz, den
+  // der Browser gerade zeichnet.
+  //
+  // Gelesen wird VOR `clearAnims`, genau wie `standJetzt` beim Element --
+  // danach steht dort der Ruhewert. Ohne diesen Blick sprang eine Zeichnung,
+  // die mitten im Zug umgekehrt wurde, erst ans Ende und fuhr von dort
+  // zurueck: `clearAnims` nimmt der laufenden Animation den Lauf, und der
+  // Pfad steht dann vollstaendig da.
+  function federStand(el) {
+    if (!el.dataset.feder) return null;
+    var aus = [];
+    el.querySelectorAll("[data-ts-feder]").forEach(function (n) {
+      var o = parseFloat(getComputedStyle(n).strokeDashoffset);
+      aus.push({ node: n, offset: isFinite(o) ? o : null });
+    });
+    return aus.length ? aus : null;
+  }
+
   // Ein Element ohne einen einzigen abfahrbaren Pfad. Es blendet dann -- aber
   // nicht stillschweigend: wer `draw` schreibt, will eine Zeichnung sehen und
   // nicht eine Blende, die zufaellig gleich aussieht.
@@ -988,7 +1006,7 @@
 
   // Die Feder ansetzen. `zurueck` heisst, sie faehrt den Pfad wieder heraus --
   // der Rueckweg des Auftritts, den `goto` beim Zurueckblaettern spielt.
-  function feder(el, dur, delay, zurueck, kurve) {
+  function feder(el, dur, delay, zurueck, kurve, stand) {
     var pfade = abfahrbar(el);
     if (!pfade.length) { federKlage(el); return; }
     // Unter "Bewegung reduzieren" bleibt es bei der Blende, die ohnehin
@@ -1003,13 +1021,29 @@
       // Abschluss steht darueber hinaus. Ohne ihn bliebe am fertigen Strich
       // ein Haerchen offen.
       var d = p.laenge + 1;
+      // Wo dieser Pfad steht, wenn er schon unterwegs war. Der neue Zug
+      // beginnt dort und bekommt die Zeit, die der Rest des Weges wert ist --
+      // dieselbe Rechnung wie `restDauer` bei der Blende, nur in Pixeln
+      // Strichlaenge statt in Deckkraft.
+      var ist = null;
+      if (stand) {
+        for (var si = 0; si < stand.length; si++) {
+          if (stand[si].node === p.node) { ist = stand[si].offset; break; }
+        }
+      }
+      var ziel = zurueck ? d : 0;
+      var von = ist == null ? (zurueck ? 0 : d) : ist;
+      var lauf = ist == null ? dur
+        : Math.max(dur * 0.25, dur * Math.min(1, Math.abs(ziel - von) / d));
       p.node.setAttribute("data-ts-feder", "1");
       p.node.style.strokeDasharray = d + " " + d;
-      p.node.style.strokeDashoffset = zurueck ? d : 0;
+      p.node.style.strokeDashoffset = von;
       var a = p.node.animate(
-        [{ strokeDashoffset: zurueck ? 0 : d },
-         { strokeDashoffset: zurueck ? d : 0 }],
-        { duration: dur, delay: delay, easing: kurve, fill: "both" });
+        [{ strokeDashoffset: von }, { strokeDashoffset: ziel }],
+        // Ein Pfad, der schon zeichnet, wartet nicht noch einmal: die
+        // Verzoegerung gehoert dem ersten Zug.
+        { duration: lauf, delay: ist == null ? delay : 0, easing: kurve,
+          fill: "both" });
       // Am Ende steht der Pfad wieder da, wie Typst ihn geschrieben hat.
       // Sichtbar waere der Unterschied nicht -- ein Strich ueber die ganze
       // Laenge sieht aus wie kein Strichmuster --, aber die Vorschau der
@@ -1109,6 +1143,7 @@
 
   function fadeIn(el, name, dur, delay) {
     var stand = standJetzt(el);
+    var fstand = federStand(el);
     clearAnims(el);
     // "none" means no effect. Animating from 1 to 1 would not merely be
     // pointless: played backwards it would keep the element visible.
@@ -1121,7 +1156,7 @@
     if (name === "none" || name === "hold") { el.style.opacity = "1"; return; }
     // Die Feder faehrt unter der Blende. Beides zugleich und beide gleich
     // lang: die Striche zeichnen sich, alles ohne Kontur blendet auf.
-    if (name === "draw") feder(el, dur, delay, false, takt(el));
+    if (name === "draw") feder(el, dur, delay, false, takt(el), fstand);
     var f = effekt(name);
     // Was gerade zu sehen ist, BEVOR `clearAnims` es wegnimmt -- oben in
     // dieser Funktion steht der Abbruch, hier der Blick darauf ist zu spät.
@@ -1155,6 +1190,7 @@
 
   function fadeOut(el, name, dur, von) {
     var stand = standJetzt(el);
+    var fstand = federStand(el);
     clearAnims(el);
     if (name === "none") { el.style.opacity = "0"; return; }
     // Ein Warten dauert so lange wie der Eintritt, den es abwartet. `goto`
@@ -1169,7 +1205,7 @@
     // Rueckwaerts faehrt die Feder heraus. Das ist der Rueckweg des Auftritts
     // -- `goto` ruft beim Zurueckblaettern `fadeOut` mit dem *enter*-Namen --
     // und ebenso ein `exit: "draw"`, wenn ein Element seinen Bereich verlaesst.
-    if (name === "draw") feder(el, dur, 0, true, takt(el));
+    if (name === "draw") feder(el, dur, 0, true, takt(el), fstand);
     var f = effekt(name);
     var ab = f[1];
     // Leaving out of the dimmed state starts where the element stands. Taken
@@ -1716,6 +1752,26 @@
   // und dafür muss die Laufzeit den laufenden Flug noch in der Hand haben --
   // seine Geister, seine Animationen und die beiden Elemente, zwischen denen
   // er steht.
+  // Wer ein Element verbirgt, zaehlt mit, und wer es freigibt, zaehlt zurueck.
+  //
+  // Ein Element kann zugleich an zwei Fluegen haengen: an dem, der gerade
+  // ausklingt, und an dem, der schon begonnen hat. Solange jeder von ihnen
+  // sein eigenes `delete` machte, gewann der frueher fertige -- gemessen auf
+  // dem Rundgang (Folie 15 auf 16, schnell vor und zurueck): Das Aufraeumen
+  // der Umkehr nahm dem neuen Flug seinen Vorhang weg, und die Formel stand
+  // sichtbar unter ihren eigenen Geistern. Mit dem Zaehler faellt der Vorhang
+  // erst, wenn der letzte ihn losgelassen hat.
+  function halten(el) {
+    if (!el) return;
+    el.tsHalt = (el.tsHalt || 0) + 1;
+    el.dataset.hold = "1";
+  }
+  function freigeben(el) {
+    if (!el) return;
+    el.tsHalt = Math.max(0, (el.tsHalt || 0) - 1);
+    if (!el.tsHalt) delete el.dataset.hold;
+  }
+
   var LAUFENDE_FLUEGE = [];
   // Und was der letzte Flug je `morph` entschieden hat. Nur fuer `pruef`:
   // die Wahl zwischen Block und Zeichen fuer Zeichen faellt mitten im Flug
@@ -1867,15 +1923,44 @@
               a.playbackRate = -1;
             } catch (e) {}
           });
-          // Die Rollen tauschen mit der Richtung: am Ende steht wieder da,
-          // was am Anfang dastand.
-          delete lauf.dst.dataset.hold;
-          lauf.src.dataset.hold = "1";
-          flyTimers.push(setTimeout(function () {
-            delete lauf.src.dataset.hold;
-            delete lauf.dst.dataset.hold;
+          // BEIDE bleiben verborgen, solange der Geist fliegt -- er ist das
+          // Bild, und daneben darf dasselbe nicht ein zweites Mal stehen.
+          // Hier stand einmal `delete lauf.dst.dataset.hold`, in der Meinung,
+          // die Rollen taeuschten mit der Richtung; gemessen auf dem Rundgang
+          // (Folie 15 auf 16, schnell vor und zurueck) stand das Ziel damit
+          // 370 ms lang sichtbar da, waehrend 28 Geister derselben Formel
+          // zurueckflogen: die Formel war doppelt zu sehen.
+          // Gehalten wird, was dieser Flug noch nicht haelt: Sein Ziel
+          // verbirgt er schon, seine Quelle nur, wenn sie nicht ohnehin
+          // stehenbleibt (`bleiber`). Auf dem Rueckweg wird die Quelle zum
+          // Ziel und muss verborgen sein wie jedes Ziel.
+          if (lauf.gehalten.indexOf(lauf.src) < 0) {
+            halten(lauf.src);
+            lauf.gehalten.push(lauf.src);
+          }
+          // Aufgeraeumt wird, wenn der Rueckweg wirklich zu Ende ist, und
+          // nicht, wenn eine gerechnete Frist ablaeuft: Geister und Hold
+          // muessen im selben Augenblick gehen, sonst steht das Element unter
+          // seinen eigenen Geistern.
+          var getan = false;
+          var aufraeumen = function () {
+            if (getan) return;
+            getan = true;
+            lauf.gehalten.forEach(freigeben);
+            lauf.gehalten = [];
             lauf.geister.forEach(function (g) { g.remove(); });
-          }, Math.max(60, gelaufen)));
+          };
+          var offen = lauf.anims.length;
+          lauf.anims.forEach(function (a) {
+            try {
+              a.finished.then(function () { if (!--offen) aufraeumen(); },
+                              function () { if (!--offen) aufraeumen(); });
+            } catch (e) { offen--; }
+          });
+          // Und ein Netz darunter: ein Browser, der `finished` nicht haelt
+          // (abgebrochene Animation, Tab im Hintergrund), liesse die Geister
+          // sonst stehen.
+          flyTimers.push(setTimeout(aufraeumen, Math.max(60, gelaufen) + 120));
         });
       });
     }
@@ -1886,8 +1971,8 @@
     LAUFENDE_FLUEGE.forEach(function (lauf) {
       if (lauf.fertig) return;
       lauf.fertig = true;
-      delete lauf.src.dataset.hold;
-      delete lauf.dst.dataset.hold;
+      lauf.gehalten.forEach(freigeben);
+      lauf.gehalten = [];
       lauf.geister.forEach(function (g) {
         try {
           g.getAnimations().forEach(function (a) { a.pause(); });
@@ -1899,8 +1984,11 @@
     });
     LAUFENDE_FLUEGE = LAUFENDE_FLUEGE.filter(function (l) { return !l.fertig; });
 
+    // Liegengebliebene Vorhaenge: was kein laufender Flug mehr haelt (Zaehler
+    // auf null), gibt es frei. Was einer haelt, bleibt -- sonst risse dieser
+    // Zug dem Flug, der gerade beginnt, sein Bild auf.
     document.querySelectorAll(".ts-el[data-hold]").forEach(function (e) {
-      if (!umgekehrt[e.dataset.name]) delete e.dataset.hold;
+      if (!e.tsHalt && !umgekehrt[e.dataset.name]) delete e.dataset.hold;
     });
     var stage = B.getBoundingClientRect();
     var any = false;
@@ -1967,8 +2055,9 @@
       // übernimmt ihre Stelle. Eine Quelle, die stehen bleibt, nicht: dort
       // liegt der Geist im ersten Bild genau auf ihr, und was sich löst, ist
       // die Kopie.
-      if (bleiber.indexOf(src) < 0) src.dataset.hold = "1";
-      dst.dataset.hold = "1";
+      var gehalten = [];
+      if (bleiber.indexOf(src) < 0) { halten(src); gehalten.push(src); }
+      halten(dst); gehalten.push(dst);
 
       // Die Bahn ist das Rechteck, das der Geist ueberstreicht: von der Quelle
       // zum Ziel. Vorgemerkt wird nur, was in Quellreihenfolge *nach* dem
@@ -2161,14 +2250,14 @@
         try { anims = anims.concat(g.getAnimations()); } catch (e) {}
       });
       var lauf = { src: src, dst: dst, geister: ghosts, anims: anims,
-                   fertig: false };
+                   gehalten: gehalten, fertig: false };
       LAUFENDE_FLUEGE.push(lauf);
 
       flyTimers.push(setTimeout(function () {
         lauf.fertig = true;
         LAUFENDE_FLUEGE = LAUFENDE_FLUEGE.filter(function (l) { return l !== lauf; });
-        delete src.dataset.hold;
-        delete dst.dataset.hold;
+        lauf.gehalten.forEach(freigeben);
+        lauf.gehalten = [];
         ghosts.forEach(function (g) { g.remove(); });
       }, d));
     });

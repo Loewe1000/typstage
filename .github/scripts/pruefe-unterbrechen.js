@@ -25,6 +25,16 @@
 //   4. Weiterblättern mitten in einer Aufdeckung macht sie nicht kaputt: Das
 //      Element steht danach da, wo es hingehört, und die nächste Aufdeckung
 //      läuft.
+//   6. Und nichts steht doppelt da: Solange Geister fliegen, sind beide
+//      Enden des Morphs verborgen -- auch dann, wenn zwei Flüge einander
+//      ablösen. Gemessen auf dem Rundgang stand das Ziel 370 ms sichtbar
+//      unter seinen eigenen Geistern, weil das Aufräumen des einen Flugs dem
+//      anderen den Vorhang wegnahm.
+//   5. Umkehren mitten in einer Zeichnung (`enter: "draw"`): Die Feder fährt
+//      von dort zurück, wo sie steht. Vorher sprang der Strich erst ans Ende
+//      -- `clearAnims` nimmt der laufenden Animation den Lauf, und der Pfad
+//      steht dann fertig da -- und fuhr von dort heraus: 400 von 508 px in
+//      einem Bild.
 //
 // Jede der drei Behebungen einzeln zurückgenommen lässt die Probe klagen; die
 // Stellen stehen im CHANGELOG unter 0.1.3.
@@ -57,6 +67,14 @@ const DECKS = {
 == Rechts
 #v(3fr)
 #align(right, morph(<m>, duration: 1200, text(size: 2em)[$ a + b $]))
+`,
+  zeichnen: KOPF + `#show: presentation.with(title: [Zeichnen], duration: 1600)
+
+== Ein Pfad
+#anim(enter: "draw", box(width: 400pt, height: 200pt,
+  place(curve(stroke: 3pt + blue,
+    curve.move((0pt, 180pt)),
+    curve.cubic((120pt, -120pt), (260pt, 300pt), (390pt, 20pt))))))
 `,
   wechsel: KOPF + `#show: presentation.with(title: [Wechsel], transition: "slide",
   transition-duration: 900)
@@ -229,6 +247,63 @@ function groesster(werte, sichtbar) {
                   + " px -- der Wechsel wurde abgebrochen statt umgekehrt");
     }
 
+    // ── 5: mitten in einer Zeichnung umkehren ──────────────────────────────
+    await b.navigiere("file://" + weg.zeichnen);
+    await schlaf(1600);
+    await b.taste("ArrowRight");
+    await schlaf(1400);
+    await b.ev(ZEICHNE(`(function(){
+      var n = document.querySelector('[data-ts-feder]');
+      return n ? parseFloat(getComputedStyle(n).strokeDashoffset) : null;
+    })()`));
+    await b.taste("ArrowRight");           // der Strich zeichnet sich
+    await schlaf(400);
+    await b.taste("ArrowLeft");            // mitten hinein: umkehren
+    await schlaf(2200);
+    const deck5 = JSON.parse(await b.ev(`JSON.stringify(window.__m)`));
+    const sprung5 = groesster(deck5);
+    if (LAUT) console.log("  5. Feder: " + deck5.filter((_, i) => i % 5 === 0)
+      .map(v => v == null ? "-" : Math.round(v)).join(" "));
+    // Der Strich ist rund 508 px lang und fährt ihn in 1600 ms ab, das sind
+    // 19 px je Bild bei doppelter Geschwindigkeit der Umkehr. 60 px liegen
+    // weit darüber und weit unter den 400, die der Sprung kostete.
+    if (sprung5 > 60) {
+      klagen.push("5. beim Umkehren mitten in der Zeichnung sprang die Feder "
+                  + "um " + Math.round(sprung5) + " px -- sie soll von dort "
+                  + "zurückfahren, wo sie steht");
+    }
+
+    // ── 6: kein Doppelbild, wenn zwei Flüge einander ablösen ──────────────
+    await b.navigiere("file://" + weg.flug);
+    await schlaf(1600);
+    await b.taste("ArrowRight");
+    await schlaf(1500);
+    const doppelt = [];
+    const schau = `JSON.stringify((function(){
+      var g = document.querySelectorAll('#ts-fly .ts-ghost, #ts-fly svg').length;
+      var sicht = [].filter.call(document.querySelectorAll('.ts-el[data-name]'),
+        function (e) {
+          var c = getComputedStyle(e);
+          return c.visibility !== 'hidden' && +c.opacity > 0.02;
+        }).length;
+      return { g: g, sicht: sicht };
+    })())`;
+    for (const [taste, warten] of [["ArrowRight", 400], ["ArrowLeft", 250],
+                                   ["ArrowRight", 250], ["ArrowLeft", 250]]) {
+      await b.taste(taste);
+      for (let i = 0; i < Math.round(warten / 100); i++) {
+        await schlaf(100);
+        const x = JSON.parse(await b.ev(schau));
+        if (x.g > 0 && x.sicht > 0) doppelt.push(x);
+      }
+    }
+    if (LAUT) console.log("  6. Doppelbilder: " + doppelt.length);
+    if (doppelt.length) {
+      klagen.push("6. in " + doppelt.length + " von " + 12 + " Messungen stand "
+                  + "die Formel sichtbar da, während ihre Geister flogen -- "
+                  + "sie war doppelt zu sehen");
+    }
+
     const fehler = JSON.parse(await b.ev(`JSON.stringify(typstage.pruef.fehler())`));
     if (fehler.length) klagen.push("die Laufzeit meldete " + fehler.length + " Fehler");
   } finally {
@@ -241,6 +316,7 @@ function groesster(werte, sichtbar) {
     klagen.forEach(k => console.log("  • " + k));
     process.exit(1);
   }
-  console.log("Unterbrechen: Aufdeckung, Flug und Folienwechsel lassen sich "
-              + "mitten in der Bewegung umkehren (3 Decks, 4 Punkte)");
+  console.log("Unterbrechen: Aufdeckung, Flug, Folienwechsel und Zeichnung "
+              + "lassen sich mitten in der Bewegung umkehren, und nichts steht "
+              + "dabei doppelt da (4 Decks, 6 Punkte)");
 })();
