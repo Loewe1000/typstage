@@ -103,8 +103,16 @@ All notable changes to this package are recorded here. The format follows
   slide 19: opacity 0.30 with 53 ghosts of that line in the air). The flight it
   grew out of now travels back instead, and the line stays hidden until it has
   landed.
+  Nothing is left in the air either: the ghosts of a flight that was cut short
+  used to fade out with their `remove()` in a shared timer list, and the next
+  flight within 200 ms cleared that list -- measured with four slides paged
+  quickly back and forth, 20 ghosts stayed on `#ts-fly` until reload, invisible
+  at opacity 0 and costing every later flight. Their timers now live on the
+  ghosts, and the safety net of a reversed flight lives on the flight; a
+  counter that could never reach zero when an animation was already cancelled
+  now does, so an element can no longer stay hidden for the rest of a talk.
   `.github/scripts/pruefe-unterbrechen.js` measures all of this frame by frame
-  and counts only what is visible; five mutations make it complain. Under
+  and counts only what is visible; six mutations make it complain. Under
   `prefers-reduced-motion: reduce` nothing changes: there is no movement there
   to interrupt.
 

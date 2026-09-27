@@ -30,6 +30,11 @@
 //      ablösen. Gemessen auf dem Rundgang stand das Ziel 370 ms sichtbar
 //      unter seinen eigenen Geistern, weil das Aufräumen des einen Flugs dem
 //      anderen den Vorhang wegnahm.
+//   7. Und nichts bleibt liegen: Nach schnellem Hin und Her -- zwei
+//      Schrittwechsel unter 200 ms -- ist `#ts-fly` in Ruhe leer. Vorher
+//      loeschte der naechste Flug den `remove()` der ausblendenden Geister
+//      mit seiner pauschalen `clearTimeout`-Runde, und sie blieben bis zum
+//      Neuladen liegen, unsichtbar bei `opacity: 0`.
 //   5. Umkehren mitten in einer Zeichnung (`enter: "draw"`): Die Feder fährt
 //      von dort zurück, wo sie steht. Vorher sprang der Strich erst ans Ende
 //      -- `clearAnims` nimmt der laufenden Animation den Lauf, und der Pfad
@@ -67,6 +72,26 @@ const DECKS = {
 == Rechts
 #v(3fr)
 #align(right, morph(<m>, duration: 1200, text(size: 2em)[$ a + b $]))
+`,
+  // Vier Folien mit demselben Namen. Auf zwei Folien ist jeder Wechsel die
+  // Umkehr des laufenden Flugs, und der Abbruchpfad -- der, dessen remove()
+  // verlorenging -- wird nie betreten. Erst ein Weiterblaettern mitten im
+  // Flug bricht einen Flug ab, statt ihn umzukehren.
+  vier: KOPF + `#show: presentation.with(title: [Vier], duration: 1200)
+
+== Eins
+#align(left, morph(<v>, duration: 1200, text(size: 1.6em)[$ a + b = c $]))
+
+== Zwei
+#align(right, morph(<v>, duration: 1200, text(size: 2.2em)[$ a + b = c $]))
+
+== Drei
+#v(2fr)
+#align(left, morph(<v>, duration: 1200, text(size: 1.4em)[$ a + b = c $]))
+
+== Vier
+#v(2fr)
+#align(right, morph(<v>, duration: 1200, text(size: 2.4em)[$ a + b = c $]))
 `,
   zeichnen: KOPF + `#show: presentation.with(title: [Zeichnen], duration: 1600)
 
@@ -304,6 +329,24 @@ function groesster(werte, sichtbar) {
                   + "sie war doppelt zu sehen");
     }
 
+    // ── 7: nichts bleibt in der Luft ──────────────────────────────────────
+    await b.navigiere("file://" + weg.vier);
+    await schlaf(1600);
+    await b.taste("ArrowRight");
+    await schlaf(1500);
+    for (const k of ["ArrowRight", "ArrowRight", "ArrowRight",
+                     "ArrowLeft", "ArrowLeft", "ArrowLeft"]) {
+      await b.taste(k);
+      await schlaf(100);
+    }
+    await schlaf(2500);
+    const liegen = +(await b.ev(`document.getElementById('ts-fly').children.length`));
+    if (LAUT) console.log("  7. nach dem Hin und Her liegen " + liegen + " Knoten auf #ts-fly");
+    if (liegen > 0) {
+      klagen.push("7. nach schnellem Hin und Her liegen in Ruhe noch " + liegen
+                  + " Geister auf #ts-fly -- ihr remove() ist verlorengegangen");
+    }
+
     const fehler = JSON.parse(await b.ev(`JSON.stringify(typstage.pruef.fehler())`));
     if (fehler.length) klagen.push("die Laufzeit meldete " + fehler.length + " Fehler");
   } finally {
@@ -318,5 +361,5 @@ function groesster(werte, sichtbar) {
   }
   console.log("Unterbrechen: Aufdeckung, Flug, Folienwechsel und Zeichnung "
               + "lassen sich mitten in der Bewegung umkehren, und nichts steht "
-              + "dabei doppelt da (4 Decks, 6 Punkte)");
+              + "dabei doppelt da oder bleibt liegen (5 Decks, 7 Punkte)");
 })();

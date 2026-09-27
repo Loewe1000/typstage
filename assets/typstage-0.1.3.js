@@ -1940,12 +1940,22 @@
       try {
         a.finished.then(function () { if (!--offen) aufraeumen(); },
                         function () { if (!--offen) aufraeumen(); });
-      } catch (e) { offen--; }
+      // Auch hier zaehlen: Wirft `finished` gar nicht erst (eine schon
+      // abgebrochene Animation), war das sonst ein Zaehler, der nie null
+      // erreicht -- und `aufraeumen` lief nie. Was bleibt: `tsHalt` ueber
+      // null, `data-hold` stehen, und die Formel ist fuer den Rest des
+      // Vortrags unsichtbar. Der globale Kehraus greift gerade deshalb nicht.
+      } catch (e) { if (!--offen) aufraeumen(); }
     });
+    if (!offen) aufraeumen();
     // Und ein Netz darunter: ein Browser, der `finished` nicht haelt
     // (abgebrochene Animation, Tab im Hintergrund), liesse die Geister sonst
     // stehen.
-    flyTimers.push(setTimeout(aufraeumen, Math.max(60, gelaufen) + 120));
+    // Am Lauf und nicht in `flyTimers`: Die Liste wird beim naechsten Flug
+    // pauschal geloescht, und damit war ausgerechnet das Netz weg, das den
+    // Fall abfangen soll. `aufraeumen` ist ueber `getan` gegen Doppelaufruf
+    // gesichert, also braucht dieser Zeitgeber kein Gegenstueck.
+    lauf.netz = setTimeout(aufraeumen, Math.max(60, gelaufen) + 120);
     return true;
   }
 
@@ -2011,7 +2021,13 @@
           g.animate([{ opacity: 1 }, { opacity: 0 }],
                     { duration: 180, easing: "ease-out", fill: "forwards" });
         } catch (e) {}
-        flyTimers.push(setTimeout(function () { g.remove(); }, 200));
+        // Am Geist und nicht in `flyTimers`, aus demselben Grund: Kam der
+        // naechste Flug innerhalb dieser 200 ms, loeschte dessen
+        // `flyTimers.forEach(clearTimeout)` genau dieses `remove` -- und der
+        // Lauf war da schon aus `LAUFENDE_FLUEGE` gefiltert, niemand kannte
+        // die Geister mehr. Sie blieben bis zum Neuladen liegen, unsichtbar
+        // bei `opacity: 0`, bis zu 240 Knoten je Fall.
+        g.tsWeg = setTimeout(function () { g.remove(); }, 200);
       });
     });
     LAUFENDE_FLUEGE = LAUFENDE_FLUEGE.filter(function (l) { return !l.fertig; });
