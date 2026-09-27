@@ -116,6 +116,29 @@ All notable changes to this package are recorded here. The format follows
   `prefers-reduced-motion: reduce` nothing changes: there is no movement there
   to interrupt.
 
+- **The runtime does less per keypress and at start.** Four analyses of the
+  runtime -- the per-step path, animation and compositing, start-up, memory
+  over a long talk -- agreed on where the time goes, and five changes follow
+  from them, each measured against the previous commit in Chrome on a
+  1600-pixel stage. A morph now builds its ghosts in a fragment and attaches
+  them in one go: each ghost measures the glyph it copies, and appending it
+  straight to `#ts-fly` forced a fresh layout before the next one could
+  measure -- 240 of them for 120 glyphs, over a document that grew with every
+  ghost. The keypress that starts a flight of 120 glyphs now takes 27 ms
+  instead of 57, one of 260 glyphs 65 ms instead of 185; the longest frame
+  gap during the flight falls from 62 to 31 and from 195 to 77 ms. The
+  ghosts' animations are collected as they are made instead of asked for
+  again ghost by ghost, and cancelled when the ghosts go, so they no longer
+  linger in `document.getAnimations()`. Renaming duplicate SVG ids at start
+  looks each reference up instead of comparing it with every entry --
+  852 711 string comparisons on the tour: 43 ms instead of 83, with the same
+  5 646 ids and 31 825 references to the character. The overview's marker no
+  longer searches the whole overview on every keypress, and a step selector
+  is parsed once instead of on every question about it. Two proposals were
+  measured and left out: `contain: paint` on the ghosts would clip ink that
+  reaches beyond a glyph's box, and a delivery path without comments would
+  save 105 KB gzipped per deck but no computing time, at the cost of the
+  explanations in the file someone opens in the DevTools when a deck breaks.
 - **Seven checks caught up with what 0.1.2 changed.** Automatic reveal chains
   start at step 2 since 0.1.2, and on paper that means a step page before the
   chain's first piece -- the slide as the hall sees it on entering.

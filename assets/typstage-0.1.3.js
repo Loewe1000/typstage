@@ -169,14 +169,25 @@
         (karte || (karte = Object.create(null)))[alt] = neu;
       });
       if (!karte) return;
+      // Umgeschrieben wird nur ein Wert, der GENAU `#name` oder `url(#name)`
+      // ist. Also den Namen herausschneiden und nachschlagen, statt jeden
+      // Wert mit jedem Eintrag der Karte zu vergleichen: Auf dem Rundgang
+      // waren das 852 711 Stringvergleiche -- Typst leitet die ids der
+      // Glyphensymbole aus dem Inhalt ab, fast jede Folie doppelt die der
+      // vorigen, und die groesste Karte hatte 117 Eintraege. Gemessen war
+      // dieser Lauf praktisch der ganze Start der Laufzeit, rund 95 ms.
       svg.querySelectorAll("*").forEach(function (u) {
         for (var i = 0; i < u.attributes.length; i++) {
           var a = u.attributes[i], v = a.value;
           if (v.indexOf("#") < 0) continue;
-          for (var alt in karte) {
-            if (v === "#" + alt) { a.value = "#" + karte[alt]; break; }
-            if (v === "url(#" + alt + ")") { a.value = "url(#" + karte[alt] + ")"; break; }
+          var name = null, url = false;
+          if (v.charAt(0) === "#") name = v.slice(1);
+          else if (v.slice(0, 5) === "url(#" && v.charAt(v.length - 1) === ")") {
+            name = v.slice(5, -1);
+            url = true;
           }
+          if (name === null || !(name in karte)) continue;
+          a.value = url ? "url(#" + karte[name] + ")" : "#" + karte[name];
         }
       });
     });
@@ -245,16 +256,48 @@
   var DECK = location.pathname + "|" + SLIDES.length + "." + STEPS.length;
 
   // ── Selektoren: "2-", "1-2", "2,4", "3" ───────────────────────────────────
-  function activeAt(at, s) {
-    var parts = String(at || "1-").split(",");
+  // Die Bereiche eines Selektors, einmal zerlegt und dann gemerkt.
+  //
+  // Die Selektoren stehen fest im Dokument, aber gefragt wird nach ihnen
+  // ueber `zustand` bei jedem Tastendruck, je Element und oft mehrmals: Eine
+  // Leinwandfolie mit zwoelf Schritten und dreissig Sprites kam in
+  // `folgeFahrt` auf bis zu 720 Auswertungen, und jede zerlegte ihre
+  // Zeichenkette neu und legte dabei frische Arrays an. Jetzt geschieht das
+  // einmal je verschiedenem Selektor; es sind in einem Deck ein paar Dutzend.
+  //
+  // Ein Bereich ist `[von, bis]`, eine einzelne Zahl `[n, n]`, ein offenes
+  // Ende `Infinity`. Was keine Zahl ist, wird zu `NaN` und trifft nie --
+  // genau wie vorher, als `+t === s` es nie traf.
+  //
+  // Der Speicher legt sich beim ersten Gebrauch an und nicht in einer Zeile
+  // `var BEREICHE = {}` hier: Die Funktion ist gehoben, die Zuweisung nicht,
+  // und `endeBei` wird schon beim Aufbau der Schrittliste gerufen, weiter
+  // oben, fuer jede Kamerafahrt. So stand es in der ersten Fassung, und ein
+  // Deck mit Kamera -- der Rundgang -- startete gar nicht mehr.
+  var BEREICHE;
+  function bereiche(at) {
+    if (!BEREICHE) BEREICHE = Object.create(null);
+    var key = String(at || "1-");
+    var r = BEREICHE[key];
+    if (r) return r;
+    r = [];
+    var parts = key.split(",");
     for (var i = 0; i < parts.length; i++) {
       var t = parts[i].trim();
       if (!t) continue;
       var k = t.indexOf("-");
-      if (k < 0) { if (+t === s) return true; continue; }
-      var a = t.slice(0, k) === "" ? 1 : +t.slice(0, k);
-      var b = t.slice(k + 1) === "" ? Infinity : +t.slice(k + 1);
-      if (s >= a && s <= b) return true;
+      if (k < 0) { r.push([+t, +t]); continue; }
+      r.push([t.slice(0, k) === "" ? 1 : +t.slice(0, k),
+              t.slice(k + 1) === "" ? Infinity : +t.slice(k + 1)]);
+    }
+    BEREICHE[key] = r;
+    return r;
+  }
+
+  function activeAt(at, s) {
+    var r = bereiche(at);
+    for (var i = 0; i < r.length; i++) {
+      if (s >= r[i][0] && s <= r[i][1]) return true;
     }
     return false;
   }
@@ -263,14 +306,10 @@
   // of the slide. Only a selector with a last step has an "after" for an
   // element to rest in.
   function endeBei(at) {
-    var parts = String(at || "1-").split(","), e = 0;
-    for (var i = 0; i < parts.length; i++) {
-      var t = parts[i].trim();
-      if (!t) continue;
-      var k = t.indexOf("-");
-      if (k < 0) { e = Math.max(e, +t); continue; }
-      if (t.slice(k + 1) === "") return Infinity;
-      e = Math.max(e, +t.slice(k + 1));
+    var r = bereiche(at), e = 0;
+    for (var i = 0; i < r.length; i++) {
+      if (r[i][1] === Infinity) return Infinity;
+      e = Math.max(e, r[i][1]);
     }
     return e;
   }
@@ -2132,8 +2171,35 @@
       var window = { duration: d * ueber, delay: d * (0.5 - ueber / 2),
                       easing: "linear", fill: "both" };
 
+      // Gebaut wird in einen Fragment-Knoten und erst am Ende in einem Zug
+      // angehaengt.
+      //
+      // Jeder Geist misst beim Bau die Glyphe, die er kopiert
+      // (`getScreenCTM`, `getBBox`), und jedes `appendChild` an `#ts-fly`
+      // machte das Layout schmutzig: lesen, schreiben, lesen, schreiben --
+      // bei 120 Glyphen 240 erzwungene Layouts in einem Tastendruck, jedes
+      // ueber ein Dokument, in dem schon alle vorigen Geister hingen. Das ist
+      // der ueberlineare Anstieg, der hinter der Glyphengrenze steht
+      // (33 ms bei 121 Zeichen, 117 ms bei 261). Ein Fragment ist nicht im
+      // Dokument; was darin waechst, macht nichts schmutzig.
+      //
+      // Die Animationen laufen trotzdem ab dem Aufruf: Sie haengen an der
+      // Zeitleiste des Dokuments, nicht am Knoten, und das Anhaengen folgt in
+      // derselben Aufgabe, bevor ein einziges Bild gemalt wird.
+      var bau = document.createDocumentFragment();
       var attach = function (node) {
-        FLY.appendChild(node); ghosts.push(node); FLUG++;
+        bau.appendChild(node); ghosts.push(node); FLUG++;
+      };
+      // Jede Animation eines Geists geht durch diese Hand und wird dabei
+      // vorgemerkt. Vorher wurde sie hinterher wieder erfragt, je Geist ein
+      // `getAnimations()` und ein `concat` -- 240 Anfragen und eine
+      // quadratisch wachsende Kopie fuer eine Liste, die beim Aufruf ohnehin
+      // anfaellt.
+      var anims = [];
+      var bewege = function (node, bild, zeit) {
+        var a = node.animate(bild, zeit);
+        anims.push(a);
+        return a;
       };
 
       if (perGlyph) {
@@ -2165,7 +2231,7 @@
           if (!z) {
             var allein = glyphGeist(g, stage);
             attach(allein);
-            allein.animate([{ opacity: 1 }, { opacity: 0 }],
+            bewege(allein, [{ opacity: 1 }, { opacity: 0 }],
               { duration: d * 0.55, easing: "ease-out", fill: "forwards" });
             return;
           }
@@ -2230,7 +2296,7 @@
           ];
           var ank = glyphGeist(z, stage, kasten(z.r));
           attach(ank);
-          ank.animate(herauf, timing);
+          bewege(ank, herauf, timing);
 
           var ghost = glyphGeist(g, stage, kasten(g.r));
           attach(ghost);
@@ -2247,14 +2313,14 @@
             // beiden Richtungen auseinanderhalten koennen.
             ank.dataset.ziel = "1";
           }
-          ghost.animate(path, timing);
-          ghost.animate([{ opacity: 1 }, { opacity: 0 }], window);
+          bewege(ghost, path, timing);
+          bewege(ghost, [{ opacity: 1 }, { opacity: 0 }], window);
         });
         p.rest.forEach(function (z) {
           var a = glyphGeist(z, stage);
           a.style.opacity = "0";
           attach(a);
-          a.animate([{ opacity: 0 }, { opacity: 1 }],
+          bewege(a, [{ opacity: 0 }, { opacity: 1 }],
             { duration: d * 0.5, delay: d * 0.5, easing: "ease-out", fill: "both" });
         });
         // Strokes take the same path as a character without a partner: the
@@ -2263,14 +2329,14 @@
         striche(src).forEach(function (n) {
           var a = glyphGeist(n, stage);
           attach(a);
-          a.animate([{ opacity: 1 }, { opacity: 0 }],
+          bewege(a, [{ opacity: 1 }, { opacity: 0 }],
             { duration: d * 0.55, easing: "ease-out", fill: "forwards" });
         });
         striche(dst).forEach(function (n) {
           var a = glyphGeist(n, stage);
           a.style.opacity = "0";
           attach(a);
-          a.animate([{ opacity: 0 }, { opacity: 1 }],
+          bewege(a, [{ opacity: 0 }, { opacity: 1 }],
             { duration: d * 0.5, delay: d * 0.5, easing: "ease-out", fill: "both" });
         });
       } else {
@@ -2318,22 +2384,20 @@
         var ank2 = kopie(dst, zr);
         ank2.style.opacity = "1";
         attach(ank2);
-        ank2.animate([{ transform: hin(zr, qr) },
+        bewege(ank2, [{ transform: hin(zr, qr) },
                       { transform: "translate(0,0) scale(1,1)" }], takt2);
 
         var ghost = kopie(src, qr);
         ghost.style.opacity = "1";
         attach(ghost);
-        ghost.animate([{ transform: "translate(0,0) scale(1,1)" },
+        bewege(ghost, [{ transform: "translate(0,0) scale(1,1)" },
                        { transform: hin(qr, zr) }], takt2);
-        ghost.animate([{ opacity: 1 }, { opacity: 0 }], window);
+        bewege(ghost, [{ opacity: 1 }, { opacity: 0 }], window);
       }
 
+      FLY.appendChild(bau);
+
       // Vorgemerkt, solange er fliegt.
-      var anims = [];
-      ghosts.forEach(function (g) {
-        try { anims = anims.concat(g.getAnimations()); } catch (e) {}
-      });
       var lauf = { src: src, dst: dst, geister: ghosts, anims: anims,
                    gehalten: gehalten, fertig: false };
       LAUFENDE_FLUEGE.push(lauf);
@@ -2344,6 +2408,12 @@
         lauf.gehalten.forEach(freigeben);
         lauf.gehalten = [];
         ghosts.forEach(function (g) { g.remove(); });
+        // Und die Animationen beenden, NACH dem Entfernen und im selben Zug:
+        // Mit `fill: "forwards"` standen sie sonst bis in alle Zukunft in
+        // `document.getAnimations()`, das `pruef.ruhig()` und
+        // `finishTransitionNow` bei jedem Aufruf durchgehen. Davor gerufen,
+        // spraenge der Geist fuer ein Bild an seine Ruhelage zurueck.
+        anims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
       }, d));
     });
     return any;
@@ -6985,6 +7055,11 @@
       minis.push(m);
     });
   }
+  // Das Feld, das `mark` zuletzt markiert hat. Es gibt hoechstens eines, und
+  // es zu suchen hiess, die ganze Uebersicht zu durchlaufen -- je Folie einen
+  // Vollklon des Hintergrunds, auf dem Rundgang zehntausende Knoten --, bei
+  // jedem Tastendruck, sobald jemand einmal `o` gedrueckt hatte.
+  var MARK_FELD = null;
   function mark() {
     if (!minis.length) return;
     var f = STEPS[current].slide;
@@ -6995,13 +7070,11 @@
     // Nur dort: zwei markierte Felder in zwei Folien saehen aus wie zwei
     // Stellen, an denen der Vortrag steht.
     var jetzt = STEPS[current].step;
-    OVERVIEW.querySelectorAll(".ts-mini-schritt[data-jetzt]").forEach(function (x) {
-      delete x.dataset.jetzt;
-    });
+    if (MARK_FELD) { delete MARK_FELD.dataset.jetzt; MARK_FELD = null; }
     var fach = OVERVIEW.children[f];
     var feld = fach && fach.querySelector(
       '.ts-mini-schritt[data-schritt="' + jetzt + '"]');
-    if (feld) feld.dataset.jetzt = "1";
+    if (feld) { feld.dataset.jetzt = "1"; MARK_FELD = feld; }
   }
 
   // ── Scaling ────────────────────────────────────────────────────────────────
