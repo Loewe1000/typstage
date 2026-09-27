@@ -9,7 +9,7 @@
 // of what algebra does: nothing is added and nothing is removed, the same
 // thing is written differently.
 
-#import "@preview/typstage:0.1.3": *
+#import "@preview/typstage:0.2.0": *
 
 // A theme is a dictionary. Its colours are available to the deck as well.
 #let t = themes.lesson

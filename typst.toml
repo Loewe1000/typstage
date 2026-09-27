@@ -1,6 +1,6 @@
 [package]
 name = "typstage"
-version = "0.1.3"
+version = "0.2.0"
 compiler = "0.15.0"
 entrypoint = "src/lib.typ"
 # Das Handle in spitzen Klammern, wie die Sammlung es vorsieht: "Each author can

@@ -36,7 +36,7 @@ import os, re, shutil, subprocess, sys, tempfile
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-KOPF = ('#import "@preview/typstage:0.1.3": *\n'
+KOPF = ('#import "@preview/typstage:0.2.0": *\n'
         '#show: presentation.with(title: [P], {zusatz})\n')
 ZUSATZ = {"slide": "", "step": 'pages: "step",', "handout": "handout: 1,"}
 
@@ -165,7 +165,7 @@ def main():
         for raum in ("schule", "preview"):
             ziel = os.path.join(paket, raum, "typstage")
             os.makedirs(ziel, exist_ok=True)
-            os.symlink(WURZEL, os.path.join(ziel, "0.1.3"))
+            os.symlink(WURZEL, os.path.join(ziel, "0.2.0"))
         klagen = []
         for name, (rumpf, soll) in FAELLE.items():
             for modus, erwartet in soll.items():

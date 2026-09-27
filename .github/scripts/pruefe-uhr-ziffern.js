@@ -51,7 +51,7 @@ const arg = (n, v) => { const i = process.argv.indexOf(n); return i > 0 ? proces
 const CHROME = arg("--browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 
-const kopf = (raum) => `#import "@preview/typstage:0.1.3": *
+const kopf = (raum) => `#import "@preview/typstage:0.2.0": *
 #show: presentation.with(theme: themes.lesson, title: [Ziffern]${raum})
 `;
 
@@ -115,7 +115,7 @@ function bauen(quelle, name, paket) {
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-ziffern-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.3"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.2.0"));
   }
   let schlicht, mitCue, gerastert, ohneZiffern;
   try {

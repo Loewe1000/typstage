@@ -36,7 +36,7 @@ def paketpfad_bauen():
     und nicht ein installiertes Paket.
     """
     pfad = tempfile.mkdtemp(prefix="typstage-ueberlauf-")
-    version = "0.1.3"
+    version = "0.2.0"
     with open(os.path.join(WURZEL, "typst.toml"), encoding="utf-8") as f:
         m = re.search(r'^version\s*=\s*"([^"]+)"', f.read(), re.M)
         if m:
@@ -65,7 +65,7 @@ def messen(deck, paketpfad, aus):
     # gehört ungekürzt gemeldet, sonst sucht man an der falschen Stelle.
     return ["übersetzt nicht: " + " ".join(text.split())[:300]]
 
-# Was übersteht und übersteht soll. Seit 0.1.3 wächst die Leinwand einer Folie
+# Was übersteht und übersteht soll. Seit 0.2.0 wächst die Leinwand einer Folie
 # mit ihrem Inhalt: Was über den Ausschnitt hinausgeht, wird im Vortrag
 # geschwenkt und kommt auf Papier eingepasst auf die Seite. Der Melder sagt
 # davon nichts anderes als vorher -- er hält die Höhe des Rumpfes gegen den

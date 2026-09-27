@@ -14,8 +14,8 @@ const root=path.resolve(__dirname,'../..');
   });
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const url='http://127.0.0.1:'+server.address().port;
-  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.1.3'));
-  const deck=`#import "@preview/typstage:0.1.3": *
+  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.2.0'));
+  const deck=`#import "@preview/typstage:0.2.0": *
 #show: presentation.with(title: [Audio], room: (clock: (step: 5, sound: "${url}/alarm.mp3")))
 == Local
 #audio("local.mp3", loop: true)

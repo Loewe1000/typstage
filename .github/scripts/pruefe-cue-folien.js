@@ -26,7 +26,7 @@ const CHROME = arg("--browser",
 
 // Fünf Folien mit derselben Gruppe: dokumentweit gezählt wären das zehn
 // Punkte, und der zehnte bricht die Übersetzung ab.
-const DECK = `#import "@preview/typstage:0.1.3": *
+const DECK = `#import "@preview/typstage:0.2.0": *
 #show: presentation.with(title: [Folien])
 
 == Eins
@@ -56,7 +56,7 @@ const gruppen = `JSON.stringify(window.typstage.pruef.adaptiv().map(function(g){
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-folien-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.3"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.2.0"));
   }
   fs.writeFileSync(path.join(tmp, "deck.typ"), DECK);
   try {
@@ -113,7 +113,7 @@ const gruppen = `JSON.stringify(window.typstage.pruef.adaptiv().map(function(g){
   // dichten Gruppen -- gemessen landete die Schicht zu Punkt 2 bei
   // `start: 2` und `start: 7` auf Schritt 3 statt auf 7, also eine Ecke des
   // Bildes ohne das Bild.
-  const LUECKE = `#import "@preview/typstage:0.1.3": *
+  const LUECKE = `#import "@preview/typstage:0.2.0": *
 #show: presentation.with(title: [Lücke])
 
 == Folie

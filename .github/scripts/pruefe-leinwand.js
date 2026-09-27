@@ -41,7 +41,7 @@ const CHROME = arg("--browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 const LAUT = process.argv.indexOf("--laut") > 0;
 
-const KOPF = `#import "@preview/typstage:0.1.3": *\n`;
+const KOPF = `#import "@preview/typstage:0.2.0": *\n`;
 
 const DECKS = {
   schmal: KOPF + `#show: presentation.with(title: [Schmal])
@@ -130,7 +130,7 @@ const MASS = `(function(){
   for (const raum of ["preview", "schule"]) {
     const ziel = path.join(paket, raum, "typstage");
     fs.mkdirSync(ziel, { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(ziel, "0.1.3"));
+    fs.symlinkSync(WURZEL, path.join(ziel, "0.2.0"));
   }
   const weg = {};
   const klagen = [];

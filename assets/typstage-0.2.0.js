@@ -8419,7 +8419,7 @@
 
       // Where the talk stands. `schritt` counts from zero like `goto`, `hash`
       // is the same step counted from one -- the number that stood in the
-      // address until 0.1.2. Seit 0.1.3 steht dort die Folie und der Schritt
+      // address until 0.1.2. Seit 0.2.0 steht dort die Folie und der Schritt
       // darin (`#slide-3-2`); wer die Adresse selbst messen will, liest
       // `location.hash`.
       stand: function () {

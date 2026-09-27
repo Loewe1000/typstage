@@ -25,7 +25,7 @@ const arg = (n, v) => { const i = process.argv.indexOf(n); return i > 0 ? proces
 const CHROME = arg("--browser", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 const W = 841.89, H = 473.563125, TOL = 0.5;
 
-const DECK = `#import "@preview/typstage:0.1.3": *
+const DECK = `#import "@preview/typstage:0.2.0": *
 #show: presentation.with(theme: themes.lesson + (footer: "fraction", progress: "bar"))
 
 = Abschnitt Eins
@@ -93,7 +93,7 @@ const hat = (liste, r) => liste.some(x => gleich(x, r));
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-vollbild-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.3"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.2.0"));
   }
   fs.writeFileSync(path.join(tmp, "deck.typ"), DECK);
   try {

@@ -29,7 +29,7 @@
 //   6. Die Vorgabe steht bei 120: 119 Zeichen fliegen einzeln, 121 nicht.
 //
 // Jede dieser sechs Behebungen einzeln zurückgenommen lässt die Probe klagen;
-// die Mutationen stehen im CHANGELOG unter 0.1.3.
+// die Mutationen stehen im CHANGELOG unter 0.2.0.
 const { starte, schlaf } = require("./decklauf/cdp.js");
 const { execFileSync } = require("child_process");
 const fs = require("fs"), os = require("os"), path = require("path");
@@ -40,7 +40,7 @@ const CHROME = arg("--browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 const LAUT = process.argv.indexOf("--laut") > 0;
 
-const KOPF = `#import "@preview/typstage:0.1.3": *\n`;
+const KOPF = `#import "@preview/typstage:0.2.0": *\n`;
 
 // Eine Formel aus genau `n` Zeichen: `n` einzelne Buchstaben. Gezählt wird,
 // was die Laufzeit zählt -- ein `<use>` je Zeichen --, und ein Buchstabe ist
@@ -144,7 +144,7 @@ const LAGE = `JSON.stringify((function () {
   for (const raum of ["preview", "schule"]) {
     const ziel = path.join(paket, raum, "typstage");
     fs.mkdirSync(ziel, { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(ziel, "0.1.3"));
+    fs.symlinkSync(WURZEL, path.join(ziel, "0.2.0"));
   }
   const weg = {};
   try {

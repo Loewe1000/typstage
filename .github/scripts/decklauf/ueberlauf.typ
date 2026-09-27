@@ -8,7 +8,7 @@
 // Die Folie ist mit Absicht zu hoch für den Platz, den das Thema ihr gibt,
 // und der Text steht ohne `fit` darum herum, damit nichts ihn kleinrechnet.
 
-#import "@preview/typstage:0.1.3": *
+#import "@preview/typstage:0.2.0": *
 
 #show: presentation.with(theme: themes.lesson, overflow: "error")
 

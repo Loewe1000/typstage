@@ -7,9 +7,9 @@ const root=path.resolve(__dirname,'../..');
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'typstage-cards-'));let b;
  try{
   assert(execFileSync('typst',['fonts'],{encoding:'utf8'}).split('\n').includes('DejaVu Sans'),'Install DejaVu Sans to exercise the fallback-font regression');
-  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.1.3'));
+  const pkg=path.join(tmp,'pkg/preview/typstage');fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(root,path.join(pkg,'0.2.0'));
   b=await starte(process.env.CHROME||(process.platform==='darwin'?'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome':'google-chrome'));
-  for(const name of ['vortragen','0.1.3-ho-vortragen'])for(const font of ['default','DejaVu Sans']){
+  for(const name of ['vortragen','0.2.0-ho-vortragen'])for(const font of ['default','DejaVu Sans']){
    let source=fs.readFileSync(path.join(root,'examples',name+'.typ'),'utf8');
    if(font!=='default')source=source.replace('#let t = themes.lesson','#let t = themes.lesson + (font: "DejaVu Sans",)');
    const file=path.join(tmp,'deck.typ'),html=path.join(tmp,'deck.html');fs.writeFileSync(file,source);

@@ -40,7 +40,7 @@ BILD = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.89 473.56">
 <rect x="420.945" y="236.78" width="420.945" height="236.78" fill="#8d6e00"/>
 </svg>"""
 
-DECK = """#import "@preview/typstage:0.1.3": *
+DECK = """#import "@preview/typstage:0.2.0": *
 #show <ts-slide-header-rule>: set rect(fill: rgb("#123456"))
 #show <ts-slide-header-text>: set text(fill: rgb("#654321"))
 #show <ts-slide-number>: set text(fill: rgb("#0a0b0c"))
@@ -116,7 +116,7 @@ def paketpfad_bauen():
     pfad = tempfile.mkdtemp(prefix="typstage-vollbild-pk-")
     for raum in ("schule", "preview"):
         os.makedirs(os.path.join(pfad, raum, "typstage"))
-        os.symlink(WURZEL, os.path.join(pfad, raum, "typstage", "0.1.3"))
+        os.symlink(WURZEL, os.path.join(pfad, raum, "typstage", "0.2.0"))
     return pfad
 
 
@@ -243,7 +243,7 @@ def main():
         # behält Band, Laufzeile und Kopfhöhe. `== #h(0pt)` zeichnet nichts und
         # steht in `example.typ` für eine Folie ohne Titel.
         titel = os.path.join(tmp, "titel.typ")
-        open(titel, "w").write('#import "@preview/typstage:0.1.3": *\n'
+        open(titel, "w").write('#import "@preview/typstage:0.2.0": *\n'
                                '#show <ts-slide-header-rule>: set rect(fill: rgb("#123456"))\n'
                                '#show: presentation.with(theme: themes.lesson)\n'
                                '== #box(rect(width: 30pt, height: 12pt, fill: rgb("#00ff02")))\nLogo\n'
@@ -312,7 +312,7 @@ def main():
         # Folie noch einmal. Ein Label darin darf dabei nur einmal zählen, sonst
         # bricht der Verweis mit "label `<abb>` occurs multiple times" ab.
         p = os.path.join(tmp, "l.typ")
-        open(p, "w").write('#import "@preview/typstage:0.1.3": *\n#show: presentation.with(pages: "step")\n'
+        open(p, "w").write('#import "@preview/typstage:0.2.0": *\n#show: presentation.with(pages: "step")\n'
                            "== A\n#bleed[\n"
                            "  #place(dx: 40pt, dy: 300pt, [#figure(rect(width: 40pt, height: 20pt), caption: [Bild]) <abb>])\n"
                            "  #place(dx: 300pt, dy: 300pt, anim(at: 2)[Später])\n]\nSiehe @abb.\n")
@@ -321,10 +321,10 @@ def main():
             klage(f"Schrittseiten mit Label im bleed: {meldungen(r.stderr)[:2]}")
 
         # ── Was abbrechen muss ──────────────────────────────────────────────
-        faelle = {k: ('#import "@preview/typstage:0.1.3": *\n#show: presentation.with()\n'
+        faelle = {k: ('#import "@preview/typstage:0.2.0": *\n#show: presentation.with()\n'
                       "= Teil\n== A\n" + rumpf.replace("rect()", "rect(width: 100%, height: 100%)"), weil)
                   for k, (rumpf, weil) in FEHLER.items()}
-        faelle.update({k: ('#import "@preview/typstage:0.1.3": *\n'
+        faelle.update({k: ('#import "@preview/typstage:0.2.0": *\n'
                            + q.replace("rect()", "rect(width: 100%, height: 100%)"), weil)
                        for k, (q, weil) in FEHLER_DOKUMENT.items()})
         for k, (quelle, weil) in faelle.items():
@@ -347,7 +347,7 @@ def main():
         bilder = {}
         for wie, ruf in (("none", "#bleed(none)"), ("leer", "#bleed[]")):
             p = os.path.join(tmp, "n-" + wie + ".typ")
-            open(p, "w").write('#import "@preview/typstage:0.1.3": *\n'
+            open(p, "w").write('#import "@preview/typstage:0.2.0": *\n'
                                "#show: presentation.with(theme: themes.lesson)\n"
                                "== A\n" + ruf + "\nText\n")
             r = uebersetzen(tmp, pk, p, os.path.join(tmp, "n-" + wie + ".png"), "--ppi", "20")
@@ -367,7 +367,7 @@ def main():
         # bleed), die Notiz, die Uhr und der Übergang stehen
         # an der Folie, und `#invert` kehrt sie um, vor dem bleed wie darin.
         p = os.path.join(tmp, "d.typ")
-        open(p, "w").write('#import "@preview/typstage:0.1.3": *\n#show: presentation.with()\n'
+        open(p, "w").write('#import "@preview/typstage:0.2.0": *\n#show: presentation.with()\n'
                            "== Davor\n"
                            '#set rect(fill: rgb("#00ff02"))\n#show strong: set text(red)\n'
                            '#transition("fade")\n#speaker-note[Die Notiz]\n#class-clock(5)\n'
@@ -401,7 +401,7 @@ def main():
         # Ein bleed läuft nie über, und seine Sprites verschieben den Schritt
         # nicht, den der Melder für den Rumpf nennt.
         p = os.path.join(tmp, "u.typ")
-        open(p, "w").write('#import "@preview/typstage:0.1.3": *\n'
+        open(p, "w").write('#import "@preview/typstage:0.2.0": *\n'
                            '#show: presentation.with(overflow: "record")\n'
                            "== Ohne\n#rect(height: 380pt)\n#anim(at: 3, rect(height: 100pt))\n"
                            "== Mit\n#bleed[#place(top + left, anim(at: 2, rect(height: 400pt)))]\n"

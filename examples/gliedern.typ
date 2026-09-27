@@ -17,7 +17,7 @@
 // `first`, `last` and `count` are transitive: a depth-1 section counts the
 // slides of its sub-sections too.
 
-#import "@preview/typstage:0.1.3": *
+#import "@preview/typstage:0.2.0": *
 
 #let t = themes.editorial
 #let hier = t.accent

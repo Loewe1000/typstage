@@ -40,7 +40,7 @@ document.getElementById("knopf").addEventListener("click", function () {
 </script>
 ` + BT + ".text";
 
-const kopf = (raum) => `#import "@preview/typstage:0.1.3": *
+const kopf = (raum) => `#import "@preview/typstage:0.2.0": *
 #let rahmen = ${RAHMEN}
 #show: presentation.with(theme: themes.lesson, title: [Zeiger]${raum})
 
@@ -80,7 +80,7 @@ const GESTELLT = kopf(", room: (pointer: (color: rgb(\"#00c853\"), size: 4%))");
 // dunkle Ring darauf 10,90 und auf reinem Weiss (`themes.lesson`,
 // `themes.plain`) 11,20 -- zwei verschiedene Sachen, zwei Zahlen, und die
 // Probe misst die, die in der Doku steht.
-const grundDeck = (thema) => `#import "@preview/typstage:0.1.3": *
+const grundDeck = (thema) => `#import "@preview/typstage:0.2.0": *
 #show: presentation.with(theme: themes.${thema}, title: [Zeiger auf ${thema}])
 
 == Textfolie
@@ -122,7 +122,7 @@ parent.postMessage({ typstage: 1, ready: 1, spiegel: "s1" }, "*");
 </script>
 ` + BT + ".text";
 
-const SPIEGEL = `#import "@preview/typstage:0.1.3": *
+const SPIEGEL = `#import "@preview/typstage:0.2.0": *
 #let rahmen = ${SPIEGELRAHMEN}
 #show: presentation.with(theme: themes.lesson, title: [Zeiger und Spiegel])
 
@@ -425,7 +425,7 @@ function paketpfad(wurzel) {
   aufraeumenAnmelden(paket);
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(wurzel, path.join(paket, raum, "typstage", "0.1.3"));
+    fs.symlinkSync(wurzel, path.join(paket, raum, "typstage", "0.2.0"));
   }
   return paket;
 }

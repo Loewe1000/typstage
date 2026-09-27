@@ -33,7 +33,7 @@ def paketpfad_bauen():
     wäre nicht darauf zu sehen.
     """
     pfad = tempfile.mkdtemp(prefix="typstage-themenbild-")
-    version = "0.1.3"
+    version = "0.2.0"
     with open(os.path.join(WURZEL, "typst.toml"), encoding="utf-8") as f:
         m = re.search(r'^version\s*=\s*"([^"]+)"', f.read(), re.M)
         if m:

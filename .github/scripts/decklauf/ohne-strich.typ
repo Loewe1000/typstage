@@ -18,7 +18,7 @@
 // Und genau ein Element mit `draw`: die Klage geht einmal je Element heraus,
 // also ist ein zweites eine zweite Zeile im Bericht.
 
-#import "@preview/typstage:0.1.3": *
+#import "@preview/typstage:0.2.0": *
 
 #show: presentation.with(
   title: [Zeichnen ohne Kontur],

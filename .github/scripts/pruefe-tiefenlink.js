@@ -3,7 +3,7 @@
 // Bis 0.1.2 stand im Feld der laufende Schritt über das ganze Deck: `#7`.
 // Damit ließ sich zwar jeder Teilschritt ansprechen, aber der Link hielt nur
 // bis zur nächsten eingefügten Folie -- alles dahinter rückt weiter. Seit
-// 0.1.3 steht dort die Folie und der Schritt darin: `#slide-3` und
+// 0.2.0 steht dort die Folie und der Schritt darin: `#slide-3` und
 // `#slide-3-2`.
 //
 //   node .github/scripts/pruefe-tiefenlink.js [--browser /pfad] [--laut]
@@ -30,7 +30,7 @@ const CHROME = arg("--browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 const LAUT = process.argv.indexOf("--laut") > 0;
 
-const KOPF = `#import "@preview/typstage:0.1.3": *\n`;
+const KOPF = `#import "@preview/typstage:0.2.0": *\n`;
 const RUMPF = `
 == Erste
 #anim[Ein Punkt]
@@ -80,7 +80,7 @@ async function frisch(b, schlaf, url) {
   for (const raum of ["preview", "schule"]) {
     const ziel = path.join(paket, raum, "typstage");
     fs.mkdirSync(ziel, { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(ziel, "0.1.3"));
+    fs.symlinkSync(WURZEL, path.join(ziel, "0.2.0"));
   }
   const weg = {};
   try {

@@ -20,7 +20,7 @@
 // Written for somebody who holds it: every working slide carries the minutes,
 // a note, and nothing the class has to wait for.
 
-#import "@preview/typstage:0.1.3": *
+#import "@preview/typstage:0.2.0": *
 
 #let t = themes.lesson
 #let zahl = t.accent

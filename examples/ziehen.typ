@@ -14,7 +14,7 @@
 // view of the same number.
 
 #import "@preview/cetz:0.5.2"
-#import "@preview/typstage:0.1.3": *
+#import "@preview/typstage:0.2.0": *
 
 #let t = themes.default
 

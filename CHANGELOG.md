@@ -4,7 +4,24 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), the numbering
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.3] — unreleased
+## [0.2.0] — unreleased
+
+A minor version and not 0.1.3, because an existing deck can look different
+without its author changing a line. What to look at when upgrading:
+
+- **On paper, a slide whose content runs past the slide is now fitted.** It
+  used to stand over the edge of the page; it now grows a canvas, which the PDF
+  shows scaled onto the page with a line underneath (`ts-canvas-note`). In the
+  talk the view pans after it instead. The overflow check (`overflow:`) still
+  reports such a slide.
+- **Formulas of 49 to 120 glyphs now fly glyph by glyph** instead of as one
+  block, since the glyph limit went from 48 to 120;
+  `presentation(morph: (glyph-limit: 48))` brings back the old threshold
+  (pinned pieces fly above it either way, see below).
+- **A chain flies back instead of fading out** when paging back through
+  `stagger(morph: …)`.
+- **The address is `#slide-3-2`** instead of the running step `#7`. The old
+  form is still read, so bookmarks keep working.
 
 ### Fixed
 

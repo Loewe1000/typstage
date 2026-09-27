@@ -36,7 +36,7 @@ const arg = (n, v) => { const i = process.argv.indexOf(n); return i > 0 ? proces
 const CHROME = arg("--browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 
-const MIT_NOTIZ = `#import "@preview/typstage:0.1.3": *
+const MIT_NOTIZ = `#import "@preview/typstage:0.2.0": *
 #show: presentation.with(theme: themes.lesson, title: [Teiler])
 
 == Erste Folie
@@ -51,7 +51,7 @@ Noch ein Satz.
 #speaker-note[Auch hier steht etwas.]
 `;
 
-const OHNE_NOTIZ = `#import "@preview/typstage:0.1.3": *
+const OHNE_NOTIZ = `#import "@preview/typstage:0.2.0": *
 #show: presentation.with(theme: themes.lesson, title: [Ohne])
 
 == Erste Folie
@@ -108,7 +108,7 @@ function bauen(quelle, name, paket) {
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-teiler-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.1.3"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.2.0"));
   }
   let mit, ohne;
   try {
