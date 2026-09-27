@@ -35,6 +35,13 @@
 //      loeschte der naechste Flug den `remove()` der ausblendenden Geister
 //      mit seiner pauschalen `clearTimeout`-Runde, und sie blieben bis zum
 //      Neuladen liegen, unsichtbar bei `opacity: 0`.
+//   8. Der Rueckweg einer Kette ist der Hinweg rueckwaerts: Beim
+//      Zurueckblaettern fliegt die Zeile in die zurueck, aus der sie
+//      hervorging, statt nach unten auszublenden -- sie ist dabei verborgen,
+//      ihre Geister steigen, und die Zeile darueber steht die ganze Zeit da.
+//      Und beim schnellen Hin und Her steht nie eine kommende oder gehende
+//      Zeile halb durchsichtig neben Geistern: Der Abbruch eines Flugs gab
+//      frueher auch die gehende Zeile sofort frei.
 //   5. Umkehren mitten in einer Zeichnung (`enter: "draw"`): Die Feder fährt
 //      von dort zurück, wo sie steht. Vorher sprang der Strich erst ans Ende
 //      -- `clearAnims` nimmt der laufenden Animation den Lauf, und der Pfad
@@ -92,6 +99,12 @@ const DECKS = {
 == Vier
 #v(2fr)
 #align(right, morph(<v>, duration: 1200, text(size: 2.4em)[$ a + b = c $]))
+`,
+  kette: KOPF + `#show: presentation.with(title: [Kette], duration: 900)
+
+== Eine Umformung
+#stagger(morph: "k", $ x^2 + 6x + 2 = 0 $, $ x^2 + 6x = -2 $,
+         $ x^2 + 6x + 9 = 7 $, $ (x + 3)^2 = 7 $)
 `,
   zeichnen: KOPF + `#show: presentation.with(title: [Zeichnen], duration: 1600)
 
@@ -329,6 +342,78 @@ function groesster(werte, sichtbar) {
                   + "sie war doppelt zu sehen");
     }
 
+    // ── 8: die Kette faehrt zurueck ───────────────────────────────────────
+    const ZEILEN = `JSON.stringify((function(){
+      var st = typstage.pruef.stand();
+      var f = document.querySelectorAll('.ts-slide')[st.folie];
+      var el = [].slice.call(f.querySelectorAll('.ts-el[data-name="k"]')).map(function (e) {
+        var c = getComputedStyle(e);
+        return { an: e.dataset.on === '1', halt: !!e.dataset.hold,
+                 sicht: c.visibility !== 'hidden' && +c.opacity > 0.02, o: +c.opacity,
+                 y: e.getBoundingClientRect().top };
+      });
+      var gy = [].slice.call(document.querySelectorAll('#ts-fly .ts-ghost'))
+        .map(function (g) { return g.getBoundingClientRect().top; });
+      return { s: st.aufFolie, el: el, g: gy.length,
+               gy: gy.length ? gy.reduce(function (a, b) { return a + b; }, 0) / gy.length : null };
+    })())`;
+    await b.navigiere("file://" + weg.kette);
+    await schlaf(1600);
+    for (let i = 0; i < 4; i++) { await b.taste("ArrowRight"); await schlaf(1300); }
+    const ruhe8 = JSON.parse(await b.ev(ZEILEN));
+    await b.taste("ArrowLeft");
+    const bahn8 = [];
+    for (let i = 0; i < 4; i++) { await schlaf(110); bahn8.push(JSON.parse(await b.ev(ZEILEN))); }
+    // Welche Zeile geht und in welche sie zurueckfliegt, aus dem Stand und
+    // nicht abgezaehlt: Eine Kette beginnt seit 0.1.2 auf Schritt 2, und
+    // wie viele Zeilen nach vier Tastendruecken stehen, ist genau die Art
+    // Zahl, die sich still verschiebt.
+    const an8 = ruhe8.el.map((e, i) => e.an ? i : -1).filter(i => i >= 0);
+    const geht = an8[an8.length - 1], bleibt = an8[an8.length - 2];
+    if (LAUT) console.log("  8. Geister-y " + bahn8.map(x => x.gy == null ? "-" : Math.round(x.gy)).join(" ")
+                          + " · gehende Zeile bei y " + Math.round(ruhe8.el[geht].y)
+                          + ", Herkunft bei y " + Math.round(ruhe8.el[bleibt].y));
+    if (!bahn8[0].g) {
+      klagen.push("8. beim Zurueckblaettern flog nichts -- die Zeile blendete "
+                  + "aus, statt in ihre Vorgaengerin zurueckzufliegen");
+    } else {
+      if (bahn8.some(x => x.el[geht].sicht && x.g)) {
+        klagen.push("8. die gehende Zeile stand sichtbar da, waehrend ihre Geister flogen");
+      }
+      if (bahn8.some(x => !x.el[bleibt].sicht || x.el[bleibt].o < 0.98)) {
+        klagen.push("8. die Zeile, in die zurueckgeflogen wird, war unterwegs nicht voll da");
+      }
+      const ys = bahn8.filter(x => x.gy != null).map(x => x.gy);
+      if (ys.length >= 2 && !(ys[ys.length - 1] < ys[0])) {
+        klagen.push("8. die Geister stiegen nicht: y " + ys.map(Math.round).join(" -> "));
+      }
+    }
+    // Und schnell hin und her: keine kommende oder gehende Zeile halb
+    // durchsichtig neben Geistern. Eine Zeile, die stehen bleibt und nur ihr
+    // eigenes Aufblenden noch nicht beendet hat, zaehlt nicht -- aus ihr waechst
+    // mit Absicht die naechste heraus.
+    let halb = 0;
+    for (const k of ["ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowLeft",
+                     "ArrowRight", "ArrowRight", "ArrowLeft", "ArrowLeft"]) {
+      await b.taste(k);
+      for (let i = 0; i < 2; i++) {
+        await schlaf(90);
+        const x = JSON.parse(await b.ev(ZEILEN));
+        x.el.forEach((e, i) => {
+          if (x.g && !e.an && e.sicht && e.o < 0.98) {
+            halb++;
+            if (LAUT) console.log("     nach " + k + " Schritt " + x.s + ": Zeile " + i
+                                  + " o=" + e.o.toFixed(2) + " gehalten=" + e.halt + " Geister " + x.g);
+          }
+        });
+      }
+    }
+    if (LAUT) console.log("  8. halb durchsichtige Zeilen beim Flippen: " + halb);
+    if (halb) {
+      klagen.push("8. beim schnellen Hin und Her stand " + halb + "-mal eine gehende "
+                  + "Zeile halb durchsichtig neben fliegenden Geistern");
+    }
+
     // ── 7: nichts bleibt in der Luft ──────────────────────────────────────
     await b.navigiere("file://" + weg.vier);
     await schlaf(1600);
@@ -361,5 +446,5 @@ function groesster(werte, sichtbar) {
   }
   console.log("Unterbrechen: Aufdeckung, Flug, Folienwechsel und Zeichnung "
               + "lassen sich mitten in der Bewegung umkehren, und nichts steht "
-              + "dabei doppelt da oder bleibt liegen (5 Decks, 7 Punkte)");
+              + "dabei doppelt da oder bleibt liegen (6 Decks, 8 Punkte)");
 })();

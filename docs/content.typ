@@ -2734,7 +2734,8 @@ Umformung an Ort und Stelle.
 
 `stagger(morph: true)` ist der nützlichere Fall: die Kette, bei der jede Zeile
 stehen bleibt. Die neue Zeile wächst aus der Zeile darüber, und die darüber
-bleibt stehen:
+bleibt stehen. Zurückgeblättert geht derselbe Weg rückwärts: Die letzte Zeile
+fliegt in die zurück, aus der sie hervorgegangen ist, statt auszublenden:
 
 #show-code[```typ
 #stagger(morph: true, spacing: 14pt,

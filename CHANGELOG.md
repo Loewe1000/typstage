@@ -20,6 +20,14 @@ All notable changes to this package are recorded here. The format follows
   Within one name the shape decides before the reading order, so the sigma
   finds the sigma. The same rectangle is as small on paper, so this was never a
   fault of the browser.
+- **`k` no longer restarts a sound key.** `k` made one decision for everything
+  on the slide, and a sound played from a key counts among its media as soon as
+  it has played -- so that the speaker view can show it a timeline. Measured on
+  the tour (slide 38): after `a`, every `k` that played started the slide's
+  recording and the horn together, and every further one both again. `k` now
+  decides by the slide's own media and only ever stops a key's sound, never
+  starts it; `a` followed by `k` starts the recording. The paused sound keeps
+  its timeline in the speaker view.
 - **The chosen pen shows its ring in the tool band too.** In the speaker view's
   wide layout the swatches stand in their own band, and there the selected one
   carried two shadow layers instead of three: the contour was missing, the one
@@ -103,6 +111,13 @@ All notable changes to this package are recorded here. The format follows
   slide 19: opacity 0.30 with 53 ghosts of that line in the air). The flight it
   grew out of now travels back instead, and the line stays hidden until it has
   landed.
+  Paging back through a chain is now the way forward in reverse: the last line
+  of `stagger(morph: …)` flies back into the line it grew out of instead of
+  fading out downwards, hidden while its ghosts rise, with the line above
+  standing throughout. When a flight is cut short by quick paging, what leaves
+  stays hidden until the ghosts that stand for it have faded, and then stands
+  at its end, instead of showing half transparent beside them -- measured on
+  the tour (slide 19), 13 such samples in 28 before, none now.
   Nothing is left in the air either: the ghosts of a flight that was cut short
   used to fade out with their `remove()` in a shared timer list, and the next
   flight within 200 ms cleared that list -- measured with four slides paged

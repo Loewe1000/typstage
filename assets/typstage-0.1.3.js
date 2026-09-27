@@ -1905,10 +1905,11 @@
     // und nach unten in die dritte. Beim Folienwechsel fällt der Unterschied
     // nicht auf, weil dort nichts von der Quellfolie stehen bleibt.
     //
-    // Rückwärts heißt das: was verschwindet, fliegt nicht zurück, es geht.
-    // `alternatives` fliegt auch rückwärts, denn dort kommt die vorige Fassung
-    // wieder neu dazu; eine Kette, in der alles stehen bleibt, hat rückwärts
-    // kein neues Stück und damit kein Ziel.
+    // Rückwärts kommt in einer Kette, in der alles stehen bleibt, nichts Neues
+    // dazu -- ein Ziel fuer den Rueckweg ergibt sich hier also nicht. Es wird
+    // weiter unten eigens bestimmt: die Zeile, aus der das verschwindende
+    // Stueck hervorgegangen ist. `alternatives` braucht das nicht, dort kommt
+    // die vorige Fassung ohnehin wieder neu dazu.
     f.querySelectorAll(".ts-morph").forEach(function (e) {
       if (zustand(e, nachSchritt) > 0 && !(zustand(e, vonSchritt) > 0)) {
         ziele.push(e);
@@ -1922,14 +1923,43 @@
     // Zeile stand bei 0,30 Deckkraft da, 53 Geister derselben Zeile in der
     // Luft. Jetzt faehrt der Flug zurueck, aus dem sie hervorgegangen ist,
     // und sie bleibt verborgen, bis er gelandet ist.
+    var zurueck = [];
     LAUFENDE_FLUEGE.slice().forEach(function (lauf) {
       if (lauf.fertig || !f.contains(lauf.dst)) return;
       if (!(zustand(lauf.dst, vonSchritt) > 0)) return;
       if (zustand(lauf.dst, nachSchritt) > 0) return;
       if (!(zustand(lauf.src, nachSchritt) > 0)) return;
-      flugUmkehren(lauf);
+      if (flugUmkehren(lauf)) zurueck.push(lauf.dst);
     });
-    return fly(quellen, ziele, f, fallback, bleiber);
+    // Und wenn kein Flug mehr laeuft, der zurueckfahren koennte: Rueckwaerts
+    // fliegt das Stueck einer Kette in die Zeile zurueck, aus der es
+    // hervorgegangen ist, statt nach unten auszublenden. Vorwaerts waechst
+    // Zeile 3 aus Zeile 2 heraus; rueckwaerts muss sie wieder in Zeile 2
+    // hinein, sonst ist der Rueckweg nicht der Hinweg rueckwaerts, sondern
+    // etwas anderes -- gemeldet am Rundgang (Folie 19): "die Gleichungen
+    // werden nach unten ausgeblendet, statt zurueckzufliegen".
+    //
+    // Die Quelle ist das Stueck, das geht (`quellen` haelt je Name das letzte
+    // auf dem verlassenen Schritt), das Ziel die letzte Zeile desselben
+    // Namens, die stehen bleibt. Sie bleibt dabei sichtbar -- sie steht ja da
+    // --, und `fly` haelt ein Ziel, das ein `bleiber` ist, deshalb nicht
+    // verborgen; der Geist landet deckungsgleich auf ihr.
+    if (nachSchritt < vonSchritt) {
+      var neu = {};
+      ziele.forEach(function (z) { neu[z.dataset.name] = true; });
+      Object.keys(quellen).forEach(function (name) {
+        var weg = quellen[name];
+        if (neu[name]) return;                        // kommt ohnehin eins
+        if (zustand(weg, nachSchritt) > 0) return;    // bleibt stehen
+        if (zurueck.indexOf(weg) >= 0) return;        // faehrt schon zurueck
+        var heim = null;
+        bleiber.forEach(function (b) {
+          if (b.dataset.name === name && b !== weg) heim = b;
+        });
+        if (heim) ziele.push(heim);
+      });
+    }
+    return fly(quellen, ziele, f, fallback, bleiber, nachSchritt);
   }
 
   // Einen laufenden Flug umkehren, statt ihn abzubrechen.
@@ -2001,7 +2031,10 @@
   // `bleiber` sind Quellen, die auch nach dem Flug noch stehen. Beim
   // Folienwechsel gibt es die nicht -- die Quellfolie geht ja fort --, deshalb
   // ist die Liste dort leer.
-  function fly(quellen, ziele, umfeld, fallback, bleiber) {
+  // `nach` ist der Schritt, auf den es innerhalb einer Folie geht (nur von
+  // `flugSchritt`): Der Abbruch unten muss wissen, ob ein Element dorthin
+  // gehoert oder geht, und gesetzt wird dieser Zustand erst NACH dem Flug.
+  function fly(quellen, ziele, umfeld, fallback, bleiber, nach) {
     bleiber = bleiber || [];
     // Magic move is travel and nothing but travel: the point of it is that
     // the eye follows a shape from where it stood to where it now stands.
@@ -2052,8 +2085,55 @@
     LAUFENDE_FLUEGE.forEach(function (lauf) {
       if (lauf.fertig) return;
       lauf.fertig = true;
-      lauf.gehalten.forEach(freigeben);
+      // Frei wird sofort, was auf den neuen Schritt gehoert. Was GEHT, bleibt
+      // verborgen, bis die Geister ausgeblendet sind: Sie sind noch das Bild,
+      // und darunter laeuft ohnehin das eigene Ausblenden des Elements.
+      // Frueher gab der Abbruch alles auf einmal frei -- gemessen auf dem
+      // Rundgang (Folie 19, zweimal schnell zurueck): die Zeile, die gerade in
+      // ihre Vorgaengerin zurueckflog, stand bei 14 % Deckkraft sichtbar neben
+      // ihren eigenen ausblendenden Geistern.
+      var spaeter = [];
+      var geht = function (el) {
+        return nach != null && umfeld.contains(el) && !(zustand(el, nach) > 0);
+      };
+      lauf.gehalten.forEach(function (el) {
+        if (geht(el)) spaeter.push(el); else freigeben(el);
+      });
+      // Und die Enden, die dieser Flug gar nicht verborgen hatte, weil sie
+      // stehen blieben -- das Ziel eines Rueckflugs in einer Kette --, die aber
+      // jetzt ebenfalls gehen: Die Geister, die gerade auf sie zuliefen, sind
+      // dasselbe Bild. Blaettert jemand bis auf den leeren Anfangsschritt
+      // zurueck, verschwindet die erste Zeile genau in dem Augenblick, in dem
+      // eine andere in sie zurueckfliegt, und beide blendeten sonst
+      // nebeneinander aus.
+      [lauf.src, lauf.dst].forEach(function (el) {
+        if (lauf.gehalten.indexOf(el) >= 0 || spaeter.indexOf(el) >= 0) return;
+        if (!geht(el)) return;
+        halten(el);
+        spaeter.push(el);
+      });
       lauf.gehalten = [];
+      // Nach den Geistern und nicht mit ihnen: Die blenden in 180 ms aus und
+      // gehen bei 200 ms; bei gleicher Frist entschied die Reihenfolge, in
+      // der die Zeitgeber angelegt wurden, und dieser hier kam zuerst.
+      //
+      // Beim Freigeben steht, was dann noch immer gehen soll, gleich an
+      // seinem Ende: Das Verschwinden haben die Geister schon gezeigt, und
+      // das eigene Ausblenden des Elements dauert laenger als ihres. Liefe es
+      // weiter, stuende die Zeile noch ein paar Prozent sichtbar da, waehrend
+      // schon der naechste Flug seine Geister zeigt. Was inzwischen wieder
+      // dazugehoert (`data-on`, gesetzt nach dem Flug), bleibt unberuehrt.
+      if (spaeter.length) {
+        setTimeout(function () {
+          spaeter.forEach(function (el) {
+            if (el.dataset.on !== "1" && !(el.tsHalt > 1)) {
+              clearAnims(el);
+              el.style.opacity = "0";
+            }
+            freigeben(el);
+          });
+        }, 220);
+      }
       lauf.geister.forEach(function (g) {
         try {
           g.getAnimations().forEach(function (a) { a.pause(); });
@@ -2144,7 +2224,9 @@
       // die Kopie.
       var gehalten = [];
       if (bleiber.indexOf(src) < 0) { halten(src); gehalten.push(src); }
-      halten(dst); gehalten.push(dst);
+      // Ebenso ein Ziel, das stehen bleibt: der Rueckflug einer Kette landet
+      // auf einer Zeile, die die ganze Zeit dasteht (`flugSchritt`).
+      if (bleiber.indexOf(dst) < 0) { halten(dst); gehalten.push(dst); }
 
       // Die Bahn ist das Rechteck, das der Geist ueberstreicht: von der Quelle
       // zum Ziel. Vorgemerkt wird nur, was in Quellreihenfolge *nach* dem
@@ -2685,9 +2767,14 @@
     return medienAlle().map(function (v, id) {
       var w = v.closest(".ts-el");
       var auf = sec && sec.contains(v) && (!w || w.dataset.on === "1");
+      // Ein Klang einer Taste steht in dieser Liste, sobald er einmal lief --
+      // auch angehalten: Die Sprecheransicht zeigt ihm eine Zeitleiste, an
+      // der man ihn fortsetzen oder verschieben kann. Was `k` mit ihm tut,
+      // entscheidet `medienTaste`, nicht diese Liste.
       if (!auf && !(v.matches("audio.ts-sound") && (v.currentTime > 0 || !v.paused))) return null;
       var clip = medienBereich(v), empty = clip.end <= clip.start;
-      return { id: id, time: v.currentTime || clip.start, start: clip.start,
+      return { id: id, klang: v.matches("audio.ts-sound"),
+        time: v.currentTime || clip.start, start: clip.start,
         duration: isFinite(clip.end) ? clip.end : 0, paused: v.paused,
         status: empty ? "Empty media clip: start is at or beyond the end." : v.tsYouTube ? v.tsYouTube.error || v.tsYouTube.notice || (!v.tsYouTube.ready ? wort("youtubeLoading", "Loading YouTube…") : "") : "",
         failed: empty || !!(v.tsYouTube && v.tsYouTube.error),
@@ -2727,8 +2814,21 @@
     }
     var items = medienHier();
     if (!items.length) return false;
-    var pause = items.some(function (m) { return !m.paused; });
+    // Ob `k` anhaelt oder abspielt, entscheiden die Medien der FOLIE, und
+    // einen Klang einer Taste haelt `k` hoechstens an, startet ihn aber nie.
+    // Vorher galt fuer beide dieselbe Entscheidung -- gemessen auf dem
+    // Rundgang (Folie 38): erst `a`, dann startete jedes `k`, das abspielte,
+    // die Aufnahme der Folie UND das Horn der Taste, und jedes weitere `k`
+    // wieder beide. Und wer `a` drueckt und dann `k`, will die Aufnahme
+    // starten; das noch klingende Horn hiess bisher "es laeuft etwas", und
+    // `k` hielt stattdessen an. Bei `j`/`l` bleibt ein Klang, wo er ist.
+    var folie = items.filter(function (m) { return !m.klang; });
+    var pause = folie.some(function (m) { return !m.paused; });
     items.forEach(function (m) {
+      if (m.klang) {
+        if (k === "k") medienBefehl({ id: m.id, action: "pause" });
+        return;
+      }
       medienBefehl(k === "k" ? { id: m.id, action: pause ? "pause" : "play" }
         : { id: m.id, action: "seek", time: m.time + (k === "j" ? -10 : 10) });
     });

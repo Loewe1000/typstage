@@ -2306,7 +2306,9 @@ replacing one another:
 ```]
 
 `stagger(morph: true)` is the chain where every line stays: the new line grows
-out of the line above, which stays put.
+out of the line above, which stays put. Paging back takes the same way in
+reverse: the last line flies back into the one it grew out of instead of fading
+out.
 
 #show-code[```typ
 #stagger(morph: true, spacing: 14pt,

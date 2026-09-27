@@ -502,6 +502,15 @@ const SOLL_HINWEIS = [
   "bewegt: Der Lauf steigt ueber die alte Form #8 ein, und die wird weiter",
   "gelesen -- hash und hashStand stehen in allen Decks unveraendert.",
   "",
+  "Der Rueckweg einer Kette (stagger(morph: ...)) fliegt jetzt, statt",
+  "auszublenden: die letzte Zeile fliegt in die zurueck, aus der sie",
+  "hervorging. Das hat tour/fliegerRueck von 113 auf 187 gehoben, und die 74",
+  "liegen vollstaendig auf Folie 19 (\"morph: without leaving the slide\"):",
+  "Rueckweg je Folie gezaehlt, alt 16:14 18:10 19:87 52:2, neu 16:14 18:10",
+  "19:161 52:2. Alle anderen Werte aller Decks stehen unveraendert, auch",
+  "pruefdeck/satz -- die Aenderung liegt in der Laufzeit, und satz schneidet",
+  "den Laufzeitblock heraus.",
+  "",
   "Dieser Absatz stand einmal von Hand in soll.json und war nach dem ersten",
   "--neu-soll fort: was hier nicht steht, ueberlebt keine Neuaufnahme."
 ];

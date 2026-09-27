@@ -46,6 +46,20 @@ Ein Satz.
 Noch einer.
 `;
 
+// Eine Folie mit einer eigenen Aufnahme UND einer Klangtaste. `k` soll die
+// Aufnahme umschalten und den Klang der Taste hoechstens anhalten -- nie
+// wieder anwerfen. Gemeldet am Rundgang (Folie 38): nach `a` startete jedes
+// `k`, das abspielte, beide, und jedes weitere wieder beide.
+const DECK_BEIDE = `#import "@preview/typstage:0.1.3": *
+#show: presentation.with(
+  theme: themes.lesson, title: [Beide],
+  room: (sounds: (a: "ton.wav")),
+)
+
+== Eine Aufnahme
+#audio("aufnahme.wav")
+`;
+
 const DECK_FEHLT = `#import "@preview/typstage:0.1.3": *
 #show: presentation.with(
   theme: themes.lesson, title: [Fehlt],
@@ -99,10 +113,12 @@ const lage = `JSON.stringify((function(){
   }
   const ordner = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-klang-"));
   tonDatei(path.join(ordner, "ton.wav"));
-  let deck, fehlt;
+  tonDatei(path.join(ordner, "aufnahme.wav"));
+  let deck, fehlt, beide;
   try {
     deck = bauen(DECK, "klang", paket, ordner);
     fehlt = bauen(DECK_FEHLT, "fehlt", paket, ordner);
+    beide = bauen(DECK_BEIDE, "beide", paket, ordner);
   } catch (e) {
     const wort = String((e.stderr || "")).split("\n")
       .find(z => z.startsWith("error:")) || "unbekannter Fehler";
@@ -175,6 +191,48 @@ const lage = `JSON.stringify((function(){
       klagen.push("7. die Klangtaste steht nicht in der Tastenleiste: " + leiste);
     }
     await pult.ende();
+  }
+
+  // ── 8: `k` wirft den Klang einer Taste nicht wieder an ─────────────────
+  // Gezaehlt wird jedes `play` der beiden Knoten, nicht nur der Stand: ein
+  // Klang von einer halben Sekunde ist womoeglich schon wieder still, wenn
+  // die Probe hinsieht, und haette doch gerade doppelt geklungen.
+  await b.navigiere("file://" + beide);
+  await schlaf(2000);
+  await b.taste("ArrowRight");
+  await schlaf(800);
+  await b.ev(`(function(){
+    window.__spiel = { taste: 0, folie: 0 };
+    document.querySelectorAll("audio").forEach(function (a) {
+      a.addEventListener("play", function () {
+        window.__spiel[a.classList.contains("ts-sound") ? "taste" : "folie"]++;
+      });
+    });
+  })()`);
+  await b.taste("a");
+  await schlaf(150);
+  const folge = [];
+  for (const warten of [300, 300, 300, 900, 300]) {
+    await b.taste("k");
+    await schlaf(warten);
+    folge.push(JSON.parse(await b.ev(`JSON.stringify((function(){
+      var t = document.querySelector("audio.ts-sound"),
+          f = document.querySelector(".ts-el audio, audio:not(.ts-sound)");
+      return { taste: !t.paused, folie: !f.paused, spiel: window.__spiel };
+    })())`)));
+  }
+  const zuletzt = folge[folge.length - 1].spiel;
+  if (zuletzt.taste !== 1) {
+    klagen.push("8. `k` warf den Klang der Taste wieder an: " + zuletzt.taste
+                + " Mal gespielt statt einmal (durch `a`)");
+  }
+  if (!folge[0].folie || folge[0].taste) {
+    klagen.push("8. das erste `k` nach `a` startete die Aufnahme nicht oder "
+                + "liess die Taste weiterklingen: " + JSON.stringify(folge[0]));
+  }
+  if (zuletzt.folie < 3) {
+    klagen.push("8. die Aufnahme wurde nur " + zuletzt.folie + " Mal gestartet, "
+                + "erwartet 3 -- `k` schaltet sie nicht mehr um");
   }
 
   // ── 6: eine fehlende Datei ──────────────────────────────────────────────
