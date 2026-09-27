@@ -42,6 +42,12 @@
 //      Und beim schnellen Hin und Her steht nie eine kommende oder gehende
 //      Zeile halb durchsichtig neben Geistern: Der Abbruch eines Flugs gab
 //      frueher auch die gehende Zeile sofort frei.
+//   9. Und beim sehr schnellen Blaettern stapeln sich keine Fassungen: Ein
+//      neuer Flug uebernimmt den laufenden dort, wo dessen Geister gerade
+//      sind, statt sie einfrieren und ausblenden zu lassen. Gemessen wird,
+//      wie viele Geister zugleich sichtbar sind -- bei Tasten im Abstand von
+//      45 ms gegen einen einzelnen, ungestoerten Flug. Vorher standen auf dem
+//      Rundgang drei bis vier Fassungen uebereinander (93 Geister gegen 26).
 //   5. Umkehren mitten in einer Zeichnung (`enter: "draw"`): Die Feder fährt
 //      von dort zurück, wo sie steht. Vorher sprang der Strich erst ans Ende
 //      -- `clearAnims` nimmt der laufenden Animation den Lauf, und der Pfad
@@ -99,6 +105,15 @@ const DECKS = {
 == Vier
 #v(2fr)
 #align(right, morph(<v>, duration: 1200, text(size: 2.4em)[$ a + b = c $]))
+`,
+  fassungen: KOPF + `#show: presentation.with(title: [Fassungen], duration: 900)
+
+== An einer Stelle
+#alternatives(morph: true, start: 1,
+  $ (a + b)^2 $,
+  $ (a + b)(a + b) $,
+  $ a dot a + a dot b + b dot a + b dot b $,
+  $ a^2 + 2 a b + b^2 $)
 `,
   kette: KOPF + `#show: presentation.with(title: [Kette], duration: 900)
 
@@ -414,6 +429,42 @@ function groesster(werte, sichtbar) {
                   + "Zeile halb durchsichtig neben fliegenden Geistern");
     }
 
+    // ── 9: keine Fassungen uebereinander ───────────────────────────────────
+    const ZAEHLE = `window.__g = []; window.__gAn = true; (function z(){
+      var n = 0;
+      document.querySelectorAll('#ts-fly .ts-ghost').forEach(function (x) {
+        if (+getComputedStyle(x).opacity > 0.05) n++;
+      });
+      window.__g.push(n);
+      if (window.__gAn) requestAnimationFrame(z);
+    })();`;
+    const zaehlen = async (warten, tasten) => {
+      await b.navigiere("about:blank"); await schlaf(150);
+      await b.navigiere("file://" + weg.fassungen);
+      await schlaf(1600);
+      await b.taste("ArrowRight");
+      await schlaf(1200);
+      await b.ev(ZAEHLE);
+      for (const k of tasten) { await b.taste(k); await schlaf(warten); }
+      await schlaf(1500);
+      await b.ev("window.__gAn = false");
+      return JSON.parse(await b.ev("JSON.stringify(window.__g)")).filter(n => n > 0);
+    };
+    const hinUndHer = ["ArrowRight", "ArrowRight", "ArrowLeft", "ArrowRight",
+                       "ArrowRight", "ArrowLeft", "ArrowLeft", "ArrowRight",
+                       "ArrowRight", "ArrowRight", "ArrowLeft", "ArrowLeft"];
+    const einzeln = await zaehlen(1300, ["ArrowRight", "ArrowRight", "ArrowRight"]);
+    const schnell = await zaehlen(45, hinUndHer);
+    const eins = Math.max.apply(null, einzeln.concat([1]));
+    const p90 = schnell.slice().sort((x, y) => x - y)[Math.floor(schnell.length * 0.9)] || 0;
+    if (LAUT) console.log("  9. ein Flug hoechstens " + eins + " Geister; schnell p90 " + p90
+                          + ", max " + Math.max.apply(null, schnell.concat([0])));
+    if (p90 > eins * 1.3) {
+      klagen.push("9. beim schnellen Blaettern standen meist " + p90 + " Geister zugleich "
+                  + "da, ein einzelner Flug hat hoechstens " + eins
+                  + " -- Fassungen stapeln sich, statt einander abzuloesen");
+    }
+
     // ── 7: nichts bleibt in der Luft ──────────────────────────────────────
     await b.navigiere("file://" + weg.vier);
     await schlaf(1600);
@@ -446,5 +497,5 @@ function groesster(werte, sichtbar) {
   }
   console.log("Unterbrechen: Aufdeckung, Flug, Folienwechsel und Zeichnung "
               + "lassen sich mitten in der Bewegung umkehren, und nichts steht "
-              + "dabei doppelt da oder bleibt liegen (6 Decks, 8 Punkte)");
+              + "dabei doppelt da oder bleibt liegen (7 Decks, 9 Punkte)");
 })();

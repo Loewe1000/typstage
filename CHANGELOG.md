@@ -118,6 +118,21 @@ All notable changes to this package are recorded here. The format follows
   stays hidden until the ghosts that stand for it have faded, and then stands
   at its end, instead of showing half transparent beside them -- measured on
   the tour (slide 19), 13 such samples in 28 before, none now.
+  And versions no longer stack when someone pages very fast. A flight that
+  was still in the air when the next key came was cut short: its ghosts froze
+  mid-way and faded out there, while the new flight started from the elements'
+  resting places. Filmed on the tour (slide 19) with keys 40 to 80 ms apart,
+  `(a+b)^2`, `(a+b)(a+b)` and `a·a+a·b+…` stood on top of each other, with
+  frozen fragments of lines beside them -- up to 93 ghosts where one flight has
+  26. A new flight now takes over the running one where its ghosts are: if
+  the running flight's target flies on, the new ghosts start from exactly where
+  its arriving copies are; if the target stays (a chain, where the next line
+  grows out of it), the running flight lands and the new one peels off from
+  its copies. A reversed flight stays a running flight with its ends swapped,
+  so it can be reversed again or taken over, instead of flying on beside a
+  new one -- and it no longer hides the line it flies back into. Measured now:
+  on `alternatives` at 45 ms per key never more ghosts than one flight has,
+  21 of 21.
   Nothing is left in the air either: the ghosts of a flight that was cut short
   used to fade out with their `remove()` in a shared timer list, and the next
   flight within 200 ms cleared that list -- measured with four slides paged

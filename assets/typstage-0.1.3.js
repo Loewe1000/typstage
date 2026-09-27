@@ -1812,6 +1812,7 @@
   }
 
   var LAUFENDE_FLUEGE = [];
+  var FLUG_NR = 0;
   // Und was der letzte Flug je `morph` entschieden hat. Nur fuer `pruef`:
   // die Wahl zwischen Block und Zeichen fuer Zeichen faellt mitten im Flug
   // und ist hinterher an nichts mehr abzulesen.
@@ -1929,7 +1930,8 @@
       if (!(zustand(lauf.dst, vonSchritt) > 0)) return;
       if (zustand(lauf.dst, nachSchritt) > 0) return;
       if (!(zustand(lauf.src, nachSchritt) > 0)) return;
-      if (flugUmkehren(lauf)) zurueck.push(lauf.dst);
+      var weg = lauf.dst;
+      if (flugUmkehren(lauf)) zurueck.push(weg);
     });
     // Und wenn kein Flug mehr laeuft, der zurueckfahren koennte: Rueckwaerts
     // fliegt das Stueck einer Kette in die Zeile zurueck, aus der es
@@ -1976,56 +1978,61 @@
   // die Zeit, die der Rueckweg noch braucht.
   function flugUmkehren(lauf) {
     if (lauf.fertig) return false;
-    lauf.fertig = true;
-    var gelaufen = 0;
+    // Ein umgekehrter Flug bleibt ein LAUFENDER Flug, nur mit vertauschten
+    // Enden. So kann ihn der naechste Tastendruck wieder umkehren oder
+    // uebernehmen. Frueher galt er ab hier als fertig und fiel aus der Liste;
+    // blaetterte jemand vor, zurueck und wieder vor, fand das letzte Vor ihn
+    // nicht mehr, startete einen neuen Flug vom Ruheplatz aus, und der
+    // umgekehrte flog daneben zu Ende -- gemessen an `alternatives` beim
+    // schnellen Blaettern meist 36 Geister zugleich statt der 21 eines Flugs.
+    clearTimeout(lauf.ende);
+    var rest = 0;
     lauf.anims.forEach(function (a) {
       try {
-        gelaufen = Math.max(gelaufen, +a.currentTime || 0);
-        a.playbackRate = -1;
+        a.playbackRate = -(a.playbackRate || 1);
+        var t = +a.currentTime || 0;
+        var bis = a.effect.getComputedTiming().endTime;
+        // Was in der neuen Richtung noch vor ihm liegt.
+        rest = Math.max(rest, a.playbackRate < 0 ? t : bis - t);
       } catch (e) {}
     });
-    // Gehalten wird, was dieser Flug noch nicht haelt: Sein Ziel verbirgt er
-    // schon, seine Quelle nur, wenn sie nicht ohnehin stehenbleibt
-    // (`bleiber`). Auf dem Rueckweg wird die Quelle zum Ziel und muss
-    // verborgen sein wie jedes Ziel.
-    if (lauf.gehalten.indexOf(lauf.src) < 0) {
-      halten(lauf.src);
-      lauf.gehalten.push(lauf.src);
+    // In dieser Runde ist er erledigt: Abbruch und Uebernahme in `fly`
+    // lassen ihn aus. Ohne das Zeichen brach dieselbe Runde, die ihn gerade
+    // umgekehrt hatte, ihn gleich darauf wieder ab.
+    lauf.geradeUmgekehrt = true;
+    var q = lauf.src; lauf.src = lauf.dst; lauf.dst = q;
+    var qb = lauf.srcBleibt; lauf.srcBleibt = lauf.dstBleibt; lauf.dstBleibt = qb;
+    // Verborgen wird das neue Ziel -- ausser es bleibt ohnehin stehen: Beim
+    // Rueckflug einer Kette ist das die Zeile darueber, und die steht die
+    // ganze Zeit da. Frueher wurde sie hier trotzdem verborgen und stand
+    // waehrend des Rueckwegs nicht da.
+    if (!lauf.dstBleibt && lauf.gehalten.indexOf(lauf.dst) < 0) {
+      halten(lauf.dst);
+      lauf.gehalten.push(lauf.dst);
     }
-    // Aufgeraeumt wird, wenn der Rueckweg wirklich zu Ende ist, und nicht,
-    // wenn eine gerechnete Frist ablaeuft: Geister und Vorhang muessen im
-    // selben Augenblick gehen, sonst steht das Element unter seinen eigenen
-    // Geistern.
-    var getan = false;
-    var aufraeumen = function () {
-      if (getan) return;
-      getan = true;
-      lauf.gehalten.forEach(freigeben);
-      lauf.gehalten = [];
-      lauf.geister.forEach(function (g) { g.remove(); });
-    };
-    var offen = lauf.anims.length;
-    lauf.anims.forEach(function (a) {
-      try {
-        a.finished.then(function () { if (!--offen) aufraeumen(); },
-                        function () { if (!--offen) aufraeumen(); });
-      // Auch hier zaehlen: Wirft `finished` gar nicht erst (eine schon
-      // abgebrochene Animation), war das sonst ein Zaehler, der nie null
-      // erreicht -- und `aufraeumen` lief nie. Was bleibt: `tsHalt` ueber
-      // null, `data-hold` stehen, und die Formel ist fuer den Rest des
-      // Vortrags unsichtbar. Der globale Kehraus greift gerade deshalb nicht.
-      } catch (e) { if (!--offen) aufraeumen(); }
-    });
-    if (!offen) aufraeumen();
-    // Und ein Netz darunter: ein Browser, der `finished` nicht haelt
-    // (abgebrochene Animation, Tab im Hintergrund), liesse die Geister sonst
-    // stehen.
-    // Am Lauf und nicht in `flyTimers`: Die Liste wird beim naechsten Flug
-    // pauschal geloescht, und damit war ausgerechnet das Netz weg, das den
-    // Fall abfangen soll. `aufraeumen` ist ueber `getan` gegen Doppelaufruf
-    // gesichert, also braucht dieser Zeitgeber kein Gegenstueck.
-    lauf.netz = setTimeout(aufraeumen, Math.max(60, gelaufen) + 120);
+    // Das Ende: wenn der Weg in der neuen Richtung durch ist. Geister und
+    // Vorhang gehen dann im selben Augenblick (`flugAbschliessen`).
+    lauf.ende = setTimeout(function () { flugAbschliessen(lauf); },
+                           Math.max(60, rest) + 40);
     return true;
+  }
+
+  // Ein Flug ist gelandet: Vorhang auf, Geister fort, Animationen beendet --
+  // in einem Zug, damit nichts fuer ein Bild doppelt oder gar nicht dasteht.
+  // Die Animationen NACH dem Entfernen: Mit `fill: "forwards"` standen sie
+  // sonst in `document.getAnimations()`, das `pruef.ruhig()` und
+  // `finishTransitionNow` bei jedem Aufruf durchgehen; davor gerufen,
+  // spraenge ein Geist fuer ein Bild an seine Ruhelage zurueck.
+  function flugAbschliessen(lauf) {
+    if (lauf.abgeschlossen) return;
+    lauf.abgeschlossen = true;
+    lauf.fertig = true;
+    clearTimeout(lauf.ende);
+    LAUFENDE_FLUEGE = LAUFENDE_FLUEGE.filter(function (l) { return l !== lauf; });
+    lauf.gehalten.forEach(freigeben);
+    lauf.gehalten = [];
+    lauf.geister.forEach(function (g) { g.remove(); });
+    lauf.anims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
   }
 
   // `bleiber` sind Quellen, die auch nach dem Flug noch stehen. Beim
@@ -2066,7 +2073,17 @@
         var src = quellen[dst.dataset.name];
         if (!src) return;
         LAUFENDE_FLUEGE.forEach(function (lauf) {
-          if (lauf.fertig || lauf.src !== dst || lauf.dst !== src) return;
+          if (lauf.fertig) return;
+          // Schon umgekehrt, eben erst in `flugSchritt`: Dann zeigen seine
+          // (getauschten) Enden bereits in die Richtung dieses Paars, und er
+          // IST der Flug, den dieser Schritt braucht. Ohne diese Zeile
+          // entstand daneben ein zweiter -- gemessen an `alternatives`, vor
+          // und gleich wieder zurueck: 37 Geister zweier Fluege statt 21.
+          if (lauf.geradeUmgekehrt && lauf.src === src && lauf.dst === dst) {
+            umgekehrt[dst.dataset.name] = true;
+            return;
+          }
+          if (lauf.src !== dst || lauf.dst !== src) return;
           if (flugUmkehren(lauf)) umgekehrt[dst.dataset.name] = true;
           // BEIDE bleiben verborgen, solange der Geist fliegt -- er ist das
           // Bild, und daneben darf dasselbe nicht ein zweites Mal stehen.
@@ -2078,13 +2095,55 @@
         });
       });
     }
-    // Alles, was nicht umgekehrt weiterläuft, geht. Nicht schlagartig: ein
-    // Geist, der mitten auf der Bahn verschwindet, ist derselbe Sprung von
-    // vorhin, nur in der Luft. Er blendet an seinem Platz aus, während der
-    // neue Flug beginnt.
+    // ── Uebernehmen statt einfrieren ──────────────────────────────────────
+    //
+    // Wer sehr schnell blaettert, startet einen Flug, waehrend der vorige
+    // noch in der Luft ist. Bisher wurde der vorige dann abgebrochen: seine
+    // Geister froren mitten auf der Bahn ein und blendeten dort aus, und der
+    // neue Flug begann am Ruheplatz der Elemente. Bei Tasten im Abstand von
+    // 40 bis 80 ms standen so zwei, drei Fassungen einer Formel uebereinander
+    // -- gefilmt auf dem Rundgang (Folie 19): `(a+b)^2`, `(a+b)(a+b)` und
+    // `a·a+a·b+…` zugleich, und links Bruchstuecke eingefrorener Zeilen.
+    //
+    // Fliegt das Ziel eines laufenden Flugs jetzt selbst weiter, beginnt der
+    // neue Flug dort, wo dessen ankommende Kopien gerade SIND: Die Lage jeder
+    // Kopie wird hier gelesen, je Glyphe (am Geist steht, welche Glyphe er
+    // traegt: `tsQuelle`), und `fly` setzt die neuen Geister darauf an. Eine
+    // durchgehende Bewegung statt eines Neustarts.
+    //
+    // Dann zwei Faelle. Geht das Ziel dabei fort (`alternatives`: die mittlere
+    // Fassung wird zur naechsten), ist der alte Flug erledigt, und seine
+    // Geister gehen sofort -- die neuen stehen genau auf ihnen. Bleibt das
+    // Ziel stehen (eine Kette: aus der Zeile waechst die naechste), fliegt
+    // der alte zu Ende und landet; die neuen Kopien loesen sich von seinen
+    // ankommenden, statt vom Ruheplatz einer Zeile, die noch gar nicht da ist.
+    var quellListe = Object.keys(quellen).map(function (n) { return quellen[n]; });
+    var uebernahme = new Map();
     LAUFENDE_FLUEGE.forEach(function (lauf) {
-      if (lauf.fertig) return;
+      // Je Flug neu bestimmt: Ein Lauf, der beim letzten Mal weiterflog, kann
+      // diesmal genau der sein, der abbricht.
+      lauf.weiter = false;
+      lauf.uebernommen = false;
+      if (lauf.fertig || lauf.geradeUmgekehrt) return;
+      if (quellListe.indexOf(lauf.dst) < 0) return;
+      var weiter = bleiber.indexOf(lauf.dst) >= 0;
+      lauf.geister.forEach(function (g) {
+        if (g.tsQuelle) {
+          uebernahme.set(g.tsQuelle, { r: g.getBoundingClientRect(), weiter: weiter });
+        }
+      });
+      if (weiter) lauf.weiter = true;
+      else lauf.uebernommen = true;
+    });
+
+    // Alles andere, was nicht umgekehrt weiterlaeuft und nicht weiterfliegt,
+    // geht. Nicht schlagartig, und nicht eingefroren: Es blendet aus, waehrend
+    // es weiterfliegt.
+    LAUFENDE_FLUEGE.forEach(function (lauf) {
+      if (lauf.geradeUmgekehrt) { lauf.geradeUmgekehrt = false; return; }
+      if (lauf.fertig || lauf.weiter) return;
       lauf.fertig = true;
+      clearTimeout(lauf.ende);
       // Frei wird sofort, was auf den neuen Schritt gehoert. Was GEHT, bleibt
       // verborgen, bis die Geister ausgeblendet sind: Sie sind noch das Bild,
       // und darunter laeuft ohnehin das eigene Ausblenden des Elements.
@@ -2134,9 +2193,13 @@
           });
         }, 220);
       }
+      if (lauf.uebernommen) {
+        lauf.geister.forEach(function (g) { g.remove(); });
+        lauf.anims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
+        return;
+      }
       lauf.geister.forEach(function (g) {
         try {
-          g.getAnimations().forEach(function (a) { a.pause(); });
           g.animate([{ opacity: 1 }, { opacity: 0 }],
                     { duration: 180, easing: "ease-out", fill: "forwards" });
         } catch (e) {}
@@ -2269,7 +2332,13 @@
       // Zeitleiste des Dokuments, nicht am Knoten, und das Anhaengen folgt in
       // derselben Aufgabe, bevor ein einziges Bild gemalt wird.
       var bau = document.createDocumentFragment();
+      // Die Nummer des Flugs an jedem seiner Geister. Von aussen ist sonst
+      // nicht zu sagen, ob zwei Geister zu einem Flug gehoeren oder zu zwei,
+      // die sich gerade ueberlagern -- und genau das fragt eine Probe, die
+      // wissen will, ob sich beim schnellen Blaettern Fassungen stapeln.
+      var flugNr = ++FLUG_NR;
       var attach = function (node) {
+        node.dataset.flug = flugNr;
         bau.appendChild(node); ghosts.push(node); FLUG++;
       };
       // Jede Animation eines Geists geht durch diese Hand und wird dabei
@@ -2310,11 +2379,22 @@
         });
         p.zug.forEach(function (paar) {
           var g = paar[0], z = paar[1];
+          // Wo diese Glyphe gerade steht: auf einer ankommenden Kopie des
+          // Flugs, der uebernommen wird, sonst an ihrem Platz.
+          var u = uebernahme.get(g.node);
+          var gr = u ? u.r : g.r;
+          // Landet der alte Flug weiter, zeigen SEINE ankommenden Kopien diese
+          // Glyphe schon an genau dieser Stelle. Eine abtretende Kopie dazu
+          // waere dieselbe Glyphe ein zweites Mal -- gemessen links auf Folie
+          // 19 lagen so drei Schichten einer Zeile uebereinander, und sie
+          // sah fett aus. Also keine.
+          var doppelt = !!(u && u.weiter);
           if (!z) {
-            var allein = glyphGeist(g, stage);
+            if (doppelt) return;
+            var allein = glyphGeist(g, stage, u ? u.r : undefined);
             attach(allein);
             bewege(allein, [{ opacity: 1 }, { opacity: 0 }],
-              { duration: d * 0.55, easing: "ease-out", fill: "forwards" });
+              { duration: d * 0.55, easing: "ease-out", fill: "both" });
             return;
           }
 
@@ -2336,8 +2416,12 @@
           // Weg, sondern weil die Zuordnung stimmt: Sigma zu Sigma, Grenze zu
           // Grenze. Das war der Fehler in Issue #18, und er steckte in der
           // Zugehoerigkeit (siehe `pinAusBaum`), nicht im Weg.
-          var zx = z.r.left - g.r.left, zy = z.r.top - g.r.top;
-          var timing = { duration: d, easing: EASE, fill: "forwards" };
+          var zx = z.r.left - gr.left, zy = z.r.top - gr.top;
+          // `both` und nicht `forwards`: Ein Flug kann umgekehrt werden und
+          // laeuft dann rueckwaerts bis zur Zeit null -- dort gilt `forwards`
+          // nicht mehr, und ein Geist sprang an seine Ruhelage, das heisst die
+          // ankommende Kopie an das Ziel: gemessen 1279 px in einem Bild.
+          var timing = { duration: d, easing: EASE, fill: "both" };
 
           // Beide Kopien stehen in einem Kasten von der GROESSEREN der beiden
           // Groessen und werden darin auf ihr jeweiliges Mass zusammen-
@@ -2358,9 +2442,9 @@
           // holt die Verzerrung wieder heraus, die `preserveAspectRatio:
           // none` in ihn hineinsetzt: Am Ende steht jede Kopie genau auf dem
           // Rechteck, das ihr Element gleich darauf einnimmt.
-          var bw = Math.max(g.r.width, z.r.width);
-          var bh = Math.max(g.r.height, z.r.height);
-          var qs = "scale(" + (g.r.width / bw) + "," + (g.r.height / bh) + ")";
+          var bw = Math.max(gr.width, z.r.width);
+          var bh = Math.max(gr.height, z.r.height);
+          var qs = "scale(" + (gr.width / bw) + "," + (gr.height / bh) + ")";
           var zs = "scale(" + (z.r.width / bw) + "," + (z.r.height / bh) + ")";
           var kasten = function (r) {
             return { left: r.left, top: r.top, width: bw, height: bh };
@@ -2377,17 +2461,21 @@
             { transform: "translate(0,0) " + zs }
           ];
           var ank = glyphGeist(z, stage, kasten(z.r));
+          ank.tsQuelle = z.node;
           attach(ank);
           bewege(ank, herauf, timing);
 
-          var ghost = glyphGeist(g, stage, kasten(g.r));
-          attach(ghost);
+          var ghost = null;
+          if (!doppelt) {
+            ghost = glyphGeist(g, stage, kasten(gr));
+            attach(ghost);
+          }
           // Der Name am Geist. Von aussen sind Geister sonst namenlos, und
           // ob eine Gruppe wirklich als ein Stueck reist, laesst sich nur an
           // ihren Wegen ablesen: dieselbe Gruppe, derselbe Weg.
           if (g.pin !== null && g.pin !== undefined) {
             ank.dataset.pin = g.pin;
-            ghost.dataset.pin = g.pin;
+            if (ghost) ghost.dataset.pin = g.pin;
             // Welcher von beiden der ankommende ist. Die zwei Kopien gehen
             // seit dem gemeinsamen groesseren Kasten entgegengesetzte Wege --
             // die abtretende hinaus, die ankommende von klein herauf --, und
@@ -2395,11 +2483,14 @@
             // beiden Richtungen auseinanderhalten koennen.
             ank.dataset.ziel = "1";
           }
-          bewege(ghost, path, timing);
-          bewege(ghost, [{ opacity: 1 }, { opacity: 0 }], window);
+          if (ghost) {
+            bewege(ghost, path, timing);
+            bewege(ghost, [{ opacity: 1 }, { opacity: 0 }], window);
+          }
         });
         p.rest.forEach(function (z) {
           var a = glyphGeist(z, stage);
+          a.tsQuelle = z.node;
           a.style.opacity = "0";
           attach(a);
           bewege(a, [{ opacity: 0 }, { opacity: 1 }],
@@ -2412,7 +2503,7 @@
           var a = glyphGeist(n, stage);
           attach(a);
           bewege(a, [{ opacity: 1 }, { opacity: 0 }],
-            { duration: d * 0.55, easing: "ease-out", fill: "forwards" });
+            { duration: d * 0.55, easing: "ease-out", fill: "both" });
         });
         striche(dst).forEach(function (n) {
           var a = glyphGeist(n, stage);
@@ -2422,7 +2513,7 @@
             { duration: d * 0.5, delay: d * 0.5, easing: "ease-out", fill: "both" });
         });
       } else {
-        var takt2 = { duration: d, easing: EASE, fill: "forwards" };
+        var takt2 = { duration: d, easing: EASE, fill: "both" };
         // Each copy sits in *its own* box and is moved from there.
         //
         // Previously both sat in the source's box. For the source that is
@@ -2463,40 +2554,43 @@
                  (nach.top - von.top) + "px) scale(" +
                  (nach.width / von.width) + "," + (nach.height / von.height) + ")";
         };
+        // Auch hier: auf der uebernommenen Lage ansetzen, wenn es eine gibt.
+        var ub = uebernahme.get(src);
+        if (ub) qr = ub.r;
         var ank2 = kopie(dst, zr);
+        ank2.tsQuelle = dst;
         ank2.style.opacity = "1";
         attach(ank2);
         bewege(ank2, [{ transform: hin(zr, qr) },
                       { transform: "translate(0,0) scale(1,1)" }], takt2);
 
-        var ghost = kopie(src, qr);
-        ghost.style.opacity = "1";
-        attach(ghost);
-        bewege(ghost, [{ transform: "translate(0,0) scale(1,1)" },
-                       { transform: hin(qr, zr) }], takt2);
-        bewege(ghost, [{ opacity: 1 }, { opacity: 0 }], window);
+        // Wie im Glyphenzweig: Landet der alte Flug weiter, zeigt er die
+        // Quelle an dieser Stelle schon.
+        if (!(ub && ub.weiter)) {
+          var ghost = kopie(src, qr);
+          ghost.style.opacity = "1";
+          attach(ghost);
+          bewege(ghost, [{ transform: "translate(0,0) scale(1,1)" },
+                         { transform: hin(qr, zr) }], takt2);
+          bewege(ghost, [{ opacity: 1 }, { opacity: 0 }], window);
+        }
       }
 
       FLY.appendChild(bau);
 
       // Vorgemerkt, solange er fliegt.
       var lauf = { src: src, dst: dst, geister: ghosts, anims: anims,
-                   gehalten: gehalten, fertig: false };
+                   gehalten: gehalten, fertig: false,
+                   // Welche Enden stehen bleiben -- `flugUmkehren` tauscht
+                   // sie mit und verbirgt ein Ende, das bleibt, nie.
+                   srcBleibt: bleiber.indexOf(src) >= 0,
+                   dstBleibt: bleiber.indexOf(dst) >= 0 };
       LAUFENDE_FLUEGE.push(lauf);
 
-      flyTimers.push(setTimeout(function () {
-        lauf.fertig = true;
-        LAUFENDE_FLUEGE = LAUFENDE_FLUEGE.filter(function (l) { return l !== lauf; });
-        lauf.gehalten.forEach(freigeben);
-        lauf.gehalten = [];
-        ghosts.forEach(function (g) { g.remove(); });
-        // Und die Animationen beenden, NACH dem Entfernen und im selben Zug:
-        // Mit `fill: "forwards"` standen sie sonst bis in alle Zukunft in
-        // `document.getAnimations()`, das `pruef.ruhig()` und
-        // `finishTransitionNow` bei jedem Aufruf durchgehen. Davor gerufen,
-        // spraenge der Geist fuer ein Bild an seine Ruhelage zurueck.
-        anims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
-      }, d));
+      // Am Lauf und nicht in `flyTimers`: Ein Flug, der weiterlandet, waehrend
+      // der naechste schon startet (oben, `weiter`), braucht sein Ende noch --
+      // und `flyTimers` loescht jeder neue Flug als Erstes.
+      lauf.ende = setTimeout(function () { flugAbschliessen(lauf); }, d);
     });
     return any;
   }
