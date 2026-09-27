@@ -126,7 +126,12 @@ const LAGE = `JSON.stringify((function () {
       var k = a[i].effect && a[i].effect.getKeyframes ? a[i].effect.getKeyframes() : [];
       var t = k.length ? k[k.length - 1].transform : null;
       if (!t || t.indexOf("translate") < 0) continue;
-      (wege[g.dataset.pin] = wege[g.dataset.pin] || []).push(t);
+      // Je Name ZWEI Listen: die abtretenden Kopien und die ankommenden.
+      // Sie gehen entgegengesetzte Wege (die eine hinaus, die andere von
+      // klein herauf, damit sie in ihrer Endgroesse gerastert wird), und
+      // zusammengeworfen saehe das aus wie eine zerfallende Gruppe.
+      var k2 = g.dataset.pin + (g.dataset.ziel ? "/ziel" : "");
+      (wege[k2] = wege[k2] || []).push(t);
       break;
     }
   });
@@ -188,24 +193,30 @@ const LAGE = `JSON.stringify((function () {
                     + "Grenzen stehen außerhalb seines Rechtecks und gelten "
                     + "als ungepinnt (Issue #18)");
       }
-      const wege = s.wege[String(gr && gr.pin)] || [];
+      const beide = [s.wege[String(gr && gr.pin)] || [],
+                     s.wege[String(gr && gr.pin) + "/ziel"] || []];
+      const wege = beide[0];
       // Verglichen wird mit einem Pixel Toleranz und nicht auf das Zeichen
       // genau: eine Gruppe, die beim Reisen ein wenig kleiner wird, verschiebt
       // jedes ihrer Zeichen um seinen Anteil an dieser Stauchung. Das sind
       // Bruchteile eines Pixels. Ein Zerfallen sind Dutzende.
-      const zahlen = wege.map(t => (t.match(/-?[\d.]+/g) || []).map(Number));
-      const spanne = (i) => zahlen.length
-        ? Math.max(...zahlen.map(z => z[i] || 0)) - Math.min(...zahlen.map(z => z[i] || 0))
-        : 0;
-      if (wege.length < 5) {
-        klagen.push("2. nur " + wege.length + " Geister trugen den Namen der "
-                    + "Gruppe, erwartet sind 5 je Richtung");
-      } else if (spanne(0) > 1 || spanne(1) > 1) {
-        klagen.push("2. die Gruppe zerfällt unterwegs: die Wege ihrer Zeichen "
-                    + "gehen um " + spanne(0).toFixed(1) + " px waagrecht und "
-                    + spanne(1).toFixed(1) + " px senkrecht auseinander ("
-                    + wege.slice(0, 3).join(" | ") + ")");
-      }
+      beide.forEach((liste, richtung) => {
+        const wohin = richtung ? "ankommend" : "abtretend";
+        const zahlen = liste.map(t => (t.match(/-?[\d.]+/g) || []).map(Number));
+        const spanne = (i) => zahlen.length
+          ? Math.max(...zahlen.map(z => z[i] || 0)) - Math.min(...zahlen.map(z => z[i] || 0))
+          : 0;
+        if (liste.length < 5) {
+          klagen.push("2. nur " + liste.length + " " + wohin + "e Geister "
+                      + "trugen den Namen der Gruppe, erwartet sind 5");
+        } else if (spanne(0) > 1 || spanne(1) > 1) {
+          klagen.push("2. die Gruppe zerfällt unterwegs (" + wohin + "): die "
+                      + "Wege ihrer Zeichen gehen um " + spanne(0).toFixed(1)
+                      + " px waagrecht und " + spanne(1).toFixed(1)
+                      + " px senkrecht auseinander ("
+                      + liste.slice(0, 3).join(" | ") + ")");
+        }
+      });
     }
 
     // ── 3 und 4: über der Grenze ──────────────────────────────────────────

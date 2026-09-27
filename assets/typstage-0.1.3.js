@@ -1875,7 +1875,78 @@
         ziele.push(e);
       }
     });
+    // Rueckwaerts verschwindet ein Stueck, das gerade erst hereingeflogen
+    // kam, und ein neuer Flug entsteht dafuer nicht: In einer Kette bleibt
+    // jede Zeile stehen, also hat der Rueckweg kein neues Ziel. Ohne das hier
+    // blendete die Zeile aus, waehrend ihre eigenen Geister noch flogen --
+    // gemessen auf dem Rundgang (Folie 19, schnell vor und zurueck): die
+    // Zeile stand bei 0,30 Deckkraft da, 53 Geister derselben Zeile in der
+    // Luft. Jetzt faehrt der Flug zurueck, aus dem sie hervorgegangen ist,
+    // und sie bleibt verborgen, bis er gelandet ist.
+    LAUFENDE_FLUEGE.slice().forEach(function (lauf) {
+      if (lauf.fertig || !f.contains(lauf.dst)) return;
+      if (!(zustand(lauf.dst, vonSchritt) > 0)) return;
+      if (zustand(lauf.dst, nachSchritt) > 0) return;
+      if (!(zustand(lauf.src, nachSchritt) > 0)) return;
+      flugUmkehren(lauf);
+    });
     return fly(quellen, ziele, f, fallback, bleiber);
+  }
+
+  // Einen laufenden Flug umkehren, statt ihn abzubrechen.
+  //
+  // Zweimal gebraucht, und das ist der Grund, warum es hier steht und nicht
+  // mitten im Zweig: Wer mitten im Flug zurueckblaettert, meint den Weg
+  // zurueck. Ueber Folienraender hinweg entsteht dabei ein neuer Flug mit
+  // vertauschten Enden (`fly` unten); in einer Kette auf einer Folie entsteht
+  // gar keiner -- was hereinkam, geht einfach wieder --, und dann ist dieser
+  // Flug hier das Einzige, was den Weg zurueck noch spielen kann
+  // (`flugSchritt`).
+  //
+  // `playbackRate` auf -1: was an Zeit schon verstrichen ist, ist zugleich
+  // die Zeit, die der Rueckweg noch braucht.
+  function flugUmkehren(lauf) {
+    if (lauf.fertig) return false;
+    lauf.fertig = true;
+    var gelaufen = 0;
+    lauf.anims.forEach(function (a) {
+      try {
+        gelaufen = Math.max(gelaufen, +a.currentTime || 0);
+        a.playbackRate = -1;
+      } catch (e) {}
+    });
+    // Gehalten wird, was dieser Flug noch nicht haelt: Sein Ziel verbirgt er
+    // schon, seine Quelle nur, wenn sie nicht ohnehin stehenbleibt
+    // (`bleiber`). Auf dem Rueckweg wird die Quelle zum Ziel und muss
+    // verborgen sein wie jedes Ziel.
+    if (lauf.gehalten.indexOf(lauf.src) < 0) {
+      halten(lauf.src);
+      lauf.gehalten.push(lauf.src);
+    }
+    // Aufgeraeumt wird, wenn der Rueckweg wirklich zu Ende ist, und nicht,
+    // wenn eine gerechnete Frist ablaeuft: Geister und Vorhang muessen im
+    // selben Augenblick gehen, sonst steht das Element unter seinen eigenen
+    // Geistern.
+    var getan = false;
+    var aufraeumen = function () {
+      if (getan) return;
+      getan = true;
+      lauf.gehalten.forEach(freigeben);
+      lauf.gehalten = [];
+      lauf.geister.forEach(function (g) { g.remove(); });
+    };
+    var offen = lauf.anims.length;
+    lauf.anims.forEach(function (a) {
+      try {
+        a.finished.then(function () { if (!--offen) aufraeumen(); },
+                        function () { if (!--offen) aufraeumen(); });
+      } catch (e) { offen--; }
+    });
+    // Und ein Netz darunter: ein Browser, der `finished` nicht haelt
+    // (abgebrochene Animation, Tab im Hintergrund), liesse die Geister sonst
+    // stehen.
+    flyTimers.push(setTimeout(aufraeumen, Math.max(60, gelaufen) + 120));
+    return true;
   }
 
   // `bleiber` sind Quellen, die auch nach dem Flug noch stehen. Beim
@@ -1914,15 +1985,7 @@
         if (!src) return;
         LAUFENDE_FLUEGE.forEach(function (lauf) {
           if (lauf.fertig || lauf.src !== dst || lauf.dst !== src) return;
-          lauf.fertig = true;
-          umgekehrt[dst.dataset.name] = true;
-          var gelaufen = 0;
-          lauf.anims.forEach(function (a) {
-            try {
-              gelaufen = Math.max(gelaufen, +a.currentTime || 0);
-              a.playbackRate = -1;
-            } catch (e) {}
-          });
+          if (flugUmkehren(lauf)) umgekehrt[dst.dataset.name] = true;
           // BEIDE bleiben verborgen, solange der Geist fliegt -- er ist das
           // Bild, und daneben darf dasselbe nicht ein zweites Mal stehen.
           // Hier stand einmal `delete lauf.dst.dataset.hold`, in der Meinung,
@@ -1930,37 +1993,6 @@
           // (Folie 15 auf 16, schnell vor und zurueck) stand das Ziel damit
           // 370 ms lang sichtbar da, waehrend 28 Geister derselben Formel
           // zurueckflogen: die Formel war doppelt zu sehen.
-          // Gehalten wird, was dieser Flug noch nicht haelt: Sein Ziel
-          // verbirgt er schon, seine Quelle nur, wenn sie nicht ohnehin
-          // stehenbleibt (`bleiber`). Auf dem Rueckweg wird die Quelle zum
-          // Ziel und muss verborgen sein wie jedes Ziel.
-          if (lauf.gehalten.indexOf(lauf.src) < 0) {
-            halten(lauf.src);
-            lauf.gehalten.push(lauf.src);
-          }
-          // Aufgeraeumt wird, wenn der Rueckweg wirklich zu Ende ist, und
-          // nicht, wenn eine gerechnete Frist ablaeuft: Geister und Hold
-          // muessen im selben Augenblick gehen, sonst steht das Element unter
-          // seinen eigenen Geistern.
-          var getan = false;
-          var aufraeumen = function () {
-            if (getan) return;
-            getan = true;
-            lauf.gehalten.forEach(freigeben);
-            lauf.gehalten = [];
-            lauf.geister.forEach(function (g) { g.remove(); });
-          };
-          var offen = lauf.anims.length;
-          lauf.anims.forEach(function (a) {
-            try {
-              a.finished.then(function () { if (!--offen) aufraeumen(); },
-                              function () { if (!--offen) aufraeumen(); });
-            } catch (e) { offen--; }
-          });
-          // Und ein Netz darunter: ein Browser, der `finished` nicht haelt
-          // (abgebrochene Animation, Tab im Hintergrund), liesse die Geister
-          // sonst stehen.
-          flyTimers.push(setTimeout(aufraeumen, Math.max(60, gelaufen) + 120));
         });
       });
     }
@@ -2148,10 +2180,27 @@
           ];
           var timing = { duration: d, easing: EASE, fill: "forwards" };
 
+          // Der Zielgeist steht in SEINER Box und faengt darin zusammen-
+          // gedrueckt an -- nicht umgekehrt.
           //
-          var ank = glyphGeist(z, stage, g.r);
+          // Das ist die Schaerfe: Ein Browser rastert die Kopie einmal in der
+          // Groesse, die ihr Kasten hat, und schiebt danach nur noch die
+          // fertige Textur; vektoriell neu gezeichnet wird erst, wenn die
+          // Animation steht. In der Quellbox gebaut und hochgezogen, war die
+          // Zielglyphe waehrend des ganzen Fluges eine vergroesserte kleine
+          // Textur -- bei einem Morph von 1.4em auf 2.6em knapp das Doppelte.
+          // In der eigenen Box gebaut und von klein heraufgefahren, ist sie am
+          // Ende Punkt fuer Punkt das, was gleich darauf wirklich dasteht, und
+          // unterwegs hoechstens ueberabgetastet. Denselben Weg geht der
+          // Blockflug eine Ebene tiefer, und aus demselben Grund.
+          var herauf = [
+            { transform: "translate(" + (-zx) + "px," + (-zy) + "px) scale("
+                         + (1 / sx) + "," + (1 / sy) + ")" },
+            { transform: "translate(0,0) scale(1,1)" }
+          ];
+          var ank = glyphGeist(z, stage);
           attach(ank);
-          ank.animate(path, timing);
+          ank.animate(herauf, timing);
 
           var ghost = glyphGeist(g, stage);
           attach(ghost);
@@ -2161,6 +2210,12 @@
           if (g.pin !== null && g.pin !== undefined) {
             ank.dataset.pin = g.pin;
             ghost.dataset.pin = g.pin;
+            // Welcher von beiden der ankommende ist. Die zwei Kopien gehen
+            // seit der Umstellung auf Zielgroesse entgegengesetzte Wege --
+            // die abtretende hinaus, die ankommende von klein herauf --, und
+            // eine Probe, die "dieselbe Gruppe, derselbe Weg" misst, muss die
+            // beiden Richtungen auseinanderhalten koennen.
+            ank.dataset.ziel = "1";
           }
           ghost.animate(path, timing);
           ghost.animate([{ opacity: 1 }, { opacity: 0 }], window);

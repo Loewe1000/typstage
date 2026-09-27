@@ -97,6 +97,12 @@ All notable changes to this package are recorded here. The format follows
   is cleaning up cannot pull the curtain away from the flight that has just
   begun. Measured on the tour, paging 15 → 16 → 15 quickly: the target stood
   visible for 370 ms under its own 28 ghosts.
+  Paging back out of a chain reverses too: `stagger(morph: …)` has no target on
+  the way back -- every line stays, so nothing new arrives -- and the line that
+  was flying in used to fade out under its own ghosts (measured on the tour,
+  slide 19: opacity 0.30 with 53 ghosts of that line in the air). The flight it
+  grew out of now travels back instead, and the line stays hidden until it has
+  landed.
   `.github/scripts/pruefe-unterbrechen.js` measures all of this frame by frame
   and counts only what is visible; five mutations make it complain. Under
   `prefers-reduced-motion: reduce` nothing changes: there is no movement there
@@ -133,6 +139,18 @@ All notable changes to this package are recorded here. The format follows
   example decks carries a flight between 49 and 120 glyphs, so their flights
   are unchanged. `presentation(morph: (glyph-limit: 400))` sets it per deck,
   and the manuals now describe the limit, which they never did.
+- **A flying glyph is drawn at the size it lands in.** A browser rasterises a
+  ghost once, in the size its box has, and from then on only pushes that
+  texture about; vector content is redrawn when the animation comes to rest.
+  The arriving copy of a glyph was built in the *source's* box and scaled up,
+  so all the way across it was a small texture blown up -- for a morph from
+  1.4em to 2.6em, nearly twice its own size -- and it was still scaled at the
+  moment the real element took its place. It is now built in its own box and
+  comes up from small, which is what the block flight a level below has done
+  since 0.1.1: sharp where the eye comes to rest, and at worst oversampled on
+  the way. `decklauf/pult.js`-style measurement is not needed here; the ghosts
+  carry `data-ziel` so `pruefe-morph-pin.js` can tell the two directions apart,
+  which it now does per direction.
 - **`typstage.pruef.flug()` reports the last flight**, per morph: the glyph
   count of both sides, the limit in force, whether it flew glyph by glyph,
   whether only the named pieces travelled, and the pinned groups with their
