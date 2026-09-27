@@ -2173,36 +2173,50 @@
           // Grenze. Das war der Fehler in Issue #18, und er steckte in der
           // Zugehoerigkeit (siehe `pinAusBaum`), nicht im Weg.
           var zx = z.r.left - g.r.left, zy = z.r.top - g.r.top;
-          var sx = z.r.width / g.r.width, sy = z.r.height / g.r.height;
-          var path = [
-            { transform: "translate(0,0) scale(1,1)" },
-            { transform: "translate(" + zx + "px," + zy + "px) scale(" + sx + "," + sy + ")" }
-          ];
           var timing = { duration: d, easing: EASE, fill: "forwards" };
 
-          // Der Zielgeist steht in SEINER Box und faengt darin zusammen-
-          // gedrueckt an -- nicht umgekehrt.
+          // Beide Kopien stehen in einem Kasten von der GROESSEREN der beiden
+          // Groessen und werden darin auf ihr jeweiliges Mass zusammen-
+          // gezogen.
           //
-          // Das ist die Schaerfe: Ein Browser rastert die Kopie einmal in der
-          // Groesse, die ihr Kasten hat, und schiebt danach nur noch die
-          // fertige Textur; vektoriell neu gezeichnet wird erst, wenn die
-          // Animation steht. In der Quellbox gebaut und hochgezogen, war die
-          // Zielglyphe waehrend des ganzen Fluges eine vergroesserte kleine
-          // Textur -- bei einem Morph von 1.4em auf 2.6em knapp das Doppelte.
-          // In der eigenen Box gebaut und von klein heraufgefahren, ist sie am
-          // Ende Punkt fuer Punkt das, was gleich darauf wirklich dasteht, und
-          // unterwegs hoechstens ueberabgetastet. Denselben Weg geht der
-          // Blockflug eine Ebene tiefer, und aus demselben Grund.
-          var herauf = [
-            { transform: "translate(" + (-zx) + "px," + (-zy) + "px) scale("
-                         + (1 / sx) + "," + (1 / sy) + ")" },
-            { transform: "translate(0,0) scale(1,1)" }
+          // Das ist die Schaerfe. Ein Browser rastert eine Kopie einmal, in
+          // der Groesse, die ihr Kasten hat, und schiebt danach nur noch
+          // diese Textur; vektoriell neu gezeichnet wird erst, wenn die
+          // Animation steht. Eine Textur, die verkleinert wird, ist scharf --
+          // eine, die vergroessert wird, ist es nie. Beide in ihrer eigenen
+          // Groesse gebaut, wurde deshalb je nach Richtung eine von beiden
+          // unterwegs hochgezogen: beim Wachsen die ankommende (bei 1.4em auf
+          // 2.6em knapp das Doppelte), beim Schrumpfen die abtretende. Im
+          // gemeinsamen groesseren Kasten wird keine von beiden je ueber ihre
+          // eigene Aufloesung hinaus gezogen.
+          //
+          // Der Kasten steht jeweils an der eigenen Ecke, und der Massstab
+          // holt die Verzerrung wieder heraus, die `preserveAspectRatio:
+          // none` in ihn hineinsetzt: Am Ende steht jede Kopie genau auf dem
+          // Rechteck, das ihr Element gleich darauf einnimmt.
+          var bw = Math.max(g.r.width, z.r.width);
+          var bh = Math.max(g.r.height, z.r.height);
+          var qs = "scale(" + (g.r.width / bw) + "," + (g.r.height / bh) + ")";
+          var zs = "scale(" + (z.r.width / bw) + "," + (z.r.height / bh) + ")";
+          var kasten = function (r) {
+            return { left: r.left, top: r.top, width: bw, height: bh };
+          };
+          // Der Weg der abtretenden Kopie: von ihrer Ecke zur Ecke des Ziels.
+          var path = [
+            { transform: "translate(0,0) " + qs },
+            { transform: "translate(" + zx + "px," + zy + "px) " + zs }
           ];
-          var ank = glyphGeist(z, stage);
+          // Und der der ankommenden, in ihrem eigenen Kasten: vom Platz der
+          // Quelle auf den eigenen.
+          var herauf = [
+            { transform: "translate(" + (-zx) + "px," + (-zy) + "px) " + qs },
+            { transform: "translate(0,0) " + zs }
+          ];
+          var ank = glyphGeist(z, stage, kasten(z.r));
           attach(ank);
           ank.animate(herauf, timing);
 
-          var ghost = glyphGeist(g, stage);
+          var ghost = glyphGeist(g, stage, kasten(g.r));
           attach(ghost);
           // Der Name am Geist. Von aussen sind Geister sonst namenlos, und
           // ob eine Gruppe wirklich als ein Stueck reist, laesst sich nur an
@@ -2211,7 +2225,7 @@
             ank.dataset.pin = g.pin;
             ghost.dataset.pin = g.pin;
             // Welcher von beiden der ankommende ist. Die zwei Kopien gehen
-            // seit der Umstellung auf Zielgroesse entgegengesetzte Wege --
+            // seit dem gemeinsamen groesseren Kasten entgegengesetzte Wege --
             // die abtretende hinaus, die ankommende von klein herauf --, und
             // eine Probe, die "dieselbe Gruppe, derselbe Weg" misst, muss die
             // beiden Richtungen auseinanderhalten koennen.

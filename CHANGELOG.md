@@ -139,18 +139,18 @@ All notable changes to this package are recorded here. The format follows
   example decks carries a flight between 49 and 120 glyphs, so their flights
   are unchanged. `presentation(morph: (glyph-limit: 400))` sets it per deck,
   and the manuals now describe the limit, which they never did.
-- **A flying glyph is drawn at the size it lands in.** A browser rasterises a
+- **A flying glyph is never drawn smaller than it is shown.** A browser rasterises a
   ghost once, in the size its box has, and from then on only pushes that
   texture about; vector content is redrawn when the animation comes to rest.
-  The arriving copy of a glyph was built in the *source's* box and scaled up,
-  so all the way across it was a small texture blown up -- for a morph from
-  1.4em to 2.6em, nearly twice its own size -- and it was still scaled at the
-  moment the real element took its place. It is now built in its own box and
-  comes up from small, which is what the block flight a level below has done
-  since 0.1.1: sharp where the eye comes to rest, and at worst oversampled on
-  the way. `decklauf/pult.js`-style measurement is not needed here; the ghosts
-  carry `data-ziel` so `pruefe-morph-pin.js` can tell the two directions apart,
-  which it now does per direction.
+  Each copy used to be built in its own size, so one of the two was blown up
+  all the way across: the arriving one when the formula grows (for 1.4em to
+  2.6em, nearly twice its own size), the departing one when it shrinks. Both
+  now stand in a box of the larger of the two sizes and are drawn into their
+  own measure inside it, so neither is ever pulled beyond its own resolution;
+  the landing is unchanged to the pixel, measured in both directions against
+  the element that takes the ghosts' place (within one pixel of its box). The
+  two copies travel opposite ways for it, so the ghosts carry `data-ziel` and
+  `pruefe-morph-pin.js` reads "same group, same path" per direction.
 - **`typstage.pruef.flug()` reports the last flight**, per morph: the glyph
   count of both sides, the limit in force, whether it flew glyph by glyph,
   whether only the named pieces travelled, and the pinned groups with their
