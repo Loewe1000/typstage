@@ -24,6 +24,13 @@
 //   5. Der Kopf der gewachsenen Folie steht: Er liegt als eigene Schicht über
 //      der Leinwand, bleibt beim Schwenk an der Oberkante der Bühne und ist so
 //      breit wie sie. Eine gewöhnliche Folie trägt diese Schicht gar nicht.
+//   6. Zurückblättern fährt die Ansicht zurück. Die erste Fassung fuhr vom
+//      zuletzt erreichten Stand aus weiter und nur so weit wie nötig: vorwärts
+//      richtig, rückwärts gar nicht -- wer zurückblätterte, blieb unten
+//      stehen. Verglichen wird Schritt für Schritt mit dem Hinweg.
+//   7. Und ein Sprung mitten auf die Folie zeigt dasselbe wie das
+//      Durchblättern dorthin: Der Ausschnitt hängt am Schritt und nicht am
+//      Weg, den der Vortrag genommen hat.
 const { starte, schlaf } = require("./decklauf/cdp.js");
 const { execFileSync } = require("child_process");
 const fs = require("fs"), os = require("os"), path = require("path");
@@ -223,6 +230,38 @@ const MASS = `(function(){
                   + " px breit -- er soll an der Oberkante der Bühne stehen "
                   + "bleiben und so breit sein wie sie");
     }
+    // ── 6: und wieder zurück ──────────────────────────────────────────────
+    const rueck = [];
+    for (let i = bahn.length - 2; i >= 0; i--) {
+      await b.taste("ArrowLeft");
+      await schlaf(700);
+      rueck[i] = JSON.parse(await b.ev(`JSON.stringify(${MASS})`));
+    }
+    if (LAUT) rueck.forEach(m => m && console.log("  6. " + JSON.stringify(m)));
+    const anders = bahn.map((m, i) => (rueck[i] && rueck[i].fahrt !== m.fahrt)
+      ? ("Schritt " + m.schritt + ": hin " + m.fahrt + ", zurück " + rueck[i].fahrt)
+      : null).filter(Boolean);
+    if (anders.length) {
+      klagen.push("6. auf dem Rückweg steht die Ansicht anders als auf dem "
+                  + "Hinweg -- " + anders[0]
+                  + (anders.length > 1 ? " (und " + (anders.length - 1) + " weitere)" : ""));
+    }
+
+    // ── 7: hergesprungen statt hingeblättert ──────────────────────────────
+    const letzterSchritt = bahn[bahn.length - 1].schritt;
+    await b.navigiere("about:blank");
+    await schlaf(150);
+    await b.navigiere("file://" + weg.lang + "#slide-2-" + letzterSchritt);
+    await schlaf(1600);
+    const sprung = JSON.parse(await b.ev(`JSON.stringify(${MASS})`));
+    if (LAUT) console.log("  7. " + JSON.stringify(sprung));
+    if (sprung.schritt !== letzterSchritt || sprung.fahrt !== letzte.fahrt) {
+      klagen.push("7. der Sprung auf #slide-2-" + letzterSchritt + " steht auf "
+                  + "Schritt " + sprung.schritt + " bei " + sprung.fahrt
+                  + ", durchgeblättert steht dort Schritt " + letzterSchritt
+                  + " bei " + letzte.fahrt);
+    }
+
     const blind = bahn.filter(m => m.sichtbar === false);
     if (blind.length) {
       klagen.push("2. bei " + blind.length + " von " + bahn.length
@@ -259,6 +298,6 @@ const MASS = `(function(){
     process.exit(1);
   }
   console.log("Leinwand: die Folie wächst mit ihrem Inhalt, die Ansicht folgt, "
-              + "der Kopf bleibt stehen, und auf Papier kommt sie ganz "
-              + "(3 Decks, 5 Punkte)");
+              + "der Kopf bleibt stehen, sie fährt zurück, und auf Papier kommt "
+              + "sie ganz (3 Decks, 7 Punkte)");
 })();

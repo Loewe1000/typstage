@@ -47,7 +47,10 @@ All notable changes to this package are recorded here. The format follows
   revealed: measured in Chrome on a 1600-pixel stage, a nine-step calculation on
   a canvas 1.083 slides high stands still for eight steps and pans by 7.56
   percent of the layer for the ninth, which would otherwise have stood 16 pixels
-  below the stage. The slide's head -- band or title line -- does not travel
+  below the stage. The view belongs to the step, not to the way there: it is the
+  smallest pan from the corner that shows what the step reveals, so paging back
+  travels the same way back, and jumping into the middle of a slide shows what
+  paging there shows. The slide's head -- band or title line -- does not travel
   along: it is set as its own layer above the canvas, so the title stays put
   while the calculation passes under it. On paper there is nothing to pan, so
   the whole canvas goes onto the page, fitted and centred, with a line
@@ -55,7 +58,7 @@ All notable changes to this package are recorded here. The format follows
   in the talk", in the deck's language, labelled `ts-canvas-note`); the handout
   and `pages: "step"` do the same. A slide that fits its viewport is untouched
   in both outputs and carries no extra layer.
-  `.github/scripts/pruefe-leinwand.js` measures three decks on five points.
+  `.github/scripts/pruefe-leinwand.js` measures three decks on seven points.
 
 - **The address names the slide and the step on it.** Until 0.1.2 the running
   step over the whole deck stood in the hash (`#7`), so a link to a sub-step

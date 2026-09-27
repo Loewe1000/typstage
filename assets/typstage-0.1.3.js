@@ -712,14 +712,34 @@
     return neu;
   }
 
+  // Der Ausschnitt eines Schritts -- und zwar als Rechnung ueber den Schritt
+  // allein, nicht ueber den Weg dorthin.
+  //
+  // Das ist der Unterschied, an dem die erste Fassung scheiterte: Sie fuhr
+  // vom zuletzt erreichten Stand aus weiter und nur so weit, wie noetig --
+  // vorwaerts richtig, rueckwaerts gar nicht. Wer zurueckblaetterte, blieb
+  // unten stehen, obwohl der Schritt laengst wieder oben stand, und ein
+  // Sprung mitten auf die Folie hing davon ab, wo der Vortrag vorher war.
+  // Jetzt steht der Ausschnitt fuer jeden Schritt fest: dasselbe Bild,
+  // gleich ob vorwaerts, rueckwaerts oder hergesprungen.
+  //
+  // Gerechnet wird von der linken oberen Ecke aus: die kleinste Fahrt, die
+  // das Neue dieses Schritts zeigt. Vorwaerts ist das dieselbe Zahl wie
+  // vorher -- eine Rechnung, die nach unten weiterlaeuft, schiebt sich so
+  // Schritt um Schritt herunter --, und rueckwaerts faehrt sie denselben Weg
+  // zurueck.
+  //
+  // Bringt ein Schritt nichts Neues (eine Pause, eine Kette, die nur dimmt),
+  // gilt der letzte, der etwas brachte: Der Ausschnitt soll nicht
+  // heimspringen, nur weil ein Schritt still ist.
   function folgeFahrt(f, schritt) {
     var lw = leinwandVon(f);
     if (!lw) return "";
-    var neu = neuAufSchritt(f, schritt);
-    if (!neu.length) return f.tsFolge || "";
-    // Der Ausschnitt in Prozent der Leinwand, und wo er gerade steht.
+    var neu = [], s = schritt;
+    while (s >= 1 && !neu.length) { neu = neuAufSchritt(f, s); s--; }
+    if (!neu.length) return "";
+    // Der Ausschnitt in Prozent der Leinwand.
     var sichtB = CFG.width / lw.w * 100, sichtH = CFG.height / lw.h * 100;
-    var stand = f.tsFolgeStand || { x: 0, y: 0 };
     // Das Rechteck um alles, was dieser Schritt bringt.
     var l = Math.min.apply(null, neu.map(function (r) { return r.x; }));
     var o = Math.min.apply(null, neu.map(function (r) { return r.y; }));
@@ -729,7 +749,8 @@
     // Ausschnitts, aber nie mehr, als noch Platz ist.
     var randX = Math.min(sichtB / 20, Math.max(0, (sichtB - (re - l)) / 2));
     var randY = Math.min(sichtH / 20, Math.max(0, (sichtH - (u - o)) / 2));
-    var x = stand.x, y = stand.y;
+    // Die kleinste Fahrt von der Ecke aus, die das Rechteck zeigt.
+    var x = 0, y = 0;
     if (l - randX < x) x = l - randX;
     else if (re + randX > x + sichtB) x = re + randX - sichtB;
     if (o - randY < y) y = o - randY;
@@ -737,10 +758,8 @@
     // Nicht über die Leinwand hinaus.
     x = Math.max(0, Math.min(x, 100 - sichtB));
     y = Math.max(0, Math.min(y, 100 - sichtH));
-    f.tsFolgeStand = { x: x, y: y };
-    f.tsFolge = (x || y)
+    return (x || y)
       ? "translate(" + (-x).toFixed(4) + "%," + (-y).toFixed(4) + "%)" : "";
-    return f.tsFolge;
   }
 
   // Welche Fahrt auf einem Schritt gilt. Die letzte, die ihn deckt: zwei
