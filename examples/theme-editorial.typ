@@ -10,7 +10,7 @@
 // one build (three slides to a page, no transitions), then take the line out
 // again. The deck itself runs without it.
 
-#import "@preview/typstage:0.2.0": *
+#import "@preview/typstage:0.3.0": *
 
 // A theme is a dictionary, so a deck may reach into its palette directly.
 #let t = themes.editorial

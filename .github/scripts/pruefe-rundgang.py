@@ -65,7 +65,7 @@ MARKE = ("pause", "invert")
 # Werte, die in einem Ausdruck gebraucht statt aufgerufen werden.
 WERT = ("slide-width", "slide-height", "slide-margin", "dark", "accent",
         "paper", "muted", "runtime-version", "runtime-files", "themes",
-        "palettes")
+        "palettes", "subject-accents", "subject-names")
 
 # Was dieser Rundgang nicht aufrufen kann, und warum nicht.
 DESMOS_GRUND = (

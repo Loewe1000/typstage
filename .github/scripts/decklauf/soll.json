@@ -6,7 +6,7 @@
   "",
   "flieger und fliegerRueck sind die Zahl der Geister, die die Flüge des",
   "Hin- und des Rückwegs erzeugen, gezählt in der Laufzeit an der Stelle, an",
-  "der sie entstehen (FLUG in assets/typstage-0.2.0.js).",
+  "der sie entstehen (FLUG in assets/typstage-0.3.0.js).",
   "",
   "Das ist NICHT die alte dritte Zahl der Reihe folien/schritte/flieger. Die",
   "wurde am DOM abgelesen, an #ts-fly, und fly() räumt seine Geister per",
@@ -49,7 +49,7 @@
   "",
   "feder und federRueck sind die Zahl der Pfade, die sich auf dem Hin- und auf",
   "dem Rueckweg selbst gezeichnet haben (enter: \"draw\"). Gezaehlt wie flieger:",
-  "in der Laufzeit, dort wo sie entstehen (FEDER in assets/typstage-0.2.0.js),",
+  "in der Laufzeit, dort wo sie entstehen (FEDER in assets/typstage-0.3.0.js),",
   "und nicht am DOM. Sie stehen bei allen Decks; nur das Pruefdeck zeichnet,",
   "bei den anderen sind sie 0 -- und das ist selbst eine Aussage, denn ein Deck,",
   "das ploetzlich zeichnet, hat sich veraendert.",
@@ -343,7 +343,7 @@
   "--neu-soll fort: was hier nicht steht, ueberlebt keine Neuaufnahme."
  ],
  "decks": {
-  "0.2.0-ho-unterrichten": {
+  "0.3.0-ho-unterrichten": {
    "folien": 12,
    "schritte": 21,
    "elemente": 9,
@@ -415,7 +415,7 @@
    ],
    "fehler": []
   },
-  "0.2.0-ho-vortragen": {
+  "0.3.0-ho-vortragen": {
    "folien": 15,
    "schritte": 47,
    "elemente": 105,
@@ -543,8 +543,8 @@
    "fehler": []
   },
   "tour": {
-   "folien": 52,
-   "schritte": 165,
+   "folien": 53,
+   "schritte": 166,
    "elemente": 140,
    "flieger": 190,
    "fliegerRueck": 187,
@@ -594,6 +594,7 @@
     "#ffffff",
     "#ffffff",
     "#c1361c",
+    "#ffffff",
     "#ffffff",
     "#ffffff",
     "#ffffff",
@@ -738,6 +739,7 @@
     "102/0·0/0",
     "103/0·1/0",
     "103/0·0/0",
+    "103/0·0/0",
     "104/0·1/0",
     "105/0·2/0",
     "106/0·3/0",
@@ -809,6 +811,7 @@
     "108/0·3/0",
     "107/0·2/0",
     "106/0·1/0",
+    "105/0·0/0",
     "105/0·0/0",
     "105/0·1/0",
     "104/0·0/0",
@@ -2575,14 +2578,66 @@
    "zeichnung": "3+3 Pfade · hinein/heraus · 0>1 · 0/0 offen · Sprung 0/1/6",
    "kurve": "cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1) · cubic-bezier(.34,1.56,.64,1)",
    "satz": {
-    "darwin": "f9da955f8ec6b8e4"
+    "darwin": "052beb69c91de0c6"
    },
    "satzBytes": {
-    "darwin": 1364790
+    "darwin": 1365328
    },
    "szene": "4 Halte · 28 Bilder · 0/9/18/27/27 · Mitte 7 · Sprung 27",
    "kino": "at 1- 0/0/0/12/23 · at 3- 0/0/0/12/23",
    "kamera": "1/7.893/7.893/1 · einig · Mitte 0.50/0.50 · halb 6.346 · Sprung 7.893 · ganz/nah/einig · allein 3"
+  },
+  "schul-themes": {
+   "folien": 8,
+   "schritte": 13,
+   "elemente": 7,
+   "flieger": 27,
+   "fliegerRueck": 27,
+   "feder": 0,
+   "federRueck": 0,
+   "hash": 8,
+   "hashStand": "1/0",
+   "sprecher": 217,
+   "grund": [
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff",
+    "#ffffff"
+   ],
+   "sichtbar": [
+    "0/0·0/0",
+    "0/0·0/0",
+    "0/0·0/0",
+    "1/0·1/0",
+    "1/0·0/0",
+    "2/0·1/0",
+    "2/0·0/0",
+    "3/0·1/0",
+    "4/0·1/0",
+    "4/0·0/0",
+    "5/0·1/0",
+    "6/0·2/0",
+    "7/0·3/0"
+   ],
+   "sichtbarRueck": [
+    "6/0·2/0",
+    "5/0·1/0",
+    "4/0·0/0",
+    "4/0·1/0",
+    "4/0·1/0",
+    "4/0·0/0",
+    "4/0·1/0",
+    "3/0·0/0",
+    "3/0·1/0",
+    "2/0·0/0",
+    "2/0·0/0",
+    "2/0·0/0"
+   ],
+   "fehler": []
   }
  }
 }

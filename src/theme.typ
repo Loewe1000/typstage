@@ -208,7 +208,12 @@
     let zahl = des-decks[#[#{
       if t.footer == "fraction" { str(n) + " / " + str(total) } else { str(n) }
     } <ts-slide-number>] <ts-slide-footer>]
-    if t.footer == "center" {
+    if type(t.footer) == function {
+      // Ein Theme, das seine Nummer selbst zeichnet: Es bekommt, was `info()`
+      // weiss, und die ganze Fläche der Zier. Der Rahmen um seine Zeichnung
+      // trägt dieselbe Marke wie die Fußzeile der übrigen Themes.
+      [#(t.footer)(t, d, geo) <ts-slide-footer>]
+    } else if t.footer == "center" {
       place(bottom + center, dy: -13pt * k, text(size: 12pt * k, fill: t.muted, zahl))
     } else if t.footer != "none" {
       am-ende(bottom, m, dy: -13pt * k,
@@ -312,7 +317,7 @@
   let titel = not leerer-titel(s.title)
   let randlos = s.at("bleed", default: none)
   if not titel { return m.top }
-  if t.header == "band" { return t.band-height * k }
+  if t.header == "band" or type(t.header) == function { return t.band-height * k }
   let strich = if t.rule-size > 0pt {
     t.rule-size * k + t.title-size * 0.34 * k
   } else { 0pt }
@@ -340,7 +345,12 @@
     ..font-args(t.title-font), size: t.title-size * k, weight: t.weight,
     fill: t.title-fill, tracking: t.tracking * k, [#s.title <ts-slide-title>],
   )
-  if t.header == "band" {
+  if type(t.header) == function {
+    // Der Kopf als ganzes Bild: das Theme setzt den fertig gestalteten Titel
+    // selbst, auf die volle Folie. Wie tief der Rumpf beginnt, sagt
+    // `band-height`, wie beim Band.
+    (t.header)(t, titel-text, geo, s)
+  } else if t.header == "band" {
     place(top + left, {
       set rect(fill: t.strong, stroke: none)
       [#rect(width: 100%, height: bar) <ts-slide-header-band>]
@@ -586,7 +596,7 @@
     // Eine Folie mit `bleed` trägt kein Chrome, also auch keine Laufzeile, und
     // ihr Titel rückt um deren Höhe hinauf.
     let lauf = if titel and randlos == none { lauf-hoehe(t, k) } else { 0pt }
-    let kopf = if not titel { m.top } else if t.header == "band" { bar } else {
+    let kopf = if not titel { m.top } else if t.header == "band" or type(t.header) == function { bar } else {
       m.top + lauf + t.title-size * 1.35 * k + strich
     }
     {

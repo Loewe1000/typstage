@@ -534,14 +534,19 @@
   box: "bar",
   title-slide: band-title-slide,
   section: band-section,
+  class: none,
+  subject-accent: false,
+  derive: none,
+  math-font: none,
 ) = {
   // A typo in one of these three would otherwise simply do nothing: the
   // footer would stay missing, and nobody would know why.
-  assert(header in ("band", "plain", "run"),
-         message: "typstage: theme(header: ..) is \"band\", \"plain\" or \"run\"")
-  assert(footer in ("fraction", "number", "center", "none"),
+  assert(type(header) == function or header in ("band", "plain", "run"),
+         message: "typstage: theme(header: ..) is \"band\", \"plain\", \"run\" "
+           + "or a function (t, title, geo, slide) => content")
+  assert(type(footer) == function or footer in ("fraction", "number", "center", "none"),
          message: "typstage: theme(footer: ..) is \"fraction\", \"number\", "
-           + "\"center\" or \"none\"")
+           + "\"center\", \"none\" or a function (t, info, geo) => content")
   assert(progress in ("bar", "top", "tick", "none"),
          message: "typstage: theme(progress: ..) is \"bar\", \"top\", \"tick\" "
            + "or \"none\"")
@@ -557,6 +562,8 @@
   head-gap: head-gap, foot-gap: foot-gap, band-height: band-height,
   footer: footer, footer-rule: footer-rule, progress: progress, box: box,
   title-slide: title-slide, section: section,
+  class: class, subject-accent: subject-accent,
+  derive: derive, math-font: math-font,
   )
 }
 
@@ -750,6 +757,16 @@
   let farben = (:)
   for k in palette-keys { farben.insert(k, t.at(k)) }
   farben = farben + p
+  // Farben, die ein Theme aus anderen ableitet (`derive`), etwa die Karten in
+  // der Fachfarbe. Abgeleitet wird aus den Farben, die wirklich gelten, damit
+  // `accent:`, `class:` und eine Palette sie mitnehmen; was die Palette
+  // selbst nennt, bleibt ihres.
+  let ableiten = t.at("derive", default: none)
+  if type(ableiten) == function {
+    for (name, wert) in ableiten(farben) {
+      if name not in p { farben.insert(name, wert) }
+    }
+  }
   if invert { farben = invert-palette(farben) }
   let aufloesen(v) = if type(v) == function { v(farben) } else { v }
   t + farben + (

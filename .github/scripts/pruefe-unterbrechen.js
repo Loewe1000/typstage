@@ -66,7 +66,7 @@ const CHROME = arg("--browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 const LAUT = process.argv.indexOf("--laut") > 0;
 
-const KOPF = `#import "@preview/typstage:0.2.0": *\n`;
+const KOPF = `#import "@preview/typstage:0.3.0": *\n`;
 
 // Langsam genug, dass ein Tastendruck wirklich mitten hinein fällt: Eine
 // halbe Sekunde ist zu kurz, um sicher in ihrer Mitte zu landen.
@@ -174,7 +174,7 @@ function groesster(werte, sichtbar) {
   for (const raum of ["preview", "schule"]) {
     const ziel = path.join(paket, raum, "typstage");
     fs.mkdirSync(ziel, { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(ziel, "0.2.0"));
+    fs.symlinkSync(WURZEL, path.join(ziel, "0.3.0"));
   }
   const weg = {};
   try {

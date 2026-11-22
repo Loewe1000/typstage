@@ -7,7 +7,7 @@ the handout as PDF from that same file.**
 
 [![Badge linking to the typstage manual](https://img.shields.io/badge/docs-manual-green)](https://loewe1000.github.io/typstage/)
 [![Badge linking to example decks and handouts](https://img.shields.io/badge/demo-decks%20%26%20handouts-blue)](https://loewe1000.github.io/typstage/beispiele/en.html)
-[![Badge linking to the changelog for version 0.2.0](https://img.shields.io/badge/changelog-0.2.0-lightgrey)](CHANGELOG.md)
+[![Badge linking to the changelog for version 0.3.0](https://img.shields.io/badge/changelog-0.3.0-lightgrey)](CHANGELOG.md)
 ![Badge showing the license this package is released under](https://img.shields.io/github/license/Loewe1000/typstage)
 
 ```bash
@@ -46,7 +46,7 @@ One source, three outputs:
 This file compiles, as it stands, with both commands above.
 
 ```typ
-#import "@preview/typstage:0.2.0": *
+#import "@preview/typstage:0.3.0": *
 
 #show: presentation.with(
   title: [The Pythagorean Theorem],
@@ -144,7 +144,7 @@ Nothing to install. Import it and Typst fetches the package on the first
 compile:
 
 ```typ
-#import "@preview/typstage:0.2.0": *
+#import "@preview/typstage:0.3.0": *
 ```
 
 To work on the package itself, clone it under the local package path. A clone
@@ -153,7 +153,7 @@ that sits there is found before the published one, so the same
 
 ```bash
 git clone https://github.com/Loewe1000/typstage \
-  ~/Library/Application\ Support/typst/packages/preview/typstage/0.2.0
+  ~/Library/Application\ Support/typst/packages/preview/typstage/0.3.0
 ```
 
 On Linux that path is `~/.local/share/typst/packages/preview/…`, on Windows
@@ -224,6 +224,58 @@ built shapes (`header`, `footer`, `progress`, `box`). That is why `+` is enough
 to bend one, and `theme(…)` builds a new one from scratch. Only the title slide
 and the section slide are functions in it: they are whole pictures, not
 variations of one another.
+
+### Classroom themes
+
+Eight more themes are made for the classroom: `klar`, `atlas`, `skizze`,
+`labor`, `kontur`, `leiste`, `riso` and `bauhaus`. They share one set of
+building blocks and draw each of them in their own way: a subject colour, the
+line "Mathematik · Klasse 7" above the title, the class code as a badge, and
+the slide number as a filled marker in the subject colour.
+
+```typ
+#show: presentation.with(theme: "labor", class: "MA-07")
+#show: presentation.with(theme: "riso", class: "PH-9")
+#show: presentation.with(theme: themes.atlas, accent: rgb("#13866f"))
+```
+
+A theme can be named by string, `theme: "labor"` is the same as
+`theme: themes.labor`. `class:` takes a class code of the form `MA-07`,
+`PH-9` or `IF-11`; its subject letters pick the colour (`MA` blue, `PH`
+orange, `IF` and `NW` teal, `CH` violet, `BI` green, `DE` red, `EN` magenta,
+`KLS` grey, anything else blue) and its number the year. `accent:` overrides
+the colour, and a palette still overrides both. The table is exported as
+`subject-accents` and `subject-names`, the line above the title as
+`subject-line(class)`.
+
+| Theme | Look | Fonts |
+|---|---|---|
+| `klar` | hairlines instead of surfaces, square markers | Avenir Next |
+| `atlas` | title card in the subject colour, rounded corners | Myriad Pro |
+| `skizze` | handwriting, title on tape, class code on a slanted note | Playpen Sans, SF Pro Rounded |
+| `labor` | framed bar with a measuring scale, monospace tags | Fira Sans, Fira Code |
+| `kontur` | thick frames, hard offset shadows, bold capitals | Futura, Helvetica Neue |
+| `leiste` | a band at the outer edge carries class code and number | Montserrat, Lato |
+| `riso` | two-colour print, subject colour plus pink, halftone dots | Rockwell, PT Sans |
+| `bauhaus` | circle, square and triangle as signet and numbers | Gill Sans, Futura |
+
+Formulas are set in Fira Math in all eight. The fonts are not bundled: a font
+that is not installed is reported by Typst as a warning (`unknown font
+family`), and nothing else is quietly put in its place. `examples/schul-themes.typ`
+shows one deck in any of the eight:
+
+```sh
+typst compile --input theme=labor --input class=MA-07 examples/schul-themes.typ
+```
+
+Two keys make these themes possible, and a theme of your own can use them
+too: `header` and `footer` may be functions. `header: (t, title, geo, slide)
+=> content` draws the whole head of an ordinary slide, with `band-height`
+saying where the body starts; `footer: (t, info, geo) => content` draws the
+number and anything else that stays put while slides change. `derive: p =>
+(strong: p.accent)` derives palette colours from the ones in force, so they
+follow `accent:`, `class:` and a palette, and `math-font:` sets the formula
+font.
 
 ## Palettes and the contrast contract
 
@@ -536,7 +588,7 @@ single run.
 
 The price stands in the list above: an experimental export, files measured in
 megabytes, outlines instead of text, five themes rather than a hundred, and a
-version number that begins with a zero. Mosaic is at 0.0.1 and this at 0.2.0;
+version number that begins with a zero. Mosaic is at 0.0.1 and this at 0.3.0;
 neither of us has earned a habit yet.
 
 `examples/` holds three decks adapted from Mosaic's own, so that part of the

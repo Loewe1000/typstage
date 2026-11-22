@@ -4,6 +4,39 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), the numbering
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — unreleased
+
+A minor version because it adds to the public surface; a deck written for
+0.2.0 looks the same under 0.3.0. Measured on the five theme examples: every
+page identical to the pixel.
+
+### Added
+
+- **Eight classroom themes**: `klar`, `atlas`, `skizze`, `labor`, `kontur`,
+  `leiste`, `riso` and `bauhaus`. Each draws its own title slide, section
+  slide, slide head and slide number, and all eight share the same building
+  blocks: the subject colour, the line "Mathematik · Klasse 7" above the
+  title, the class code as a badge. `examples/schul-themes.typ` shows one deck
+  in any of them (`--input theme=…`).
+- **`presentation(class: …)`** takes a class code such as `"MA-07"`. Its
+  subject letters give the classroom themes their colour, its number the year
+  in the line above the title. **`presentation(accent: …)`** sets the accent
+  of any theme directly and wins over `class`; a palette still wins over both.
+- **`theme: "labor"`**: a theme can be named by string. An unknown name lists
+  the bundled ones.
+- **`header` and `footer` may be functions.** `header: (t, title, geo, slide)
+  => content` draws the head of an ordinary slide, `band-height` says how deep
+  it builds; `footer: (t, info, geo) => content` draws the number and whatever
+  else stands still while slides change. Both work on paper and in the
+  browser, where the footer stays on its own layer above the stage.
+- **`theme(derive: …)`** derives palette colours from the ones in force, so a
+  card's bar can follow the accent through `class:`, `accent:` and palettes.
+  Colours a palette names itself stay the palette's.
+- **`theme(math-font: …)`** sets the formula font. It is laid around the
+  `style` hook, so a flying formula lands in the font it started in.
+- `subject-accents`, `subject-names`, `subject-line` and `class-accent` are
+  exported.
+
 ## [0.2.0] — unreleased
 
 A minor version and not 0.1.3, because an existing deck can look different

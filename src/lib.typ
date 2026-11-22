@@ -14,7 +14,8 @@
   runtime-version, runtime-files,
 )
 
-#import "themes.typ": theme, themes
+#import "themes.typ": theme
+#import "looks.typ": themes, subject-accents, subject-names, subject-line, class-accent
 #import "palettes.typ": (
   // Color as a thing of its own, and the instrument the bundled palettes are
   // measured with.

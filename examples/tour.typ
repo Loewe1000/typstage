@@ -30,7 +30,7 @@
 // white space under it. `#v(1fr)` at both ends centres one; a pure `fr` spacer
 // is passed through untouched even where it stands next to tracked elements.
 
-#import "@preview/typstage:0.2.0": *
+#import "@preview/typstage:0.3.0": *
 
 // Two meaning colours, declared once here and passed in wherever they are
 // needed. This deck's theme keeps none of its own. `live` marks the parts of a
@@ -1624,6 +1624,34 @@ and the wrong two find each other), the piece gets a name instead.
   this deck's own theme has #t.keys().len().
 ], at: 2, enter: "fade-up")
 
+== Classroom themes and the class code
+
+// The eight classroom themes take their accent from a class code. The four
+// helpers behind that are exported, so a deck can colour its own pieces the
+// same way: here they are called rather than described.
+Eight of the themes are made for the classroom:
+#themes.keys().slice(5).map(raw).join([, ]).
+`presentation(class: "MA-07")` picks the subject colour and the line above the
+title.
+
+#v(0.6em)
+
+#side-by-side(
+  split: (1fr, 1.25fr), align: top,
+  card(title: [From the class code])[
+    `subject-line("MA-07")` gives #subject-line("MA-07").
+
+    `class-accent("PH-9")` gives #swatch(class-accent("PH-9"), "PH").
+  ],
+  card(title: [Every subject])[
+    #set text(size: 0.8em)
+    #grid(columns: 2, column-gutter: 1em, row-gutter: 0.5em,
+      ..subject-accents.pairs().map(((k, c)) => [#swatch(c, k) #subject-names.at(k)]))
+  ],
+)
+
+#v(1fr)
+
 == Palettes, and the contract they are held to
 
 // A palette is colour on its own, apart from fonts and sizes. Five ship with
@@ -1949,7 +1977,7 @@ and the wrong two find each other), the piece gets a name instead.
   split: (1fr, 1fr), align: top,
   card(title: [The whole file])[
     #text(size: 0.68em, raw(lang: "typ",
-      "#import \"@preview/typstage:0.2.0\": *\n#show: presentation.with(\n  theme: themes.default,\n  title: [My talk],\n  handout: 3,\n)\n\n= First section\n== First slide\nOne point."))
+      "#import \"@preview/typstage:0.3.0\": *\n#show: presentation.with(\n  theme: themes.default,\n  title: [My talk],\n  handout: 3,\n)\n\n= First section\n== First slide\nOne point."))
   ],
   card(title: [The three commands])[
     #text(size: 0.68em, raw(lang: "sh",

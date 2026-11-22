@@ -1,4 +1,4 @@
-#import "@preview/typstage:0.2.0": *
+#import "@preview/typstage:0.3.0": *
 
 #show: presentation.with(
   title: [The Pythagorean Theorem],

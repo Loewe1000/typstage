@@ -72,7 +72,7 @@
 // `96/328/278/396/224/96`. Zwei Prüfer sind daran gescheitert.
 //
 // Die Zahl wird deshalb nicht mehr am DOM abgelesen, sondern in der Laufzeit
-// gezählt, dort wo die Geister entstehen (`FLUG` in `assets/typstage-0.2.0.js`).
+// gezählt, dort wo die Geister entstehen (`FLUG` in `assets/typstage-0.3.0.js`).
 // Ein laufender Zähler kann nicht zum falschen Zeitpunkt gefragt werden.
 // =============================================================================
 "use strict";
@@ -147,7 +147,7 @@ const sollDatei = path.resolve(opt("--soll", path.join(__dirname, "decklauf", "s
 const bildZiel = opt("--bilder", null) && path.resolve(opt("--bilder"));
 const tempo = Math.max(1, +(opt("--tempo", "1")) || 1);
 const neuSoll = hat("--neu-soll");
-// Der Paketpfad, unter dem die Prüfdecks `@preview/typstage:0.2.0` finden.
+// Der Paketpfad, unter dem die Prüfdecks `@preview/typstage:0.3.0` finden.
 //
 // Ohne Angabe wird er aus dem Arbeitsbaum selbst gebaut, und zwar immer. Das
 // ist nicht Bequemlichkeit: verlässt man sich darauf, dass der Import
@@ -162,12 +162,12 @@ const paketpfad = (function () {
   const wurzel = bauordner("typstage-pp-");
   const ziel = path.join(wurzel, "schule", "typstage");
   fs.mkdirSync(ziel, { recursive: true });
-  fs.symlinkSync(WURZEL, path.join(ziel, "0.2.0"), "dir");
+  fs.symlinkSync(WURZEL, path.join(ziel, "0.3.0"), "dir");
   // Und unter `preview`, wie das Paket nach der Einreichung heisst. Die
   // Pruefdecks nennen es so; ohne diesen zweiten Verweis faenden sie es nicht.
   const ziel2 = path.join(wurzel, "preview", "typstage");
   fs.mkdirSync(ziel2, { recursive: true });
-  fs.symlinkSync(WURZEL, path.join(ziel2, "0.2.0"), "dir");
+  fs.symlinkSync(WURZEL, path.join(ziel2, "0.3.0"), "dir");
   return wurzel;
 })();
 
@@ -189,7 +189,7 @@ const SOLL_HINWEIS = [
   "",
   "flieger und fliegerRueck sind die Zahl der Geister, die die Flüge des",
   "Hin- und des Rückwegs erzeugen, gezählt in der Laufzeit an der Stelle, an",
-  "der sie entstehen (FLUG in assets/typstage-0.2.0.js).",
+  "der sie entstehen (FLUG in assets/typstage-0.3.0.js).",
   "",
   "Das ist NICHT die alte dritte Zahl der Reihe folien/schritte/flieger. Die",
   "wurde am DOM abgelesen, an #ts-fly, und fly() räumt seine Geister per",
@@ -232,7 +232,7 @@ const SOLL_HINWEIS = [
   "",
   "feder und federRueck sind die Zahl der Pfade, die sich auf dem Hin- und auf",
   "dem Rueckweg selbst gezeichnet haben (enter: \"draw\"). Gezaehlt wie flieger:",
-  "in der Laufzeit, dort wo sie entstehen (FEDER in assets/typstage-0.2.0.js),",
+  "in der Laufzeit, dort wo sie entstehen (FEDER in assets/typstage-0.3.0.js),",
   "und nicht am DOM. Sie stehen bei allen Decks; nur das Pruefdeck zeichnet,",
   "bei den anderen sind sie 0 -- und das ist selbst eine Aussage, denn ein Deck,",
   "das ploetzlich zeichnet, hat sich veraendert.",
@@ -548,11 +548,11 @@ const SOLL_HINWEIS = [
 // Rahmen läuft, holt der Browser von `geogebra.org` und meldet sich in seinem
 // eigenen Fenster. Der Lauf ist deshalb nicht vom Netz abhängig: gemessen
 // ergeben beide Decks mit und ohne erreichbares GeoGebra dieselben Zahlen.
-const BEISPIELE = ["0.2.0-ho-unterrichten", "0.2.0-ho-vortragen", "tour", "theme-default", "theme-editorial",
+const BEISPIELE = ["0.3.0-ho-unterrichten", "0.3.0-ho-vortragen", "tour", "theme-default", "theme-editorial",
                    "theme-lesson", "theme-night", "theme-plain", "ziehen",
                    "geogebra", "geogebra-sprecher", "anziehen", "zeichnen",
                    "vortragen", "mosaic-editorial", "mosaic-manifesto",
-                   "mosaic-greyscale", "unterrichten", "gliedern"];
+                   "mosaic-greyscale", "unterrichten", "gliedern", "schul-themes"];
 
 // Kein Beispiel darf hier fehlen. Diese Liste war einmal von Hand gepflegt,
 // und zwei frisch gebaute Decks sind dabei stillschweigend durchgerutscht:
@@ -615,7 +615,7 @@ function ohneGeoGebra(datei) {
 }
 
 // Die Laufzeit, wie sie im Paket liegt. Jedes Deck muss genau diese tragen.
-const LAUFZEIT = fs.readFileSync(path.join(WURZEL, "assets", "typstage-0.2.0.js"));
+const LAUFZEIT = fs.readFileSync(path.join(WURZEL, "assets", "typstage-0.3.0.js"));
 
 // Ein Deck aus `decklauf/` übersetzen. Gibt den Pfad zurück, oder wirft mit
 // der Meldung von typst.
@@ -756,7 +756,7 @@ function notizProbe() {
       + "`parbreak` nicht, stoßen die Sätze ohne ein Leerzeichen aneinander.";
   }
   const css = fs.readFileSync(path.join(WURZEL, "assets",
-                                        "typstage-0.2.0.css"), "utf8");
+                                        "typstage-0.3.0.css"), "utf8");
   if (!/\.ts-sp-notiz\{[^}]*white-space:\s*pre-wrap/.test(css)) {
     return "das Notizfeld der Sprecheransicht steht nicht mehr auf "
       + "white-space: pre-wrap. Der Umbruch im Attribut stimmt dann zwar, "
@@ -2263,7 +2263,7 @@ const kurz = s => (s == null ? "nichts" : (s.length > 220 ? s.slice(0, 217) + ".
     const roh = fs.readFileSync(d.datei);
     const stelle = roh.indexOf(LAUFZEIT);
     if (stelle < 0) z.maengel.push("Dieses Deck trägt eine andere Laufzeit als "
-      + "assets/typstage-0.2.0.js. Erst neu bauen, dann prüfen.");
+      + "assets/typstage-0.3.0.js. Erst neu bauen, dann prüfen.");
     // Und der Satz selbst, als Fingerabdruck der HTML-Ausgabe ohne den
     // Laufzeitblock. Nur für das Prüfdeck: das ist die einzige Stelle, an der
     // eine Änderung an `fit`, `info()`, `invert` oder einer Palette sicher

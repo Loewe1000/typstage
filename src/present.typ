@@ -5,7 +5,8 @@
 #import "slides.typ": *
 #import "theme.typ": (auf-leinwand, fortschritt-stil, handout-body, kopf-ebene,
                      leinwand-mass, slide-body, mit-leinwand, slide-chrome)
-#import "themes.typ": mit-palette, theme-state, themes
+#import "themes.typ": mit-palette, theme-state
+#import "looks.typ": class-accent, themes
 #import "palettes.typ": palette-pruefen
 #import "render.typ": *
 #import "elements.typ": anim, pause
@@ -666,6 +667,8 @@
   date: none,
   assets: "inline",
   theme: themes.default,
+  class: none,
+  accent: auto,
   palette: (:),
   transition: "slide",
   speaker-view: (:),
@@ -691,7 +694,7 @@
   assert(slides.named().len() == 0, message:
     "typstage: presentation() does not know "
     + slides.named().keys().join(", ")
-    + ". It takes title, subtitle, author, date, assets, theme, palette, "
+    + ". It takes title, subtitle, author, date, assets, theme, class, accent, palette, "
     + "transition, transition-duration, duration, speaker-view, room, style, "
     + "width, height, margin, handout, overflow, drift, slide-level, "
     + "section-numbering, section-back and pages.")
@@ -760,13 +763,37 @@
     "typstage: duration is the planned length of the talk in minutes, a "
     + "whole number from 0 upwards; 0 turns the pace off. Not "
     + repr(duration))
-  // `theme: "lesson"` statt `theme: themes.lesson` ist der wahrscheinlichste
-  // Anfaengerfehler des Pakets, und er endete bisher mit "expected integer,
-  // found string" aus dem Inneren von `themes.typ`.
+  // Ein Theme ist ein Dictionary oder sein Name. Seit 0.3.0 auch der Name:
+  // `theme: "labor"` liest sich wie `arbeitsblatt(theme: "labor")` und war
+  // ohnehin der häufigste Anfängerfehler.
+  if type(theme) == str {
+    assert(theme in themes, message: "typstage: there is no theme \"" + theme
+      + "\". The bundled ones are " + themes.keys().map(n => "\"" + n + "\"").join(", ") + ".")
+    theme = themes.at(theme)
+  }
   assert(type(theme) == dictionary, message:
-    "typstage: theme takes a theme, not " + str(type(theme)) + ". The bundled "
-    + "ones live in `themes`: themes.default, themes.editorial, themes.lesson, "
-    + "themes.night, themes.plain -- written without quotes.")
+    "typstage: theme takes a theme or its name, not " + str(type(theme)) + ". The bundled "
+    + "ones live in `themes`: " + themes.keys().join(", ") + ".")
+  assert(accent == auto or type(accent) == color, message:
+    "typstage: accent is auto or a colour, not " + repr(accent))
+  // Das Kürzel geht ins Theme, damit Titelfolie und Leiste es zeichnen können,
+  // und gibt den Themes, die es wollen, die Fachfarbe. Ein ausdrückliches
+  // `accent:` geht vor; eine Palette liegt darüber und geht vor beiden.
+  if class != none { theme.insert("class", class) }
+  if accent != auto {
+    theme.insert("accent", accent)
+  } else if class != none and theme.at("subject-accent", default: false) {
+    theme.insert("accent", class-accent(class))
+  }
+  // Die Formelschrift des Themes, als äußerste Schicht um den `style`-Haken:
+  // der wird auch um jedes fliegende Stück gelegt, und so landet eine Formel
+  // in derselben Schrift, in der sie gestartet ist. Was das Deck im Haken
+  // selbst setzt, liegt innen und geht vor.
+  let formelschrift = theme.at("math-font", default: none)
+  let style = if formelschrift == none { style } else {
+    let innen = style
+    it => { show math.equation: set text(font: formelschrift); innen(it) }
+  }
   // Was die Sprecheransicht zeigen soll. Ein Deck, das keine Klassenuhr
   // braucht, soll ihre Kachel nicht sehen -- sie nimmt Platz, der der Notiz
   // fehlt. Vorgabe ist ueberall `true`: wer nichts sagt, bekommt alles.
