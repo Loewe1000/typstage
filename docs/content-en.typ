@@ -2611,16 +2611,21 @@ those a row of four small tiles:
 The seam between the slide and the note is a handle: drag it down for more
 slide, up for more note. Tab reaches it; the arrow keys then move it by 16
 pixels, by 64 with Shift, `Home` and `End` take it to the stops, and a
-double-click or `Enter` puts it back. A reload keeps the split. A second divider sets the notes/next-slide width
+double-click or `Enter` puts it back. The browser remembers the split, see
+"What the browser remembers". A second divider sets the notes/next-slide width
 ratio independently of slide height. `h` or the `?` button toggles the shortcut
-bar; `speaker-view: (shortcuts: false)` hides it initially. Presenter media
+bar; `speaker-view: (shortcuts: false)` hides it initially, as long as the
+browser has not remembered a choice of its own. Presenter media
 controls provide playback buttons and timelines for video and audio. A deck without
 notes has nothing to divide and gets no handle.
 
 Under the tiles the tool row -- pen, pointer and eraser, the four colours, undo
-and clear, light or dark --, and under that the key row with every key of the
-view, the deck's sound keys at its end. The state of the hall -- `black`,
-`frozen`, `no talk window` -- stands at the top right inside the slide tile.
+and clear, and on a slide with video or audio the playback controls --, and
+under that the key row with every key of the view, the deck's sound keys at its
+end. The state of the hall -- `black`, `frozen`, `no talk window` -- stands at
+the top right inside the slide tile, and beside it three small buttons that
+concern the view alone: light or dark, `?` for the key row, and the gear that
+customizes the view.
 
 The keys of the view, which `?` also shows inside it:
 
@@ -2644,6 +2649,7 @@ The keys of the view, which `?` also shows inside it:
   [`c`], [the next drawing colour],
   [`z`], [take back the last stroke],
   [`x`], [clear the strokes on this slide],
+  [`,`], [customize the view: which tiles are shown],
   [`⇧L`], [light or dark, for the view alone],
   [`h`], [toggle the shortcut bar],
   [`k`], [pause or resume video and audio],
@@ -2668,20 +2674,116 @@ the note could use:
 ```]
 
 What is not named is on: a deck that says nothing gets the whole view.
-`tools: false` takes the drawing bar away.
+`tools: false` takes pen, pointer, eraser and colours away; the playback
+controls for video and audio, `?` and light/dark stay.
 
 A tile that is switched off takes its keys with it: with `clock: false`, `t`
-and `⇧t` do nothing and no longer stand in the key bar.
+and `⇧t` do nothing and no longer stand in the key bar; with `tools: false`
+neither do `m`, `c`, `z` and `x`.
 
 The colours are Typst colours, not strings, and there may be more or fewer than
 four. `c` steps through them in turn.
 
+=== What of it is shown
+
+What `speaker-view` switches off does not exist in this deck. Which of the rest
+is shown is the speaker's own choice, made at the lectern: `,` or the gear at
+the top of the slide tile opens a small sheet at the top right, where it covers
+as little of the slide as it can. It holds three presets and a checkbox for
+each part of the view, each *module*:
+
+#table(
+  columns: (auto, auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Module*], [*Name*], [*What belongs to it*]),
+  [next step], [`next`], [the preview],
+  [note], [`notes`], [the step's note],
+  [elapsed], [`elapsed`], [the elapsed time and the time of day],
+  [progress], [`progress`], [slide, step and the bar],
+  [target], [`target`], [planned length, remaining and pace],
+  [class clock], [`clock`], [the clock for the hall],
+  [drawing], [`tools`], [pen, pointer, eraser, colours, undo and clear],
+  [media], [`media`], [the playback controls; they appear only on slides with
+    video or audio anyway],
+)
+
+The running slide (`slide`) is always there. The three presets:
+
+- *Full* (`full`): everything, the default -- the lectern as it always was.
+- *Lesson* (`lesson`): next step, note, class clock, drawing and media. The
+  talk's own clocks stay away, and the class clock fills the tile row alone.
+- *Minimal* (`minimal`): next step and note.
+
+Anything else is a *custom* view. Every change takes effect at once, and the
+slide takes the room it frees: without note and preview it stands the full
+height, without tiles the tile row goes along with its gap. `Esc` or another
+`,` closes the sheet. It is not modal: while the focus is in it, space and the
+arrows do not page; click the slide or tab out, and they page as usual.
+"Reset everything" in it forgets what the browser remembered for the lectern.
+
+Hiding is not switching off: the keys stay. `r`, `d`, the digits, `m`, `c`, `z`
+and `x` work while their tile is out of sight. The class clock shows itself
+when needed: `t`, `⇧t` or a digit bring its tile in while the minutes field is
+open or the clock runs in the hall, and take it out again afterwards. Likewise
+`d` brings in the target duration while its field is open.
+
+The deck can give the starting value -- for browsers that remember nothing yet,
+such as the machine in the classroom:
+
+// check: dokument
+#show-code[```typ
+#show: presentation.with(speaker-view: (
+  preset: "lesson",                     // "full", "lesson" or "minimal"
+  // modules: ("next", "notes", "clock"),  // or name the modules yourself
+))
+```]
+
+`modules` names the modules shown and wins over `preset`. A module that the
+same `speaker-view` switches off (`modules: ("clock",)` beside `clock: false`)
+is an error, as is an unknown name. A single module needs the comma of a Typst
+list: `("notes",)`.
+
+=== What the browser remembers
+
+The choice of modules, the split between slide, note and preview, the note
+size set with `+` and `-`, light or dark and the key row are remembered by the
+browser in `localStorage` -- not per deck but for all of them: a lectern set up
+once is there again in the next deck. It is read only when the view opens; a
+change made in another deck does not rebuild an open view in the middle of a
+talk.
+
+How far "all of them" reaches is the browser's decision:
+
+- *Safari, Chrome and the Typstage app* share the storage across all local
+  files, in every folder.
+- *Firefox* keeps it per file: each deck is set up on its own.
+- *Safari and the app* do not share with each other, although both run on the
+  same Mac.
+- Loaded from a server, it holds for every deck of that server.
+
+The Typst option `preset`/`modules` is therefore the starting value that does
+not depend on the browser: it holds wherever the browser remembers nothing yet.
+The order, from the bottom up: the default `full`, then the deck, then the
+browser -- field by field. Whoever only dragged the split still gets the
+modules from the deck. What the deck switches off stays off, whatever is
+stored.
+
+Per deck the browser remembers only the target duration (`d`); it stays even
+when the deck is compiled again and gains a slide. The elapsed time belongs to
+the tab: it survives a reload, and it survives closing the speaker view and
+opening it again with `n` -- the talk window keeps it meanwhile.
+
+To start over with the defaults, add `&reset` to the address:
+`talk.html#speaker&reset` forgets the remembered lectern, not the target
+durations, and takes the `&reset` off the address again, so that a reload does
+not reset a second time.
+
 === Light or dark
 
 The view follows the system setting of the machine it stands on
-(`prefers-color-scheme`), and `l` contradicts it when the room is not what the
-operating system thinks. The choice holds for the session and survives a
-reload.
+(`prefers-color-scheme`), and `⇧L` or the sun button contradicts it when the
+room is not what the operating system thinks. The browser remembers the choice
+for every deck.
 
 It is expressly *not* the deck's palette: the lectern is a tool and should read
 the same whatever the room does.

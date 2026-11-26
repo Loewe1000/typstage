@@ -200,7 +200,8 @@ const FOKUS = `(() => {
       // `prefers-color-scheme`, sondern von `l`, und dieser Lauf muss es
       // genauso holen wie ein Mensch. Vorher prueften beide Durchgaenge
       // dasselbe dunkle Bild, und die Haelfte des Laufs war blind.
-      // Gestellt, nicht umgeschaltet: `ts-licht` haelt die Sitzung und
+      // Gestellt, nicht umgeschaltet: die Wahl steht im Pultspeicher
+      // (`light` unter `typstage:pult:v1`, frueher `ts-licht`) und
       // ueberlebt ein Neuladen. Ein blindes `l` je Seite kippte deshalb ab
       // der zweiten Groesse wieder ins Dunkle zurueck, und der helle
       // Durchgang mass abwechselnd beides.

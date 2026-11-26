@@ -351,7 +351,29 @@ A deck can order less of it:
 ```
 
 A tile that is switched off takes its keys with it, and they leave the key bar
-with them.
+with them. `tools: false` takes only the drawing tools: media controls, `?` and
+light/dark stay.
+
+What of the rest is *shown* is the speaker's choice: `,` or the gear button in
+the slide tile opens a small sheet with three presets — `full` (everything, the
+default), `lesson` (next step, notes, class clock, drawing, media) and
+`minimal` (next step and notes) — and a checkbox per module (`next`, `notes`,
+`elapsed`, `progress`, `target`, `clock`, `tools`, `media`). A hidden module
+keeps its keys. The deck can set the starting value:
+
+```typ
+#show: presentation.with(speaker-view: (
+  preset: "lesson",                          // "full", "lesson" or "minimal"
+  // modules: ("next", "notes", "clock"),    // or name them; wins over preset
+))
+```
+
+The browser remembers the choice, the splits, the note size, light/dark and the
+key bar in `localStorage`, for every local deck at once in Safari, Chrome and
+the Typstage app, per file in Firefox. What is stored wins over the deck, field
+by field; what the deck switches off stays off. Per deck only the target
+duration is kept. `#speaker&reset` on the address starts over with the
+defaults.
 
 Set `speaker-view: (shortcuts: false)` to start with the shortcut bar hidden;
 `h` or the `?` button toggles it during the talk. Drag the divider between notes

@@ -218,7 +218,9 @@ function bauen(quelle, name, paket) {
   if (g.da) {
     await b.navigiere("file://" + mit + "#speaker");
     await schlaf(2200);
-    await b.ev("sessionStorage.clear()");
+    // Die Aufteilung steht seit dem Pultspeicher global in `localStorage`
+    // (`typstage:pult:v1`), nicht mehr im `sessionStorage` des Tabs.
+    await b.ev("sessionStorage.clear(); localStorage.clear()");
     await b.ruf("Page.reload", {}); await schlaf(2300);
     const vorgabe = JSON.parse(await b.ev(mass));
     const schritt0 = await b.ev("window.typstage.state()");

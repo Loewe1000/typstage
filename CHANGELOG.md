@@ -36,6 +36,54 @@ page identical to the pixel.
   `style` hook, so a flying formula lands in the font it started in.
 - `subject-accents`, `subject-names`, `subject-line` and `class-accent` are
   exported.
+- **A speaker view made of modules.** `next`, `notes`, `elapsed`, `progress`,
+  `target`, `clock`, `tools` and `media` can each be shown or hidden; the
+  running slide is always there. `,` or the new gear button in the slide tile
+  opens a small sheet with the presets `full` (everything, the default and the
+  view as it was), `lesson` (next step, notes, class clock, drawing, media)
+  and `minimal` (next step and notes), a checkbox per module and "Reset
+  everything". The slide takes the room a hidden module frees. Hiding keeps
+  the keys: `t` or a digit shows a hidden class clock for as long as it is
+  needed. The words come in German, English and French, and `,` stands in the
+  view's key table.
+- **`speaker-view: (preset: …, modules: …)`** gives that choice its starting
+  value, the same in every browser. `modules` wins over `preset`; an unknown
+  name, a single string instead of a list, or a module the same dictionary
+  switches off (`modules: ("clock",)` beside `clock: false`) is an error that
+  lists the valid values.
+- **The speaker view remembers its setup across decks.** The modules, the two
+  splits, the note size (as an offset from the automatic size), light or dark
+  and the key bar live in `localStorage["typstage:pult:v1"]` and replace the
+  former `sessionStorage` entry `ts-pult:<deck>` and `ts-licht`. Safari,
+  Chrome and the Typstage app share it across all local files, Firefox keeps
+  it per file. What is stored wins over the deck field by field; what the
+  deck switches off stays off. The target duration is kept per deck under
+  `typstage:ziel:<path>`. `#speaker&reset` forgets the stored lectern (not the
+  target durations).
+- `window.typstage.pult` — `stand()`, `voreinstellung(id)`, `modul(id, on)`,
+  `blatt(open)`, `zuruecksetzen()` — for tests and the Typstage app; `null` in
+  the talk window.
+
+### Fixed
+
+- `speaker-view: (tools: false)` took the media controls, the `?` button and
+  the light/dark button along with the drawing bar. It now takes only pen,
+  pointer, eraser, colours, undo and clear; `?` and light/dark moved to the
+  head of the slide tile.
+- `x` cleared the strokes under `tools: false`, although the key bar listed it
+  as switched off. It now does nothing, like `m`, `c` and `z`.
+- Closing the speaker view and opening it again with `n` lost its state: the
+  new window starts with a copy of the talk window's `sessionStorage`, which
+  never saw the lectern's changes. The split, light/dark and key bar now come
+  from `localStorage`, and the elapsed time comes back from the talk window,
+  which keeps it while the view is closed.
+- The target duration was lost as soon as the deck changed its number of
+  slides or steps, because the storage key contained them. It is now keyed by
+  the file's path.
+- With `tools: false` the key bar showed an empty "Drawing" group.
+- After a reload the view showed the light/dark choice made with `⇧L`, but
+  forgot internally that it was a choice: the next change of the system's
+  colour scheme (at sunset, say) switched it back.
 
 ## [0.2.0] — unreleased
 
