@@ -40,7 +40,7 @@ const CHROME = arg("--browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 const LAUT = process.argv.indexOf("--laut") > 0;
 
-const KOPF = `#import "@preview/typstage:0.3.0": *\n`;
+const KOPF = `#import "@preview/typstage:0.4.0": *\n`;
 
 // Eine Formel aus genau `n` Zeichen: `n` einzelne Buchstaben. Gezählt wird,
 // was die Laufzeit zählt -- ein `<use>` je Zeichen --, und ein Buchstabe ist
@@ -144,7 +144,7 @@ const LAGE = `JSON.stringify((function () {
   for (const raum of ["preview", "schule"]) {
     const ziel = path.join(paket, raum, "typstage");
     fs.mkdirSync(ziel, { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(ziel, "0.3.0"));
+    fs.symlinkSync(WURZEL, path.join(ziel, "0.4.0"));
   }
   const weg = {};
   try {

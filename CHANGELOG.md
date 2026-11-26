@@ -4,38 +4,16 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), the numbering
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] — unreleased
+## [0.4.0] — unreleased
 
-A minor version because it adds to the public surface; a deck written for
-0.2.0 looks the same under 0.3.0. Measured on the five theme examples: every
-page identical to the pixel.
+A minor version because an existing deck's speaker view looks different
+without its author changing a line: `?` and light/dark move to the head of
+the slide tile, and `tools: false` no longer takes the media controls with
+it. The talk window and paper are unchanged; a deck that says nothing gets
+the full view as before.
 
 ### Added
 
-- **Eight classroom themes**: `klar`, `atlas`, `skizze`, `labor`, `kontur`,
-  `leiste`, `riso` and `bauhaus`. Each draws its own title slide, section
-  slide, slide head and slide number, and all eight share the same building
-  blocks: the subject colour, the line "Mathematik · Klasse 7" above the
-  title, the class code as a badge. `examples/schul-themes.typ` shows one deck
-  in any of them (`--input theme=…`).
-- **`presentation(class: …)`** takes a class code such as `"MA-07"`. Its
-  subject letters give the classroom themes their colour, its number the year
-  in the line above the title. **`presentation(accent: …)`** sets the accent
-  of any theme directly and wins over `class`; a palette still wins over both.
-- **`theme: "labor"`**: a theme can be named by string. An unknown name lists
-  the bundled ones.
-- **`header` and `footer` may be functions.** `header: (t, title, geo, slide)
-  => content` draws the head of an ordinary slide, `band-height` says how deep
-  it builds; `footer: (t, info, geo) => content` draws the number and whatever
-  else stands still while slides change. Both work on paper and in the
-  browser, where the footer stays on its own layer above the stage.
-- **`theme(derive: …)`** derives palette colours from the ones in force, so a
-  card's bar can follow the accent through `class:`, `accent:` and palettes.
-  Colours a palette names itself stay the palette's.
-- **`theme(math-font: …)`** sets the formula font. It is laid around the
-  `style` hook, so a flying formula lands in the font it started in.
-- `subject-accents`, `subject-names`, `subject-line` and `class-accent` are
-  exported.
 - **A speaker view made of modules.** `next`, `notes`, `elapsed`, `progress`,
   `target`, `clock`, `tools` and `media` can each be shown or hidden; the
   running slide is always there. `,` or the new gear button in the slide tile
@@ -85,6 +63,38 @@ page identical to the pixel.
   forgot internally that it was a choice: the next change of the system's
   colour scheme (at sunset, say) switched it back.
 
+## [0.3.0] — unreleased
+
+A minor version because it adds to the public surface; a deck written for
+0.2.0 looks the same under 0.3.0. Measured on the five theme examples: every
+page identical to the pixel.
+
+### Added
+
+- **Eight classroom themes**: `klar`, `atlas`, `skizze`, `labor`, `kontur`,
+  `leiste`, `riso` and `bauhaus`. Each draws its own title slide, section
+  slide, slide head and slide number, and all eight share the same building
+  blocks: the subject colour, the line "Mathematik · Klasse 7" above the
+  title, the class code as a badge. `examples/schul-themes.typ` shows one deck
+  in any of them (`--input theme=…`).
+- **`presentation(class: …)`** takes a class code such as `"MA-07"`. Its
+  subject letters give the classroom themes their colour, its number the year
+  in the line above the title. **`presentation(accent: …)`** sets the accent
+  of any theme directly and wins over `class`; a palette still wins over both.
+- **`theme: "labor"`**: a theme can be named by string. An unknown name lists
+  the bundled ones.
+- **`header` and `footer` may be functions.** `header: (t, title, geo, slide)
+  => content` draws the head of an ordinary slide, `band-height` says how deep
+  it builds; `footer: (t, info, geo) => content` draws the number and whatever
+  else stands still while slides change. Both work on paper and in the
+  browser, where the footer stays on its own layer above the stage.
+- **`theme(derive: …)`** derives palette colours from the ones in force, so a
+  card's bar can follow the accent through `class:`, `accent:` and palettes.
+  Colours a palette names itself stay the palette's.
+- **`theme(math-font: …)`** sets the formula font. It is laid around the
+  `style` hook, so a flying formula lands in the font it started in.
+- `subject-accents`, `subject-names`, `subject-line` and `class-accent` are
+  exported.
 ## [0.2.0] — unreleased
 
 A minor version and not 0.1.3, because an existing deck can look different

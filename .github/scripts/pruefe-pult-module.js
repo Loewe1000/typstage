@@ -67,7 +67,7 @@ const arg = (n, v) => { const i = process.argv.indexOf(n); return i > 0 ? proces
 const CHROME = arg("--browser", process.env.CHROME || (process.platform === "darwin"
   ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" : "google-chrome"));
 
-const KOPF = `#import "@preview/typstage:0.3.0": *
+const KOPF = `#import "@preview/typstage:0.4.0": *
 `;
 const FOLIEN = `
 == Erste Folie
@@ -197,7 +197,7 @@ function bauen(quelle, datei, paket, wurzel) {
   const paket = path.join(tmp, "pkg");
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.3.0"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.4.0"));
   }
   const decks = path.join(tmp, "decks");
   fs.mkdirSync(path.join(decks, "medien"), { recursive: true });
