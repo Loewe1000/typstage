@@ -550,9 +550,30 @@
 /// advertises a key which does nothing is worse than one that is missing it.
 /// `tools: false` removes the drawing bar the same way.
 /// `shortcuts: false` starts with the keyboard bar hidden. `h` or its `?`
-/// button toggles it during a talk; the choice is remembered for this session.
+/// button toggles it during a talk, and the browser remembers the choice.
 /// Media controls show play/pause and a timeline. `k` toggles playback,
 /// `j`/`l` seek ten seconds; `Shift+L` switches the presenter's light theme.
+///
+/// Those three say what the view *has*. What of it is *visible* is a second
+/// layer, chosen in the view itself (`,` or the gear button opens a small
+/// sheet) and stored by the browser for every local deck. `preset` and
+/// `modules` give that choice its starting value:
+///
+/// ```typ
+/// #show: presentation.with(speaker-view: (
+///   preset: "lesson",                     // "full", "lesson" or "minimal"
+///   modules: ("next", "notes", "clock"),  // or name the modules; wins over preset
+/// ))
+/// ```
+///
+/// The modules are `next`, `notes`, `elapsed`, `progress`, `target`, `clock`,
+/// `tools` and `media`; the running slide is always there. `"full"` shows
+/// everything and is the default, `"lesson"` keeps next step, notes, class
+/// clock, drawing bar and media, `"minimal"` next step and notes. A hidden
+/// module keeps its keys, unlike one switched off above. What the speaker
+/// has chosen and the browser has stored wins over both, field by field;
+/// `#speaker&reset` on the address forgets it. A module in `modules` that the
+/// same dictionary switches off (`clock: false`) is an error.
 ///
 /// `morph` holds what magic move needs to know about this deck. It knows
 /// `glyph-limit`: up to how many glyphs `match: "auto"` pairs one by one
@@ -797,18 +818,73 @@
   // Was die Sprecheransicht zeigen soll. Ein Deck, das keine Klassenuhr
   // braucht, soll ihre Kachel nicht sehen -- sie nimmt Platz, der der Notiz
   // fehlt. Vorgabe ist ueberall `true`: wer nichts sagt, bekommt alles.
+  //
+  // Zwei Ebenen: `clock`, `target` und `tools` sagen, was es *gibt* (hart,
+  // samt Tasten); `preset` und `modules` sagen, was davon beim Start
+  // *sichtbar* ist. Das zweite ist nur ein Startwert -- was der Vortragende
+  // im Pult waehlt, merkt sich der Browser und gewinnt. Deshalb pruefen wir
+  // hier streng: ein Tippfehler in `modules` fiele sonst nie auf, weil das
+  // eigene Pult ihn mit seiner gespeicherten Auswahl ueberdeckt.
+  let pult-voreinstellungen = ("full", "lesson", "minimal")
+  // Die Kennungen sind dieselben wie im Speicher des Browsers, in
+  // `data-modul` und in `typstage.pult` -- englisch, weil sie oeffentlich
+  // sind. `slide` fehlt: die laufende Folie ist immer da.
+  let pult-module = ("next", "notes", "elapsed", "progress", "target",
+                     "clock", "tools", "media")
+  let pult-module-liste = pult-module.map(m => "\"" + m + "\"").join(", ",
+    last: " and ")
   assert(type(speaker-view) == dictionary, message:
     "typstage: speaker-view takes a dictionary, not " + str(type(speaker-view))
-    + ". It knows clock, target, tools, shortcuts and pen.")
+    + ". It knows preset, modules, clock, target, tools, shortcuts and pen.")
   for k in speaker-view.keys() {
-    assert(k in ("clock", "target", "tools", "shortcuts", "pen"), message:
-      "typstage: speaker-view has no entry \"" + k + "\". It takes clock "
-      + "(the class clock), target (the planned length), tools (the drawing "
-      + "bar), shortcuts (the keyboard help) and pen.")
-    if k != "pen" {
+    assert(k in ("preset", "modules", "clock", "target", "tools", "shortcuts",
+                 "pen"), message:
+      "typstage: speaker-view has no entry \"" + k + "\". It takes preset "
+      + "and modules (what the view shows at the start), clock (the class "
+      + "clock), target (the planned length), tools (the drawing bar), "
+      + "shortcuts (the keyboard help) and pen.")
+    if k not in ("pen", "preset", "modules") {
       assert(type(speaker-view.at(k)) == bool, message:
         "typstage: speaker-view." + k + " is true or false, not "
         + repr(speaker-view.at(k)))
+    }
+  }
+  if "preset" in speaker-view {
+    let p = speaker-view.preset
+    assert(type(p) == str and p in pult-voreinstellungen, message:
+      "typstage: speaker-view.preset is one of \"full\" (everything), "
+      + "\"lesson\" (next step, notes, class clock, drawing bar, media) or "
+      + "\"minimal\" (next step and notes), written as a string. Not "
+      + repr(p))
+  }
+  if "modules" in speaker-view {
+    let ms = speaker-view.modules
+    // `("notes")` ist in Typst eine Zeichenkette, keine Liste mit einem
+    // Eintrag -- der haeufigste Fehler hier, deshalb mit eigenem Hinweis.
+    assert(type(ms) != str, message:
+      "typstage: speaker-view.modules is a list of modules, not a single "
+      + "string. One module is written with a trailing comma: (" + repr(ms)
+      + ",)")
+    assert(type(ms) == array, message:
+      "typstage: speaker-view.modules is a list of the modules the view "
+      + "shows at the start, such as (\"next\", \"notes\", \"clock\"). Not "
+      + repr(ms))
+    for m in ms {
+      // `slide` dulden wir still: wer die Folie mit aufzaehlt, meint nichts
+      // Falsches, sie ist nur ohnehin immer da.
+      assert(type(m) == str and (m in pult-module or m == "slide"), message:
+        "typstage: speaker-view.modules has no module " + repr(m)
+        + ". It knows " + pult-module-liste
+        + "; the running slide is always shown.")
+      // Ein Modul zeigen wollen, das dasselbe Dictionary abschaltet, ist ein
+      // Widerspruch, den die Laufzeit nur still aufloesen koennte -- das
+      // Abschalten gewaenne, und niemand erfuehre, warum die Uhr fehlt.
+      if m in ("clock", "target", "tools") {
+        assert(speaker-view.at(m, default: true) != false, message:
+          "typstage: speaker-view.modules shows \"" + m + "\", but "
+          + m + ": false in the same speaker-view switches it off. Leave "
+          + "out one of the two.")
+      }
     }
   }
   if "pen" in speaker-view {

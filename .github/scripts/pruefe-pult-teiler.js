@@ -36,7 +36,7 @@ const arg = (n, v) => { const i = process.argv.indexOf(n); return i > 0 ? proces
 const CHROME = arg("--browser",
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
 
-const MIT_NOTIZ = `#import "@preview/typstage:0.3.0": *
+const MIT_NOTIZ = `#import "@preview/typstage:0.4.0": *
 #show: presentation.with(theme: themes.lesson, title: [Teiler])
 
 == Erste Folie
@@ -51,7 +51,7 @@ Noch ein Satz.
 #speaker-note[Auch hier steht etwas.]
 `;
 
-const OHNE_NOTIZ = `#import "@preview/typstage:0.3.0": *
+const OHNE_NOTIZ = `#import "@preview/typstage:0.4.0": *
 #show: presentation.with(theme: themes.lesson, title: [Ohne])
 
 == Erste Folie
@@ -108,7 +108,7 @@ function bauen(quelle, name, paket) {
   const paket = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-teiler-pkg-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(paket, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.3.0"));
+    fs.symlinkSync(WURZEL, path.join(paket, raum, "typstage", "0.4.0"));
   }
   let mit, ohne;
   try {
@@ -218,7 +218,9 @@ function bauen(quelle, name, paket) {
   if (g.da) {
     await b.navigiere("file://" + mit + "#speaker");
     await schlaf(2200);
-    await b.ev("sessionStorage.clear()");
+    // Die Aufteilung steht seit dem Pultspeicher global in `localStorage`
+    // (`typstage:pult:v1`), nicht mehr im `sessionStorage` des Tabs.
+    await b.ev("sessionStorage.clear(); localStorage.clear()");
     await b.ruf("Page.reload", {}); await schlaf(2300);
     const vorgabe = JSON.parse(await b.ev(mass));
     const schritt0 = await b.ev("window.typstage.state()");

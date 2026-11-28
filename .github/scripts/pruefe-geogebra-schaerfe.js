@@ -8,8 +8,8 @@ const root=fs.mkdtempSync(path.join(os.tmpdir(),'typstage-geogebra-'));
 let b;
 try {
 const pkg=path.join(root,'pkg/preview/typstage');
-fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(packageRoot,path.join(pkg,'0.3.0'));
-fs.writeFileSync(path.join(root,'deck.typ'),`#import "@preview/typstage:0.3.0": *
+fs.mkdirSync(pkg,{recursive:true});fs.symlinkSync(packageRoot,path.join(pkg,'0.4.0'));
+fs.writeFileSync(path.join(root,'deck.typ'),`#import "@preview/typstage:0.4.0": *
 #show: presentation.with(title: [Sharp GeoGebra])
 == Circle
 #geogebra(width: 360pt, height: 260pt)

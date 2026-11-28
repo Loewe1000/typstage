@@ -138,6 +138,101 @@
   var ROLLE = (location.hash.slice(1).split(/[&=]/)[0] || "").toLowerCase()
               === "speaker" ? "speaker" : "stage";
   if (ROLLE === "speaker") document.documentElement.dataset.tsRolle = "speaker";
+
+  // ── Der Speicher des Pults ────────────────────────────────────────────────
+  //
+  // Was die Lehrkraft am Pult einstellt -- welche Module sie sehen will, die
+  // Aufteilung, hell/dunkel, die Tastenleiste, die Notizgroesse --, gilt fuer
+  // *sie* und nicht fuer ein Deck. Es steht deshalb in `localStorage` unter
+  // einem einzigen, globalen Schluessel. Auf `file://` teilen Safari und die
+  // Typstage-App diesen Speicher ueber alle lokalen Dateien und Ordner
+  // (gemessen: Ursprung "file://", in der App auch ueber einen Neustart);
+  // Firefox gibt jeder Datei ihren eigenen, dort gilt die Wahl je Datei.
+  //
+  // Hier oben und nicht beim Aufbau der Ansicht: `lichtHorchen` laeuft drei
+  // Zeilen weiter unten und braucht das gespeicherte Bild schon. Weiter
+  // unten deklariert waeren die `var`s zu diesem Zeitpunkt noch `undefined`.
+  //
+  // Die Zieldauer dagegen gehoert dem Deck: 45 Minuten fuer die eine Stunde
+  // sind keine Vorgabe fuer die naechste. Ihr Schluessel ist der Pfad der
+  // Datei -- nicht `DECK`, das auch Folien- und Schrittzahl traegt und sich
+  // mit jeder eingefuegten Folie aendern wuerde. `DECK` bleibt, was es ist:
+  // der Schluessel des Fensterpaars.
+  var PULT_SCHLUESSEL = "typstage:pult:v1";
+  var ZIEL_SCHLUESSEL = "typstage:ziel:" + location.pathname;
+  // Ein Speicher, der nicht schreibt -- privates Fenster, Sperre durch eine
+  // Richtlinie, voller Speicher --, darf das Pult nicht umwerfen. Dann haelt
+  // ein Objekt im Arbeitsspeicher die Werte bis zum Schliessen, und das Blatt
+  // sagt es dazu. Geprueft wird einmal und mit einem echten Schreibversuch:
+  // Safari wirft in alten privaten Fenstern erst beim `setItem`, nicht beim
+  // Zugriff auf `localStorage`. Die Buehne braucht den Speicher nicht und
+  // prueft gar nicht erst.
+  var SPEICHER_ERSATZ = Object.create(null);
+  var SPEICHER_FEST = ROLLE === "speaker" && (function () {
+    try {
+      localStorage.setItem("typstage:probe", "1");
+      localStorage.removeItem("typstage:probe");
+      return true;
+    } catch (x) { return false; }
+  })();
+  function speicherHol(k) {
+    if (SPEICHER_FEST) { try { return localStorage.getItem(k); } catch (x) {} }
+    return k in SPEICHER_ERSATZ ? SPEICHER_ERSATZ[k] : null;
+  }
+  // `null` loescht. Gibt zurueck, ob es wirklich im Speicher steht. Wirft
+  // der Speicher mitten im Lauf (voll), geht alles Weitere in den Ersatz.
+  function speicherLeg(k, v) {
+    if (SPEICHER_FEST) {
+      try {
+        if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+        return true;
+      } catch (x) { SPEICHER_FEST = false; }
+    }
+    if (v == null) delete SPEICHER_ERSATZ[k]; else SPEICHER_ERSATZ[k] = v;
+    return false;
+  }
+  // Der gespeicherte Pultstand als Objekt. Kaputtes JSON, ein Array oder
+  // eine Zahl unter dem Schluessel sind dasselbe wie nichts: die Vorgaben.
+  function pultLesen() {
+    var roh = speicherHol(PULT_SCHLUESSEL);
+    if (!roh) return {};
+    try {
+      var o = JSON.parse(roh);
+      return (o && typeof o === "object" && !Array.isArray(o)) ? o : {};
+    } catch (x) { return {}; }
+  }
+  // Lesen, aendern, schreiben -- und alles, was diese Fassung nicht kennt,
+  // bleibt stehen. Ein Pult von morgen mit einem Feld mehr soll von einem
+  // Pult von heute nicht beschnitten werden, wenn beide auf denselben
+  // Speicher sehen (Safari und App teilen ihn ueber alle Decks). `undefined`
+  // als Wert nimmt ein Feld heraus.
+  function pultSchreiben(felder) {
+    var o = pultLesen();
+    o.v = 1;
+    for (var k in felder) {
+      if (felder[k] === undefined) delete o[k]; else o[k] = felder[k];
+    }
+    return speicherLeg(PULT_SCHLUESSEL, JSON.stringify(o));
+  }
+  // `#speaker&reset` an der Adresse: der Notausgang, wenn eine Auswahl das
+  // Pult unbrauchbar gemacht hat und niemand mehr das Zahnrad findet.
+  // Geloescht wird der Pultstand, nicht die Zieldauern -- die gehoeren den
+  // Decks und haben mit einer verbauten Ansicht nichts zu tun. Das `&reset`
+  // geht danach aus der Adresse, sonst setzte jedes F5 wieder zurueck.
+  // (`ROLLE` liest nur das erste Wort, `#speaker&reset` ist also schon die
+  // Sprecherrolle.)
+  if (ROLLE === "speaker") {
+    var hashTeile = location.hash.slice(1).split("&");
+    if (hashTeile.indexOf("reset") > 0) {
+      speicherLeg(PULT_SCHLUESSEL, null);
+      var hashRest = hashTeile.filter(function (t) { return t !== "reset"; });
+      try {
+        history.replaceState(null, "", location.pathname + location.search
+                                       + "#" + hashRest.join("&"));
+      } catch (x) {}
+    }
+  }
+
   // Und gleich mit der Rolle das Erscheinungsbild. Hier und nicht erst beim
   // Aufbau der Ansicht: die Farben der Sprecherbox haengen samt und sonders
   // an `data-ts-licht`, und fehlte es fuer die Dauer eines Bildes, staende
@@ -2931,7 +3026,11 @@
   function medienZeigen() {
     if (!MEDIEN_ZEILE) return;
     var items = medienHier(), key = items.map(function (m) { return m.id; }).join(",");
-    var sichtbar = items.length > 0, wechsel = MEDIEN_ZEILE.hidden === sichtbar || key !== MEDIEN_KEY;
+    // Die Zeile erscheint nur auf Folien mit Medien -- und nur, wenn das
+    // Pult sie zeigen darf (Modul `media`). Gebaut wird sie trotzdem: die
+    // Tasten `j k l` steuern weiter, und ihre Knoepfe schreiben hinein.
+    var sichtbar = items.length > 0 && modulZeigt("media"),
+        wechsel = MEDIEN_ZEILE.hidden === sichtbar || key !== MEDIEN_KEY;
     MEDIEN_ZEILE.hidden = !sichtbar;
     if (key !== MEDIEN_KEY) {
       MEDIEN_KEY = key; MEDIEN_ZEILE.textContent = "";
@@ -3753,6 +3852,30 @@
   // receiver below, only a `horch("meinding", fn)`.
   function horch(art, fn) { (HOERER[art] || (HOERER[art] = [])).push(fn); }
 
+  // ── Der Stundenzaehler, bei der Buehne hinterlegt ─────────────────────────
+  //
+  // Das Pult ist ein eigenes Fenster, und sein `sessionStorage` ist eine
+  // Kopie von dem der Buehne -- beim Oeffnen gezogen, danach getrennt.
+  // Was das Pult dort hineinschreibt, stirbt mit ihm: wer es schliesst und
+  // mit `n` neu oeffnet, stand ohne seine Stunde da. In der App gibt es
+  // nicht einmal die Kopie.
+  //
+  // Also hinterlegt das Pult `UHR_START` bei jeder Aenderung bei der Buehne
+  // (`stunde`), und die Buehne gibt ihn in jeder Antwort auf `hallo` zurueck.
+  // Ein frisches Pult ohne eigene Stunde uebernimmt ihn (`stundeAbgleich`).
+  // Die Buehne haelt ihn ausserdem in ihrem eigenen `sessionStorage`, damit
+  // auch ein Neuladen des Vortragsfensters ihn nicht verliert. Sie liest ihn
+  // nur und zeigt ihn nirgends.
+  var STUNDE_BUEHNE = 0;
+  if (ROLLE !== "speaker") {
+    try { STUNDE_BUEHNE = +sessionStorage.getItem("ts-stunde:" + DECK) || 0; } catch (x) {}
+    horch("stunde", function (d) {
+      var t = +d.start;
+      STUNDE_BUEHNE = t > 0 ? t : 0;
+      try { sessionStorage.setItem("ts-stunde:" + DECK, String(STUNDE_BUEHNE)); } catch (x) {}
+    });
+  }
+
   // ── A stream instead of individual messages ───────────────────────────────
   //
   // Some things do not arrive every few seconds but at the pace of the
@@ -3916,7 +4039,9 @@
                          // in der Aufgabe auf Vollbild um, also auf schwarz von
                          // Rand zu Rand, und der naechste Pfeil loeschte sie.
                          uhrArt: (UHR_KNOTEN && UHR_KNOTEN.dataset.art === "fest")
-                                 ? "fest" : "voll" });
+                                 ? "fest" : "voll",
+                         // Der hinterlegte Stundenzaehler des Pults.
+                         stunde: STUNDE_BUEHNE });
       // The stock only goes to a freshly loaded counterpart. Otherwise the
       // two would keep pushing the same strokes back and forth at the pace
       // of the heartbeat.
@@ -4836,6 +4961,53 @@
   // ein, die keine ist.
   var ANTEIL = 0, NOTIZ_ANTEIL = 0.65;
   var HILFE_AN = SPV.shortcuts !== false;
+
+  // ── Was das Pult zeigt: Module und Voreinstellungen ──────────────────────
+  //
+  // Zwei Ebenen, und sie duerfen nicht verwechselt werden. *Verfuegbar* ist,
+  // was das Deck erlaubt (`speaker-view.clock/target/tools` in Typst) und was
+  // es inhaltlich gibt (ein Deck ohne Notizen hat keine Notiz) -- das ist
+  // hart, samt Tasten, und steht in `modulDa`. *Sichtbar* ist, was die
+  // Lehrkraft am Pult davon sehen will -- das ist weich: ausgeblendet heisst
+  // nur nicht gezeigt, die Tasten wirken weiter. `r` setzt die Stunde auch
+  // dann zurueck, wenn die Kachel dafuer gerade nicht dasteht.
+  //
+  // Die Kennungen sind englisch und oeffentlich: dieselben Woerter stehen
+  // in Typst, im Speicher, in `data-modul` und in `typstage.pult`. Eine
+  // Uebersetzung dazwischen waere eine Stelle mehr, an der zwei Namen fuer
+  // dieselbe Sache auseinanderlaufen.
+  //
+  // `slide` steht mit in der Liste, ist aber nie abwaehlbar: ein Pult ohne
+  // die laufende Folie ist keines, und die Folie ist zugleich die
+  // Zeichenflaeche.
+  var PULT_MODULE = ["slide", "next", "notes", "elapsed", "progress",
+                     "target", "clock", "tools", "media"];
+  // Drei feste Voreinstellungen, nicht umbenennbar. `full` ist das Pult,
+  // wie es immer war; `lesson` behaelt, was man im Klassenzimmer braucht
+  // -- die Klassenuhr ja, die Vortragsuhren nein --; `minimal` nur das, was
+  // man liest.
+  var PULT_VOR = {
+    full: PULT_MODULE.slice(),
+    lesson: ["slide", "next", "notes", "clock", "tools", "media"],
+    minimal: ["slide", "next", "notes"]
+  };
+  // Die Auswahl, als Menge der gewuenschten Module. Sie haelt auch Module,
+  // die das Deck gar nicht hat: die Auswahl ist ein Wunsch, der fuer jedes
+  // Deck gilt, und ein Deck ohne Uhr soll den Wunsch "Uhr an" nicht
+  // loeschen -- im naechsten Deck mit Uhr ist er wieder richtig.
+  var SICHTBAR = {};
+  PULT_VOR.full.forEach(function (m) { SICHTBAR[m] = 1; });
+  var PULT_PRESET = "full";
+  // Die Klassenuhr ist ausgeblendet, aber gerade gebraucht: das Minutenfeld
+  // steht offen oder eine Saaluhr laeuft. Dann steht die Kachel trotzdem da
+  // (siehe `uhrVoruebergehend`).
+  var UHR_VORUEBER = 0;
+  // Dasselbe fuer die Zieldauer: `d` springt in ihr Feld, und das nimmt in
+  // einer ausgeblendeten Kachel keinen Fokus an. Die Ziffern danach liefen
+  // sonst nicht ins Feld, sondern an die Klassenuhr -- im Saal startete
+  // eine Pause, die niemand wollte. Also steht die Kachel da, solange das
+  // Feld den Fokus hat (siehe `zielVoruebergehend`).
+  var ZIEL_VORUEBER = 0;
   // Die Waehrung des letzten Laufs von `sprecherSpalten`, in Pixeln: der
   // Topf, die Folienhoehe darin und die beiden harten Grenzen. Der Zug
   // rechnet damit und misst nichts nach -- nachgemessen stimmt es hochkant
@@ -4847,39 +5019,169 @@
   // Setzen der Zeilen gemessen und aendern sich danach.
   var TEIL_TOPF = 0, TEIL_FOLIE = 0, TEIL_MIN = 0, TEIL_MAX = 0;
 
-  // Schwarz, Frost und die Klassenuhr ueberleben ein Neuladen, der
-  // Stundenzaehler und die Zieldauer nicht -- eine Asymmetrie, die niemand
-  // erklaeren kann und die eine Lehrkraft nach einem versehentlichen F5
-  // ohne ihre Zeit dastehen laesst. Beides steht jetzt daneben, im selben
-  // Speicher und mit demselben Schluessel je Deck.
+  // Was das Pult sich merkt, und wo. Drei Lebensdauern, drei Orte:
   //
-  // Die Aufteilung steht als drittes Feld in demselben Schluessel und nicht
-  // in einem zweiten: sie ist Pultstand wie die Zieldauer, und eine, die
-  // anderswo laege als die andere, waere dieselbe Asymmetrie noch einmal.
-  // Vier Nachkommastellen -- 0,0001 des Topfes sind auf einem 5000 px hohen
-  // Schirm ein halbes Pixel, und die Zeichenkette bleibt kurz.
-  function standMerken() {
-    if (ROLLE !== "speaker") return;
+  //   die Stunde     -- `UHR_START`, seit wann gezaehlt wird. Sie gehoert zu
+  //                     diesem Vortrag in diesem Fenster und steht in
+  //                     `sessionStorage` (`ts-pult:` + `DECK`). Dazu geht sie
+  //                     bei jeder Aenderung an die Buehne, die sie haelt und
+  //                     einem neu geoeffneten Pult zurueckgibt (siehe
+  //                     `stundeAbgleich`): ein Pult ist ein eigenes Fenster,
+  //                     und dessen `sessionStorage` stirbt mit ihm.
+  //   die Zieldauer  -- je Deck, in `localStorage` unter dem Pfad der Datei.
+  //   alles andere   -- global, in `localStorage` unter `typstage:pult:v1`
+  //                     (siehe ganz oben bei `pultSchreiben`).
+  //
+  // Geschrieben wird feldweise und nur, was sich gegen den zuletzt
+  // gelesenen oder geschriebenen Stand wirklich geaendert hat (`PULT_BASIS`).
+  // Das ist keine Sparsamkeit, sondern die Rangfolge: was im Speicher steht,
+  // schlaegt die Vorgabe aus Typst. Schriebe jedes `standMerken` alle Felder,
+  // stuende nach dem ersten `r` auch `help` im Speicher, und ein Deck mit
+  // `shortcuts: false` zeigte die Tastenleiste ab dann nie wieder so, wie
+  // sein Autor es will -- obwohl niemand sie angefasst hat.
+  //
+  // Die Aufteilung mit vier Nachkommastellen: 0,0001 des Topfes sind auf
+  // einem 5000 px hohen Schirm ein halbes Pixel.
+  var PULT_BASIS = null;
+  var STUNDE_GESENDET = -1;   // was zuletzt an die Buehne ging
+  function vier(x) { return Math.round(x * 1e4) / 1e4; }
+  function pultFelder() {
+    var aus = [];
+    PULT_MODULE.forEach(function (m) {
+      if (m !== "slide" && !SICHTBAR[m]) aus.push(m);
+    });
+    return {
+      preset: PULT_PRESET,
+      hidden: aus,
+      split: { slide: vier(ANTEIL), notes: vier(NOTIZ_ANTEIL) },
+      help: HILFE_AN,
+      noteDelta: NOTIZ_DELTA == null ? undefined : NOTIZ_DELTA
+    };
+  }
+  // Die Stunde steht im Pult unter zwei Schluesseln: `ts-pult:` liest das
+  // Pult selbst beim Neuladen, `ts-stunde:` liest eine Buehne beim Start.
+  // Den zweiten muss das Pult mitfuehren, weil eine Buehne, die es mit `n`
+  // selbst oeffnet, eine Kopie *seines* `sessionStorage` erbt. Stuende dort
+  // noch der Wert, den das Pult beim eigenen Oeffnen von der alten Buehne
+  // geerbt hat, holte die neue Buehne eine laengst zurueckgesetzte Stunde
+  // zurueck -- und das Pult uebernaehme sie nach `r` (dann ist `UHR_START`
+  // 0) im naechsten `hallo` brav wieder.
+  function stundeAblegen() {
     try {
-      sessionStorage.setItem("ts-pult:" + DECK,
-        UHR_START + "," + ZIEL_MIN + "," + ANTEIL.toFixed(4) + "," + NOTIZ_ANTEIL.toFixed(4) + "," + (HILFE_AN ? 1 : 0));
+      sessionStorage.setItem("ts-pult:" + DECK, String(UHR_START));
+      sessionStorage.setItem("ts-stunde:" + DECK, String(UHR_START || 0));
     } catch (x) {}
   }
+  function standMerken() {
+    if (ROLLE !== "speaker") return;
+    stundeAblegen();
+    if (UHR_START !== STUNDE_GESENDET && sende("stunde", { start: UHR_START })) {
+      STUNDE_GESENDET = UHR_START;
+    }
+    zielMerken();
+    if (!PULT_BASIS) return;
+    var jetzt = pultFelder(), neu = {}, was = 0;
+    var gleich = function (k) { return JSON.stringify(jetzt[k]) === JSON.stringify(PULT_BASIS[k]); };
+    // Voreinstellung und Liste gehen zusammen: eine ohne die andere waere
+    // ein Stand, den es nie gab.
+    if (!gleich("preset") || !gleich("hidden")) {
+      neu.preset = jetzt.preset; neu.hidden = jetzt.hidden; was = 1;
+    }
+    ["split", "help", "noteDelta"].forEach(function (k) {
+      if (!gleich(k)) { neu[k] = jetzt[k]; was = 1; }
+    });
+    if (!was) return;
+    pultSchreiben(neu);
+    PULT_BASIS = jetzt;
+  }
+  // Die Antwort der Buehne auf `hallo`, gesehen vom Pult. Gehandelt wird
+  // einmal je Buehnensitzung, nicht bei jedem Schlag: die Antwort kommt
+  // jede Sekunde, und eine, die schon unterwegs war, als `r` gedrueckt
+  // wurde, truege den alten Wert noch einmal heran -- die Stunde stuende
+  // nach dem Zuruecksetzen gleich wieder da.
+  //
+  // Hat das Pult selbst keine Stunde (frisch geoeffnet), uebernimmt es die
+  // der Buehne. Hat es eine, und die Buehne kennt eine andere (die Buehne
+  // wurde ohne ihren Speicher neu geladen, oder das Pult war schneller als
+  // sein erstes `stunde`), geht die eigene hinueber.
+  var STUNDE_SITZUNG = null;
+  function stundeAbgleich(d) {
+    if (d.sitzung === STUNDE_SITZUNG) return;
+    STUNDE_SITZUNG = d.sitzung;
+    var dort = +d.stunde > 0 ? +d.stunde : 0;
+    if (!UHR_START && dort && dort <= Date.now()) {
+      UHR_START = dort;
+      STUNDE_GESENDET = dort;
+      stundeAblegen();
+      sprecherUhr();
+    } else if (dort !== UHR_START) {
+      if (sende("stunde", { start: UHR_START })) STUNDE_GESENDET = UHR_START;
+    } else {
+      STUNDE_GESENDET = UHR_START;
+    }
+  }
+  var ZIEL_GEMERKT = 0;
+  function zielMerken() {
+    if (ZIEL_MIN === ZIEL_GEMERKT) return;
+    ZIEL_GEMERKT = ZIEL_MIN;
+    speicherLeg(ZIEL_SCHLUESSEL, ZIEL_MIN > 0 ? String(ZIEL_MIN) : null);
+  }
+
+  // Die Auswahl roh setzen, ohne anzuwenden und ohne zu merken -- fuer den
+  // Start und das Zuruecksetzen, wo beides erst am Schluss einmal geschieht.
+  function auswahlRoh(liste) {
+    PULT_MODULE.forEach(function (m) { SICHTBAR[m] = 0; });
+    liste.forEach(function (m) { if (PULT_MODULE.indexOf(m) >= 0) SICHTBAR[m] = 1; });
+    SICHTBAR.slide = 1;
+  }
+  // Die Rangfolge, einmal von unten nach oben: eingebaute Vorgabe (`full`)
+  // < Typst (`speaker-view.preset`, `speaker-view.modules`) < Speicher.
+  // Der Speicher gewinnt feldweise -- wer nur die Aufteilung gezogen hat,
+  // bekommt die Module weiter aus Typst. Die Verfuegbarkeit steht ueber
+  // allem und wird hier gar nicht gefragt: sie greift in `modulZeigt`.
+  //
+  // `gemerkt` ist `false` beim Zuruecksetzen: dann zaehlt nur Typst.
+  function pultVorgaben(gemerkt) {
+    auswahlRoh(PULT_VOR.full);
+    if (Array.isArray(SPV.modules)) auswahlRoh(SPV.modules);
+    else if (PULT_VOR.hasOwnProperty(SPV.preset)) auswahlRoh(PULT_VOR[SPV.preset]);
+    ANTEIL = 0; NOTIZ_ANTEIL = 0.65;
+    HILFE_AN = SPV.shortcuts !== false;
+    NOTIZ_DELTA = null;
+    var s = gemerkt ? pultLesen() : {};
+    // Gespeichert ist die Liste der *abgewaehlten* Module: ein Modul, das
+    // eine spaetere Fassung dazubringt, steht damit von selbst da, statt
+    // in jeder gespeicherten Auswahl zu fehlen.
+    if (Array.isArray(s.hidden)) {
+      auswahlRoh(PULT_MODULE.filter(function (m) { return s.hidden.indexOf(m) < 0; }));
+    } else if (PULT_VOR.hasOwnProperty(s.preset)) {
+      auswahlRoh(PULT_VOR[s.preset]);
+    }
+    PULT_PRESET = voreinstellungJetzt();
+    if (s.split && typeof s.split === "object") {
+      var a = +s.split.slide, n = +s.split.notes;
+      if (a > 0 && a < 1) ANTEIL = a;
+      if (n > 0 && n < 1) NOTIZ_ANTEIL = n;
+    }
+    if (typeof s.help === "boolean") HILFE_AN = s.help;
+    if (typeof s.noteDelta === "number" && isFinite(s.noteDelta)) {
+      NOTIZ_DELTA = Math.max(-60, Math.min(60, Math.round(s.noteDelta)));
+    }
+    PULT_BASIS = pultFelder();
+  }
+
   function standErinnern() {
     if (ROLLE !== "speaker") return;
     try {
+      // Nur das erste Feld: frueher standen hier fuenf, durch Kommas
+      // getrennt, und ein Tab von vorhin liest sich so weiter richtig.
       var t = (sessionStorage.getItem("ts-pult:" + DECK) || "").split(",");
       if (+t[0] > 0) UHR_START = +t[0];
-      if (+t[1] > 0) ZIEL_MIN = Math.max(0, +t[1]);
-      // Vertraeglich nach hinten, ohne Sonderfall: ein Stand von gestern hat
-      // nur zwei Felder, `+undefined` ist NaN, und NaN scheitert an beiden
-      // Vergleichen. Ein Deck von gestern faellt damit lautlos auf die
-      // Vorgabe zurueck.
-      var a = +t[2];
-      if (a > 0 && a < 1) ANTEIL = a;
-      if (+t[3] > 0 && +t[3] < 1) NOTIZ_ANTEIL = +t[3];
-      if (t[4] === "0" || t[4] === "1") HILFE_AN = t[4] === "1";
     } catch (x) {}
+    var z = +speicherHol(ZIEL_SCHLUESSEL);
+    if (z > 0) ZIEL_MIN = z;
+    ZIEL_GEMERKT = ZIEL_MIN;
+    pultVorgaben(true);
   }
   // Die Vollbilduhr, von hier aus gesehen. `SAAL_SEK` ist die Dauer, die
   // drueben laeuft (0 = aus), `SAAL_NR` die laufende Nummer des Laufs, und
@@ -4954,7 +5256,13 @@
                   "M3.1 3.1 L4.2 4.2", "M11.8 11.8 L12.9 12.9",
                   "M12.9 3.1 L11.8 4.2", "M4.2 11.8 L3.1 12.9"] },
     mond:   { fuell: 1,
-              d: ["M13.1 10.4 A5.7 5.7 0 0 1 5.6 2.9 A5.9 5.9 0 1 0 13.1 10.4 Z"] }
+              d: ["M13.1 10.4 A5.7 5.7 0 0 1 5.6 2.9 A5.9 5.9 0 1 0 13.1 10.4 Z"] },
+    // Das Zahnrad fuer "Ansicht anpassen": ein Ring, eine Nabe, acht Zaehne.
+    zahnrad: { d: ["M8 3.6 A4.4 4.4 0 1 0 8 12.4 A4.4 4.4 0 1 0 8 3.6 Z",
+                   "M8 6.2 A1.8 1.8 0 1 0 8 9.8 A1.8 1.8 0 1 0 8 6.2 Z",
+                   "M8 1.2 L8 3.6", "M8 12.4 L8 14.8", "M1.2 8 L3.6 8",
+                   "M12.4 8 L14.8 8", "M3.2 3.2 L4.9 4.9", "M11.1 11.1 L12.8 12.8",
+                   "M12.8 3.2 L11.1 4.9", "M4.9 11.1 L3.2 12.8"] }
   };
   var SVGNS = "http://www.w3.org/2000/svg";
   function wzBild(wohin, name) {
@@ -5113,6 +5421,9 @@
     ELN.saalBalken.style.transition = wenigerBewegung() ? "none" : "";
     ELN.saalBalken.style.width = (lage === "aus" || lage === "blind"
       ? 0 : teil * 100) + "%";
+    // Laeuft eine Saaluhr, steht die Kachel da, auch wenn sie ausgeblendet
+    // ist -- gestartet mit einer Ziffer, beendet drueben oder mit `0`.
+    uhrVoruebergehend();
   }
 
   // If no one on the other side answers anymore, that has to be visible.
@@ -5335,20 +5646,27 @@
   // Widerspruch, wenn der Raum anders ist, als das Betriebssystem denkt.
   // (`l` wie Licht, light, lumiere: in allen drei Sprachen derselbe
   // Buchstabe, dieselbe Ueberlegung wie bei `d`. Und weit weg von den
-  // teuren Nachbarschaften r-t-z und c-x.) Die Wahl haelt die Sitzung, wie
-  // `ts-sicht:` es fuer den Saal tut, und ueberlebt ein Neuladen.
+  // teuren Nachbarschaften r-t-z und c-x.) Die Wahl steht im Pultspeicher
+  // (`light` unter `typstage:pult:v1`) und gilt damit ueber Neuladen,
+  // Decks und Tage hinweg.
   //
   // Geschrieben wird immer ein ausdrueckliches `hell` oder `dunkel`, nie
   // gar nichts. Damit steht jede Farbe genau zweimal im Stilblatt und keine
   // nur einmal, und es braucht dort weder Mediaabfrage noch `:not()`.
   // Kennt der Browser die Vorliebe nicht, gilt dunkel: so sah diese Ansicht
   // immer aus, und das Klassenzimmer beim Vortrag ist abgedunkelt.
-  var LICHT_HAND = "";
+  // Ohne Startwert, und das mit Absicht: `lichtHorchen` laeuft ganz oben,
+  // gleich nach der Rolle, und hat den gespeicherten Wert dann schon hier
+  // hineingelegt. Ein `= ""` an dieser Stelle setzte ihn beim Erreichen der
+  // Zeile wieder zurueck -- danach hielte `folgen` die Wahl fuer "niemand
+  // hat widersprochen" und kippte das Pult beim naechsten Wechsel der
+  // Systemeinstellung zurueck ins Dunkle.
+  var LICHT_HAND;
   function lichtStellen() {
     // Vorgabe ist dunkel, ohne die Systemeinstellung zu fragen. Ein Pult
     // steht im abgedunkelten Raum, und ein helles Fenster neben einer dunklen
-    // Wand blendet. Wer es hell will, sagt es mit `l`; die Wahl haelt die
-    // Sitzung.
+    // Wand blendet. Wer es hell will, sagt es mit `⇧L`; die Wahl wird
+    // gespeichert.
     var hell = LICHT_HAND === "hell";
     document.documentElement.dataset.tsLicht = hell ? "hell" : "dunkel";
     lichtStand();
@@ -5365,9 +5683,12 @@
     // getauscht -- ein `textContent` allein haette das Zeichen mit
     // weggewischt.
     var wo = wort(hell ? "dark" : "light", hell ? "dark" : "light");
+    // Der Knopf im Folienkopf traegt nur das Zeichen; das Wort steht dann
+    // im Titel und in `aria-label`. Ein `textContent` haette das Zeichen
+    // weggewischt, deshalb nur dort, wo es gar keines gibt.
     var sp = ELN.licht.querySelector(".ts-sp-wz-wort");
-    if (sp) sp.textContent = wo; else ELN.licht.textContent = wo;
     var alt = ELN.licht.querySelector("svg");
+    if (sp) sp.textContent = wo; else if (!alt) ELN.licht.textContent = wo;
     if (alt) ELN.licht.replaceChild(wzBild(null, hell ? "mond" : "sonne"), alt);
     ELN.licht.title = wo + "  (⇧L)";
     ELN.licht.setAttribute("aria-label", wo);
@@ -5375,12 +5696,15 @@
   function lichtUm() {
     LICHT_HAND = document.documentElement.dataset.tsLicht === "dunkel"
       ? "hell" : "dunkel";
-    try { sessionStorage.setItem("ts-licht", LICHT_HAND); } catch (x) {}
+    // Global gespeichert wie die anderen Pulteinstellungen: wer sein Pult
+    // hell will, will es in jedem Deck hell und morgen auch noch.
+    pultSchreiben({ light: LICHT_HAND });
     lichtStellen();
     hint(LICHT_HAND === "hell" ? wort("light", "light") : wort("dark", "dark"));
   }
   function lichtHorchen() {
-    try { LICHT_HAND = sessionStorage.getItem("ts-licht") || ""; } catch (x) {}
+    var gemerkt = pultLesen().light;
+    LICHT_HAND = (gemerkt === "hell" || gemerkt === "dunkel") ? gemerkt : "";
     lichtStellen();
     if (!window.matchMedia) return;
     var m = window.matchMedia("(prefers-color-scheme: light)");
@@ -5660,6 +5984,410 @@
     HILFE_AN = !HILFE_AN; hilfeZeigen(); fit(); standMerken();
   }
 
+  // Gibt es das Modul in diesem Deck ueberhaupt? Die harte Ebene: was hier
+  // nein sagt, kann keine Auswahl einschalten.
+  function modulDa(id) {
+    if (PULT_MODULE.indexOf(id) < 0) return false;
+    if (id === "clock") return SPV.clock !== false;
+    if (id === "target") return SPV.target !== false;
+    if (id === "tools") return SPV.tools !== false;
+    // Ein Deck ohne Notizen hat keine Notiz -- entschieden einmal je Deck in
+    // `sprecherAufbau`, nicht je Folie.
+    if (id === "notes") return !LEIB || LEIB.dataset.notiz !== "keine";
+    return true;
+  }
+  // Steht das Modul gerade da? Auswahl geschnitten mit Verfuegbarkeit, und
+  // die Klassenuhr ausserdem, solange sie voruebergehend gebraucht wird.
+  // Die Medienzeile sagt hier nur, ob sie *darf*; ob die Folie Medien
+  // traegt, entscheidet weiter `medienZeigen`.
+  function modulZeigt(id) {
+    if (!modulDa(id)) return false;
+    if (id === "slide") return true;
+    if (id === "clock" && UHR_VORUEBER) return true;
+    if (id === "target" && ZIEL_VORUEBER) return true;
+    return !!SICHTBAR[id];
+  }
+  // Welche Voreinstellung die Auswahl gerade ist, oder `custom`. Verglichen
+  // wird der Wunsch ueber *alle* Module und nicht nur die verfuegbaren: so
+  // heisst dieselbe Auswahl in jedem Deck gleich, und in einem Deck ohne
+  // Uhr springt "Unterricht" nicht still auf "Schlank" um.
+  function voreinstellungJetzt() {
+    for (var p in PULT_VOR) {
+      var gleich = true;
+      for (var i = 0; i < PULT_MODULE.length && gleich; i++) {
+        var m = PULT_MODULE[i];
+        if (m === "slide") continue;
+        if (!!SICHTBAR[m] !== (PULT_VOR[p].indexOf(m) >= 0)) gleich = false;
+      }
+      if (gleich) return p;
+    }
+    return "custom";
+  }
+  // Ein Modul an oder aus. Gibt `false` zurueck, wenn es die Kennung nicht
+  // gibt oder sie nicht abwaehlbar ist (`slide`). Ein hart abgeschaltetes
+  // Modul nimmt den Wunsch trotzdem an -- er gilt fuer das naechste Deck --,
+  // zeigt aber nichts.
+  function modulSetzen(id, an) {
+    if (PULT_MODULE.indexOf(id) < 0 || id === "slide") return false;
+    SICHTBAR[id] = an ? 1 : 0;
+    PULT_PRESET = voreinstellungJetzt();
+    pultAnwenden();
+    standMerken();
+    return true;
+  }
+  function voreinstellungSetzen(id) {
+    if (!PULT_VOR.hasOwnProperty(id)) return false;
+    auswahlRoh(PULT_VOR[id]);
+    PULT_PRESET = id;
+    pultAnwenden();
+    standMerken();
+    return true;
+  }
+  // Alles zurueck, wie es ohne Speicher waere: der Pultstand geht aus dem
+  // Speicher (die Zieldauern bleiben, sie gehoeren den Decks), und was
+  // gilt, kommt wieder aus Typst und der eingebauten Vorgabe. Dasselbe wie
+  // `#speaker&reset`, nur ohne Neuladen.
+  function pultZuruecksetzen() {
+    if (ROLLE !== "speaker") return;
+    speicherLeg(PULT_SCHLUESSEL, null);
+    LICHT_HAND = "";
+    lichtStellen();
+    pultVorgaben(false);
+    notizNachFenster();
+    hilfeZeigen();
+    pultAnwenden();
+  }
+  // Steht ueberhaupt etwas im Speicher? Fuer `typstage.pult.stand()` --
+  // ein Pult, das nach `#speaker&reset` noch etwas Gespeichertes meldet,
+  // hat nicht zurueckgesetzt. Gemeint ist der dauerhafte Speicher: ist
+  // `localStorage` nicht schreibbar, liest `pultLesen` aus dem Ersatz im
+  // Arbeitsspeicher, und der stirbt mit dem Fenster. Das als "gespeichert"
+  // zu melden, waehrend das Blatt "nicht gespeichert" zeigt, waere fuer
+  // die App und fuer Pruefungen eine Luege.
+  function pultGespeichert() {
+    if (!SPEICHER_FEST) return false;
+    var s = pultLesen();
+    for (var k in s) if (k !== "v") return true;
+    return false;
+  }
+  // Die Auswahl auf die Ansicht uebertragen. Die eigentliche Arbeit -- wer
+  // `hidden` traegt, wie viele Spalten die Kachelzeile hat, welche Zeile wo
+  // steht -- macht `sprecherSpalten` bei jedem Lauf von `fit()`, damit es
+  // genau *eine* Stelle gibt, die das entscheidet: auch ein Fensterzug oder
+  // eine Folie mit Medien muss zu derselben Antwort kommen. Hier steht nur
+  // der Anstoss. `medienZeigen` vorweg, weil die Medienzeile ihr `hidden`
+  // selbst fuehrt und die Werkzeugleiste davon abhaengt.
+  //
+  // Woher die Auswahl beim Start kommt (Vorgabe < Typst < Speicher), steht
+  // in `pultVorgaben`; gemerkt wird von den Aufrufern ueber `standMerken`.
+  function pultAnwenden() {
+    if (ROLLE !== "speaker" || !LEIB) return;
+    medienZeigen();
+    fit();
+    blattFuellen();
+  }
+
+  // ── Das Blatt "Ansicht anpassen" ──────────────────────────────────────────
+  //
+  // Ein kleines Blatt oben rechts ueber der Ansicht, geoeffnet mit `,` oder
+  // dem Zahnrad im Folienkopf. Nicht modal: die Folie dahinter laeuft
+  // weiter, und jede Aenderung wirkt sofort, sichtbar hinter dem Blatt --
+  // ein "Uebernehmen" gaebe es nur, wenn man die Wirkung nicht saehe.
+  //
+  // `,` und nicht `v` oder `p`: die beiden darf ein Deck mit `room.sounds`
+  // belegen, und `,` steht weder dort noch in `TASTEN_DECK` -- ein
+  // eingebettetes Dokument reicht es nicht herueber, es gehoert dem Pult.
+  //
+  // Gebaut wird es erst beim ersten Oeffnen. Die meisten Stunden oeffnen es
+  // nie, und ein verstecktes Blatt mit acht Checkboxen waere acht Ziele
+  // mehr fuer die Tabulatortaste, die niemand sieht.
+  var BLATT = null, BLATT_VORHER = null;
+  // Tasten, die im Blatt trotzdem dem Saal gelten. Dieselbe Ueberlegung wie
+  // bei `SAALTASTEN` fuer die Zahlenfelder: wer gerade die Ansicht einstellt
+  // und der Klasse die Tafel zeigen muss, soll mit `b` schwarz schalten
+  // koennen, ohne erst das Blatt zu schliessen. Blaettern ausdruecklich
+  // nicht -- Pfeile und Leertaste bedienen die Knoepfe und Haekchen des
+  // Blattes, und eine Folie, die beim Ankreuzen weiterspringt, waere genau
+  // die Falle, vor der `tippt` schuetzt.
+  // `⇧L` gehoert dazu, obwohl es kein Saalbefehl ist: hell/dunkel stellt man
+  // gern im selben Zug wie die Module, und das Blatt zeigt die Wirkung.
+  var BLATT_SAAL = { b: 1, e: 1, n: 1, L: 1 };
+
+  function blattBauen() {
+    // Am `body` und nicht in der Sprecherbox: die ist ein eigener
+    // Stapelkontext (z 70), und die Buehne, die in ihre Kachel faehrt, liegt
+    // darueber. Ein Blatt in der Box laege unter der Folie, die es oben
+    // rechts gerade nicht verdecken soll, sondern ueberragt.
+    var b = bau("div", "ts-sp-blatt", document.body);
+    b.id = "ts-sp-blatt";
+    b.hidden = true;
+    b.setAttribute("role", "dialog");
+    b.setAttribute("aria-modal", "false");
+    b.setAttribute("aria-labelledby", "ts-sp-blatt-titel");
+    var kopf = bau("div", "ts-sp-blatt-kopf", b);
+    var titel = bau("h2", "ts-sp-blatt-titel", kopf);
+    titel.id = "ts-sp-blatt-titel";
+    titel.textContent = wort("viewTitle", "View");
+    var zu = bau("button", "ts-sp-blatt-zu", kopf);
+    zu.type = "button";
+    zu.textContent = "\u00d7";
+    zu.title = wort("viewClose", "close") + "  (Esc)";
+    zu.setAttribute("aria-label", wort("viewClose", "close"));
+    zu.addEventListener("click", function () { blattUm(false); });
+
+    // Die drei Voreinstellungen als Knopfreihe. `aria-pressed` traegt die
+    // aktive -- bei einer angepassten Auswahl keine, und die Zeile darunter
+    // sagt es mit einem Wort.
+    var vor = bau("div", "ts-sp-blatt-vor", b);
+    vor.setAttribute("role", "group");
+    vor.setAttribute("aria-label", wort("viewPresets", "presets"));
+    var vk = {};
+    [["full", "presetFull", "Full"], ["lesson", "presetLesson", "Lesson"],
+     ["minimal", "presetMinimal", "Minimal"]].forEach(function (p) {
+      var k = bau("button", "ts-sp-blatt-knopf", vor);
+      k.type = "button";
+      k.dataset.preset = p[0];
+      k.textContent = wort(p[1], p[2]);
+      k.addEventListener("click", function () { voreinstellungSetzen(p[0]); });
+      vk[p[0]] = k;
+    });
+    var stand = bau("div", "ts-sp-blatt-stand", b);
+    stand.setAttribute("aria-live", "polite");
+
+    // Je Modul ein echtes Haekchen mit Label: Klick auf das Wort trifft, der
+    // Bildschirmleser sagt "Kontrollkaestchen, aktiviert", und die
+    // Leertaste schaltet -- alles vom Browser, nichts nachgebaut. `slide`
+    // fehlt, es ist nicht abwaehlbar.
+    var fs = bau("fieldset", "ts-sp-blatt-module", b);
+    bau("legend", "", fs).textContent = wort("viewModules", "show");
+    var kk = {};
+    var namen = {
+      next: ["modNext", "next step"], notes: ["modNotes", "note"],
+      elapsed: ["modElapsed", "elapsed time"], progress: ["modProgress", "slide and step"],
+      target: ["modTarget", "target duration"], clock: ["modClock", "class clock"],
+      tools: ["modTools", "drawing tools"], media: ["modMedia", "media controls"]
+    };
+    PULT_MODULE.forEach(function (m) {
+      if (m === "slide") return;
+      var zeile = bau("label", "ts-sp-blatt-modul", fs);
+      zeile.dataset.modul = m;
+      var c = bau("input", "", zeile);
+      c.type = "checkbox";
+      c.id = "ts-sp-modul-" + m;
+      c.addEventListener("change", function () { modulSetzen(m, c.checked); });
+      bau("span", "ts-sp-blatt-wort", zeile).textContent = wort(namen[m][0], namen[m][1]);
+      var neben = bau("span", "ts-sp-blatt-neben", zeile);
+      kk[m] = { box: c, zeile: zeile, neben: neben };
+    });
+
+    var hinweis = bau("p", "ts-sp-blatt-hinweis", b);
+    hinweis.textContent = wort("viewNotStored", "settings are not saved in this browser");
+
+    var rs = bau("button", "ts-sp-blatt-reset", b);
+    rs.type = "button";
+    rs.textContent = wort("viewReset", "reset everything");
+    rs.addEventListener("click", function () {
+      pultZuruecksetzen();
+      hint(wort("viewResetDone", "view reset"));
+    });
+
+    // Im Blatt gehoeren die Tasten dem Blatt. Der grosse Empfaenger haengt
+    // am Fenster in der Blasenphase; `tippt` laesst die Haekchen schon durch
+    // (sie sind `input`), die Knoepfe aber nicht -- Leertaste auf "Schlank"
+    // blaetterte sonst zusaetzlich weiter. `stopPropagation` hier haelt ihn
+    // fuer alle auf. Tab bleibt beim Browser: das Blatt ist nicht modal,
+    // man darf aus ihm heraus.
+    b.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" || (e.key === "," && !e.metaKey && !e.ctrlKey && !e.altKey)) {
+        blattUm(false);
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      e.stopPropagation();
+      if (BLATT_SAAL[e.key] && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        var k = e.key;
+        setTimeout(function () {
+          document.dispatchEvent(new KeyboardEvent("keydown",
+            { key: k, shiftKey: k === "L", bubbles: true, cancelable: true }));
+        }, 0);
+      }
+    });
+
+    BLATT = { el: b, vor: vk, stand: stand, module: kk, hinweis: hinweis };
+  }
+
+  // Das Blatt nach dem Stand. Laeuft nach jeder Aenderung, auch nach einer
+  // ueber `typstage.pult` von aussen -- die App stellt die Ansicht aus ihrem
+  // Menue, und ein offenes Blatt soll das mitzeigen.
+  function blattFuellen() {
+    if (!BLATT || BLATT.el.hidden) return;
+    for (var p in BLATT.vor) {
+      BLATT.vor[p].setAttribute("aria-pressed", String(PULT_PRESET === p));
+    }
+    BLATT.stand.textContent = PULT_PRESET === "custom"
+      ? wort("presetCustom", "custom") : "";
+    for (var m in BLATT.module) {
+      var e = BLATT.module[m], da = modulDa(m);
+      // Hart abgeschaltet heisst: es gibt das Modul in diesem Deck nicht.
+      // Das Haekchen bleibt stehen, aber grau und mit Grund -- sonst sucht
+      // man es im naechsten Deck und weiss nicht, warum es hier fehlte.
+      // Der Wunsch selbst bleibt unangetastet (siehe `SICHTBAR`).
+      e.box.disabled = !da;
+      e.box.checked = da && !!SICHTBAR[m];
+      e.zeile.dataset.aus = da ? "" : "1";
+      e.neben.textContent = !da
+        ? (m === "notes" ? wort("viewNoNotes", "no notes in this deck")
+                         : wort("viewOff", "switched off in this deck"))
+        : (m === "media" ? wort("viewMediaHint", "only on slides with media") : "");
+    }
+    BLATT.hinweis.hidden = !!SPEICHER_FEST;
+  }
+
+  // Wo das Blatt steht. Oben rechts ist im breiten Fenster die beste Ecke:
+  // die Folie liegt links, und ihr rechter oberer Rand traegt selten
+  // Inhalt. In einem schmalen oder stehenden Fenster nimmt die Folie aber
+  // die ganze Breite oben ein, und genau dort laege das Blatt -- gemessen
+  // bei 480x800 deckte es 99 Prozent der Buehne zu, bei 700x900 fast die
+  // Haelfte samt der Marke "naechste Folie", waehrend unten Platz frei war.
+  // Deckt die Ecke oben rechts mehr als ein Siebtel der Buehne zu, rueckt
+  // das Blatt unter die Folienkachel, sofern dort Platz fuer einen
+  // brauchbaren Teil davon ist (der Rest scrollt im Blatt). Laeuft beim
+  // Oeffnen und nach jedem Umbau der Ansicht (`fit`), solange es offen ist.
+  function blattLage() {
+    if (!BLATT || BLATT.el.hidden || !ELN.buehne) return;
+    var st = BLATT.el.style;
+    st.top = ""; st.maxHeight = "";
+    var b = BLATT.el.getBoundingClientRect();
+    // Gezaehlt wird gegen das Bild selbst, nicht gegen seine Kachel: die
+    // ist im breiten Fenster rechts und links breiter als die Folie, und
+    // ein Blatt ueber dem leeren Rand verdeckt nichts.
+    var bild = document.getElementById("ts-stage");
+    var k = (bild || ELN.buehne).getBoundingClientRect();
+    var kachel = ELN.buehne.getBoundingClientRect();
+    var bx = Math.max(0, Math.min(b.right, k.right) - Math.max(b.left, k.left));
+    var by = Math.max(0, Math.min(b.bottom, k.bottom) - Math.max(b.top, k.top));
+    var flaeche = k.width * k.height;
+    if (!flaeche || bx * by / flaeche <= 1 / 7) return;
+    var oben = Math.round(kachel.bottom + 8);
+    var platz = innerHeight - oben - 8;
+    if (platz < Math.min(b.height, 200)) return;
+    st.top = oben + "px";
+    st.maxHeight = platz + "px";
+  }
+
+  // Auf oder zu; ohne Argument umschalten. Gibt zurueck, ob es offen ist.
+  function blattUm(offen) {
+    if (ROLLE !== "speaker" || !gebaut) return false;
+    if (!BLATT) blattBauen();
+    var war = !BLATT.el.hidden;
+    var soll = offen == null ? !war : !!offen;
+    if (soll === war) return soll;
+    if (soll) {
+      BLATT_VORHER = document.activeElement;
+      BLATT.el.hidden = false;
+      blattFuellen();
+      blattLage();
+      // Der Fokus springt ins Blatt, auf die aktive Voreinstellung, sonst
+      // auf die erste: Tab und Leertaste arbeiten dann sofort hier.
+      var ziel = BLATT.vor[PULT_PRESET] || BLATT.vor.full;
+      try { ziel.focus(); } catch (x) {}
+    } else {
+      var drin = BLATT.el.contains(document.activeElement);
+      BLATT.el.hidden = true;
+      // Zurueck, wo der Fokus herkam -- zum Zahnrad, wenn es geklickt
+      // wurde. Sonst liegt er auf dem Leib, und der grosse Empfaenger
+      // bekommt die naechste Taste wieder.
+      if (drin) {
+        var z = BLATT_VORHER;
+        if (z && z !== document.body && document.contains(z) && z.focus) {
+          try { z.focus(); } catch (x) {}
+        } else if (document.activeElement && document.activeElement.blur) {
+          document.activeElement.blur();
+        }
+      }
+      BLATT_VORHER = null;
+    }
+    if (ELN.blattKnopf) ELN.blattKnopf.setAttribute("aria-expanded", String(soll));
+    return soll;
+  }
+
+  // Die Kachelknoten nach der Auswahl ein- und ausblenden. Aufgerufen von
+  // `sprecherSpalten`, *vor* dem Messen: was gemessen wird, muss schon in
+  // seiner neuen Lage stehen.
+  //
+  // Gebaut ist immer alles, versteckt wird mit `hidden` (siehe die Regel
+  // `[data-modul][hidden]` im Stilblatt -- `.ts-sp-kachel` setzt selbst ein
+  // `display`, das Attribut allein wirkte nicht). An den Kacheln haengen
+  // ueber vierzig ungeschuetzte Schreibzugriffe; ein Knoten, der fehlt,
+  // braeuchte an jedem eine Schranke.
+  function pultSichtbarkeit() {
+    if (!LEIB) return;
+    LEIB.querySelectorAll("[data-modul]").forEach(function (k) {
+      var id = k.dataset.modul;
+      // Die Medienzeile fuehrt `medienZeigen` (sie haengt auch an der Folie).
+      if (id === "media" || id === "slide") return;
+      var an = modulZeigt(id);
+      if (k.hidden === !an) return;
+      k.hidden = !an;
+    });
+    // Die Werkzeugleiste ist kein Modul, sondern ein Traeger: sie steht da,
+    // solange die Zeichenwerkzeuge oder eine Medienzeile darin stehen, und
+    // verschwindet sonst samt ihrer Rasterzeile. Bisher nahm `tools:false`
+    // die ganze Leiste mit -- und damit auch Medienzeile, `?` und hell/dunkel.
+    if (ELN.wzTraeger) {
+      var medien = !!(MEDIEN_ZEILE && !MEDIEN_ZEILE.hidden);
+      ELN.wzTraeger.hidden = !(modulZeigt("tools") || medien);
+    }
+    // Die Kachelzeile zaehlt ihre sichtbaren Kacheln selbst. Abbestellte
+    // Kacheln haengen nicht mehr im Baum und zaehlen damit von allein nicht.
+    var zeile = LEIB.querySelector(".ts-sp-uhren");
+    if (zeile) {
+      var n = 0, letzte = null;
+      for (var c = zeile.firstElementChild; c; c = c.nextElementSibling) {
+        delete c.dataset.allein;
+        if (!c.hidden) { n++; letzte = c; }
+      }
+      zeile.hidden = n === 0;
+      // Schmal zu zweit: bei einer ungeraden Zahl (drei) stuende die letzte
+      // allein in ihrer Reihe, rechts daneben eine leere Zelle so gross wie
+      // sie. Sie nimmt dann die ganze Reihe (das Stilblatt wertet die Marke
+      // nur im schmalen Modus aus).
+      if (letzte && n > 2 && n % 2) letzte.dataset.allein = "1";
+      // Breit so viele Spalten wie Kacheln: eine einzelne Klassenuhr fuellt
+      // die Zeile, statt ein Viertel davon zu belegen. Schmal hoechstens
+      // zwei nebeneinander, wie bisher -- drei Kacheln in einem 560 px
+      // breiten Fenster waeren je 180 px, und "TARGET (MIN)" passt nicht.
+      zeile.style.setProperty("--ts-n", String(Math.max(1, n)));
+      zeile.style.setProperty("--ts-n-schmal", String(Math.max(1, Math.min(2, n))));
+    }
+  }
+
+  // Die Klassenuhr ist ausgeblendet und wird doch gebraucht: `t`, `⇧t` oder
+  // eine Ziffer haben das Minutenfeld aufgemacht, oder eine Saaluhr laeuft.
+  // Ein Feld, in das man tippt, ohne es zu sehen, ist eine Falle, und eine
+  // Uhr, deren Rest man am Pult nicht ablesen kann, eine halbe. Also steht
+  // die Kachel so lange da und geht danach von selbst wieder. Nur bei einem
+  // Wechsel wird umgebaut: `uhrZeigen` laeuft oft.
+  function uhrVoruebergehend() {
+    if (ROLLE !== "speaker" || !ELN.uhrFeld) return;
+    var offen = ELN.uhrFeld.style.display !== "none";
+    var soll = (offen || SAAL_SEK > 0) ? 1 : 0;
+    if (soll === UHR_VORUEBER) return;
+    UHR_VORUEBER = soll;
+    if (gebaut && !SICHTBAR.clock) pultAnwenden();
+  }
+
+  // Die Zieldauer, voruebergehend: an mit `d` (vor dem Fokus), aus, sobald
+  // das Feld ihn wieder abgibt -- Enter, Escape, Tab oder ein Klick daneben.
+  function zielVoruebergehend(an) {
+    var soll = an ? 1 : 0;
+    if (soll === ZIEL_VORUEBER) return;
+    ZIEL_VORUEBER = soll;
+    if (gebaut && !SICHTBAR.target) pultAnwenden();
+  }
+
   function sprecherAufbau() {
     if (ROLLE !== "speaker" || !SPRECHERBOX) return;
 
@@ -5677,16 +6405,43 @@
     //    Vortragsfenster. Der stand bisher in der Fusszeile, achthundert
     //    Pixel von dem Bild entfernt, ueber das er etwas aussagt.
     var kb = bau("div", "ts-sp-kachel ts-sp-buehne", LEIB);
+    kb.dataset.modul = "slide";
     ELN.buehne = kb;
     var bkopf = bau("div", "ts-sp-buehnenkopf", kb);
     bau("div", "ts-sp-marke", bkopf).textContent = wort("current", "current slide");
     ELN.lage = bau("div", "ts-sp-lage", bkopf);
+    // Drei kleine Knoepfe, die diese *Ansicht* einstellen und nichts ueber
+    // die Tinte sagen: hell/dunkel, die Tastenleiste und das Blatt "Ansicht
+    // anpassen". Sie sassen in der Werkzeugleiste, und `tools:false` nahm sie
+    // mit -- ein Deck ohne Stift hatte damit auch keinen Weg mehr zu `?`.
+    // Hier oben stehen sie in der einen Kachel, die es immer gibt.
+    var kopfKnoepfe = bau("div", "ts-sp-kopfknoepfe", bkopf);
+    var kopfKnopf = function (zeichen, name, taste) {
+      var k = bau("button", "ts-sp-kopfknopf", kopfKnoepfe);
+      k.type = "button";
+      if (zeichen) wzBild(k, zeichen);
+      k.title = name + (taste ? "  (" + taste + ")" : "");
+      k.setAttribute("aria-label", name);
+      return k;
+    };
+    ELN.licht = kopfKnopf("sonne", wort("light", "light"), "\u21e7L");
+    ELN.licht.classList.add("ts-sp-licht");
+    ELN.licht.addEventListener("click", lichtUm);
+    ELN.hilfeKnopf = kopfKnopf("", "Keyboard shortcuts", "h");
+    ELN.hilfeKnopf.textContent = "?";
+    ELN.hilfeKnopf.addEventListener("click", hilfeUm);
+    ELN.blattKnopf = kopfKnopf("zahnrad", wort("viewCustomize", "customize view"), "");
+    ELN.blattKnopf.setAttribute("aria-haspopup", "dialog");
+    ELN.blattKnopf.setAttribute("aria-controls", "ts-sp-blatt");
+    ELN.blattKnopf.setAttribute("aria-expanded", "false");
+    ELN.blattKnopf.addEventListener("click", function () { blattUm(); });
     PLATZ = bau("div", "ts-sp-platz", kb);
 
     // 2. Die Notiz. Sie bekommt die ganze zweite Spalte statt eines
     //    Streifens unter der Folie: sie ist das Einzige in dieser Ansicht,
     //    das man wirklich liest.
     var nk = kachel(LEIB, "ts-sp-notizkasten", wort("note", "note"));
+    nk.dataset.modul = "notes";
     ELN.notizKasten = nk;
     ELN.notiz = bau("div", "ts-sp-notiz", nk);
     notizNachFenster();
@@ -5718,6 +6473,7 @@
     // die viermal je Sekunde zappelt, zieht den Blick, ohne ihn zu belohnen.
     // So macht es reveal.js auch.
     var kZeit = kachel(uhren, "", wort("elapsed", "elapsed"));
+    kZeit.dataset.modul = "elapsed";
     // Ein Klick auf die verstrichene Zeit setzt sie zurueck -- dieselbe
     // Wirkung wie `r`.
     ELN.zeit = hauptKnopf(kZeit, wort("resetTip", "reset elapsed"), function () {
@@ -5728,6 +6484,7 @@
 
     // Folie und Schritt, mit dem Fortschrittsbalken am Fuss der Kachel.
     var kOrt = kachel(uhren, "", wort("slide", "slide"));
+    kOrt.dataset.modul = "progress";
     ELN.fort = haupt(kOrt);
     ELN.fortSchritt = neben(bau("div", "ts-sp-neben", kOrt), wort("step", "step"));
     ELN.balken = balken(kOrt);
@@ -5738,6 +6495,7 @@
     // in derselben Groesse, und `d` geht hinein. Rest und Plan stehen klein
     // darunter -- beides gibt es nur, wenn eine Dauer gesetzt ist.
     var kZiel = kachel(uhren, "", wort("target", "target (min)"));
+    kZiel.dataset.modul = "target";
     var inp = document.createElement("input");
     inp.type = "number"; inp.min = "0"; inp.step = "1";
     inp.className = "ts-sp-ziel"; inp.id = "ts-sp-ziel";
@@ -5760,6 +6518,7 @@
       ev.preventDefault();
       ev.stopPropagation();
     });
+    inp.addEventListener("blur", function () { zielVoruebergehend(false); });
     ELN.ziel = inp;
     var zZeile = bau("div", "ts-sp-neben", kZiel);
     ELN.rest = neben(zZeile, wort("left", "remaining"));
@@ -5780,6 +6539,7 @@
     // der leerlaeuft. Sie sehen verschieden aus, sie ticken verschieden,
     // und sie heissen verschieden.
     var kUhr = kachel(uhren, "ts-sp-uhrkachel", wort("timer", "class clock"));
+    kUhr.dataset.modul = "clock";
     ELN.uhrKachel = kUhr;
     ELN.uhrMarke = kUhr.firstChild;
     // Laeuft die Uhr, beendet ein Klick sie; steht sie, klappt er das
@@ -5840,6 +6600,7 @@
     //    Die Vorschau ist ein Blick und keine zweite Buehne; sie steht
     //    deshalb nicht mehr in einer eigenen Spalte, deren Rest leer blieb.
     var vor = kachel(LEIB, "ts-sp-naechst", "");
+    vor.dataset.modul = "next";
     ELN.vorMarke = vor.firstChild;
     ELN.vorBild = bau("div", "ts-sp-vorbild", vor);
 
@@ -5880,13 +6641,20 @@
     var wzk = bau("div", "ts-sp-werkzeug", wzTraeger);
     ELN.wzKasten = wzk;
     ELN.werkzeug = {};
+    // Die Zeichenwerkzeuge in einem eigenen Umschlag, der fuer das Raster
+    // nicht existiert (`display:contents`): die Gruppen fliessen weiter wie
+    // bisher in der Leiste, aber `tools` -- abbestellt wie ausgeblendet --
+    // trifft jetzt genau sie und nicht die Medienzeile daneben.
+    var zeichenWz = bau("div", "ts-sp-zeichenwz", wzk);
+    zeichenWz.dataset.modul = "tools";
+    ELN.zeichenWz = zeichenWz;
 
     // Eine Gruppe traegt ihren Namen mit, benutzt ihn aber nur dort, wo sie
     // quer liegt und Platz dafuer hat -- dann sieht sie aus wie ein Kasten
     // der Tastenzeile darunter, und das ist Absicht: beide sagen "das hier
     // gehoert zusammen, und so heisst es".
     var wzGruppe = function (klasse, name) {
-      var g = bau("div", "ts-sp-wzgruppe " + klasse, wzk);
+      var g = bau("div", "ts-sp-wzgruppe " + klasse, zeichenWz);
       bau("span", "ts-sp-wzgruppe-name", g).textContent = name;
       return g;
     };
@@ -5973,29 +6741,16 @@
         hint(wort("inkCleared", "slide cleared — z brings it back"));
       });
 
-    // 4 ── hell/dunkel. Das einzige der neun, das nichts ueber die Tinte
-    //      sagt, sondern ueber diese Ansicht. Wo es steht, ist der
-    //      Unterschied zwischen den Entwuerfen a und b; c und d geben ihm
-    //      einen eigenen Kasten am Ende, getrennt durch Luft und nicht durch
-    //      einen Strich -- dieselbe Sprache, mit der die Kacheln sich
-    //      untereinander trennen.
-    // Der Kasten heisst nach dem, was er einstellt, und nicht nach dem Knopf
-    // darin: "LIGHT . LIGHT" waere dasselbe Wort zweimal. "Ansicht" ist
-    // ausserdem der Name, unter dem `l` in der Tastenzeile steht -- dieselbe
-    // Sache, derselbe Name, zwei Zeilen uebereinander.
-    var lichtWohin = wzGruppe("ts-sp-wzlicht", wort("groupView", "view"));
-    ELN.licht = wzKnopf(lichtWohin, "ts-sp-tat ts-sp-licht", "sonne",
-                        "light", "light", "⇧L");
-    ELN.licht.addEventListener("click", lichtUm);
+    // 4 ── hell/dunkel stand hier als vierte Gruppe, zusammen mit `?`. Beide
+    //      sagen nichts ueber die Tinte, sondern ueber diese Ansicht, und sie
+    //      sind in den Kopf der Folienkachel gezogen (siehe oben): dort nimmt
+    //      `tools:false` sie nicht mehr mit.
     ELN.modus = ELN.werkzeug.stift;
 
     var fuss = bau("div", "ts-sp-fuss", SPRECHERBOX);
     ELN.fuss = fuss;
-    ELN.hilfeKnopf = bau("button", "ts-sp-tat", lichtWohin);
-    ELN.hilfeKnopf.textContent = "?";
-    ELN.hilfeKnopf.title = "Keyboard shortcuts (h)";
-    ELN.hilfeKnopf.addEventListener("click", hilfeUm);
     MEDIEN_ZEILE = bau("div", "ts-sp-medien", wzk);
+    MEDIEN_ZEILE.dataset.modul = "media";
     MEDIEN_ZEILE.hidden = true;
     ELN.hilfe = bau("div", "ts-sp-hilfe", fuss);
     // Die ganze Tastenzeile, nicht die kurze Fassung: die Leiste ist breit
@@ -6017,12 +6772,20 @@
     //
     // Die Tasten gehen mit. Eine Uhr, die man nicht sieht, aber mit ⇧T
     // starten kann, waere schlimmer als gar keine.
+    //
+    // Das ist die *harte* Ebene. Die weiche -- was die Lehrkraft am Pult
+    // ausblendet -- entfernt nichts und schaltet keine Taste ab, sie setzt
+    // nur `hidden` (siehe `pultSichtbarkeit`).
+    //
+    // `tools:false` nimmt nur noch die Zeichengruppen. Bisher ging die ganze
+    // Werkzeugleiste, und mit ihr Medienzeile, `?` und hell/dunkel -- ein
+    // Deck ohne Stift hatte dann auch keine Videosteuerung am Pult mehr.
     if (SPV.clock === false) ELN.uhrKachel.remove();
     if (SPV.target === false && ELN.ziel) {
       var zk = ELN.ziel.closest(".ts-sp-kachel");
       if (zk) zk.remove();
     }
-    if (SPV.tools === false) ELN.wzTraeger.remove();
+    if (SPV.tools === false) ELN.zeichenWz.remove();
 
     // The sound belongs in the hall, not at the speaker's seat: the stage
     // runs along here in full, video included. Seeing it is desired,
@@ -6036,8 +6799,14 @@
     modusSetzen("stift");
     // Was vor dem Neuladen dastand, steht danach wieder da -- nach dem
     // Aufbau, denn erst jetzt gibt es das Feld, in das die Zieldauer gehoert.
+    //
+    // Dort laeuft auch die Rangfolge der Pulteinstellungen (Vorgabe < Typst
+    // < Speicher); die Notizgroesse rechnet danach mit der gemerkten
+    // Abweichung neu, und die Medienzeile fragt die Auswahl neu.
     standErinnern();
+    notizNachFenster();
     hilfeZeigen();
+    medienZeigen();
     if (ELN.ziel && ZIEL_MIN) ELN.ziel.value = String(ZIEL_MIN);
     gebaut = 1;
     document.documentElement.dataset.tsFertig = "1";
@@ -6049,7 +6818,7 @@
     // whether it carries a different number than the previous one.
     var fern = null;
     horch("schritt", function (d) {
-      if (d.sitzung !== undefined) return;   // a greeting, not a step
+      if (d.sitzung !== undefined) { stundeAbgleich(d); return; }   // a greeting, not a step
       if (fern !== null && fern !== d.n) uhrAn();
       fern = d.n;
     });
@@ -6132,21 +6901,34 @@
   // As long as no one has chosen the size by hand, it follows the window:
   // 21px is right on a large screen and too big in a small window, where
   // only four lines would remain. The window also opens small and is often
-  // only resized afterward. A press of + or - ends this following, because
-  // from then on what the speaker wants applies.
-  var NOTIZ_HAND = 0;
+  // only resized afterward. A press of + or - shifts the size against the
+  // automatic one; it keeps following the window, by that many pixels
+  // larger or smaller.
+  //
+  // Gemerkt wird, was die Hand gegen die Automatik verstellt hat, nicht die
+  // Pixelzahl selbst (`NOTIZ_DELTA`, gespeichert als `noteDelta`): 24 px,
+  // am grossen Schirm von Hand eingestellt, waeren im kleinen Fenster des
+  // Laptops zu viel, "zwei Stufen groesser als ueblich" ist es nirgends.
+  // `null` heisst: niemand hat gedrueckt, die Groesse folgt allein dem
+  // Fenster.
+  var NOTIZ_DELTA = null;
+  function notizAuto() {
+    return Math.max(15, Math.min(24, Math.round(innerHeight / 34)));
+  }
   function notizNachFenster() {
-    if (NOTIZ_HAND || !ELN.notiz) return;
-    var neu = Math.max(15, Math.min(24, Math.round(innerHeight / 34)));
+    if (!ELN.notiz) return;
+    var neu = NOTIZ_DELTA == null ? notizAuto()
+            : Math.max(12, Math.min(64, notizAuto() + NOTIZ_DELTA));
     if (neu === NOTIZ_PX) return;
     NOTIZ_PX = neu;
     ELN.notiz.style.fontSize = NOTIZ_PX + "px";
   }
   function notizGroesse(d) {
-    NOTIZ_HAND = 1;
     NOTIZ_PX = Math.max(12, Math.min(64, NOTIZ_PX + d));
+    NOTIZ_DELTA = NOTIZ_PX - notizAuto();
     if (ELN.notiz) ELN.notiz.style.fontSize = NOTIZ_PX + "px";
     notizStand();
+    standMerken();
   }
   // A line that is simply cut off at the bottom edge reads as if the note
   // had ended. Hence a gradient and an arrow as soon as more is coming, and
@@ -6249,6 +7031,9 @@
     ELN.uhrFeld.style.display = "";
     ELN.saal.style.display = "none";
     ELN.uhrFeld.value = ELN.uhrFeld.value || "5";
+    // Vor dem Fokus: ein Feld in einer ausgeblendeten Kachel nimmt keinen
+    // an, und die Ziffern liefen dann ins Leere statt ins Feld.
+    uhrVoruebergehend();
     ELN.uhrFeld.focus();
     ELN.uhrFeld.select();
   }
@@ -6257,6 +7042,7 @@
     ELN.uhrFeld.style.display = "none";
     ELN.saal.style.display = "";
     ELN.uhrFeld.blur();
+    uhrVoruebergehend();
   }
 
   // ── The speaker view's keys ───────────────────────────────────────────────
@@ -6322,7 +7108,13 @@
       // gehoert dem, was man oft drueckt: die Zieldauer wird einmal je Vortrag
       // gesetzt, die Klassenuhr mehrmals je Stunde.
       else if (k === "d" && SPV.target !== false) {
-        if (ELN.ziel) { ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault(); }
+        // Erst einblenden, dann fokussieren: ein verstecktes Feld nimmt
+        // keinen Fokus an (siehe `ZIEL_VORUEBER`).
+        if (ELN.ziel) {
+          zielVoruebergehend(true);
+          ELN.ziel.focus(); ELN.ziel.select(); e.preventDefault();
+          if (document.activeElement !== ELN.ziel) zielVoruebergehend(false);
+        }
       }
       // Sagt, was es getan hat. `r` liegt auf einer Tastatur neben `t` und
       // `z`, und es loeschte den Stundenzaehler ohne ein Wort.
@@ -6337,9 +7129,19 @@
       else if (k === "z" && SPV.tools !== false) {
         tinteSenden({ b: "weg", s: tinteFolie() });
       }
-      else if (k === "x") {
+      // `x` gehoert zu den Zeichenwerkzeugen wie `z`: die Tastenleiste fuehrt
+      // es bei `tools:false` schon lange als still, nur gewirkt hat es weiter
+      // -- eine Taste, die eine Zeichnung loescht, die man gar nicht machen
+      // konnte, und das ohne Knopf, der zeigt, dass es sie gibt.
+      else if (k === "x" && SPV.tools !== false) {
         tinteSenden({ b: "loesch", s: tinteFolie() });
         hint(wort("inkCleared", "slide cleared — z brings it back"));
+      }
+      // `,` oeffnet das Blatt "Ansicht anpassen" (siehe `blattUm`); im Blatt
+      // schliesst es dieselbe Taste wieder, dort faengt es der Horcher am
+      // Blatt selbst ab.
+      else if (k === "," && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        blattUm(); e.preventDefault();
       }
       else if (k === "+" || k === "=") { notizGroesse(2); }
       else if (k === "-" || k === "_") { notizGroesse(-2); }
@@ -7351,6 +8153,9 @@
           if (k) bau("kbd", "ts-sp-kappe", pr).textContent = k;
         });
       });
+      // Eine Gruppe, deren Tasten alle abbestellt sind, geht mit: bei
+      // `tools:false` stand sonst "Zeichnen" als leerer Kasten in der Leiste.
+      if (!g.querySelector(".ts-sp-taste-paar")) wohin.removeChild(g);
     });
     // Zuletzt die Klangtasten des Decks. Im Hilfetext koennen sie nicht
     // stehen: welche es sind, waehlt das Deck, und der Text ist uebersetzt
@@ -7381,7 +8186,29 @@
     // Zeile wirklich sein will und wie viel Hoehe die Folie danach hat.
     LEIB.style.maxWidth = "";
     LEIB.style.gridTemplateColumns = "";
-    LEIB.style.gridTemplateRows = "";
+    // Zum Messen ein neutrales Raster: die Folie in einer `1fr`-Zeile, die
+    // allen freien Platz schluckt, und Kachelzeile und Werkzeugleiste je in
+    // einer eigenen `auto`-Zeile darunter -- dort stehen sie auf ihrer
+    // natuerlichen Hoehe. Die Vorlage aus dem Stilblatt taugt dafuer nicht
+    // mehr, seit die Belegung inline steht: hochkant ist dort Zeile 2 die
+    // `1fr`-Zeile, und das `gridRow = 2`, das ein voriger Lauf (etwa mit
+    // `minimal` oder nur der Klassenuhr) Kachelzeile oder Leiste gegeben
+    // hatte, legte sie genau hinein. Gemessen wurde dann die gestreckte
+    // Hoehe: bei 480x800 mit nur `clock` eine 639 px hohe Kachelzeile und
+    // eine 52 px hohe Folie, die Buehne ragte aus Kachel und Fenster. Und
+    // ohne eigene Zeilen teilten sich hochkant beide die vierte Zeile und
+    // massen je die Hoehe der groesseren. Die richtige Belegung setzt der
+    // Schluss dieser Funktion.
+    //
+    // Notiz und Vorschau (Zeilen 2 und 3) duerfen dabei auf null: mit
+    // `auto` schoben sie in einem kleinen Fenster (640x480) das Raster ueber
+    // den Rand, die Zeilen darunter fielen auf ihre Mindesthoehe -- bei einer
+    // Kachel mit `overflow` weniger als ihr Inhalt --, und die Leiste wurde
+    // 4 px zu niedrig gemessen.
+    LEIB.style.gridTemplateRows = "minmax(0,1fr) minmax(0,auto) minmax(0,auto) auto auto";
+    var zeileMess = LEIB.querySelector(".ts-sp-uhren");
+    if (zeileMess) { zeileMess.style.gridRow = "4"; zeileMess.style.gridColumn = "1 / 3"; }
+    if (ELN.wzTraeger) { ELN.wzTraeger.style.gridRow = "5"; ELN.wzTraeger.style.gridColumn = "1 / 3"; }
     // Fuenf Kacheln nebeneinander brauchen Platz, und die fuenfte ist keine
     // Zahl: sie traegt drei Reihen Knoepfe statt einer Ziffer. Bleibt fuer
     // sie weniger als ein knappes Fuenftel, bekommt sie eine eigene Zeile
@@ -7397,6 +8224,19 @@
     // wieder breit, bekam eine 212 px hohe Zeile, wo frisch geladen 166
     // standen, und sie blieb so.
     LEIB.dataset.wz = r.width < 780 ? "schmal" : "weit";
+    // Hochkant heisst hier nur noch: die Vorschau passt nicht mehr neben die
+    // Notiz. Die Folie liegt in beiden Faellen oben und quer. Steht jetzt vor
+    // dem Messen, weil die Zeilenbelegung unten davon abhaengt.
+    LEIB.dataset.form = r.width < 520 ? "hochkant" : "hoch";
+    var hochkant = LEIB.dataset.form === "hochkant";
+
+    // Erst die Auswahl auf die Knoten, dann messen: was gemessen wird, muss
+    // schon so dastehen, wie es gleich stehen soll.
+    pultSichtbarkeit();
+    var notizAn = modulZeigt("notes"), vorAn = modulZeigt("next");
+    var zeile2 = notizAn && vorAn ? "beide" : notizAn ? "notiz"
+               : vorAn ? "naechst" : "keine";
+    LEIB.dataset.zeile2 = zeile2;
 
     // Die Zahlenzeile selbst gesucht und nicht ueber eine ihrer Kacheln. Ein
     // Deck kann die Uhr abbestellen; ihre Kachel haengt dann an keinem
@@ -7408,12 +8248,19 @@
     // halbe Flaeche -- die Zahl steht klein in einem grossen Kasten, und
     // rechts davon ist nichts. Nebeneinander wird die Zahl groesser und die
     // Kachel niedriger, und die Folie darueber bekommt, was die Zeile abgibt.
-    if (zeile) {
+    // Eine ausgeblendete Kachelzeile ist keine: sie misst null und bekommt
+    // keine Rasterzeile, sonst bliebe ihr Zeilenabstand als Phantom stehen.
+    var zeileDa = !!(zeile && !zeile.hidden);
+    if (zeileDa) {
+      // Gemessen wird die erste *sichtbare* Kachel. Die erste ueberhaupt
+      // kann ausgeblendet sein und misst dann null -- die Zeile stuende
+      // fuer immer untereinander.
       var k1 = zeile.firstElementChild;
+      while (k1 && k1.hidden) k1 = k1.nextElementSibling;
       var breitGenug = k1 && k1.getBoundingClientRect().width >= 215;
       if (breitGenug) zeile.dataset.breit = "1"; else delete zeile.dataset.breit;
     }
-    var natur = zeile ? zeile.getBoundingClientRect().height : 0;
+    var natur = zeileDa ? zeile.getBoundingClientRect().height : 0;
     // Das Werkzeugband ist eine eigene Rasterzeile und will eigene Hoehe.
     // Ohne diesen Posten rechnete der Rest so, als gaebe es nur die
     // Zahlenzeile: alle Zeilen zusammen wurden hoeher als der Leib, und die
@@ -7421,12 +8268,39 @@
     // 64 px mass. Gemessen gleich nach dem Zuruecksetzen der Zeilen: nur
     // jetzt steht das Band auf seiner natuerlichen Hoehe. Die 10 sind der
     // Zeilenabstand des Rasters.
-    var band = ELN.wzTraeger
-      ? ELN.wzTraeger.getBoundingClientRect().height + 10 : 0;
+    //
+    // Eine versteckte Leiste zaehlt gar nicht, auch nicht mit ihren 10 px
+    // Abstand: die Zeile gibt es dann nicht.
+    var leisteDa = !!(ELN.wzTraeger && ELN.wzTraeger.parentNode && !ELN.wzTraeger.hidden);
+    var band = leisteDa ? ELN.wzTraeger.getBoundingClientRect().height + 10 : 0;
 
-    // Hochkant heisst hier nur noch: die Vorschau passt nicht mehr neben die
-    // Notiz. Die Folie liegt in beiden Faellen oben und quer.
-    LEIB.dataset.form = r.width < 520 ? "hochkant" : "hoch";
+    // Hochkant mit Notiz *und* Vorschau steht die Vorschau in einer eigenen
+    // Zeile unter der Notiz, und die will ihre Hoehe genauso wie die
+    // Kachelzeile. Bisher stand sie dort ungezaehlt, und Kachelzeile und
+    // Werkzeugleiste teilten sich die vierte Rasterzeile -- uebereinander,
+    // gemessen bei 500x900 beide auf y=621.
+    //
+    // Ihre Hoehe wird gesetzt und nicht gemessen. Gemessen waere es die
+    // eigene Groesse von vorhin: die Vorschau richtet ihr Bild nach der
+    // Kachel (`vorschauBreite`), die Kachel ihre Hoehe nach dem Bild -- wer
+    // vorher "nur Vorschau" gewaehlt hatte, behielt beim Zurueckschalten eine
+    // 343 px hohe Vorschau, und fuer die Folie blieben 17 px.
+    var vorZeile = hochkant && zeile2 === "beide";
+    //
+    // Gedeckelt ausserdem auf ein Fuenftel dessen, was nach Kachelzeile und
+    // Leiste fuer Folie, Notiz und Vorschau zusammen bleibt. Mit dem festen
+    // Deckel allein (150 px oder 18 Prozent der Hoehe) war die Vorschau
+    // hochkant bei `full` hoeher als die Folie: bei 480x800 stand die Buehne
+    // auf 151x85, die Vorschau auf 126 px -- der Blick auf das Naechste
+    // groesser als das, was gerade an der Wand steht.
+    var vorRest = r.height - natur - band - 10 * ((zeileDa ? 1 : 0) + 2);
+    var vorSpur = vorZeile
+      ? Math.round(Math.max(0, Math.min(150, r.height * 0.18, vorRest * 0.2))) : 0;
+    var vorH = vorZeile ? vorSpur + 10 : 0;
+    // Die Zeilenabstaende, die nicht schon in `band` und `vorH` stecken: je
+    // einer zwischen Folie, zweiter Zeile und Kachelzeile, soweit es sie
+    // gibt. Mit allen Modulen sind das die 20 von frueher.
+    var luecken = 10 * ((zeile2 !== "keine" ? 1 : 0) + (zeileDa ? 1 : 0));
 
     // Was die Notiz bekommt: was nach Folie und Kachelzeile uebrig ist,
     // gedeckelt, damit sie in einem hohen Fenster nicht die Folie auffrisst.
@@ -7439,7 +8313,7 @@
     // `bw = min(raumB, raumH * v)`; oberhalb davon ist sie breitenbegrenzt,
     // und weiter zu ziehen naehme der Notiz Hoehe und gaebe sie niemandem.
     var ideal = (r.width - randX) / v + randY;
-    var uebrig = Math.max(0, r.height - natur - band - 20);
+    var uebrig = Math.max(0, r.height - natur - band - vorH - luecken);
     // Die Folie nimmt hoechstens 72 Prozent -- und laesst der Zeile darunter
     // ausserdem einen Boden. Ohne den schrumpfte die Vorschau in einem
     // kleinen Sprecherfenster auf 27x15 Pixel: ein Bild, das kleiner ist als
@@ -7475,6 +8349,10 @@
     // Dann bleibt es bei der alten Formel, und der Griff sagt das, statt
     // sich stumm nicht bewegen zu lassen.
     var beweglich = deckelF - bodenF > 1;
+    // Ohne zweite Zeile gibt es nichts zu teilen: die Folie bekommt den
+    // ganzen Topf, und ihr Seitenmass haelt `fit()`, das die Buehne in
+    // der Kachel zentriert.
+    if (zeile2 === "keine") { beweglich = false; folieVorgabe = folieHoch = uebrig; }
     TEIL_TOPF = uebrig;
     TEIL_MIN = bodenF;
     TEIL_MAX = deckelF;
@@ -7486,17 +8364,46 @@
       folieHoch = Math.min(Math.max(uebrig * ANTEIL, bodenF), deckelF);
     }
     TEIL_FOLIE = folieHoch;
-    var notizHoch = Math.max(0, uebrig - folieHoch);
+    var notizHoch = zeile2 === "keine" ? 0 : Math.max(0, uebrig - folieHoch);
 
-    // Vier Zeilen: Folie, Notiz, Zahlen, Werkzeuge.
-    LEIB.style.gridTemplateRows =
-      Math.round(folieHoch) + "px " + Math.round(notizHoch) + "px auto auto";
+    // Bis zu fuenf Zeilen: Folie, Notiz/Vorschau, (hochkant) Vorschau,
+    // Zahlen, Werkzeuge. Jede Kachel bekommt ihre Zeile ausdruecklich und
+    // nur die Zeilen, die belegt sind, gibt es -- eine leere Rasterzeile
+    // behielte ihre beiden Abstaende. Die Belegung steht deshalb hier und
+    // nicht im Stilblatt: welche Zeile die wievielte ist, haengt an der
+    // Auswahl.
+    var spuren = [Math.round(folieHoch) + "px"];
+    var setz = function (el, reihe, spalte) {
+      if (!el) return;
+      el.style.gridRow = reihe ? String(reihe) : "";
+      el.style.gridColumn = spalte || "";
+    };
+    if (zeile2 !== "keine") spuren.push(Math.round(notizHoch) + "px");
+    var reiheN = 2;
+    if (zeile2 === "beide" && !hochkant) {
+      setz(ELN.notizKasten, 2, "1");
+      setz(ELN.vorBild && ELN.vorBild.parentNode, 2, "2");
+    } else if (zeile2 === "beide") {
+      setz(ELN.notizKasten, 2, "1 / 3");
+      setz(ELN.vorBild && ELN.vorBild.parentNode, 3, "1 / 3");
+      spuren.push(vorSpur + "px");
+      reiheN = 3;
+    } else {
+      // Nur eines von beiden: es nimmt die ganze Breite, ohne Spaltenteiler.
+      setz(ELN.notizKasten, 2, "1 / 3");
+      setz(ELN.vorBild && ELN.vorBild.parentNode, 2, "1 / 3");
+    }
+    var naechsteReihe = zeile2 === "keine" ? 2 : reiheN + 1;
+    if (zeileDa) { setz(zeile, naechsteReihe, "1 / 3"); spuren.push("auto"); naechsteReihe++; }
+    if (leisteDa) { setz(ELN.wzTraeger, naechsteReihe, "1 / 3"); spuren.push("auto"); }
+    LEIB.style.gridTemplateRows = spuren.join(" ");
     // Und der Griff auf die Naht, aus derselben Zahl. Hochkant gilt das
-    // unveraendert: Zeile 1 ist auch dort die Folie und Zeile 2 die Notiz
-    // (gemessen bei 500x900 "289px 152px auto auto"), nur nimmt die Notiz
-    // beide Spalten. Genau deshalb liegt der Griff auf `left:0;right:0` und
-    // nicht in einer Spalte.
-    teilerStellen(folieHoch, uebrig, beweglich);
+    // unveraendert: Zeile 1 ist auch dort die Folie und Zeile 2 die Notiz,
+    // nur nimmt die Notiz beide Spalten (und die Vorschau steht in einer
+    // eigenen dritten Zeile). Genau deshalb liegt der Griff auf
+    // `left:0;right:0` und nicht in einer Spalte. Und es gibt ihn nur, wenn
+    // unter der Folie ueberhaupt etwas steht.
+    teilerStellen(folieHoch, uebrig, beweglich && zeile2 !== "keine");
 
     // Keep the chosen column ratio independent of the row height.
     var gap = parseFloat(getComputedStyle(LEIB).columnGap) || 10;
@@ -7506,7 +8413,9 @@
     LEIB.style.gridTemplateColumns = links + "px minmax(0,1fr)";
     var griff = ELN.spaltenteiler;
     if (griff) {
-      griff.hidden = LEIB.dataset.form === "hochkant";
+      // Und den senkrechten nur, wenn Notiz *und* Vorschau nebeneinander
+      // stehen -- zwischen einer Kachel und nichts teilt er nichts.
+      griff.hidden = hochkant || zeile2 !== "beide";
       griff.style.left = (links - 4) + "px";
       griff.style.top = (Math.round(folieHoch) + (parseFloat(getComputedStyle(LEIB).rowGap) || 10)) + "px";
       griff.style.width = (gap + 8) + "px";
@@ -7519,6 +8428,7 @@
     vorschauBreite(v);
     notizNachFenster();
     notizStand();
+    blattLage();
   }
 
   // Die Vorschau ist ein Blick und keine zweite Buehne. Sie steht in einer
@@ -7973,6 +8883,18 @@
 
   addEventListener("keydown", function (e) {
     if (tippt(e)) return;
+    // Ein offenes Blatt "Ansicht anpassen" schliesst `Escape`, auch wenn der
+    // Fokus nicht mehr darin liegt -- das Blatt ist nicht modal, man tabbt
+    // oder klickt (auf die Folie, zum Zeichnen) aus ihm heraus. Ohne diese
+    // Zeile ginge `Escape` dann an die Uebersicht weiter unten: die klappte
+    // auf, und das Blatt bliebe dahinter offen stehen. Liegt der Fokus im
+    // Blatt, kommt `Escape` gar nicht bis hierher (der Horcher am Blatt
+    // haelt es auf).
+    if (e.key === "Escape" && BLATT && !BLATT.el.hidden) {
+      blattUm(false);
+      e.preventDefault();
+      return;
+    }
     // Umschalt und Pfeil verlaengern die laufende Vollbilduhr, statt zu
     // blaettern. `uhrSaalMehr` gibt `false`, wenn keine laeuft -- im
     // Buehnenfenster nie eine, gefuehrt wird sie drueben --, und dann faellt
@@ -8232,6 +9154,51 @@
       verbunden: function () { return !!partner(); }
     },
 
+    // ── Was das Pult zeigt ──────────────────────────────────────────────────
+    // Fuer Pruefungen und fuer die App, die es per `evaluateJavaScript` im
+    // Moderatorenfenster ruft. Nur in der Sprecherrolle wirksam; im
+    // Vortragsfenster gibt es kein Pult, und jeder Ruf antwortet `null`.
+    //
+    //   stand()            {preset, visible, available, stored, split}
+    //   voreinstellung(id) "full" | "lesson" | "minimal"
+    //   modul(id, an)      ein Modul ein- oder ausblenden
+    //   blatt(offen)       das Blatt "Ansicht anpassen" auf/zu (ohne
+    //                      Argument umschalten); gibt zurueck, ob es offen ist
+    //   zuruecksetzen()    Pultstand aus dem Speicher loeschen, zurueck auf
+    //                      Typst und Vorgabe (Zieldauern bleiben)
+    //
+    // `stored` sagt, ob ueberhaupt ein Pultstand dauerhaft (in
+    // `localStorage`) steht -- bei nicht schreibbarem Speicher immer `false`;
+    // `visible` ist, was gerade dasteht, samt einer nur voruebergehend
+    // eingeblendeten Klassenuhr oder Zieldauer.
+    pult: {
+      stand: function () {
+        if (ROLLE !== "speaker") return null;
+        return {
+          preset: PULT_PRESET,
+          visible: PULT_MODULE.filter(modulZeigt),
+          available: PULT_MODULE.filter(modulDa),
+          stored: pultGespeichert(),
+          split: { slide: ANTEIL, notes: NOTIZ_ANTEIL }
+        };
+      },
+      voreinstellung: function (id) {
+        return ROLLE === "speaker" ? voreinstellungSetzen(id) : null;
+      },
+      modul: function (id, an) {
+        return ROLLE === "speaker" ? modulSetzen(id, an !== false) : null;
+      },
+      blatt: function (offen) {
+        if (ROLLE !== "speaker") return null;
+        return blattUm(offen);
+      },
+      zuruecksetzen: function () {
+        if (ROLLE !== "speaker") return null;
+        pultZuruecksetzen();
+        return true;
+      }
+    },
+
     // ── Speaker view ────────────────────────────────────────────────────────
     // For measuring, and for anything from outside that wants at it.
     sprecher: {
@@ -8240,6 +9207,7 @@
         if (m == null) return ZIEL_MIN;
         ZIEL_MIN = Math.max(0, +m || 0);
         if (ELN.ziel) ELN.ziel.value = ZIEL_MIN ? String(ZIEL_MIN) : "";
+        standMerken();
         sprecherUhr();
         return ZIEL_MIN;
       },

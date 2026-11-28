@@ -7,7 +7,7 @@ the handout as PDF from that same file.**
 
 [![Badge linking to the typstage manual](https://img.shields.io/badge/docs-manual-green)](https://loewe1000.github.io/typstage/)
 [![Badge linking to example decks and handouts](https://img.shields.io/badge/demo-decks%20%26%20handouts-blue)](https://loewe1000.github.io/typstage/beispiele/en.html)
-[![Badge linking to the changelog for version 0.3.0](https://img.shields.io/badge/changelog-0.3.0-lightgrey)](CHANGELOG.md)
+[![Badge linking to the changelog for version 0.4.0](https://img.shields.io/badge/changelog-0.4.0-lightgrey)](CHANGELOG.md)
 ![Badge showing the license this package is released under](https://img.shields.io/github/license/Loewe1000/typstage)
 
 ```bash
@@ -46,7 +46,7 @@ One source, three outputs:
 This file compiles, as it stands, with both commands above.
 
 ```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 
 #show: presentation.with(
   title: [The Pythagorean Theorem],
@@ -144,7 +144,7 @@ Nothing to install. Import it and Typst fetches the package on the first
 compile:
 
 ```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 ```
 
 To work on the package itself, clone it under the local package path. A clone
@@ -153,7 +153,7 @@ that sits there is found before the published one, so the same
 
 ```bash
 git clone https://github.com/Loewe1000/typstage \
-  ~/Library/Application\ Support/typst/packages/preview/typstage/0.3.0
+  ~/Library/Application\ Support/typst/packages/preview/typstage/0.4.0
 ```
 
 On Linux that path is `~/.local/share/typst/packages/preview/…`, on Windows
@@ -351,7 +351,29 @@ A deck can order less of it:
 ```
 
 A tile that is switched off takes its keys with it, and they leave the key bar
-with them.
+with them. `tools: false` takes only the drawing tools: media controls, `?` and
+light/dark stay.
+
+What of the rest is *shown* is the speaker's choice: `,` or the gear button in
+the slide tile opens a small sheet with three presets — `full` (everything, the
+default), `lesson` (next step, notes, class clock, drawing, media) and
+`minimal` (next step and notes) — and a checkbox per module (`next`, `notes`,
+`elapsed`, `progress`, `target`, `clock`, `tools`, `media`). A hidden module
+keeps its keys. The deck can set the starting value:
+
+```typ
+#show: presentation.with(speaker-view: (
+  preset: "lesson",                          // "full", "lesson" or "minimal"
+  // modules: ("next", "notes", "clock"),    // or name them; wins over preset
+))
+```
+
+The browser remembers the choice, the splits, the note size, light/dark and the
+key bar in `localStorage`, for every local deck at once in Safari, Chrome and
+the Typstage app, per file in Firefox. What is stored wins over the deck, field
+by field; what the deck switches off stays off. Per deck only the target
+duration is kept. `#speaker&reset` on the address starts over with the
+defaults.
 
 Set `speaker-view: (shortcuts: false)` to start with the shortcut bar hidden;
 `h` or the `?` button toggles it during the talk. Drag the divider between notes
@@ -588,7 +610,7 @@ single run.
 
 The price stands in the list above: an experimental export, files measured in
 megabytes, outlines instead of text, five themes rather than a hundred, and a
-version number that begins with a zero. Mosaic is at 0.0.1 and this at 0.3.0;
+version number that begins with a zero. Mosaic is at 0.0.1 and this at 0.4.0;
 neither of us has earned a habit yet.
 
 `examples/` holds three decks adapted from Mosaic's own, so that part of the

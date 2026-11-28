@@ -6,7 +6,7 @@
 // Ohne Eingabe gilt `klar` und die Klasse MA-07. Dieselben Namen wie beim
 // Arbeitsblatt: klar, atlas, skizze, labor, kontur, leiste, riso, bauhaus.
 
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 
 #let name = sys.inputs.at("theme", default: "klar")
 #let klasse = sys.inputs.at("class", default: "MA-07")

@@ -22,7 +22,7 @@
 // export", in den drei heilen nicht. Wer den Kopf hier herausnimmt, nimmt
 // diesen Zeugen mit.
 
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 
 #show: presentation.with(theme: themes.lesson)
 

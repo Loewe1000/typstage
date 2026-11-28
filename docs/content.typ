@@ -337,7 +337,7 @@ dieses Dokument eine Präsentation ist.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 #show: presentation.with(title: [Wie hoch ist der Turm?])
 ```]
 
@@ -519,7 +519,7 @@ blättert um wie der Vortrag.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 #show: presentation.with(
   title: [Wie hoch ist der Turm?],
   pages: "step",
@@ -571,7 +571,7 @@ je Seite, die Notiz daneben, und wo keine steht, Linien.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 #show: presentation.with(
   title: [Wie hoch ist der Turm?],
   handout: 3,
@@ -587,7 +587,7 @@ Fünfundvierzig Zeilen, und nichts darin, das nicht oben erklärt wurde.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 
 #show: presentation.with(
   title: [Wie hoch ist der Turm?],
@@ -1904,7 +1904,7 @@ nicht bewegen kann -- eine Konstruktion, ein Video, eine gezeichnete Bewegung.
 die Konstruktion, rechts die Stichpunkte, darunter die Befehle.
 
 #show-code[```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 
 #show: presentation.with(theme: themes.lesson)
 
@@ -2218,7 +2218,7 @@ Farben ändern, den Ausschnitt verschieben, eine Bewegung anstoßen.
 Folienrumpf und geben selbst nichts aus.
 
 #show-code[```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 
 #presentation(
   slide([Ferngesteuert], {
@@ -2579,7 +2579,7 @@ not for commercial use.
 
 // check: dokument
 #show-code[```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 
 #presentation(
   slide([Eine Parabel], {
@@ -3167,18 +3167,21 @@ Die Naht zwischen Folie und Notiz ist ein Griff: nach unten gezogen gibt er
 der Folie mehr Platz, nach oben der Notiz. Die Tabulatortaste erreicht ihn;
 dann schieben ihn die Pfeiltasten um 16 Pixel, mit Umschalt um 64, `Pos1` und
 `Ende` stellen ihn an die Anschläge, und ein Doppelklick oder `Eingabe` stellt
-ihn zurück. Ein Neuladen behält die Teilung. Ein weiterer Griff zwischen Notiz und
+ihn zurück. Der Browser merkt sich die Teilung, siehe „Was sich der Browser
+merkt". Ein weiterer Griff zwischen Notiz und
 Vorschau regelt deren Breitenverhältnis; es bleibt beim Ändern der Folienhöhe
 und beim Vergrößern des Fensters erhalten. `h` oder der `?`-Knopf blendet die
 Tastenleiste aus und ein; `speaker-view: (shortcuts: false)` blendet sie beim
-Start aus. Video und Audio haben im Presenter Wiedergabeknöpfe und Zeitregler. Ein Deck ohne Notizen hat nichts
+Start aus, solange der Browser sich nicht selbst eine Wahl gemerkt hat. Video und Audio haben im Presenter Wiedergabeknöpfe und Zeitregler. Ein Deck ohne Notizen hat nichts
 zu teilen und bekommt keinen Griff.
 
 Unter den Kacheln die Werkzeugzeile -- Stift, Zeiger und Radierer, die vier
-Farben, Zurücknehmen und Löschen, hell oder dunkel --, darunter die
-Tastenleiste mit allen Tasten der Ansicht, am Ende die Klangtasten des Decks.
-Der Zustand des Saals -- `schwarz`, `eingefroren`, `kein Vortragsfenster` --
-steht oben rechts in der Folienkachel.
+Farben, Zurücknehmen und Löschen, auf einer Folie mit Video oder Audio dazu die
+Wiedergabe --, darunter die Tastenleiste mit allen Tasten der Ansicht, am Ende
+die Klangtasten des Decks. Der Zustand des Saals -- `schwarz`, `eingefroren`,
+`kein Vortragsfenster` -- steht oben rechts in der Folienkachel, und daneben
+drei kleine Knöpfe, die nur die Ansicht betreffen: hell oder dunkel, `?` für
+die Tastenleiste und das Zahnrad, das die Ansicht anpasst.
 
 Die Tasten der Ansicht, die `?` dort auch selbst zeigt:
 
@@ -3202,6 +3205,7 @@ Die Tasten der Ansicht, die `?` dort auch selbst zeigt:
   [`c`], [die nächste Zeichenfarbe],
   [`z`], [den letzten Strich zurücknehmen],
   [`x`], [die Striche dieser Folie löschen],
+  [`,`], [die Ansicht anpassen: welche Kacheln zu sehen sind],
   [`⇧L`], [hell oder dunkel, nur für die Ansicht],
   [`h`], [die Tastenleiste ein- oder ausblenden],
   [`k`], [Video und Audio pausieren oder fortsetzen],
@@ -3275,16 +3279,114 @@ bleibt an:
 ))
 ```]
 
-`tools: false` nimmt die Werkzeugzeile weg. Eine abbestellte Kachel nimmt ihre
-Tasten mit: mit `clock: false` tun `t` und `⇧t` nichts mehr. Die Stiftfarben
-sind Typst-Farben, keine Zeichenketten, und es dürfen mehr oder weniger als vier
-sein.
+`tools: false` nimmt Stift, Zeiger, Radierer und Farben weg; die Wiedergabe von
+Video und Audio, `?` und hell/dunkel bleiben. Eine abbestellte Kachel nimmt ihre
+Tasten mit: mit `clock: false` tun `t` und `⇧t` nichts mehr, mit `tools: false`
+weder `m`, `c` und `z` noch `x`. Die Stiftfarben sind Typst-Farben, keine
+Zeichenketten, und es dürfen mehr oder weniger als vier sein.
+
+=== Was davon zu sehen ist
+
+Was `speaker-view` abbestellt, gibt es in diesem Deck nicht. Was davon zu
+sehen ist, entscheidet der Vortragende selbst, am Pult: `,` oder das Zahnrad
+oben in der Folienkachel öffnet ein kleines Blatt oben rechts, das die Folie
+möglichst wenig verdeckt. Darin stehen drei Voreinstellungen und ein Häkchen je
+Teil der Ansicht, je *Modul*:
+
+#table(
+  columns: (auto, auto, 1fr),
+  stroke: 0.5pt + luma(180),
+  table.header([*Modul*], [*Kennung*], [*was dazugehört*]),
+  [nächster Schritt], [`next`], [die Vorschau],
+  [Notiz], [`notes`], [die Notiz des Schritts],
+  [verstrichen], [`elapsed`], [der Stundenzähler und die Uhrzeit],
+  [Fortschritt], [`progress`], [Folie, Schritt und der Balken],
+  [Ziel], [`target`], [Zieldauer, Rest und Plan],
+  [Klassenuhr], [`clock`], [die Uhr für den Saal],
+  [Zeichnen], [`tools`], [Stift, Zeiger, Radierer, Farben, Zurück und Löschen],
+  [Medien], [`media`], [die Wiedergabe; erscheint ohnehin nur auf Folien mit
+    Video oder Audio],
+)
+
+Die laufende Folie (`slide`) ist immer da. Die drei Voreinstellungen:
+
+- *Voll* (`full`): alles, die Vorgabe -- das Pult, wie es immer war.
+- *Unterricht* (`lesson`): nächster Schritt, Notiz, Klassenuhr, Zeichnen und
+  Medien. Die Uhren des Vortrags bleiben weg; die Klassenuhr füllt dann die
+  Kachelzeile allein.
+- *Schlank* (`minimal`): nächster Schritt und Notiz.
+
+Wer davon abweicht, hat eine *angepasste* Ansicht. Jede Änderung wirkt sofort,
+und die Folie nimmt den frei gewordenen Platz: ohne Notiz und Vorschau steht
+sie über die ganze Höhe, ohne Kacheln verschwindet die Kachelzeile samt ihrem
+Abstand. `Esc` oder noch einmal `,` schließt das Blatt. Es ist nicht modal:
+solange der Fokus darin liegt, blättern Leertaste und Pfeile nicht; wer auf die
+Folie klickt oder mit Tab hinausgeht, blättert wie gewohnt. „Alles zurücksetzen“ darin vergisst, was
+sich der Browser für das Pult gemerkt hat.
+
+Ausblenden ist nicht Abbestellen: die Tasten bleiben. `r`, `d`, die Ziffern,
+`m`, `c`, `z` und `x` wirken auch, wenn ihre Kachel nicht zu sehen ist. Die
+Klassenuhr zeigt sich dabei von selbst: `t`, `⇧t` oder eine Ziffer blenden ihre
+Kachel ein, solange das Minutenfeld offen ist oder die Uhr im Saal läuft, und
+danach wieder aus. Ebenso `d` die Zieldauer, solange ihr Feld offen ist.
+
+Das Deck kann den Startwert geben -- für Browser, die sich noch nichts gemerkt
+haben, etwa am Rechner im Klassenzimmer:
+
+// check: dokument
+#show-code[```typ
+#show: presentation.with(speaker-view: (
+  preset: "lesson",                     // "full", "lesson" oder "minimal"
+  // modules: ("next", "notes", "clock"),  // oder die Module selbst nennen
+))
+```]
+
+`modules` nennt die sichtbaren Module und geht `preset` vor. Ein Modul, das
+dasselbe `speaker-view` abbestellt (`modules: ("clock",)` neben `clock: false`),
+ist ein Fehler, ebenso ein unbekannter Name. Ein einzelnes Modul braucht das
+Komma der Typst-Liste: `("notes",)`.
+
+=== Was sich der Browser merkt
+
+Die Wahl der Module, die Teilung zwischen Folie, Notiz und Vorschau, die mit
+`+` und `-` verstellte Notizgröße, hell oder dunkel und die Tastenleiste merkt
+sich der Browser im `localStorage` -- nicht je Deck, sondern für alle: wer sein
+Pult einmal eingerichtet hat, findet es im nächsten Deck wieder. Gelesen wird
+nur beim Öffnen der Ansicht; eine Änderung in einem anderen Deck baut eine
+offene Ansicht nicht mitten im Vortrag um.
+
+Wie weit „alle“ reicht, entscheidet der Browser:
+
+- *Safari, Chrome und die Typstage-App* teilen den Speicher über alle lokalen
+  Dateien, in jedem Ordner.
+- *Firefox* hält ihn je Datei: jedes Deck richtet sich einzeln ein.
+- *Safari und die App* teilen nicht untereinander, obwohl beide auf demselben
+  Mac laufen.
+- Von einem Server geladen gilt er für alle Decks dieses Servers.
+
+Die Typst-Option `preset`/`modules` ist deshalb der browserunabhängige
+Startwert: sie gilt überall, wo der Browser sich noch nichts gemerkt hat. Die
+Rangfolge, von unten nach oben: die Vorgabe `full`, dann das Deck, dann der
+Browser -- und zwar Feld für Feld. Wer nur die Teilung gezogen hat, bekommt die
+Module weiter aus dem Deck. Was das Deck abbestellt, bleibt abbestellt, ganz
+gleich, was gespeichert ist.
+
+Je Deck merkt sich der Browser nur die Zieldauer (`d`); sie bleibt, auch wenn
+das Deck neu übersetzt wird und eine Folie dazubekommt. Der Stundenzähler gilt
+für den Tab: er übersteht ein Neuladen, und er übersteht auch, dass die
+Sprecheransicht geschlossen und mit `n` neu geöffnet wird -- das
+Vortragsfenster hebt ihn so lange auf.
+
+Wer mit Vorgaben neu anfangen will, hängt `&reset` an die Adresse:
+`vortrag.html#speaker&reset` vergisst den gemerkten Pultstand, nicht die
+Zieldauern, und nimmt das `&reset` gleich wieder aus der Adresse, damit ein
+Neuladen nicht noch einmal zurücksetzt.
 
 === Hell oder dunkel
 
 Die Ansicht folgt der Systemeinstellung des Rechners, an dem sie steht
-(`prefers-color-scheme`); `l` widerspricht ihr, und die Wahl übersteht ein
-Neuladen. An der Palette des Decks hängt sie *nicht*: die sagt, wie die Wand
+(`prefers-color-scheme`); `⇧L` oder der Knopf mit der Sonne widerspricht ihr,
+und der Browser merkt sich die Wahl für alle Decks. An der Palette des Decks hängt sie *nicht*: die sagt, wie die Wand
 aussieht, nicht das Pult vor dem Vortragenden.
 
 === Eine Uhr, die die Klasse sieht
@@ -3781,8 +3883,8 @@ Laufzeitumgebung, die die Bewegung ausführt. Wo sie herkommen, sagt `assets`:
   [`"inline"`], [Beide Dateien stehen im HTML. Eine einzige Datei, die sich
     verschicken, auf einen Stick legen und ohne Netz öffnen lässt. Vorgabe --
     und für den Unterricht meist die richtige Wahl.],
-  [`"split"`], [Das HTML verweist auf `typstage-0.3.0.css` und
-    `typstage-0.3.0.js` daneben. Angebracht, wo mehrere Vorträge in einem
+  [`"split"`], [Das HTML verweist auf `typstage-0.4.0.css` und
+    `typstage-0.4.0.js` daneben. Angebracht, wo mehrere Vorträge in einem
     Ordner liegen: Der Browser lädt die Laufzeit einmal für alle.],
   [`(cdn: …)`], [Dieselben Namen unter der angegebenen Adresse. Für eine
     Website, die viele Vorträge trägt.],
@@ -3800,7 +3902,7 @@ Bündel-Export gibt sie im selben Lauf aus:
 
 // check: ganz ziel=bundle
 #show-code[```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 
 #document("vortrag.html", title: "Der Satz des Pythagoras")[
   #show: presentation.with(title: [Der Satz des Pythagoras], assets: "split")
@@ -3989,7 +4091,7 @@ verschieden:
     )
   },
   source: ```typ
-  #import "@preview/typstage:0.3.0": themes
+  #import "@preview/typstage:0.4.0": themes
   #themes.night.accent      // die Signalfarbe des Themes, als Farbe
   ```,
   width: 12cm,
@@ -4647,7 +4749,7 @@ Abschnittsfolie, Ersatzfläche eines Videos --, trägt ein festes Typst-Label.
 Eine gewöhnliche `show`-Regel genügt dann, kein Theme-Schlüssel, kein Fork.
 
 #show-code[```typ
-#import "@preview/typstage:0.3.0": *
+#import "@preview/typstage:0.4.0": *
 
 #show label("ts-slide-header-band"): set rect(fill: rgb("#4c1d95"))
 #show label("ts-slide-title"): set text(fill: rgb("#fde047"), style: "italic")

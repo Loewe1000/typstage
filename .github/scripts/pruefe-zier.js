@@ -133,7 +133,7 @@ const FARBE = {
   blau: (r, g, b) => b - Math.max(r, g) > 40,
 };
 
-const KOPF = `#import "@preview/typstage:0.3.0": *
+const KOPF = `#import "@preview/typstage:0.4.0": *
 #show <ts-slide-number>: set text(fill: rgb("#ff00ff"))
 #show <ts-slide-header-text>: set text(fill: rgb("#00ffff"))
 #show <ts-slide-footer-rule>: set rect(fill: rgb("#00ff00"))
@@ -327,7 +327,7 @@ function paketpfad() {
   const pp = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-zier-pk-"));
   for (const raum of ["schule", "preview"]) {
     fs.mkdirSync(path.join(pp, raum, "typstage"), { recursive: true });
-    fs.symlinkSync(WURZEL, path.join(pp, raum, "typstage", "0.3.0"), "dir");
+    fs.symlinkSync(WURZEL, path.join(pp, raum, "typstage", "0.4.0"), "dir");
   }
   return pp;
 }

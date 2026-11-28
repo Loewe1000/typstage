@@ -46,11 +46,11 @@ function deckBauen() {
   const pp = fs.mkdtempSync(path.join(os.tmpdir(), "typstage-pult-"));
   const ziel = path.join(pp, "schule", "typstage");
   fs.mkdirSync(ziel, { recursive: true });
-  fs.symlinkSync(WURZEL, path.join(ziel, "0.3.0"), "dir");
+  fs.symlinkSync(WURZEL, path.join(ziel, "0.4.0"), "dir");
   // Und unter `preview`, wie das Paket nach der Einreichung heisst.
   const ziel2 = path.join(pp, "preview", "typstage");
   fs.mkdirSync(ziel2, { recursive: true });
-  fs.symlinkSync(WURZEL, path.join(ziel2, "0.3.0"), "dir");
+  fs.symlinkSync(WURZEL, path.join(ziel2, "0.4.0"), "dir");
   const aus = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "typstage-pult-h-")), "pruefdeck.html");
   execFileSync("typst", ["compile", "--format", "html", "--features", "html",
     "--root", WURZEL, "--package-path", pp,
@@ -200,7 +200,8 @@ const FOKUS = `(() => {
       // `prefers-color-scheme`, sondern von `l`, und dieser Lauf muss es
       // genauso holen wie ein Mensch. Vorher prueften beide Durchgaenge
       // dasselbe dunkle Bild, und die Haelfte des Laufs war blind.
-      // Gestellt, nicht umgeschaltet: `ts-licht` haelt die Sitzung und
+      // Gestellt, nicht umgeschaltet: die Wahl steht im Pultspeicher
+      // (`light` unter `typstage:pult:v1`, frueher `ts-licht`) und
       // ueberlebt ein Neuladen. Ein blindes `l` je Seite kippte deshalb ab
       // der zweiten Groesse wieder ins Dunkle zurueck, und der helle
       // Durchgang mass abwechselnd beides.

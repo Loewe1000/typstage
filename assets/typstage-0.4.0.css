@@ -778,7 +778,7 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
    Kachel -- sie schrumpft, statt hinauszuragen. */
 .ts-sp-triade{grid-template-columns:repeat(3,minmax(0,1fr))}
 .ts-sp-taten{grid-template-columns:repeat(2,minmax(0,1fr))}
-.ts-sp-wzlicht,.ts-sp-wzrand{grid-template-columns:minmax(0,1fr)}
+.ts-sp-wzrand{grid-template-columns:minmax(0,1fr)}
 /* Genau dieselbe Rechnung fuer die Farben, und sie ist der Grund, warum
    die Kachel jetzt in jedes Fenster passt: vorher stand hier
    `flex:0 0 auto` mit `width:26px` je Tupfen, zusammen ein Eigenmass von
@@ -865,8 +865,6 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
   grid-template-columns:auto repeat(3,minmax(0,5.5rem))}
 .ts-sp-werkzeugleiste .ts-sp-taten{
   grid-template-columns:auto repeat(2,minmax(0,5rem))}
-.ts-sp-werkzeugleiste .ts-sp-wzlicht{
-  grid-template-columns:auto minmax(0,5rem) 1.8rem}
 /* Equal swatches and reserved ring space keep selection inside the group. */
 .ts-sp-werkzeugleiste .ts-sp-farben{
   grid-template-columns:auto repeat(4,24px);align-items:center;
@@ -892,14 +890,24 @@ button.ts-sp-knopf:focus-visible{outline:2px solid var(--sp-marke);
              0 0 0 4px var(--sp-satz)}
 /* Vier Spalten: die Werkzeuge haben ihr eigenes Band, die Zeile traegt nur
    noch Zahlen. */
-.ts-sp-uhren{grid-template-columns:repeat(4,minmax(0,1fr))}
+/* Inzwischen so viele Spalten wie *sichtbare* Kacheln -- `--ts-n` setzt
+   `pultSichtbarkeit`. Eine einzelne Klassenuhr fuellt damit die Zeile,
+   statt ein Viertel davon zu belegen und drei leere Viertel stehen zu
+   lassen. */
+.ts-sp-uhren{grid-template-columns:repeat(var(--ts-n,4),minmax(0,1fr))}
 /* Schmal stapeln sich die Zahlen zu zweit. Vier nebeneinander sind bei
    560 px Fenster je 130 px breit; darin steht die Marke "TARGET (MIN)"
    nicht mehr, und die Unterzeile rutscht unter die Zahl. Zu zweit sind es
    265 px -- die Marke passt, die Unterzeile steht wieder neben der Zahl,
    und die Kachel ist dabei sogar niedriger (85 statt 125 px). */
+/* Mit weniger als drei Kacheln gibt es nichts zu stapeln: eine oder zwei
+   stehen nebeneinander (`--ts-n-schmal`). */
 .ts-sp-leib[data-wz="schmal"] .ts-sp-uhren{
-  grid-template-columns:repeat(2,minmax(0,1fr))}
+  grid-template-columns:repeat(var(--ts-n-schmal,2),minmax(0,1fr))}
+/* Drei Kacheln zu zweit: die dritte allein in der zweiten Reihe nimmt
+   deren ganze Breite, statt eine leere Zelle neben sich zu lassen
+   (`data-allein` setzt `pultSichtbarkeit`). */
+.ts-sp-leib[data-wz="schmal"] .ts-sp-uhren > [data-allein]{grid-column:1/-1}
 html[data-ts-rolle="speaker"][data-ts-modus="radier"] #ts-stage{cursor:cell}
 /* Tastenkappen. Eine Taste sieht aus wie eine Taste: eine kleine Flaeche mit
    Rand und einer staerkeren Kante unten, die sie ein Stueck heraushebt.
@@ -1004,7 +1012,7 @@ html[data-ts-schwarz="1"] #ts-clock:not([data-art="fest"]){opacity:0}
      seine Leiste im Druck-Chrome, und die der Buehne lag sonst mit dem
      Stand der Folie, auf der der Vortrag gerade war, ueber Blatt eins. */
   #ts-overview,#ts-hint,#ts-fly,#ts-chrome,#ts-fortschritt,#ts-ink,#ts-punkt,
-  #ts-clock,#ts-speaker{display:none!important}
+  #ts-clock,#ts-speaker,.ts-sp-blatt{display:none!important}
   /* Printing produces the same thing from both windows. The speaker
      view's rules are more specific than the print rule above and would
      otherwise override it: the stage would stay small, nailed to its
@@ -1055,3 +1063,73 @@ html[data-ts-schwarz="1"] #ts-stage > :not(#ts-clock){opacity:0!important}
 .ts-sp-fuss[hidden]{display:none}
 html[data-ts-rolle="speaker"] #ts-speaker[data-fuss="aus"]{
   grid-template-rows:minmax(0,1fr);row-gap:0}
+
+/* ── Module des Pults ──────────────────────────────────────────────────────
+   Ausgeblendet wird mit `hidden`, gebaut ist immer alles. Das Attribut allein
+   wirkt hier nicht: `.ts-sp-kachel` setzt selbst `display:flex`, die
+   Kachelzeile `display:grid`, und beide schlagen die Vorgabe des Browsers
+   fuer `[hidden]`. Daher ausdruecklich und mit Nachdruck. */
+[data-modul][hidden],.ts-sp-kachel[hidden],.ts-sp-uhren[hidden]{display:none!important}
+/* Der Umschlag um die Zeichengruppen ist fuer das Raster nicht da: die
+   Gruppen fliessen in der Leiste wie zuvor. */
+.ts-sp-zeichenwz{display:contents}
+/* Die drei Knoepfe im Kopf der Folienkachel: hell/dunkel, Tastenleiste,
+   Ansicht anpassen. Klein und leise -- sie stellen die Ansicht ein, nicht
+   den Vortrag, und sollen dem Zustand des Saals daneben (`.ts-sp-lage`)
+   keinen Rang ablaufen. */
+.ts-sp-kopfknoepfe{display:flex;gap:4px;flex:0 0 auto}
+.ts-sp-buehnenkopf > .ts-sp-lage{margin-left:auto}
+.ts-sp-kopfknopf{display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:18px;padding:0;border:1px solid var(--sp-rand);
+  border-radius:5px;background:var(--sp-kachel);color:var(--sp-leise);
+  cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;line-height:1}
+.ts-sp-kopfknopf .ts-sp-wz-bild{width:13px;height:13px}
+.ts-sp-kopfknopf:hover{background:var(--sp-ruhig);color:var(--sp-ruhig-satz)}
+.ts-sp-kopfknopf[aria-expanded="true"]{background:var(--sp-ruhig);color:var(--sp-satz);
+  border-color:var(--sp-marke)}
+.ts-sp-kopfknopf:focus-visible{outline:2px solid var(--sp-marke);outline-offset:2px}
+
+/* ── Das Blatt "Ansicht anpassen" ──────────────────────────────────────────
+   Oben rechts und schmal: dort liegt im Folienkopf das Zahnrad, das es
+   oeffnet, und die rechte obere Ecke einer Folie traegt am seltensten den
+   Inhalt. Es haengt am `body` (die Sprecherbox ist ein eigener
+   Stapelkontext unter der Buehne) und liegt ueber der angehefteten Uhr
+   (75), unter Hinweis (80) und Uebersicht (90). Nur Farben aus dem Satz
+   des Pults, damit hell und dunkel von selbst stimmen. */
+.ts-sp-blatt{position:fixed;top:40px;right:14px;z-index:78;
+  width:min(300px,calc(100vw - 28px));max-height:calc(100vh - 56px);overflow:auto;
+  box-sizing:border-box;padding:10px 12px 12px;border-radius:10px;
+  background:var(--sp-kachel);color:var(--sp-satz);border:1px solid var(--sp-rand);
+  box-shadow:var(--sp-schatten);font:13px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif}
+.ts-sp-blatt[hidden]{display:none}
+html:not([data-ts-rolle="speaker"]) .ts-sp-blatt{display:none!important}
+.ts-sp-blatt-kopf{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px}
+.ts-sp-blatt-titel{margin:0;font-size:13px;font-weight:700;letter-spacing:.02em}
+.ts-sp-blatt-zu{width:22px;height:22px;padding:0;border:0;border-radius:5px;
+  background:transparent;color:var(--sp-leise);font-size:16px;line-height:1;cursor:pointer}
+.ts-sp-blatt-zu:hover{background:var(--sp-ruhig);color:var(--sp-ruhig-satz)}
+.ts-sp-blatt-vor{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.ts-sp-blatt-knopf{padding:5px 4px;border:1px solid var(--sp-rand);border-radius:6px;
+  background:var(--sp-grund);color:var(--sp-satz);font:inherit;font-size:12px;cursor:pointer}
+.ts-sp-blatt-knopf:hover{background:var(--sp-ruhig);color:var(--sp-ruhig-satz)}
+.ts-sp-blatt-knopf[aria-pressed="true"]{background:var(--sp-ruhig);color:var(--sp-satz);
+  border-color:var(--sp-marke);font-weight:700}
+.ts-sp-blatt-stand{min-height:16px;margin:3px 0 2px;font-size:11px;color:var(--sp-leise);
+  text-align:right}
+.ts-sp-blatt-module{margin:4px 0 0;padding:6px 0 0;border:0;border-top:1px solid var(--sp-rand)}
+.ts-sp-blatt-module legend{padding:0;margin-bottom:2px;font-size:11px;color:var(--sp-leise)}
+.ts-sp-blatt-modul{display:flex;align-items:baseline;gap:7px;padding:3px 0;cursor:pointer}
+.ts-sp-blatt-modul input{margin:0;flex:0 0 auto;accent-color:var(--sp-marke);
+  transform:translateY(1px)}
+.ts-sp-blatt-modul[data-aus="1"]{cursor:default;color:var(--sp-leise)}
+.ts-sp-blatt-neben{margin-left:auto;font-size:11px;color:var(--sp-leise);text-align:right}
+.ts-sp-blatt-hinweis{margin:8px 0 0;padding:5px 7px;border-radius:6px;font-size:11px;
+  background:var(--sp-alarm-flaeche);color:var(--sp-satz)}
+.ts-sp-blatt-hinweis[hidden]{display:none}
+.ts-sp-blatt-reset{margin-top:10px;width:100%;padding:5px;border:1px solid var(--sp-rand);
+  border-radius:6px;background:transparent;color:var(--sp-satz);font:inherit;font-size:12px;
+  cursor:pointer}
+.ts-sp-blatt-reset:hover{background:var(--sp-ruhig);color:var(--sp-ruhig-satz)}
+.ts-sp-blatt button:focus-visible,.ts-sp-blatt input:focus-visible{
+  outline:2px solid var(--sp-marke);outline-offset:2px}
